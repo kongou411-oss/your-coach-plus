@@ -61,6 +61,7 @@ const AddMealModal = ({
     const [filteredSearchItems, setFilteredSearchItems] = useState([]); // 検索結果（非同期処理用）
     const [isSearching, setIsSearching] = useState(false); // 検索中フラグ
     const [isCategoryExpanded, setIsCategoryExpanded] = useState(false); // カテゴリ折りたたみ
+    const [isActionsExpanded, setIsActionsExpanded] = useState(true); // アクションボタン折りたたみ（デフォルト展開）
 
     // 量調整UI用のstate
     const [selectedItemIndex, setSelectedItemIndex] = useState(null); // 選択中のアイテム
@@ -499,6 +500,7 @@ const AddMealModal = ({
             return item;
         });
         setAddedItems(items);
+        setIsActionsExpanded(false); // アイテム追加後は格納
     };
 
     // ===== テンプレートから直接記録 =====
@@ -620,6 +622,7 @@ const AddMealModal = ({
 
         setAddedItems([...addedItems, ...newItems]);
         setShowAIFoodRecognition(false);
+        setIsActionsExpanded(false); // アイテム追加後は格納
     };
 
     // ===== アイテムを削除 =====
@@ -696,6 +699,110 @@ const AddMealModal = ({
             onUpdate(meal);
         } else if (onAdd) {
             onAdd(meal);
+        }
+    };
+
+    // ===== カスタムアイテムを保存（検索モーダルのカスタムタブ用） =====
+    const handleSaveCustomFood = async () => {
+        if (!customData.name.trim()) {
+            toast('アイテム名を入力してください');
+            return;
+        }
+
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser) {
+            toast.error('ログインが必要です');
+            return;
+        }
+
+        try {
+            // 個数単位判定
+            const isCountUnit = COUNT_UNITS.some(u => customData.servingUnit.includes(u));
+            const servingSize = parseFloat(customData.servingSize) || (isCountUnit ? 1 : 100);
+
+            // 重量単位の場合は100g基準に換算、個数単位はそのまま
+            let finalServingSize, conversionRatio;
+            if (isCountUnit) {
+                finalServingSize = servingSize;
+                conversionRatio = 1;
+            } else {
+                finalServingSize = 100;
+                conversionRatio = 100 / servingSize;
+            }
+
+            const customFood = {
+                name: customData.name,
+                category: customData.category || 'カスタム',
+                itemType: customData.itemType,
+                calories: parseFloat(((parseFloat(customData.calories) || 0) * conversionRatio).toFixed(1)),
+                protein: parseFloat(((parseFloat(customData.protein) || 0) * conversionRatio).toFixed(1)),
+                fat: parseFloat(((parseFloat(customData.fat) || 0) * conversionRatio).toFixed(1)),
+                carbs: parseFloat(((parseFloat(customData.carbs) || 0) * conversionRatio).toFixed(1)),
+                servingSize: finalServingSize,
+                servingUnit: customData.servingUnit || 'g',
+                unit: customData.servingUnit || 'g',
+                isCustom: true,
+                createdAt: new Date().toISOString()
+            };
+
+            await firebase.firestore()
+                .collection('users')
+                .doc(currentUser.uid)
+                .collection('customFoods')
+                .add(customFood);
+
+            toast.success('カスタムアイテムを保存しました');
+
+            // フォームリセット
+            setCustomData({
+                name: '',
+                category: 'カスタム',
+                itemType: 'food',
+                servingSize: 100,
+                servingUnit: 'g',
+                calories: '',
+                protein: '',
+                fat: '',
+                carbs: '',
+                diaas: '',
+                gi: '',
+                sugar: '',
+                fiber: '',
+                solubleFiber: '',
+                insolubleFiber: '',
+                saturatedFat: '',
+                monounsaturatedFat: '',
+                polyunsaturatedFat: '',
+                mediumChainFat: '',
+                vitaminA: '', vitaminB1: '', vitaminB2: '', vitaminB6: '', vitaminB12: '',
+                vitaminC: '', vitaminD: '', vitaminE: '', vitaminK: '',
+                niacin: '', pantothenicAcid: '', biotin: '', folicAcid: '',
+                sodium: '', potassium: '', calcium: '', magnesium: '', phosphorus: '',
+                iron: '', zinc: '', copper: '', manganese: '', iodine: '',
+                selenium: '', chromium: '', molybdenum: '',
+                otherNutrients: []
+            });
+
+            // カスタムフードリストを再読み込み
+            const customFoodsRef = firebase.firestore()
+                .collection('users')
+                .doc(currentUser.uid)
+                .collection('customFoods');
+            const snapshot = await customFoodsRef.get();
+            const customFoodsList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                isCustom: true
+            }));
+            setCustomFoods(customFoodsList);
+
+            // 食材タブに切り替えてカスタムカテゴリを表示
+            setFoodTab('food');
+            setSelectedCategory('カスタム');
+
+        } catch (error) {
+            console.error('カスタムアイテム保存エラー:', error);
+            toast.error('保存に失敗しました');
         }
     };
 
@@ -851,119 +958,141 @@ const AddMealModal = ({
                     </div>
                 </div>
 
-                {/* この食事の合計 + テンプレート保存ボタン */}
-                {addedItems.length > 0 && (
-                    <div className="px-4 pt-3 pb-2">
-                        <div className="flex gap-2">
-                            {/* 左側：この食事の合計 */}
-                            <div className="flex-1 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                <div className="text-xs font-medium text-gray-600 mb-1">この食事の合計</div>
+                {/* メインコンテンツエリア */}
+                <div className="flex-1 overflow-y-auto p-4">
+                    {addedItems.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                            <Icon name="Plus" size={48} className="mx-auto mb-3 opacity-30" />
+                            <p className="font-medium mb-2">食材を追加してください</p>
+                            <p className="text-xs">「一覧から検索」で食材を追加するか、</p>
+                            <p className="text-xs">「写真解析」「テンプレート」で直接記録できます</p>
+                        </div>
+                    ) : (
+                        <div className="p-3 rounded-lg border-2" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
+                            {/* ヘッダー：タイトル + 保存ボタン */}
+                            <div className="flex justify-between items-center mb-3">
+                                <p className="text-sm font-bold" style={{color: '#4A9EFF'}}>追加済み（{addedItems.length}種）</p>
+                                <button
+                                    onClick={saveAsTemplate}
+                                    className="px-3 bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg font-semibold hover:bg-purple-100 transition flex flex-col items-center justify-center"
+                                >
+                                    <Icon name="BookTemplate" size={16} className="mb-1" />
+                                    <span className="text-xs whitespace-nowrap">保存</span>
+                                </button>
+                            </div>
+
+                            {/* アイテム一覧 */}
+                            <div className="space-y-2 mb-3">
+                                {addedItems.map((item, index) => {
+                                    // 個数単位（本、個、杯、枚）の場合はそのまま、g/ml単位の場合は100で割る
+                                    const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
+                                    const ratio = isCountUnit ? item.amount : item.amount / 100;
+                                    const displayCalories = Math.round((item.calories || 0) * ratio);
+                                    const displayProtein = Math.round((item.protein || 0) * ratio * 10) / 10;
+                                    const displayFat = Math.round((item.fat || 0) * ratio * 10) / 10;
+                                    const displayCarbs = Math.round((item.carbs || 0) * ratio * 10) / 10;
+                                    const isSelected = selectedItemIndex === index;
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`bg-white p-3 rounded-lg border-2 transition ${
+                                                isSelected ? 'border-blue-500 shadow-md' : 'border-gray-200'
+                                            }`}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div
+                                                    className="flex-1 cursor-pointer"
+                                                    onClick={() => {
+                                                        setSelectedItemIndex(index);
+                                                        setOriginalAmount(item.amount); // 元の量を保存
+                                                    }}
+                                                >
+                                                    <div className="font-semibold text-gray-800">{item.name}</div>
+                                                    <div className="text-sm text-gray-600 mt-1">
+                                                        {item.amount}{item.unit || 'g'}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 ml-2">
+                                                    {/* 編集ボタン（量調整を開く） */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedItemIndex(index);
+                                                            setOriginalAmount(item.amount);
+                                                        }}
+                                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
+                                                        title="編集"
+                                                    >
+                                                        <Icon name="Edit" size={18} />
+                                                    </button>
+                                                    {/* 削除ボタン */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            removeItem(index);
+                                                        }}
+                                                        className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                        title="削除"
+                                                    >
+                                                        <Icon name="Trash2" size={18} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
+                                                <div className="text-sm font-bold text-blue-600">
+                                                    {displayCalories}kcal
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs">
+                                                    <span className="text-red-500 font-semibold">P {displayProtein}g</span>
+                                                    <span className="text-gray-400">|</span>
+                                                    <span className="text-yellow-500 font-semibold">F {displayFat}g</span>
+                                                    <span className="text-gray-400">|</span>
+                                                    <span className="text-green-500 font-semibold">C {displayCarbs}g</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* この食事の合計 */}
+                            <div className="bg-white p-3 rounded-lg border border-gray-200 mb-3">
                                 <div className="flex items-center justify-between">
-                                    <div className="text-lg font-bold text-blue-600">
-                                        {Math.round(totalPFC.calories)}kcal
+                                    <div>
+                                        <div className="text-xs font-medium text-gray-600">総カロリー</div>
+                                        <div className="text-lg font-bold text-blue-600">
+                                            {Math.round(totalPFC.calories)}kcal
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1 text-xs">
-                                        <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
-                                        <span className="text-gray-400">|</span>
-                                        <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
-                                        <span className="text-gray-400">|</span>
-                                        <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
+                                    <div className="text-right">
+                                        <div className="text-xs font-medium text-gray-600">PFC</div>
+                                        <div className="flex items-center gap-1 text-xs">
+                                            <span className="text-red-500 font-semibold">P {Math.round(totalPFC.protein)}g</span>
+                                            <span className="text-gray-400">|</span>
+                                            <span className="text-yellow-500 font-semibold">F {Math.round(totalPFC.fat)}g</span>
+                                            <span className="text-gray-400">|</span>
+                                            <span className="text-green-500 font-semibold">C {Math.round(totalPFC.carbs)}g</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 右側：テンプレート保存ボタン */}
-                            <button
-                                onClick={saveAsTemplate}
-                                className="px-3 bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg font-semibold hover:bg-purple-100 transition flex flex-col items-center justify-center"
-                            >
-                                <Icon name="BookTemplate" size={16} className="mb-1" />
-                                <span className="text-xs whitespace-nowrap">保存</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* 追加済みアイテム一覧 */}
-                <div className="flex-1 overflow-y-auto p-4">
-                    {addedItems.length === 0 ? (
-                        <div className="text-center py-12 text-gray-600">
-                            <Icon name="Plus" size={48} className="mx-auto mb-3 opacity-30" />
-                            <p>食材を追加してください</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {addedItems.map((item, index) => {
-                                // 個数単位（本、個、杯、枚）の場合はそのまま、g/ml単位の場合は100で割る
-                                const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
-                                const ratio = isCountUnit ? item.amount : item.amount / 100;
-                                const displayCalories = Math.round((item.calories || 0) * ratio);
-                                const displayProtein = Math.round((item.protein || 0) * ratio * 10) / 10;
-                                const displayFat = Math.round((item.fat || 0) * ratio * 10) / 10;
-                                const displayCarbs = Math.round((item.carbs || 0) * ratio * 10) / 10;
-                                const isSelected = selectedItemIndex === index;
-
-                                return (
-                                    <div
-                                        key={index}
-                                        className={`bg-white p-3 rounded-lg border-2 transition ${
-                                            isSelected ? 'border-blue-500 shadow-md' : 'border-gray-200'
-                                        }`}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div
-                                                className="flex-1 cursor-pointer"
-                                                onClick={() => {
-                                                    setSelectedItemIndex(index);
-                                                    setOriginalAmount(item.amount); // 元の量を保存
-                                                }}
-                                            >
-                                                <div className="font-semibold text-gray-800">{item.name}</div>
-                                                <div className="text-sm text-gray-600 mt-1">
-                                                    {item.amount}{item.unit || 'g'}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 ml-2">
-                                                {/* 編集ボタン（量調整を開く） */}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedItemIndex(index);
-                                                        setOriginalAmount(item.amount);
-                                                    }}
-                                                    className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-[#4A9EFF] hover:bg-blue-50 transition border-2 border-[#4A9EFF]"
-                                                    title="編集"
-                                                >
-                                                    <Icon name="Edit" size={18} />
-                                                </button>
-                                                {/* 削除ボタン */}
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        removeItem(index);
-                                                    }}
-                                                    className="min-w-[44px] min-h-[44px] rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
-                                                    title="削除"
-                                                >
-                                                    <Icon name="Trash2" size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
-                                            <div className="text-sm font-bold text-blue-600">
-                                                {displayCalories}kcal
-                                            </div>
-                                            <div className="flex items-center gap-2 text-xs">
-                                                <span className="text-red-500 font-semibold">P {displayProtein}g</span>
-                                                <span className="text-gray-400">|</span>
-                                                <span className="text-yellow-500 font-semibold">F {displayFat}g</span>
-                                                <span className="text-gray-400">|</span>
-                                                <span className="text-green-500 font-semibold">C {displayCarbs}g</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                            {/* 追加/記録ボタン */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setShowSearchModal(true)}
+                                    className="flex-1 py-3 rounded-lg font-bold transition bg-[#4A9EFF] text-white hover:bg-[#3b8fef]"
+                                >
+                                    追加
+                                </button>
+                                <button
+                                    onClick={handleRecord}
+                                    className="flex-1 py-3 rounded-lg font-bold transition bg-[#4A9EFF] text-white hover:bg-[#3b8fef]"
+                                >
+                                    記録
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1084,88 +1213,70 @@ const AddMealModal = ({
                     );
                 })()}
 
-                {/* フッター：アクションボタン */}
-                <div className="border-t p-4 space-y-2 flex-shrink-0">
-                    {/* 1行目：写真解析（Premium制限あり） */}
-                    {(() => {
-                        const isPremium = userProfile?.isPremium;
-                        const isTrial = usageDays < 7;
-                        const hasAccess = isPremium || isTrial;
+                {/* フッター：アクションボタン（アイテム未追加時のみ表示） */}
+                {addedItems.length === 0 && (
+                    <div className="border-t p-4 flex-shrink-0">
+                        <div className="space-y-2">
+                            {/* 1行目：写真解析（Premium制限あり） */}
+                            {(() => {
+                                const isPremium = userProfile?.isPremium;
+                                const isTrial = usageDays < 7;
+                                const hasAccess = isPremium || isTrial;
 
-                        if (!hasAccess) {
-                            // Premium専用ロック表示
-                            return (
-                                <div className="w-full p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Icon name="Lock" size={18} className="text-amber-600" />
-                                            <span className="font-semibold text-amber-900 text-sm">AI写真解析（Premium専用）</span>
+                                if (!hasAccess) {
+                                    // Premium専用ロック表示
+                                    return (
+                                        <div className="w-full p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Icon name="Lock" size={18} className="text-amber-600" />
+                                                    <span className="font-semibold text-amber-900 text-sm">AI写真解析（Premium専用）</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        toast('Premium会員になると、写真から自動で食事を記録できます', { icon: '📸', duration: 3000 });
+                                                    }}
+                                                    className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition text-xs font-bold"
+                                                >
+                                                    Premium会員になる
+                                                </button>
+                                            </div>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                toast('Premium会員になると、写真から自動で食事を記録できます', { icon: '📸', duration: 3000 });
-                                            }}
-                                            className="px-3 py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition text-xs font-bold"
-                                        >
-                                            Premium会員になる
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        }
+                                    );
+                                }
 
-                        // アクセス権限あり：通常の写真解析ボタン
-                        return (
+                                // アクセス権限あり：通常の写真解析ボタン
+                                return (
+                                    <button
+                                        onClick={() => setShowAIFoodRecognition(true)}
+                                        className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3b8fef] transition shadow-md"
+                                    >
+                                        <Icon name="Camera" size={16} className="inline mr-1" />
+                                        写真解析
+                                    </button>
+                                );
+                            })()}
+
+                            {/* 2行目：一覧から検索 */}
                             <button
-                                onClick={() => setShowAIFoodRecognition(true)}
-                                className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3b8fef] transition shadow-md"
+                                onClick={() => setShowSearchModal(true)}
+                                className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
                             >
-                                <Icon name="Camera" size={16} className="inline mr-1" />
-                                写真解析
+                                <Icon name="Search" size={16} className="inline mr-1" />
+                                一覧から検索
                             </button>
-                        );
-                    })()}
 
-                    {/* 2行目：一覧から検索 */}
-                    <button
-                        onClick={() => setShowSearchModal(true)}
-                        className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
-                    >
-                        <Icon name="Search" size={16} className="inline mr-1" />
-                        一覧から検索
-                    </button>
-
-                    {/* 3行目：カスタム作成 */}
-                    <button
-                        onClick={() => setShowCustomForm(true)}
-                        className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
-                    >
-                        <Icon name="PlusCircle" size={16} className="inline mr-1" />
-                        カスタム作成
-                    </button>
-
-                    {/* 4行目：テンプレート */}
-                    <button
-                        onClick={() => setShowTemplateSelector(true)}
-                        className="w-full px-4 py-3 bg-purple-50 border-2 border-purple-400 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
-                    >
-                        <Icon name="BookTemplate" size={16} className="inline mr-1" />
-                        テンプレート
-                    </button>
-
-                    {/* 5行目：記録/更新 */}
-                    <button
-                        onClick={handleRecord}
-                        disabled={addedItems.length === 0}
-                        className={`w-full py-3 rounded-lg font-bold shadow-lg transition ${
-                            addedItems.length === 0
-                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                : 'bg-[#4A9EFF] text-white hover:bg-[#3b8fef]'
-                        }`}
-                    >
-                        {isEditMode ? '更新' : '記録'}
-                    </button>
-                </div>
+                            {/* 3行目：テンプレート */}
+                            <button
+                                onClick={() => setShowTemplateSelector(true)}
+                                className="w-full px-4 py-3 bg-purple-50 border-2 border-purple-400 text-purple-700 rounded-lg font-semibold hover:bg-purple-100 transition"
+                            >
+                                <Icon name="BookTemplate" size={16} className="inline mr-1" />
+                                テンプレート
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 検索モーダル */}
@@ -1299,6 +1410,7 @@ const AddMealModal = ({
 
                     setAddedItems([...addedItems, newItem]);
                     setSearchTerm(''); // 検索語クリア
+                    setIsActionsExpanded(false); // アイテム追加後は格納
                 };
 
                 return (
@@ -1363,6 +1475,19 @@ const AddMealModal = ({
                                     >
                                         <Icon name="Pill" size={16} />
                                         サプリ
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setFoodTab('custom');
+                                        }}
+                                        className={`py-2 px-3 rounded-lg font-medium transition flex items-center justify-center gap-1 text-sm ${
+                                            foodTab === 'custom'
+                                                ? 'bg-white text-purple-600'
+                                                : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                        }`}
+                                    >
+                                        <Icon name="PlusCircle" size={16} />
+                                        カスタム
                                     </button>
                                 </div>
                             </div>
@@ -1468,79 +1593,506 @@ const AddMealModal = ({
                                 );
                             })()}
 
-                            {/* アイテム一覧 */}
-                            <div className="flex-1 overflow-y-auto p-4">
-                                {isSearching ? (
-                                    <div className="text-center py-12 text-gray-600">
-                                        <Icon name="Loader" size={48} className="mx-auto mb-3 opacity-30 animate-spin" />
-                                        <p>検索中...</p>
-                                    </div>
-                                ) : filteredItems.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-600">
-                                        <Icon name="Search" size={48} className="mx-auto mb-3 opacity-30" />
-                                        <p>該当する食材が見つかりません</p>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {filteredItems.map((item, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={() => handleSelectItem(item)}
-                                                className="text-left p-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-500 rounded-lg transition"
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex-1">
-                                                        <div className="font-semibold text-gray-800 flex items-center gap-2 flex-wrap">
-                                                            {item.name}
-                                                            {item.category && (
-                                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                    {item.category}
-                                                                </span>
-                                                            )}
-                                                            {item.isCustom && (
-                                                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                    {item.customLabel || 'カスタム'}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-xs mt-1 flex items-center gap-2 flex-wrap">
-                                                            <span className="font-semibold text-blue-600">{item.calories}kcal</span>
-                                                            <span className="text-gray-400">|</span>
-                                                            <span className="text-red-500 font-semibold">P {item.protein}g</span>
-                                                            <span className="text-gray-400">|</span>
-                                                            <span className="text-yellow-500 font-semibold">F {item.fat}g</span>
-                                                            <span className="text-gray-400">|</span>
-                                                            <span className="text-green-500 font-semibold">C {item.carbs}g</span>
-                                                            <span className="text-gray-600 text-[10px] ml-1">
-                                                                {(() => {
-                                                                    // servingSizeとservingUnitがあればそれを使用
-                                                                    if (item.servingSize && item.servingUnit) {
-                                                                        // unitベースの表記（個、本、杯、錠、枚など）
-                                                                        const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
+                            {/* アイテム一覧（食材・サプリタブ） */}
+                            {foodTab !== 'custom' && (
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    {isSearching ? (
+                                        <div className="text-center py-12 text-gray-600">
+                                            <Icon name="Loader" size={48} className="mx-auto mb-3 opacity-30 animate-spin" />
+                                            <p>検索中...</p>
+                                        </div>
+                                    ) : filteredItems.length === 0 ? (
+                                        <div className="text-center py-12 text-gray-600">
+                                            <Icon name="Search" size={48} className="mx-auto mb-3 opacity-30" />
+                                            <p>該当する食材が見つかりません</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {filteredItems.map((item, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => handleSelectItem(item)}
+                                                    className="text-left p-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-500 rounded-lg transition"
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="flex-1">
+                                                            <div className="font-semibold text-gray-800 flex items-center gap-2 flex-wrap">
+                                                                {item.name}
+                                                                {item.category && (
+                                                                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                                        {item.category}
+                                                                    </span>
+                                                                )}
+                                                                {item.isCustom && (
+                                                                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                                                                        {item.customLabel || 'カスタム'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs mt-1 flex items-center gap-2 flex-wrap">
+                                                                <span className="font-semibold text-blue-600">{item.calories}kcal</span>
+                                                                <span className="text-gray-400">|</span>
+                                                                <span className="text-red-500 font-semibold">P {item.protein}g</span>
+                                                                <span className="text-gray-400">|</span>
+                                                                <span className="text-yellow-500 font-semibold">F {item.fat}g</span>
+                                                                <span className="text-gray-400">|</span>
+                                                                <span className="text-green-500 font-semibold">C {item.carbs}g</span>
+                                                                <span className="text-gray-600 text-[10px] ml-1">
+                                                                    {(() => {
+                                                                        // servingSizeとservingUnitがあればそれを使用
+                                                                        if (item.servingSize && item.servingUnit) {
+                                                                            // unitベースの表記（個、本、杯、錠、枚など）
+                                                                            const isCountUnit = COUNT_UNITS.some(u => (item.unit || '').includes(u));
 
-                                                                        // 錠やg/ml単位で、servingSizeが100未満の場合は「※{servingSize}{servingUnit}あたり」
-                                                                        if ((item.servingUnit === '錠' || item.servingUnit === 'g' || item.servingUnit === 'ml') && item.servingSize < 100) {
-                                                                            return `※${item.servingSize}${item.servingUnit}あたり`;
-                                                                        }
+                                                                            // 錠やg/ml単位で、servingSizeが100未満の場合は「※{servingSize}{servingUnit}あたり」
+                                                                            if ((item.servingUnit === '錠' || item.servingUnit === 'g' || item.servingUnit === 'ml') && item.servingSize < 100) {
+                                                                                return `※${item.servingSize}${item.servingUnit}あたり`;
+                                                                            }
 
-                                                                        if (isCountUnit) {
-                                                                            // 個、本などは「1{unit}」形式
-                                                                            return `※1${item.unit}(${item.servingSize}${item.servingUnit})あたり`;
+                                                                            if (isCountUnit) {
+                                                                                // 個、本などは「1{unit}」形式
+                                                                                return `※1${item.unit}(${item.servingSize}${item.servingUnit})あたり`;
+                                                                            }
                                                                         }
-                                                                    }
-                                                                    // デフォルト
-                                                                    return '※100gあたり';
-                                                                })()}
-                                                            </span>
+                                                                        // デフォルト
+                                                                        return '※100gあたり';
+                                                                    })()}
+                                                                </span>
+                                                            </div>
                                                         </div>
+                                                        <Icon name="Plus" size={20} className="text-blue-600 flex-shrink-0" />
                                                     </div>
-                                                    <Icon name="Plus" size={20} className="text-blue-600 flex-shrink-0" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* カスタム作成フォーム（カスタムタブ） */}
+                            {foodTab === 'custom' && (
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    <div className="space-y-4">
+                                        {/* 名前 */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600 mb-1">名前</label>
+                                            <input
+                                                type="text"
+                                                value={customData.name}
+                                                onChange={(e) => setCustomData({...customData, name: e.target.value})}
+                                                placeholder="例: 自家製プロテインバー"
+                                                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                            />
+                                        </div>
+
+                                        {/* カテゴリタブ（食材・サプリ） */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-600 mb-2">カテゴリ</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomData({...customData, itemType: 'food', category: 'カスタム'})}
+                                                    className={`py-3 px-4 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
+                                                        customData.itemType === 'food'
+                                                            ? 'border-green-600 bg-green-50 text-green-600'
+                                                            : 'border-gray-300 text-gray-600 hover:border-green-600 hover:text-green-600'
+                                                    }`}
+                                                >
+                                                    <Icon name="Apple" size={20} />
+                                                    <span className="text-sm">食材</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomData({...customData, itemType: 'supplement', category: 'カスタム'})}
+                                                    className={`py-3 px-4 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
+                                                        customData.itemType === 'supplement'
+                                                            ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                                            : 'border-gray-300 text-gray-600 hover:border-blue-600 hover:text-blue-600'
+                                                    }`}
+                                                >
+                                                    <Icon name="Pill" size={20} />
+                                                    <span className="text-sm">サプリ</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 1回分の量 */}
+                                        <div className="flex gap-2">
+                                            <div className="flex-1">
+                                                <label className="block text-xs text-gray-600 mb-1">1回分の量</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={customData.servingSize}
+                                                    onChange={(e) => setCustomData({...customData, servingSize: e.target.value})}
+                                                    placeholder="100"
+                                                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="w-24">
+                                                <label className="block text-xs text-gray-600 mb-1">単位</label>
+                                                <select
+                                                    value={customData.servingUnit}
+                                                    onChange={(e) => setCustomData({...customData, servingUnit: e.target.value})}
+                                                    className="w-full px-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                >
+                                                    <option value="g">g</option>
+                                                    <option value="ml">ml</option>
+                                                    <option value="本">本</option>
+                                                    <option value="個">個</option>
+                                                    <option value="杯">杯</option>
+                                                    <option value="枚">枚</option>
+                                                    <option value="錠">錠</option>
+                                                    <option value="包">包</option>
+                                                    <option value="粒">粒</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* 基本栄養素 */}
+                                        <div className="border-t pt-4">
+                                            <p className="text-sm font-medium text-gray-600 mb-2">
+                                                基本栄養素（{customData.servingSize || 100}{customData.servingUnit}あたり）
+                                            </p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="text-xs text-gray-600">カロリー (kcal)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.calories}
+                                                        onChange={(e) => setCustomData({...customData, calories: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
                                                 </div>
-                                            </button>
-                                        ))}
+                                                <div>
+                                                    <label className="text-xs text-gray-600">タンパク質 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.protein}
+                                                        onChange={(e) => setCustomData({...customData, protein: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">脂質 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.fat}
+                                                        onChange={(e) => setCustomData({...customData, fat: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">炭水化物 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.carbs}
+                                                        onChange={(e) => setCustomData({...customData, carbs: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 品質指標（折りたたみ） */}
+                                        <details className="border-t pt-4">
+                                            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-purple-600 flex items-center gap-2">
+                                                <Icon name="ChevronDown" size={14} />
+                                                品質指標
+                                            </summary>
+                                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                                <div>
+                                                    <label className="text-xs text-gray-600">DIAAS</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={customData.diaas}
+                                                        onChange={(e) => setCustomData({...customData, diaas: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">GI値</label>
+                                                    <input
+                                                        type="number"
+                                                        step="1"
+                                                        value={customData.gi}
+                                                        onChange={(e) => setCustomData({...customData, gi: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">糖質 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.sugar}
+                                                        onChange={(e) => setCustomData({...customData, sugar: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">食物繊維 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.fiber}
+                                                        onChange={(e) => setCustomData({...customData, fiber: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">水溶性食物繊維 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.solubleFiber}
+                                                        onChange={(e) => setCustomData({...customData, solubleFiber: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">不溶性食物繊維 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.insolubleFiber}
+                                                        onChange={(e) => setCustomData({...customData, insolubleFiber: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">飽和脂肪酸 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.saturatedFat}
+                                                        onChange={(e) => setCustomData({...customData, saturatedFat: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">一価不飽和脂肪酸 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.monounsaturatedFat}
+                                                        onChange={(e) => setCustomData({...customData, monounsaturatedFat: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">多価不飽和脂肪酸 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.polyunsaturatedFat}
+                                                        onChange={(e) => setCustomData({...customData, polyunsaturatedFat: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-600">中鎖脂肪酸 (g)</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        value={customData.mediumChainFat}
+                                                        onChange={(e) => setCustomData({...customData, mediumChainFat: e.target.value})}
+                                                        placeholder="0"
+                                                        className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </details>
+
+                                        {/* ビタミン（折りたたみ） */}
+                                        <details className="border-t pt-4">
+                                            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-purple-600 flex items-center gap-2">
+                                                <Icon name="ChevronDown" size={14} />
+                                                ビタミン
+                                            </summary>
+                                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                                {[
+                                                    ['vitaminA', 'ビタミンA', 'μg'],
+                                                    ['vitaminB1', 'ビタミンB1', 'mg'],
+                                                    ['vitaminB2', 'ビタミンB2', 'mg'],
+                                                    ['vitaminB6', 'ビタミンB6', 'mg'],
+                                                    ['vitaminB12', 'ビタミンB12', 'μg'],
+                                                    ['vitaminC', 'ビタミンC', 'mg'],
+                                                    ['vitaminD', 'ビタミンD', 'μg'],
+                                                    ['vitaminE', 'ビタミンE', 'mg'],
+                                                    ['vitaminK', 'ビタミンK', 'μg'],
+                                                    ['niacin', 'ナイアシン', 'mg'],
+                                                    ['pantothenicAcid', 'パントテン酸', 'mg'],
+                                                    ['biotin', 'ビオチン', 'μg'],
+                                                    ['folicAcid', '葉酸', 'μg'],
+                                                ].map(([key, label, unit]) => (
+                                                    <div key={key}>
+                                                        <label className="text-xs text-gray-600">{label} ({unit})</label>
+                                                        <input
+                                                            type="number"
+                                                            step={unit === 'μg' ? '0.001' : '0.01'}
+                                                            value={customData[key]}
+                                                            onChange={(e) => setCustomData({...customData, [key]: e.target.value})}
+                                                            placeholder="0"
+                                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </details>
+
+                                        {/* ミネラル（折りたたみ） */}
+                                        <details className="border-t pt-4">
+                                            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-purple-600 flex items-center gap-2">
+                                                <Icon name="ChevronDown" size={14} />
+                                                ミネラル
+                                            </summary>
+                                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                                {[
+                                                    ['sodium', 'ナトリウム', 'mg'],
+                                                    ['potassium', 'カリウム', 'mg'],
+                                                    ['calcium', 'カルシウム', 'mg'],
+                                                    ['magnesium', 'マグネシウム', 'mg'],
+                                                    ['phosphorus', 'リン', 'mg'],
+                                                    ['iron', '鉄', 'mg'],
+                                                    ['zinc', '亜鉛', 'mg'],
+                                                    ['copper', '銅', 'mg'],
+                                                    ['manganese', 'マンガン', 'mg'],
+                                                    ['iodine', 'ヨウ素', 'μg'],
+                                                    ['selenium', 'セレン', 'μg'],
+                                                    ['chromium', 'クロム', 'μg'],
+                                                    ['molybdenum', 'モリブデン', 'μg'],
+                                                ].map(([key, label, unit]) => (
+                                                    <div key={key}>
+                                                        <label className="text-xs text-gray-600">{label} ({unit})</label>
+                                                        <input
+                                                            type="number"
+                                                            step={unit === 'μg' ? '0.001' : '0.1'}
+                                                            value={customData[key]}
+                                                            onChange={(e) => setCustomData({...customData, [key]: e.target.value})}
+                                                            placeholder="0"
+                                                            className="w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </details>
+
+                                        {/* その他栄養素（折りたたみ） */}
+                                        <details className="border-t pt-4">
+                                            <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-purple-600 flex items-center gap-2">
+                                                <Icon name="ChevronDown" size={14} />
+                                                その他栄養素（クレアチン、カフェインなど）
+                                            </summary>
+                                            <div className="mt-2 space-y-2">
+                                                {customData.otherNutrients.length === 0 ? (
+                                                    <div className="text-xs text-gray-400 text-center py-2">
+                                                        追加ボタンをタップして栄養素を入力
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {customData.otherNutrients.map((nutrient, idx) => (
+                                                            <div key={idx} className="grid grid-cols-[1fr_50px_45px_24px] gap-1 items-center">
+                                                                <input
+                                                                    type="text"
+                                                                    value={nutrient.name}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...customData.otherNutrients];
+                                                                        updated[idx].name = e.target.value;
+                                                                        setCustomData({...customData, otherNutrients: updated});
+                                                                    }}
+                                                                    placeholder="名前"
+                                                                    className="w-full px-2 py-1 text-xs border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                                />
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.1"
+                                                                    value={nutrient.amount}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...customData.otherNutrients];
+                                                                        updated[idx].amount = e.target.value;
+                                                                        setCustomData({...customData, otherNutrients: updated});
+                                                                    }}
+                                                                    placeholder="量"
+                                                                    className="w-full px-1 py-1 text-xs border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                                />
+                                                                <select
+                                                                    value={nutrient.unit}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...customData.otherNutrients];
+                                                                        updated[idx].unit = e.target.value;
+                                                                        setCustomData({...customData, otherNutrients: updated});
+                                                                    }}
+                                                                    className="w-full px-1 py-1 text-xs border rounded focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                                >
+                                                                    <option value="mg">mg</option>
+                                                                    <option value="g">g</option>
+                                                                    <option value="μg">μg</option>
+                                                                </select>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const updated = customData.otherNutrients.filter((_, i) => i !== idx);
+                                                                        setCustomData({...customData, otherNutrients: updated});
+                                                                    }}
+                                                                    className="text-red-500 hover:bg-red-50 rounded p-1"
+                                                                >
+                                                                    <Icon name="X" size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        setCustomData({
+                                                            ...customData,
+                                                            otherNutrients: [...customData.otherNutrients, { name: '', amount: '', unit: 'mg' }]
+                                                        });
+                                                    }}
+                                                    className="w-full py-2 text-xs text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition flex items-center justify-center gap-1"
+                                                >
+                                                    <Icon name="Plus" size={14} />
+                                                    栄養素を追加
+                                                </button>
+                                            </div>
+                                        </details>
+
+                                        {/* 保存ボタン */}
+                                        <button
+                                            onClick={handleSaveCustomFood}
+                                            disabled={!customData.name.trim()}
+                                            className={`w-full py-3 rounded-lg font-bold transition ${
+                                                customData.name.trim()
+                                                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            カスタムアイテムを保存
+                                        </button>
+                                        <p className="text-xs text-gray-500 text-center">
+                                            保存後、食材・サプリタブの「カスタム」カテゴリから選択できます
+                                        </p>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             {/* フッター */}
                             <div className="border-t p-4 bg-gray-50">
@@ -2679,6 +3231,7 @@ const AddMealModal = ({
                                         };
 
                                         setAddedItems([...addedItems, newItem]);
+                                        setIsActionsExpanded(false); // アイテム追加後は格納
                                         }
 
                                         // フォームをリセット

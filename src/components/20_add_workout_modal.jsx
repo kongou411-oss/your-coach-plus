@@ -39,6 +39,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
             // 削除されていたState変数を復元
             const [showTemplates, setShowTemplates] = useState(false);
             const [showTemplateInfoModal, setShowTemplateInfoModal] = useState(false);
+            const [isActionsExpanded, setIsActionsExpanded] = useState(true); // アクションボタン折りたたみ（デフォルト展開）
             const [editingTemplateId, setEditingTemplateId] = useState(null);
             const [editingTemplateObj, setEditingTemplateObj] = useState(null);
             // カスタム種目（renderWorkoutInput内から移動）
@@ -348,6 +349,56 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                     }
                 };
 
+                // ===== カスタム種目を保存（検索モーダルのカスタムタブ用） =====
+                const handleSaveCustomExercise = async () => {
+                    if (!customExerciseData.name.trim()) {
+                        toast('種目名を入力してください');
+                        return;
+                    }
+
+                    if (!user) {
+                        toast.error('ユーザー情報が見つかりません');
+                        return;
+                    }
+
+                    try {
+                        const customExercise = {
+                            id: `custom_${Date.now()}`,
+                            name: customExerciseData.name,
+                            category: 'カスタム',
+                            targetPart: customExerciseData.targetPart || '胸', // 部位（筋トレの場合）
+                            exerciseTab: customExerciseData.exerciseTab || 'strength',
+                            subcategory: customExerciseData.subcategory || 'コンパウンド',
+                            exerciseType: customExerciseData.exerciseTab === 'cardio' ? 'aerobic' :
+                                         customExerciseData.exerciseTab === 'stretch' ? 'stretch' : 'anaerobic',
+                            isCustom: true,
+                            createdAt: new Date().toISOString()
+                        };
+
+                        const docRef = await firebase.firestore()
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('customExercises')
+                            .add(customExercise);
+
+                        // カスタム運動をstateに追加
+                        setCustomExercises(prev => [...prev, { ...customExercise, firestoreId: docRef.id }]);
+
+                        toast.success('カスタム種目を保存しました');
+
+                        // フォームリセット
+                        setCustomExerciseData({ name: '', exerciseTab: 'strength', subcategory: 'コンパウンド', targetPart: '胸' });
+
+                        // 筋トレタブに切り替えてカスタムカテゴリを表示
+                        setExerciseTab('strength');
+                        setSelectedExerciseCategory('カスタム');
+
+                    } catch (error) {
+                        console.error('カスタム種目の保存に失敗:', error);
+                        toast.error('カスタム種目の保存に失敗しました');
+                    }
+                };
+
                 const handleWorkoutSave = async () => {
                     if (exercises.length === 0) {
                         toast('運動を追加してください');
@@ -446,10 +497,204 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                 };
 
                 return (
-                    <div className="space-y-4">
-                        {/* ①どうやって記録しますか？ */}
-                        {!currentExercise && !showCustomExerciseForm && (
-                            <div className="space-y-2">
+                    <div className="flex flex-col h-full">
+                        {/* 上部: 追加済み種目リスト または プレースホルダー */}
+                        <div className="flex-1 overflow-y-auto">
+                            {!currentExercise && !showCustomExerciseForm && exercises.length === 0 ? (
+                                <div className="text-center py-12 text-gray-500">
+                                    <Icon name="Dumbbell" size={48} className="mx-auto mb-3 opacity-30" />
+                                    <p className="font-medium mb-2">種目を追加してください</p>
+                                    <p className="text-xs">「一覧から検索」で種目を追加するか、</p>
+                                    <p className="text-xs">「テンプレート」で直接記録できます</p>
+                                </div>
+                            ) : null}
+
+                            {/* 追加済み種目リスト（上部に配置） */}
+                            {exercises.length > 0 && !currentExercise && !showCustomExerciseForm && (
+                                <div className="p-4 rounded-lg border-2 mb-4" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
+                                    {/* ヘッダー：タイトル + 保存ボタン */}
+                                    <div className="flex justify-between items-center mb-3">
+                                        <p className="text-sm font-bold" style={{color: '#4A9EFF'}}>追加済み（{exercises.length}種目）</p>
+                                        {!editingTemplateId && (
+                                            <button
+                                                onClick={saveAsTemplate}
+                                                className="px-3 bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg font-semibold hover:bg-purple-100 transition flex flex-col items-center justify-center"
+                                            >
+                                                <Icon name="BookTemplate" size={16} className="mb-1" />
+                                                <span className="text-xs whitespace-nowrap">保存</span>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* 種目一覧 */}
+                                    <div className="space-y-2 mb-3">
+                                        {exercises.map((ex, index) => {
+                                            const isCardioOrStretch = ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch';
+                                            let totalVolume = 0;
+                                            let totalDuration = 0;
+
+                                            if (isCardioOrStretch) {
+                                                totalDuration = ex.duration || 0;
+                                            } else {
+                                                totalVolume = ex.sets.reduce((sum, set) => sum + (set.weight || 0) * (set.reps || 0), 0);
+                                                totalDuration = ex.sets.reduce((sum, set) => sum + (set.duration || 0), 0);
+                                            }
+
+                                            const rmUpdates = !isCardioOrStretch && ex.sets ? ex.sets.filter(set => set.rm && set.rmWeight) : [];
+
+                                            return (
+                                                <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-sm">{ex.exercise.name}</p>
+                                                            {isCardioOrStretch ? (
+                                                                <p className="text-xs text-gray-600">{totalDuration}分</p>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
+                                                                    {rmUpdates.length > 0 && (
+                                                                        <p className="text-xs text-orange-600 font-medium">
+                                                                            🏆 {rmUpdates.map(s => `${s.rm}RM×${s.rmWeight}kg`).join(', ')}
+                                                                        </p>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setCurrentExercise(ex.exercise);
+                                                                    if (isCardioOrStretch) {
+                                                                        setSets([{ duration: ex.duration }]);
+                                                                    } else {
+                                                                        setSets(ex.sets);
+                                                                    }
+                                                                    setExercises(exercises.filter((_, i) => i !== index));
+                                                                }}
+                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
+                                                            >
+                                                                <Icon name="Edit" size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setExercises(exercises.filter((_, i) => i !== index))}
+                                                                className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
+                                                            >
+                                                                <Icon name="Trash2" size={18} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* 総重量・総時間の表示 */}
+                                    <div className="grid grid-cols-2 gap-4 p-3 bg-white rounded-lg border border-gray-200">
+                                        {exercises.some(ex => ex.exerciseType === 'anaerobic') && (
+                                            <div className="text-center">
+                                                <p className="text-xs text-gray-600 mb-1">総重量</p>
+                                                <p className="text-lg font-bold text-orange-600">
+                                                    {exercises.reduce((sum, ex) => {
+                                                        if (ex.exerciseType === 'anaerobic' && ex.sets) {
+                                                            return sum + ex.sets.reduce((setSum, set) => setSum + (set.weight || 0) * (set.reps || 0), 0);
+                                                        }
+                                                        return sum;
+                                                    }, 0)}kg
+                                                </p>
+                                            </div>
+                                        )}
+                                        <div className="text-center">
+                                            <p className="text-xs text-gray-600 mb-1">総時間</p>
+                                            <p className="text-lg font-bold text-orange-600">
+                                                {exercises.reduce((sum, ex) => {
+                                                    if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
+                                                        return sum + (ex.duration || 0);
+                                                    } else if (ex.sets) {
+                                                        return sum + ex.sets.reduce((setSum, set) => setSum + (set.duration || 0), 0);
+                                                    }
+                                                    return sum;
+                                                }, 0)}分
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* テンプレート名入力（編集モード時） */}
+                                    {editingTemplateId && (
+                                        <div className="mt-3">
+                                            <label className="block text-sm font-medium mb-2">テンプレート名</label>
+                                            <input
+                                                type="text"
+                                                value={editingTemplateObj?.name || ''}
+                                                onChange={(e) => setEditingTemplateObj({...editingTemplateObj, name: e.target.value})}
+                                                placeholder="例: 胸トレ1"
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* 追加/記録ボタン */}
+                                    <div className="flex gap-2 mt-3">
+                                        <button
+                                            onClick={() => setShowSearchModal(true)}
+                                            className="flex-1 py-3 rounded-lg font-bold transition bg-[#4A9EFF] text-white hover:bg-[#3b8fef]"
+                                        >
+                                            追加
+                                        </button>
+                                        <button
+                                            onClick={editingTemplateId ? async () => {
+                                                // テンプレート更新処理
+                                                if (!editingTemplateObj?.name || !editingTemplateObj.name.trim()) {
+                                                    toast.error('テンプレート名を入力してください');
+                                                    return;
+                                                }
+
+                                                const updatedTemplate = {
+                                                    ...editingTemplateObj,
+                                                    name: editingTemplateObj.name.trim(),
+                                                    exercises: exercises,
+                                                    updatedAt: new Date().toISOString()
+                                                };
+
+                                                try {
+                                                    await window.DataService.saveWorkoutTemplate(user.uid, updatedTemplate);
+                                                    const templates = await window.DataService.getWorkoutTemplates(user.uid);
+                                                    setWorkoutTemplates(templates || []);
+                                                    toast.success('テンプレートを更新しました');
+
+                                                    setEditingTemplateId(null);
+                                                    setEditingTemplateObj(null);
+                                                    setExercises([]);
+                                                    onClose();
+                                                } catch (error) {
+                                                    console.error('テンプレート更新エラー:', error);
+                                                    toast.error('テンプレートの更新に失敗しました');
+                                                }
+                                            } : isEditMode ? async () => {
+                                                // 運動記録更新処理
+                                                const updatedWorkout = {
+                                                    ...editingWorkout,
+                                                    exercises: exercises,
+                                                    timestamp: editingWorkout.timestamp,
+                                                    updatedAt: new Date().toISOString()
+                                                };
+
+                                                if (onUpdate) {
+                                                    onUpdate(updatedWorkout);
+                                                    onClose();
+                                                }
+                                            } : handleWorkoutSave}
+                                            className="flex-1 py-3 rounded-lg font-bold transition bg-[#4A9EFF] text-white hover:bg-[#3b8fef]"
+                                        >
+                                            {editingTemplateId ? '更新' : isEditMode ? '更新' : '記録'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 下部: ボタン群（種目未追加時のみ表示） */}
+                        {!currentExercise && !showCustomExerciseForm && exercises.length === 0 && (
+                            <div className="border-t pt-4 mt-auto space-y-2">
                                 {/* 一覧から検索（白背景、グレー枠） */}
                                 <button
                                     type="button"
@@ -458,16 +703,6 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                 >
                                     <Icon name="Search" size={16} className="inline mr-1" />
                                     一覧から検索
-                                </button>
-
-                                {/* カスタム作成（白背景、グレー枠） */}
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCustomExerciseForm(true)}
-                                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 rounded-lg font-semibold transition"
-                                >
-                                    <Icon name="PlusCircle" size={16} className="inline mr-1" />
-                                    カスタム作成
                                 </button>
 
                                 {/* テンプレート - 初日から開放 */}
@@ -843,11 +1078,11 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                             className="w-full px-4 py-2 rounded-lg text-gray-800 focus:ring-2 focus:ring-white focus:outline-none"
                                         />
 
-                                        {/* 筋トレ/有酸素/ストレッチ/その他 タブ */}
-                                        <div className="grid grid-cols-4 mt-3 gap-2">
+                                        {/* 筋トレ/有酸素/ストレッチ/その他/カスタム タブ */}
+                                        <div className="grid grid-cols-5 mt-3 gap-1">
                                             <button
                                                 onClick={() => setExerciseTab('strength')}
-                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
+                                                className={`py-2 px-1 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
                                                     exerciseTab === 'strength'
                                                         ? 'bg-white text-orange-600'
                                                         : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
@@ -858,7 +1093,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                             </button>
                                             <button
                                                 onClick={() => setExerciseTab('cardio')}
-                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
+                                                className={`py-2 px-1 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
                                                     exerciseTab === 'cardio'
                                                         ? 'bg-white text-blue-600'
                                                         : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
@@ -869,7 +1104,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                             </button>
                                             <button
                                                 onClick={() => setExerciseTab('stretch')}
-                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
+                                                className={`py-2 px-1 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
                                                     exerciseTab === 'stretch'
                                                         ? 'bg-white text-green-600'
                                                         : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
@@ -880,7 +1115,7 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                             </button>
                                             <button
                                                 onClick={() => setExerciseTab('other')}
-                                                className={`py-2 px-2 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
+                                                className={`py-2 px-1 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
                                                     exerciseTab === 'other'
                                                         ? 'bg-white text-gray-600'
                                                         : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
@@ -888,6 +1123,17 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                             >
                                                 <Icon name="MoreHorizontal" size={14} />
                                                 その他
+                                            </button>
+                                            <button
+                                                onClick={() => setExerciseTab('custom')}
+                                                className={`py-2 px-1 rounded-lg font-medium transition flex items-center justify-center gap-1 text-xs ${
+                                                    exerciseTab === 'custom'
+                                                        ? 'bg-white text-purple-600'
+                                                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                                }`}
+                                            >
+                                                <Icon name="PlusCircle" size={14} />
+                                                カスタム
                                             </button>
                                         </div>
                                     </div>
@@ -980,6 +1226,130 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                 }
                                                 return false;
                                             });
+
+                                            // カスタムタブの場合はカスタム作成フォーム
+                                            if (exerciseTab === 'custom') {
+                                                return (
+                                                    <div className="space-y-4">
+                                                        {/* 種目名 */}
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-600 mb-1">種目名</label>
+                                                            <input
+                                                                type="text"
+                                                                value={customExerciseData.name}
+                                                                onChange={(e) => setCustomExerciseData({...customExerciseData, name: e.target.value})}
+                                                                placeholder="例: マイ・レッグプレス"
+                                                                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                            />
+                                                        </div>
+
+                                                        {/* 種目タイプ */}
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-600 mb-2">種目タイプ</label>
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setCustomExerciseData({...customExerciseData, exerciseTab: 'strength'})}
+                                                                    className={`py-2 px-2 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
+                                                                        customExerciseData.exerciseTab === 'strength'
+                                                                            ? 'border-orange-600 bg-orange-50 text-orange-600'
+                                                                            : 'border-gray-300 text-gray-600 hover:border-orange-600'
+                                                                    }`}
+                                                                >
+                                                                    <Icon name="Dumbbell" size={18} />
+                                                                    <span className="text-xs">筋トレ</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setCustomExerciseData({...customExerciseData, exerciseTab: 'cardio'})}
+                                                                    className={`py-2 px-2 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
+                                                                        customExerciseData.exerciseTab === 'cardio'
+                                                                            ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                                                            : 'border-gray-300 text-gray-600 hover:border-blue-600'
+                                                                    }`}
+                                                                >
+                                                                    <Icon name="Heart" size={18} />
+                                                                    <span className="text-xs">有酸素</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setCustomExerciseData({...customExerciseData, exerciseTab: 'stretch'})}
+                                                                    className={`py-2 px-2 font-medium transition flex flex-col items-center justify-center gap-1 rounded-lg border-2 ${
+                                                                        customExerciseData.exerciseTab === 'stretch'
+                                                                            ? 'border-green-600 bg-green-50 text-green-600'
+                                                                            : 'border-gray-300 text-gray-600 hover:border-green-600'
+                                                                    }`}
+                                                                >
+                                                                    <Icon name="Wind" size={18} />
+                                                                    <span className="text-xs">ストレッチ</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 部位選択（筋トレの場合のみ） */}
+                                                        {customExerciseData.exerciseTab === 'strength' && (
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-600 mb-2">部位</label>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {['胸', '背中', '脚', '肩', '腕', '腹筋・体幹', '尻', 'ウエイトリフティング'].map(part => (
+                                                                        <button
+                                                                            key={part}
+                                                                            type="button"
+                                                                            onClick={() => setCustomExerciseData({...customExerciseData, targetPart: part})}
+                                                                            className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                                                                                customExerciseData.targetPart === part
+                                                                                    ? 'bg-orange-600 text-white'
+                                                                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                                            }`}
+                                                                        >
+                                                                            {part}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* サブカテゴリ（筋トレの場合のみ） */}
+                                                        {customExerciseData.exerciseTab === 'strength' && (
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-gray-600 mb-2">サブカテゴリ</label>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {['コンパウンド', 'アイソレーション', 'マシン', 'ケーブル', '自重'].map(sub => (
+                                                                        <button
+                                                                            key={sub}
+                                                                            type="button"
+                                                                            onClick={() => setCustomExerciseData({...customExerciseData, subcategory: sub})}
+                                                                            className={`px-3 py-1 rounded-full text-xs font-medium transition ${
+                                                                                customExerciseData.subcategory === sub
+                                                                                    ? 'bg-orange-600 text-white'
+                                                                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                                            }`}
+                                                                        >
+                                                                            {sub}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* 保存ボタン */}
+                                                        <button
+                                                            onClick={handleSaveCustomExercise}
+                                                            disabled={!customExerciseData.name.trim()}
+                                                            className={`w-full py-3 rounded-lg font-bold transition ${
+                                                                customExerciseData.name.trim()
+                                                                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                                                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                            }`}
+                                                        >
+                                                            カスタム種目を保存
+                                                        </button>
+                                                        <p className="text-xs text-gray-500 text-center">
+                                                            保存後、各タブの「カスタム」カテゴリから選択できます
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
 
                                             // その他タブの場合は専用UI
                                             if (exerciseTab === 'other') {
@@ -1811,6 +2181,7 @@ RM回数と重量を別々に入力してください。`
                                         setExercises([...exercises, newExercise]);
                                         setCurrentExercise(null);
                                         setSets([]);
+                                        setIsActionsExpanded(false); // 種目追加後は格納
                                     }}
                                     disabled={sets.length === 0}
                                     className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1820,215 +2191,6 @@ RM回数と重量を別々に入力してください。`
                             </div>
                         )}
 
-                        {/* 追加済み種目リスト */}
-                        {exercises.length > 0 && !currentExercise && (
-                            <div className="p-4 rounded-lg border-2" style={{backgroundColor: '#EFF6FF', borderColor: '#4A9EFF'}}>
-                                {/* ヘッダー：タイトル + 保存ボタン */}
-                                <div className="flex justify-between items-center mb-3">
-                                    <p className="text-sm font-bold" style={{color: '#4A9EFF'}}>追加済み（{exercises.length}種目）</p>
-                                    {!editingTemplateId && (
-                                        <button
-                                            onClick={saveAsTemplate}
-                                            className="px-3 bg-purple-50 text-purple-700 border-2 border-purple-500 rounded-lg font-semibold hover:bg-purple-100 transition flex flex-col items-center justify-center"
-                                        >
-                                            <Icon name="BookTemplate" size={16} className="mb-1" />
-                                            <span className="text-xs whitespace-nowrap">保存</span>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* 種目一覧 */}
-                                <div className="space-y-2 mb-3">
-                                    {exercises.map((ex, index) => {
-                                        // 有酸素・ストレッチの場合は総時間のみ、筋トレの場合は総重量も計算
-                                        const isCardioOrStretch = ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch';
-
-                                        let totalVolume = 0;
-                                        let totalDuration = 0;
-
-                                        if (isCardioOrStretch) {
-                                            // 有酸素・ストレッチ: durationのみ
-                                            totalDuration = ex.duration || 0;
-                                        } else {
-                                            // 筋トレ: setsから計算
-                                            totalVolume = ex.sets.reduce((sum, set) => {
-                                                return sum + (set.weight || 0) * (set.reps || 0);
-                                            }, 0);
-                                            totalDuration = ex.sets.reduce((sum, set) => {
-                                                return sum + (set.duration || 0);
-                                            }, 0);
-                                        }
-
-                                        // RM更新があるかチェック
-                                        const rmUpdates = !isCardioOrStretch && ex.sets ? ex.sets.filter(set => set.rm && set.rmWeight) : [];
-
-                                        return (
-                                            <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <div className="flex-1">
-                                                        <p className="font-medium text-sm">{ex.exercise.name}</p>
-                                                        {isCardioOrStretch ? (
-                                                            <p className="text-xs text-gray-600">{totalDuration}分</p>
-                                                        ) : (
-                                                            <>
-                                                                <p className="text-xs text-gray-600">{ex.sets.length}セット - {totalVolume}kg</p>
-                                                                {rmUpdates.length > 0 && (
-                                                                    <p className="text-xs text-orange-600 font-medium">
-                                                                        🏆 {rmUpdates.map(s => `${s.rm}RM×${s.rmWeight}kg`).join(', ')}
-                                                                    </p>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={() => {
-                                                                // 編集：該当種目をcurrentExerciseに戻す
-                                                                setCurrentExercise(ex.exercise);
-                                                                if (isCardioOrStretch) {
-                                                                    // 有酸素・ストレッチは時間を1セットとして扱う
-                                                                    setSets([{ duration: ex.duration }]);
-                                                                } else {
-                                                                    setSets(ex.sets);
-                                                                }
-                                                                setExercises(exercises.filter((_, i) => i !== index));
-                                                            }}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-blue-600 hover:bg-blue-50 transition border-2 border-blue-500"
-                                                        >
-                                                            <Icon name="Edit" size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setExercises(exercises.filter((_, i) => i !== index))}
-                                                            className="w-10 h-10 rounded-lg bg-white shadow-md flex items-center justify-center text-red-600 hover:bg-red-50 transition border-2 border-red-500"
-                                                        >
-                                                            <Icon name="Trash2" size={18} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* 総重量・総時間の表示 */}
-                                <div className="grid grid-cols-2 gap-4 p-3 bg-white rounded-lg border border-gray-200 mb-3">
-                                    {/* 総重量: 筋トレのみ表示 */}
-                                    {exercises.some(ex => ex.exerciseType === 'anaerobic') && (
-                                        <div className="text-center">
-                                            <p className="text-xs text-gray-600 mb-1">総重量</p>
-                                            <p className="text-lg font-bold text-orange-600">
-                                                {exercises.reduce((sum, ex) => {
-                                                    if (ex.exerciseType === 'anaerobic' && ex.sets) {
-                                                        return sum + ex.sets.reduce((setSum, set) => {
-                                                            return setSum + (set.weight || 0) * (set.reps || 0);
-                                                        }, 0);
-                                                    }
-                                                    return sum;
-                                                }, 0)}kg
-                                            </p>
-                                        </div>
-                                    )}
-                                    {/* 総時間: すべての種目で表示 */}
-                                    <div className="text-center">
-                                        <p className="text-xs text-gray-600 mb-1">総時間</p>
-                                        <p className="text-lg font-bold text-orange-600">
-                                            {exercises.reduce((sum, ex) => {
-                                                if (ex.exerciseType === 'aerobic' || ex.exerciseType === 'stretch') {
-                                                    // 有酸素・ストレッチ: durationを直接加算
-                                                    return sum + (ex.duration || 0);
-                                                } else if (ex.sets) {
-                                                    // 筋トレ: setsから計算
-                                                    return sum + ex.sets.reduce((setSum, set) => {
-                                                        return setSum + (set.duration || 0);
-                                                    }, 0);
-                                                }
-                                                return sum;
-                                            }, 0)}分
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* 種目を追加ボタン */}
-                                <button
-                                    onClick={() => setShowSearchModal(true)}
-                                    className="w-full bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition mb-2"
-                                >
-                                    追加
-                                </button>
-
-                                {/* テンプレート名入力（編集モード時） */}
-                                {editingTemplateId && (
-                                    <div className="mb-3">
-                                        <label className="block text-sm font-medium mb-2">テンプレート名</label>
-                                        <input
-                                            type="text"
-                                            value={editingTemplateObj?.name || ''}
-                                            onChange={(e) => setEditingTemplateObj({...editingTemplateObj, name: e.target.value})}
-                                            placeholder="例: 胸トレ1"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* 記録ボタン */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        onClick={editingTemplateId ? async () => {
-                                            // テンプレート更新処理
-                                            if (!editingTemplateObj?.name || !editingTemplateObj.name.trim()) {
-                                                toast.error('テンプレート名を入力してください');
-                                                return;
-                                            }
-
-                                            const updatedTemplate = {
-                                                ...editingTemplateObj,
-                                                name: editingTemplateObj.name.trim(),
-                                                exercises: exercises,
-                                                updatedAt: new Date().toISOString()
-                                            };
-
-                                            try {
-                                                await window.DataService.saveWorkoutTemplate(user.uid, updatedTemplate);
-                                                const templates = await window.DataService.getWorkoutTemplates(user.uid);
-                                                setWorkoutTemplates(templates || []);
-                                                toast.success('テンプレートを更新しました');
-
-                                                // 編集モード解除
-                                                setEditingTemplateId(null);
-                                                setEditingTemplateObj(null);
-                                                setExercises([]);
-                                                onClose();
-                                            } catch (error) {
-                                                console.error('テンプレート更新エラー:', error);
-                                                toast.error('テンプレートの更新に失敗しました');
-                                            }
-                                        } : isEditMode ? async () => {
-                                            // 運動記録更新処理（食事モーダルと同じ仕様）
-                                            const updatedWorkout = {
-                                                ...editingWorkout,
-                                                exercises: exercises,
-                                                timestamp: editingWorkout.timestamp,
-                                                updatedAt: new Date().toISOString()
-                                            };
-
-                                            if (onUpdate) {
-                                                onUpdate(updatedWorkout);
-                                                onClose();
-                                            }
-                                        } : handleWorkoutSave}
-                                        className="bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] shadow-lg transition"
-                                    >
-                                        {editingTemplateId ? '更新' : isEditMode ? '更新' : '記録'}
-                                    </button>
-                                    <button
-                                        onClick={onClose}
-                                        className="bg-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-400 transition"
-                                    >
-                                        キャンセル
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 );
             };
