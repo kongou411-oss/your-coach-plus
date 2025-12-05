@@ -2194,23 +2194,34 @@ const BasicTab = ({
                                         </div>
 
                                         {/* 計算結果表示 */}
-                                        <div className={`mt-3 p-2 rounded-lg text-center ${
-                                            profile.calorieAdjustment > 0 ? 'bg-green-100' :
-                                            profile.calorieAdjustment < 0 ? 'bg-red-100' : 'bg-gray-100'
-                                        }`}>
-                                            <div className="text-xs text-gray-600">算出カロリー調整値</div>
-                                            <div className={`text-lg font-bold ${
-                                                profile.calorieAdjustment > 0 ? 'text-green-700' :
-                                                profile.calorieAdjustment < 0 ? 'text-red-700' : 'text-gray-700'
-                                            }`}>
-                                                {profile.calorieAdjustment > 0 ? '+' : ''}{profile.calorieAdjustment || 0} kcal/日
-                                            </div>
-                                            {profile.weightChangePace && (
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    {profile.weightChangePace > 0 ? '+' : ''}{profile.weightChangePace} {(profile.paceUnit || 'kg') === 'bf_percent' ? '体脂肪率%' : 'kg'}/月
+                                        {(() => {
+                                            // 表示用のカロリー調整値を計算
+                                            const pace = profile.customPaceValue !== null && profile.customPaceValue !== undefined
+                                                ? profile.customPaceValue
+                                                : profile.weightChangePace;
+                                            const displayCalorie = pace
+                                                ? LBMUtils.calculateCalorieAdjustmentFromPace(pace, profile.paceUnit || 'kg', profile.weight)
+                                                : (profile.calorieAdjustment || 0);
+                                            return (
+                                                <div className={`mt-3 p-2 rounded-lg text-center ${
+                                                    displayCalorie > 0 ? 'bg-green-100' :
+                                                    displayCalorie < 0 ? 'bg-red-100' : 'bg-gray-100'
+                                                }`}>
+                                                    <div className="text-xs text-gray-600">算出カロリー調整値</div>
+                                                    <div className={`text-lg font-bold ${
+                                                        displayCalorie > 0 ? 'text-green-700' :
+                                                        displayCalorie < 0 ? 'text-red-700' : 'text-gray-700'
+                                                    }`}>
+                                                        {displayCalorie > 0 ? '+' : ''}{displayCalorie} kcal/日
+                                                    </div>
+                                                    {pace && (
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            {pace > 0 ? '+' : ''}{pace} {(profile.paceUnit || 'kg') === 'bf_percent' ? '体脂肪率%' : 'kg'}/月
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
 

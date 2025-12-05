@@ -207,7 +207,21 @@ export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd android && 
 **⚠️ Play Storeアップロード時のバージョンコード：**
 - 同じversionCodeは再アップロード不可
 - エラー時は `android/app/build.gradle` の `versionCode` を +1 する
-- 現在: versionCode **8**, versionName **1.0.7**
+- 現在: versionCode **19**, versionName **1.0.18**
+
+### バージョンアップ時（「バージョンアップ」と言われたら）
+
+⚠️ **必ず以下を全て実行**:
+1. `android/app/build.gradle` の versionCode +1、versionName 更新
+2. `./gradlew bundleRelease` でAABビルド
+3. `git add -A && git commit && git push`
+
+```bash
+# バージョンアップコマンド（Windows）
+export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd android && ./gradlew bundleRelease
+```
+
+**AABファイル場所**: `android/app/build/outputs/bundle/release/app-release.aab`
 
 **ユーザーの役割**: 考える・指示するのみ。実行はすべてClaude Codeが行う。
 

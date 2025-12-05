@@ -1139,6 +1139,9 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     // 当日のデイリー記録を取得
     const [todayRecord, setTodayRecord] = useState(null);
 
+    // ヘルプモーダル
+    const [showProjectHelpModal, setShowProjectHelpModal] = useState(false);
+
     // 履歴データから過去30日間の平均を同期的に計算（即座に表示）
     const autoFetchedData = useMemo(() => {
         console.error('[CommunityPost] useMemo historyData:', historyData ? Object.keys(historyData).length + ' days' : 'null');
@@ -1979,7 +1982,9 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         <Icon name="ArrowLeft" size={24} />
                     </button>
                     <h1 className="text-xl font-bold mx-auto">新規プロジェクト作成</h1>
-                    <div className="w-6"></div>
+                    <button onClick={() => setShowProjectHelpModal(true)}>
+                        <Icon name="HelpCircle" size={24} className="text-gray-400" />
+                    </button>
                 </header>
                 <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6">
                     {/* アプリ継続日数 */}
@@ -2183,6 +2188,54 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         );
                     })()}
 
+                    {/* テンプレート選択 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            <Icon name="FileText" size={16} className="inline mr-1" />
+                            テンプレートから選択
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[
+                                {
+                                    label: 'ダイエット',
+                                    icon: 'TrendingDown',
+                                    title: '3ヶ月で体脂肪率-5%',
+                                    detail: '【目標】体脂肪率を15%まで落とす\n【現状】体脂肪率20%、体重70kg\n【方針】週5回の筋トレ、カロリー管理徹底'
+                                },
+                                {
+                                    label: 'バルクアップ',
+                                    icon: 'TrendingUp',
+                                    title: '半年で筋肉量+5kg',
+                                    detail: '【目標】除脂肪体重を5kg増やす\n【現状】体重65kg、体脂肪率12%\n【方針】高タンパク食、週4回の筋トレ'
+                                },
+                                {
+                                    label: '食事改善',
+                                    icon: 'Utensils',
+                                    title: 'PFCバランス改善チャレンジ',
+                                    detail: '【目標】タンパク質を毎日120g以上\n【現状】タンパク質不足気味\n【方針】毎食タンパク質を意識して摂取'
+                                },
+                                {
+                                    label: '運動習慣',
+                                    icon: 'Dumbbell',
+                                    title: '週3運動を3ヶ月継続',
+                                    detail: '【目標】運動習慣を定着させる\n【現状】運動が続かない\n【方針】無理なく週3回、まず続けることを優先'
+                                }
+                            ].map((template, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        setProjectTitle(template.title);
+                                        setProjectGoal(template.detail);
+                                    }}
+                                    className="p-3 border border-gray-200 rounded-lg text-left hover:border-fuchsia-400 hover:bg-fuchsia-50 transition flex items-center gap-2"
+                                >
+                                    <Icon name={template.icon} size={18} className="text-fuchsia-600 flex-shrink-0" />
+                                    <span className="text-sm font-medium text-gray-700">{template.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* タイトル */}
                     <div>
                         <label className="block font-semibold text-gray-800 mb-2">
@@ -2264,6 +2317,43 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         {isSubmitting ? '作成中...' : 'プロジェクトを作成'}
                     </button>
                 </div>
+
+                {/* ヘルプモーダル */}
+                {showProjectHelpModal && (
+                    <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={() => setShowProjectHelpModal(false)}>
+                        <div className="bg-white rounded-xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="p-4 border-b flex items-center justify-between">
+                                <h3 className="font-bold text-lg">プロジェクト作成について</h3>
+                                <button onClick={() => setShowProjectHelpModal(false)}>
+                                    <Icon name="X" size={24} className="text-gray-400" />
+                                </button>
+                            </div>
+                            <div className="p-4 space-y-4">
+                                <div>
+                                    <h4 className="font-semibold text-fuchsia-600 flex items-center gap-2 mb-1">
+                                        <Icon name="Calendar" size={16} />
+                                        アプリ継続日数
+                                    </h4>
+                                    <p className="text-sm text-gray-600">アプリを使い始めてからの日数です。継続日数が長いほど、信頼性の高いプロジェクトとして表示されます。</p>
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-blue-600 flex items-center gap-2 mb-1">
+                                        <Icon name="TrendingUp" size={16} />
+                                        過去○日間の平均
+                                    </h4>
+                                    <p className="text-sm text-gray-600">食事や運動の記録がある日のみを対象に、1日あたりの平均を計算しています。記録がない日は含まれません。</p>
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-violet-600 flex items-center gap-2 mb-1">
+                                        <Icon name="Settings" size={16} />
+                                        プロフィール設定
+                                    </h4>
+                                    <p className="text-sm text-gray-600">設定画面で登録したあなたの目標やスタイルです。プロジェクトに自動で反映され、他のユーザーに公開されます。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }

@@ -228,6 +228,15 @@ const SettingsView = ({
         const bmr = LBMUtils.calculateBMR(lbm, fatMass);
         const tdeeBase = LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass);
 
+        // カロリー調整値をペースから再計算（データ整合性のため）
+        let calorieAdjustment = profile.calorieAdjustment || 0;
+        const pace = profile.customPaceValue !== null && profile.customPaceValue !== undefined
+            ? profile.customPaceValue
+            : profile.weightChangePace;
+        if (pace && (profile.purpose === 'ダイエット' || profile.purpose === 'バルクアップ')) {
+            calorieAdjustment = LBMUtils.calculateCalorieAdjustmentFromPace(pace, profile.paceUnit || 'kg', profile.weight);
+        }
+
         // カスタムモードの場合はカスタムPFC比率を保存、目的別モードの場合は既存値を保持
         const pfcSettings = advancedSettings.usePurposeBased === false
             ? {
@@ -245,6 +254,7 @@ const SettingsView = ({
             leanBodyMass: lbm,
             bmr: bmr,
             tdeeBase: tdeeBase,
+            calorieAdjustment: calorieAdjustment, // 再計算したカロリー調整値
             featuresCompleted: profile.featuresCompleted || {} // 機能開放状態を保持
         };
 
