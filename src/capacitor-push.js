@@ -6,6 +6,7 @@
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { App } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 
 // Capacitor環境かどうかを判定
 export const isNativeApp = () => {
@@ -115,6 +116,40 @@ export const createNotificationChannel = async () => {
     console.log('[Push] Notification channel created');
   } catch (error) {
     console.error('[Push] Error creating channel:', error);
+  }
+};
+
+// 通知権限の状態を確認
+export const checkNotificationPermission = async () => {
+  if (!isNativeApp()) return 'unsupported';
+
+  try {
+    const permStatus = await PushNotifications.checkPermissions();
+    return permStatus.receive; // 'prompt' | 'granted' | 'denied'
+  } catch (error) {
+    console.error('[Push] Error checking permission:', error);
+    return 'error';
+  }
+};
+
+// アプリの設定画面を開く（権限が拒否された場合）
+export const openAppSettings = async () => {
+  if (!isNativeApp()) return;
+
+  try {
+    // Androidの場合、アプリ設定画面を開く
+    // intent://settings/... のようなURLを使用
+    const packageName = 'com.yourcoach.plus'; // AndroidManifest.xmlのpackage名
+
+    if (Capacitor.getPlatform() === 'android') {
+      // Android用: アプリの詳細設定を開く
+      window.open(`intent://settings/app_detail_settings?id=${packageName}#Intent;scheme=android-app;end`, '_system');
+    } else if (Capacitor.getPlatform() === 'ios') {
+      // iOS用: 設定アプリを開く
+      window.open('app-settings:', '_system');
+    }
+  } catch (error) {
+    console.error('[Push] Error opening app settings:', error);
   }
 };
 

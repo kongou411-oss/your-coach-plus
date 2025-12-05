@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { isNativeApp, initPushNotifications, createNotificationChannel } from '../capacitor-push';
+import { isNativeApp, initPushNotifications, createNotificationChannel, checkNotificationPermission, openAppSettings } from '../capacitor-push';
 
 // ===== 通知設定コンポーネント =====
 const NotificationSettings = ({ userId }) => {
@@ -144,6 +144,13 @@ const NotificationSettings = ({ userId }) => {
         const checkAndGetToken = async () => {
             // ネイティブアプリの場合のみ（Capacitor Push Notifications）
             if (isNativeApp()) {
+                // まず現在の権限状態を確認
+                const currentStatus = await checkNotificationPermission();
+                if (currentStatus === 'denied') {
+                    setNotificationPermission('denied');
+                    return;
+                }
+
                 const result = await initPushNotifications(userId, async (token) => {
                     setFcmToken(token);
                     setNotificationPermission('granted');
@@ -170,6 +177,17 @@ const NotificationSettings = ({ userId }) => {
 
         setLoading(true);
         try {
+            // まず現在の権限状態を確認
+            const currentStatus = await checkNotificationPermission();
+
+            if (currentStatus === 'denied') {
+                // 既に拒否されている場合は設定画面を開く
+                toast('設定アプリで通知を許可してください', { icon: '⚙️' });
+                await openAppSettings();
+                setLoading(false);
+                return;
+            }
+
             const result = await initPushNotifications(userId, async (token) => {
                 setFcmToken(token);
                 setNotificationPermission('granted');
@@ -182,7 +200,10 @@ const NotificationSettings = ({ userId }) => {
                 setNotificationPermission('granted');
                 toast.success('通知権限が許可されました');
             } else {
-                toast.error('通知権限が拒否されました');
+                // 拒否された場合は設定画面を開くよう促す
+                setNotificationPermission('denied');
+                toast('設定アプリで通知を許可してください', { icon: '⚙️' });
+                await openAppSettings();
             }
         } catch (error) {
             console.error('[Notification] Failed to request permission:', error);
@@ -535,7 +556,7 @@ const NotificationSettings = ({ userId }) => {
                         disabled={loading}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
                     >
-                        {loading ? '処理中...' : '許可'}
+                        {loading ? '処理中...' : notificationPermission === 'denied' ? '設定を開く' : '許可'}
                     </button>
                 )}
             </div>
