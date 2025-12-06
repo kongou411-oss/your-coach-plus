@@ -849,6 +849,18 @@ const LoginScreen = () => {
 // ===== オンボーディング画面 =====
 const OnboardingScreen = ({ user, onComplete }) => {
     const [step, setStep] = useState(0); // Start from step 0 (basic info)
+    const scrollContainerRef = React.useRef(null);
+
+    // ステップ変更時にスクロール位置をリセット
+    const goToStep = (newStep) => {
+        setStep(newStep);
+        // モーダル内のスクロールをリセット
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        }
+        // ページ全体のスクロールもリセット
+        window.scrollTo(0, 0);
+    };
     const [profile, setProfile] = useState({
         nickname: '',
         displayName: '', // 氏名（フルネーム）
@@ -1222,7 +1234,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center p-4"
              style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
-            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-2xl slide-up max-h-[85vh] overflow-y-auto">
+            <div ref={scrollContainerRef} className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-[95vw] sm:max-w-2xl slide-up max-h-[85vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-2">
                     {step === 0 && '基本情報'}
                     {step === 1 && '現在の体組成を知る'}
@@ -2025,6 +2037,29 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             </div>
                         </div>
 
+                        {/* ヘルプアイコンの説明 */}
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+                                <Icon name="Lightbulb" size={16} />
+                                困ったときは
+                            </h4>
+                            <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0">
+                                    <Icon name="HelpCircle" size={20} className="text-[#4A9EFF]" />
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                    <p>
+                                        各項目の横にある<span className="font-medium text-[#4A9EFF]">?マーク</span>をタップすると、使い方や仕組みの説明がモーダルで表示されます。
+                                    </p>
+                                    <div className="mt-2 text-xs text-gray-500 space-y-1">
+                                        <p>例）「目的」の? → ダイエット・バルクアップ等の違いを解説</p>
+                                        <p>例）「LBM」の? → 除脂肪体重の計算式と意味を解説</p>
+                                        <p>例）「PFCバランス」の? → 三大栄養素の推奨比率を解説</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 )}
 
@@ -2109,7 +2144,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                         <button
                             onClick={() => {
                                 setValidationError(''); // エラーをクリア
-                                setStep(step - 1);
+                                goToStep(step - 1);
                             }}
                             className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300"
                         >
@@ -2121,8 +2156,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             onClick={() => {
                                 // バリデーションチェック
                                 if (validateStep(step)) {
-                                    setStep(step + 1);
-                                    window.scrollTo(0, 0);
+                                    goToStep(step + 1);
                                 }
                             }}
                             className="flex-1 bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
@@ -2134,8 +2168,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             <button
                                 onClick={() => {
                                     // コード入力をスキップして次へ
-                                    setStep(4);
-                                    window.scrollTo(0, 0);
+                                    goToStep(4);
                                 }}
                                 className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
                             >
@@ -2148,8 +2181,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                         const isValid = await validateB2B2CCode();
                                         if (!isValid) return; // 検証失敗時は中断
                                     }
-                                    setStep(4);
-                                    window.scrollTo(0, 0);
+                                    goToStep(4);
                                 }}
                                 className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-500 hover:to-orange-600 transition disabled:opacity-50"
                                 disabled={isValidatingCode}
