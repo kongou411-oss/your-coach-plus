@@ -1600,7 +1600,7 @@ JSONのみ出力、説明文不要`;
 
             const promptText = `「${foodName}」の栄養素を日本食品標準成分表2020年版（八訂）から検索してJSON形式で出力してください。
 
-表記揺れ（ひらがな・カタカナ・漢字、調理状態、部位）を考慮して類似候補を5つ検索し、最も一致する候補を選択してください。
+表記揺れ（ひらがな・カタカナ・漢字、調理状態、部位）を考慮して類似候補を3つ検索し、最も一致する候補を選択してください。
 
 出力形式:
 {
@@ -1696,12 +1696,26 @@ JSON形式のみ出力、説明文不要`;
             }
 
             const candidate = result.data.response.candidates[0];
+
+            // MAX_TOKENSで途中で切れた場合の対応
+            if (candidate.finishReason === 'MAX_TOKENS') {
+                console.warn('[fetchNutritionFromHachitei] MAX_TOKENS: レスポンスが途中で切れました');
+                // contentがあれば部分的に処理を試みる
+                if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+                    throw new Error('レスポンスが長すぎて途中で切れました。食品名を短くしてお試しください。');
+                }
+            }
+
             if (!candidate || !candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
                 console.error('[fetchNutritionFromHachitei] candidate構造が不正:', candidate);
                 throw new Error('AIレスポンスの構造が不正です');
             }
 
             const textContent = candidate.content.parts[0].text;
+            if (!textContent) {
+                console.error('[fetchNutritionFromHachitei] textContentが空:', candidate);
+                throw new Error('AIからのテキスト応答がありませんでした');
+            }
 
             // JSONを抽出
             let jsonText = textContent.trim();
