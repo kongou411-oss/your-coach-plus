@@ -3587,7 +3587,6 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
     const [suggestions, setSuggestions] = useState([]);
     // 置換候補（同カテゴリの類似食品）
     const [replacementCandidates, setReplacementCandidates] = useState([]);
-    const [showReplacementDropdown, setShowReplacementDropdown] = useState(false);
 
     useEffect(() => {
         // isUnknown フラグに関係なく、全ての食品に候補を提示
@@ -3694,51 +3693,6 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                     </div>
                     {food.category && (
                         <p className="text-xs text-gray-600">{food.category}</p>
-                    )}
-                    {/* 置換ボタン（同カテゴリの候補がある場合のみ表示） */}
-                    {replacementCandidates.length > 0 && !food.isUnknown && (
-                        <div className="relative mt-1">
-                            <button
-                                onClick={() => setShowReplacementDropdown(!showReplacementDropdown)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition"
-                            >
-                                <Icon name="RefreshCw" size={12} />
-                                置換候補 ({replacementCandidates.length})
-                                <Icon name={showReplacementDropdown ? "ChevronUp" : "ChevronDown"} size={12} />
-                            </button>
-                            {/* 置換候補ドロップダウン */}
-                            {showReplacementDropdown && (
-                                <div className="absolute z-20 left-0 mt-1 w-72 bg-white border border-purple-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                                    <div className="p-2 border-b border-purple-100 bg-purple-50">
-                                        <p className="text-xs font-semibold text-purple-800">同カテゴリの類似食品</p>
-                                    </div>
-                                    <div className="p-1 space-y-1">
-                                        {replacementCandidates.map((candidate, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => {
-                                                    if (onReplace) {
-                                                        onReplace(candidate);
-                                                    }
-                                                    setShowReplacementDropdown(false);
-                                                }}
-                                                className="w-full px-2 py-2 text-left hover:bg-purple-50 rounded transition"
-                                            >
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-sm font-medium text-gray-800">{candidate.name}</span>
-                                                </div>
-                                                <div className="grid grid-cols-4 gap-1 text-xs text-gray-600">
-                                                    <span className="text-center">{candidate.calories}kcal</span>
-                                                    <span className="text-center text-red-600">P:{candidate.protein.toFixed(1)}g</span>
-                                                    <span className="text-center text-yellow-600">F:{candidate.fat.toFixed(1)}g</span>
-                                                    <span className="text-center text-green-600">C:{candidate.carbs.toFixed(1)}g</span>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
                     )}
                     {/* 量表示 */}
                     <div className="flex items-center gap-2 mt-2">
@@ -3999,6 +3953,58 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                                     >
                                         <Icon name="Check" size={12} />
                                         この候補を選択
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </details>
+                </div>
+            )}
+
+            {/* 置換候補の展開可能表示（紫色）- 同カテゴリの類似食品 */}
+            {replacementCandidates.length > 0 && !food.isUnknown && (
+                <div className="mt-3">
+                    <details className="bg-purple-50 border border-purple-200 rounded-lg overflow-hidden">
+                        <summary className="px-3 py-2 cursor-pointer hover:bg-purple-100 transition flex items-center justify-between text-sm font-medium text-purple-800">
+                            <span className="flex items-center gap-2">
+                                <Icon name="RefreshCw" size={14} />
+                                置換候補を見る（{replacementCandidates.length}件）
+                            </span>
+                            <Icon name="ChevronDown" size={14} />
+                        </summary>
+                        <div className="px-3 py-2 space-y-1.5">
+                            {replacementCandidates.map((candidate, idx) => (
+                                <div key={idx} className="bg-white rounded-lg p-2 text-xs border border-gray-200">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-medium text-gray-800">{candidate.name}</span>
+                                        <span className="text-purple-600 font-semibold">類似度: {candidate.similarity}%</span>
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-1 mb-2 text-xs text-gray-600">
+                                        <div className="text-center">
+                                            <p className="text-gray-500">Cal</p>
+                                            <p className="font-semibold">{candidate.calories}</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-gray-500">P</p>
+                                            <p className="font-semibold">{candidate.protein.toFixed(1)}g</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-gray-500">F</p>
+                                            <p className="font-semibold">{candidate.fat.toFixed(1)}g</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-gray-500">C</p>
+                                            <p className="font-semibold">{candidate.carbs.toFixed(1)}g</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            if (onReplace) onReplace(candidate);
+                                        }}
+                                        className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold py-1.5 rounded transition flex items-center justify-center gap-1"
+                                    >
+                                        <Icon name="RefreshCw" size={12} />
+                                        この食品に置換
                                     </button>
                                 </div>
                             ))}
