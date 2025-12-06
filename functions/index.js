@@ -2356,6 +2356,7 @@ exports.getAdminCommunityPosts = onCall({
             historyData: progressData.historyData,
             daysSinceStart: progressData.daysSinceStart
           },
+          photoSourceInfo: progressData.photoSourceInfo || null,
           userInfo
         });
       }

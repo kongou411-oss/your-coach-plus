@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import toast from 'react-hot-toast';
 import useBABHeight from '../hooks/useBABHeight.js';
+import EXIF from 'exif-js';
 // ===== Community Components =====
 const PGBaseView = ({ onClose, userId, userProfile }) => {
     const [selectedModule, setSelectedModule] = useState(null);
@@ -1135,6 +1136,11 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
     const [bodyWeight, setBodyWeight] = useState('');
     const [bodyFat, setBodyFat] = useState('');
     const photoInputRef = useRef(null);
+    const galleryInputRef = useRef(null); // ギャラリー用
+
+    // 写真ソース情報（カメラ撮影 or ギャラリー + 加工アプリ情報）
+    const [photoSourceInfo, setPhotoSourceInfo] = useState(null);
+    // { source: 'camera' | 'gallery', editedApp: string | null, isEdited: boolean }
 
     // 当日のデイリー記録を取得
     const [todayRecord, setTodayRecord] = useState(null);
@@ -1611,10 +1617,117 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
         { id: 'sleep_textbook', title: '睡眠の教科書', category: 'リカバリー' }
     ];
 
-    // 写真選択ハンドラー（カメラ撮影限定）
-    const handlePhotoCapture = (e) => {
+    // EXIFから加工アプリ情報を抽出する関数
+    const extractPhotoSourceFromEXIF = (file) => {
+        return new Promise((resolve) => {
+            // 既知の加工アプリ一覧
+            const editingApps = [
+                'Adobe Photoshop', 'Photoshop', 'Lightroom', 'Adobe Lightroom',
+                'VSCO', 'Snapseed', 'PicsArt', 'Facetune', 'BeautyPlus', 'SNOW',
+                'Meitu', 'Camera360', 'B612', 'Foodie', 'LINE Camera', 'Ulike',
+                'Cymera', 'YouCam', 'InstaSize', 'Canva', 'Pixlr', 'Afterlight',
+                'SODA', 'Remini', 'FaceApp'
+            ];
+
+            // ノーマルカメラアプリ一覧
+            const normalCameraApps = [
+                'Camera', 'Google Camera', 'Samsung Camera', 'Apple Camera',
+                'Pixel Camera', 'HUAWEI Camera', 'OnePlus Camera', 'Xiaomi Camera',
+                'OPPO Camera', 'Vivo Camera', 'Sony Camera', 'LG Camera'
+            ];
+
+            EXIF.getData(file, function() {
+                const software = EXIF.getTag(this, 'Software') || '';
+                const make = EXIF.getTag(this, 'Make') || '';
+                const model = EXIF.getTag(this, 'Model') || '';
+                const imageDescription = EXIF.getTag(this, 'ImageDescription') || '';
+
+                console.log('[EXIF] Software:', software, 'Make:', make, 'Model:', model);
+
+                // 加工アプリで編集されたか判定
+                let isEdited = false;
+                let editedApp = null;
+
+                const allMetadata = (software + ' ' + imageDescription).toLowerCase();
+
+                for (const app of editingApps) {
+                    if (allMetadata.includes(app.toLowerCase())) {
+                        isEdited = true;
+                        editedApp = app;
+                        break;
+                    }
+                }
+
+                // ノーマルカメラアプリかチェック
+                let isNormalCamera = false;
+                for (const app of normalCameraApps) {
+                    if (allMetadata.includes(app.toLowerCase())) {
+                        isNormalCamera = true;
+                        break;
+                    }
+                }
+
+                // MakeやModelがあれば、それはカメラで撮影された可能性が高い
+                const hasDeviceInfo = make || model;
+
+                resolve({
+                    software: software,
+                    make: make,
+                    model: model,
+                    isEdited: isEdited,
+                    editedApp: editedApp,
+                    isNormalCamera: isNormalCamera || (hasDeviceInfo && !isEdited)
+                });
+            });
+        });
+    };
+
+    // 写真選択ハンドラー（カメラ撮影）
+    const handlePhotoCapture = async (e) => {
         const file = e.target.files[0];
         if (file) {
+            // EXIF情報を読み取り
+            const exifInfo = await extractPhotoSourceFromEXIF(file);
+
+            setPhotoSourceInfo({
+                source: 'camera',
+                isEdited: exifInfo.isEdited,
+                editedApp: exifInfo.editedApp,
+                isNormalCamera: exifInfo.isNormalCamera,
+                deviceMake: exifInfo.make,
+                deviceModel: exifInfo.model,
+                software: exifInfo.software
+            });
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (postMode === 'new_project') {
+                    setBeforePhoto(reader.result);
+                } else if (postMode === 'add_progress') {
+                    setProgressPhoto(reader.result);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // ギャラリーから写真選択ハンドラー
+    const handleGallerySelect = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // EXIF情報を読み取り
+            const exifInfo = await extractPhotoSourceFromEXIF(file);
+
+            setPhotoSourceInfo({
+                source: 'gallery',
+                isEdited: exifInfo.isEdited,
+                editedApp: exifInfo.editedApp,
+                isNormalCamera: exifInfo.isNormalCamera,
+                deviceMake: exifInfo.make,
+                deviceModel: exifInfo.model,
+                software: exifInfo.software
+            });
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 if (postMode === 'new_project') {
@@ -1728,7 +1841,9 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 })(),
                 timestamp: new Date().toISOString(),
                 daysSinceStart: 0,
-                approvalStatus: 'pending'
+                approvalStatus: 'pending',
+                // 写真ソース情報
+                photoSourceInfo: photoSourceInfo || null
             };
 
             await db.collection('communityProjects').doc(projectId).collection('progress').add(progressData);
@@ -1872,7 +1987,9 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 })(),
                 timestamp: new Date().toISOString(),
                 daysSinceStart: daysSinceStart,
-                approvalStatus: 'pending'
+                approvalStatus: 'pending',
+                // 写真ソース情報
+                photoSourceInfo: photoSourceInfo || null
             };
 
             await db.collection('communityProjects').doc(selectedProject).collection('progress').add(progressData);
@@ -2273,12 +2390,13 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         <label className="block font-semibold text-gray-800 mb-2">
                             ビフォー写真 <span className="text-red-500">*</span>
                         </label>
-                        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-3">
-                            <p className="text-sm text-yellow-800 flex items-center gap-2">
-                                <Icon name="Camera" size={16} />
-                                カメラ撮影限定：加工なしの写真のみ投稿できます
+                        <div className="bg-blue-50 border border-blue-300 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-blue-800 flex items-center gap-2">
+                                <Icon name="Info" size={16} />
+                                写真の加工有無はEXIF情報から自動判定されます
                             </p>
                         </div>
+                        {/* カメラ用input（capture属性あり） */}
                         <input
                             ref={photoInputRef}
                             type="file"
@@ -2287,23 +2405,65 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             onChange={handlePhotoCapture}
                             className="hidden"
                         />
+                        {/* ギャラリー用input（capture属性なし） */}
+                        <input
+                            ref={galleryInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleGallerySelect}
+                            className="hidden"
+                        />
                         {!beforePhoto ? (
-                            <button
-                                onClick={() => photoInputRef.current?.click()}
-                                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 hover:border-fuchsia-500 hover:bg-fuchsia-50 transition"
-                            >
-                                <Icon name="Camera" size={48} className="text-gray-400" />
-                                <p className="text-gray-600 font-semibold">カメラで撮影</p>
-                            </button>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => photoInputRef.current?.click()}
+                                    className="h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-fuchsia-500 hover:bg-fuchsia-50 transition"
+                                >
+                                    <Icon name="Camera" size={40} className="text-gray-400" />
+                                    <p className="text-gray-600 font-semibold text-sm">カメラで撮影</p>
+                                </button>
+                                <button
+                                    onClick={() => galleryInputRef.current?.click()}
+                                    className="h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-teal-500 hover:bg-teal-50 transition"
+                                >
+                                    <Icon name="Image" size={40} className="text-gray-400" />
+                                    <p className="text-gray-600 font-semibold text-sm">ギャラリーから選択</p>
+                                </button>
+                            </div>
                         ) : (
                             <div className="relative">
                                 <img src={beforePhoto} alt="Before" className="w-full rounded-lg border-2 border-fuchsia-300" />
                                 <button
-                                    onClick={() => setBeforePhoto(null)}
+                                    onClick={() => { setBeforePhoto(null); setPhotoSourceInfo(null); }}
                                     className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition"
                                 >
                                     <Icon name="X" size={20} />
                                 </button>
+                                {/* 写真ソース情報表示 */}
+                                {photoSourceInfo && (
+                                    <div className="mt-2 p-2 bg-gray-100 rounded-lg">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Icon name={photoSourceInfo.source === 'camera' ? 'Camera' : 'Image'} size={16} className="text-gray-600" />
+                                            <span className="text-gray-700">
+                                                {photoSourceInfo.source === 'camera' ? 'カメラ撮影' : 'ギャラリー選択'}
+                                            </span>
+                                            {photoSourceInfo.isEdited ? (
+                                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                                                    加工あり{photoSourceInfo.editedApp ? `: ${photoSourceInfo.editedApp}` : ''}
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                                    ノーマル
+                                                </span>
+                                            )}
+                                        </div>
+                                        {photoSourceInfo.deviceModel && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                撮影機器: {photoSourceInfo.deviceMake} {photoSourceInfo.deviceModel}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -2618,12 +2778,13 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         <label className="block font-semibold text-gray-800 mb-2">
                             写真 <span className="text-red-500">*</span>
                         </label>
-                        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-3">
-                            <p className="text-sm text-yellow-800 flex items-center gap-2">
-                                <Icon name="Camera" size={16} />
-                                カメラ撮影限定：加工なしの写真のみ投稿できます
+                        <div className="bg-blue-50 border border-blue-300 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-blue-800 flex items-center gap-2">
+                                <Icon name="Info" size={16} />
+                                写真の加工有無はEXIF情報から自動判定されます
                             </p>
                         </div>
+                        {/* カメラ用input（capture属性あり） */}
                         <input
                             ref={photoInputRef}
                             type="file"
@@ -2632,23 +2793,65 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                             onChange={handlePhotoCapture}
                             className="hidden"
                         />
+                        {/* ギャラリー用input（capture属性なし） */}
+                        <input
+                            ref={galleryInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleGallerySelect}
+                            className="hidden"
+                        />
                         {!progressPhoto ? (
-                            <button
-                                onClick={() => photoInputRef.current?.click()}
-                                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 hover:border-teal-500 hover:bg-teal-50 transition"
-                            >
-                                <Icon name="Camera" size={48} className="text-gray-400" />
-                                <p className="text-gray-600 font-semibold">カメラで撮影</p>
-                            </button>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => photoInputRef.current?.click()}
+                                    className="h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-teal-500 hover:bg-teal-50 transition"
+                                >
+                                    <Icon name="Camera" size={40} className="text-gray-400" />
+                                    <p className="text-gray-600 font-semibold text-sm">カメラで撮影</p>
+                                </button>
+                                <button
+                                    onClick={() => galleryInputRef.current?.click()}
+                                    className="h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-fuchsia-500 hover:bg-fuchsia-50 transition"
+                                >
+                                    <Icon name="Image" size={40} className="text-gray-400" />
+                                    <p className="text-gray-600 font-semibold text-sm">ギャラリーから選択</p>
+                                </button>
+                            </div>
                         ) : (
                             <div className="relative">
                                 <img src={progressPhoto} alt="Progress" className="w-full rounded-lg border-2 border-teal-300" />
                                 <button
-                                    onClick={() => setProgressPhoto(null)}
+                                    onClick={() => { setProgressPhoto(null); setPhotoSourceInfo(null); }}
                                     className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition"
                                 >
                                     <Icon name="X" size={20} />
                                 </button>
+                                {/* 写真ソース情報表示 */}
+                                {photoSourceInfo && (
+                                    <div className="mt-2 p-2 bg-gray-100 rounded-lg">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Icon name={photoSourceInfo.source === 'camera' ? 'Camera' : 'Image'} size={16} className="text-gray-600" />
+                                            <span className="text-gray-700">
+                                                {photoSourceInfo.source === 'camera' ? 'カメラ撮影' : 'ギャラリー選択'}
+                                            </span>
+                                            {photoSourceInfo.isEdited ? (
+                                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                                                    加工あり{photoSourceInfo.editedApp ? `: ${photoSourceInfo.editedApp}` : ''}
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                                    ノーマル
+                                                </span>
+                                            )}
+                                        </div>
+                                        {photoSourceInfo.deviceModel && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                撮影機器: {photoSourceInfo.deviceMake} {photoSourceInfo.deviceModel}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -3804,6 +4007,24 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                 <img src={post.photo} alt="Progress" className="w-full rounded-lg" />
                                                 {post.progressType === 'before' && (
                                                     <p className="text-xs text-gray-500 text-center mt-1">ビフォー</p>
+                                                )}
+                                                {/* 写真ソース情報表示 */}
+                                                {post.photoSourceInfo && (
+                                                    <div className="mt-1 flex items-center justify-center gap-2 text-xs">
+                                                        <Icon name={post.photoSourceInfo.source === 'camera' ? 'Camera' : 'Image'} size={12} className="text-gray-500" />
+                                                        <span className="text-gray-600">
+                                                            {post.photoSourceInfo.source === 'camera' ? 'カメラ' : 'ギャラリー'}
+                                                        </span>
+                                                        {post.photoSourceInfo.isEdited ? (
+                                                            <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded font-medium">
+                                                                加工{post.photoSourceInfo.editedApp ? `: ${post.photoSourceInfo.editedApp}` : ''}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">
+                                                                ノーマル
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
                                         )}
