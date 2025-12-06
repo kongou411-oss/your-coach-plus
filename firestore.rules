@@ -222,6 +222,23 @@ service cloud.firestore {
     }
 
     // ============================================
+    // analytics: ユーザー行動トラッキング（本人のみ）
+    // ============================================
+    match /analytics/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // サブコレクション: events
+      match /events/{eventId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: dailyEvents（日別集計）
+      match /dailyEvents/{eventId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ============================================
     // stripeCustomers: Stripe顧客情報（Cloud Functionsのみ）
     // ============================================
     match /stripeCustomers/{customerId} {
