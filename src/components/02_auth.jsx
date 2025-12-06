@@ -1358,7 +1358,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     <div className="text-xs text-gray-600">本格的な筋トレ・競技力向上</div>
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-600 mt-2">※ボディメイカーはタンパク質の推奨量が一般の約1.8倍（一般 LBM×1.2、ボディメイカー LBM×2.2）、ビタミン・ミネラルの推奨量が2倍、食物繊維の推奨量が1.2倍になります</p>
+                            <p className="text-xs text-gray-600 mt-2">※ボディメイカーはタンパク質の推奨量が一般の約2倍（一般 LBM×1.2、ボディメイカー LBM×2.5）、ビタミン・ミネラルの推奨量が3倍（耐容上限5倍）、食物繊維の推奨量が1.2倍になります</p>
                         </div>
                     </div>
                 )}

@@ -319,7 +319,7 @@ const LBMUtils = {
             };
         }
 
-        // タンパク質係数（LBMあたり）- 一般: 1.2（固定）、ボディメイカー: 2.2（固定）
+        // タンパク質係数（LBMあたり）- 一般: 1.2（固定）、ボディメイカー: 2.5（固定）
         let proteinCoefficient = 1.2; // デフォルト
 
         // スタイル判定（一般 or ボディメイカー系）
@@ -328,7 +328,7 @@ const LBMUtils = {
 
         // 目的に関わらず、スタイルのみで係数を決定
         if (isBodymaker) {
-            proteinCoefficient = 2.2; // 固定
+            proteinCoefficient = 2.5; // 固定
         } else {
             proteinCoefficient = 1.2; // 固定
         }
@@ -403,12 +403,12 @@ const LBMUtils = {
         };
         const gFactor = goalFactors[goal] || goalFactors['メンテナンス'];
 
-        // ライフスタイル係数: ボディメイカーはビタミン・ミネラル2倍、食物繊維1.2倍
+        // ライフスタイル係数: ボディメイカーはビタミン・ミネラル3倍、食物繊維1.2倍
         const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
-        const vitaminsMinerlasBase = bodymakerStyles.includes(lifestyle) ? 2.0 : 1.0; // ビタミン・ミネラル用
+        const vitaminsMinerlasBase = bodymakerStyles.includes(lifestyle) ? 3.0 : 1.0; // ビタミン・ミネラル用
         const fiberBase = bodymakerStyles.includes(lifestyle) ? 1.2 : 1.0; // 食物繊維用
 
-        // 耐容上限値（成人）- ボディメイカーは3倍に拡大
+        // 耐容上限値（成人）- ボディメイカーは5倍に拡大
         const baseTolerableUpperLimits = {
             A: 3000,      // μg
             D: 100,       // μg
@@ -438,8 +438,8 @@ const LBMUtils = {
             molybdenum: 600   // μg
         };
 
-        // ボディメイカーの場合は上限を3倍に拡大
-        const upperLimitMultiplier = bodymakerStyles.includes(lifestyle) ? 3.0 : 1.0;
+        // ボディメイカーの場合は上限を5倍に拡大
+        const upperLimitMultiplier = bodymakerStyles.includes(lifestyle) ? 5.0 : 1.0;
         const tolerableUpperLimits = {};
         Object.keys(baseTolerableUpperLimits).forEach(key => {
             const baseLimit = baseTolerableUpperLimits[key];

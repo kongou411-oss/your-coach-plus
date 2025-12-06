@@ -1959,7 +1959,7 @@ const BasicTab = ({
     const fatMass = profile.weight - lbm;
     return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass) - 300);
 })()}kcal
-• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.2' : '1.2'}
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.5' : '1.2'}
 • 推奨ペース：週0.5〜0.7kg減
 
 【メンテナンス（現状維持）】
@@ -1979,7 +1979,7 @@ const BasicTab = ({
     const fatMass = profile.weight - lbm;
     return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass) + 300);
 })()}kcal
-• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.2' : '1.2'}
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.5' : '1.2'}
 • 炭水化物：多め（筋肉合成のエネルギー）
 • 推奨ペース：週0.5kg増
 
@@ -1990,7 +1990,7 @@ const BasicTab = ({
     const fatMass = profile.weight - lbm;
     return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass));
 })()}kcal
-• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.2' : '1.2'}
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.5' : '1.2'}
 • トレーニング強度が最重要
 
 目的はいつでも変更できます。`
@@ -2286,9 +2286,9 @@ const BasicTab = ({
                                         </button>
                                     </div>
                                     <p className="text-xs text-gray-600 mt-2">
-                                        ※ボディメイカーはタンパク質の推奨量が一般の約1.8倍<br/>
-                                        （一般 LBM×1.2、ボディメイカー LBM×2.2）、<br/>
-                                        ビタミン・ミネラルの推奨量が2倍、食物繊維の推奨量が1.2倍になります
+                                        ※ボディメイカーはタンパク質の推奨量が一般の約2倍<br/>
+                                        （一般 LBM×1.2、ボディメイカー LBM×2.5）、<br/>
+                                        ビタミン・ミネラルの推奨量が3倍（耐容上限5倍）、食物繊維の推奨量が1.2倍になります
                                     </p>
                                 </div>
 
