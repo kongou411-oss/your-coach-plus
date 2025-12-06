@@ -896,24 +896,22 @@
                             <p class="text-sm text-gray-700 mb-3">
                                 Gemini AIがグラフデータを分析し、トレンド評価・改善提案を生成します。
                             </p>
-                            <ul class="space-y-2 text-sm text-gray-700">
-                                <li class="flex items-start gap-2">
-                                    <span class="text-purple-600">•</span>
-                                    <span><strong>トレンド分析</strong>: 増加/減少/横ばいを判定し理由を説明</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="text-purple-600">•</span>
-                                    <span><strong>目標達成予測</strong>: 現在のペースで目標達成までの日数を予測</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="text-purple-600">•</span>
-                                    <span><strong>改善提案</strong>: 具体的なアクション（食事/運動/休養）を3つ提示</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <span class="text-purple-600">•</span>
-                                    <span><strong>注意点</strong>: データから気をつけるべきポイントを抽出</span>
-                                </li>
-                            </ul>
+                            <div class="space-y-3">
+                                <div class="bg-white p-3 rounded-lg">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded">個別分析</span>
+                                        <span class="text-sm font-semibold text-gray-800">タブごとの詳細分析</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600">現在選択中のタブ（食事/運動/コンディション/パフォーマンス）のデータのみを分析。各カテゴリの詳細なトレンド・改善点を把握できます。</p>
+                                </div>
+                                <div class="bg-white p-3 rounded-lg">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="px-2 py-0.5 bg-gray-500 text-white text-xs font-bold rounded">全体分析</span>
+                                        <span class="text-sm font-semibold text-gray-800">総合的な分析</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600">栄養・運動・コンディションすべてのデータを統合して分析。全体的なバランスや相互の関連性を把握できます。</p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- 統計情報 -->
@@ -4601,25 +4599,25 @@
             const tabConfig = {
                 nutrition: {
                     icon: 'utensils',
-                    label: '食事を個別分析',
+                    label: '個別分析',
                     bgColor: 'bg-green-500 hover:bg-green-600',
                     textColor: 'text-white'
                 },
                 training: {
                     icon: 'dumbbell',
-                    label: '運動を個別分析',
+                    label: '個別分析',
                     bgColor: 'bg-orange-500 hover:bg-orange-600',
                     textColor: 'text-white'
                 },
                 condition: {
                     icon: 'heart-pulse',
-                    label: 'コンディションを個別分析',
+                    label: '個別分析',
                     bgColor: 'bg-red-500 hover:bg-red-600',
                     textColor: 'text-white'
                 },
                 performance: {
                     icon: 'trending-up',
-                    label: 'パフォーマンスを個別分析',
+                    label: '個別分析',
                     bgColor: 'bg-purple-500 hover:bg-purple-600',
                     textColor: 'text-white'
                 }

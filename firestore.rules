@@ -45,11 +45,17 @@ service cloud.firestore {
     }
 
     // ============================================
-    // users: ユーザープロフィール（本人または管理者）
+    // users: ユーザープロフィール
+    // - 読み取り: 認証済みユーザー全員（コミュニティ機能でプロフィール表示のため）
+    // - 書き込み: 本人のみ
     // ============================================
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isAuthenticated();
+      // 本人は全フィールド書き込み可能
       allow write: if isOwner(userId);
+      // 他の認証済みユーザーはfollowerCountのみ更新可能（フォロー機能用）
+      allow update: if isAuthenticated()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount']);
 
       // サブコレクション: settings
       match /settings/{settingId} {

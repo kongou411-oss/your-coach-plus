@@ -56,7 +56,8 @@
       "Bash(export JAVA_HOME:*)",
       "Bash(ls:*)",
       "WebFetch(domain:www.youtube.com)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

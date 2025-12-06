@@ -3032,6 +3032,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     const [profileModalInitialTab, setProfileModalInitialTab] = useState('posts'); // プロフィールモーダルの初期タブ
     const [myFollowerCount, setMyFollowerCount] = useState(0);
     const [myFollowingCount, setMyFollowingCount] = useState(0);
+    const [followRefreshKey, setFollowRefreshKey] = useState(0); // フォローボタン再描画用キー
 
     // マイページ投稿フィルター
     const [myPostFilter, setMyPostFilter] = useState('all'); // 'all', 'before', 'progress', 'after'
@@ -3163,7 +3164,9 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
     const loadPosts = async () => {
         const allPosts = await DataService.getCommunityPosts();
         setPosts(allPosts);
+        
     };
+
 
     const handleSubmitPost = async (newPost) => {
         const updatedPosts = [newPost, ...posts];
@@ -3478,10 +3481,10 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                         selectedPostId === post.id ? 'ring-2 ring-blue-500' : ''
                                     }`}
                                 >
-                                    {/* 投稿者 + カテゴリバッジ + 目的タグ + 日時（同じ行） */}
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            {/* 投稿者（クリックでプロフィール表示） */}
+                                    {/* 3行構成ヘッダー */}
+                                    <div className="mb-3">
+                                        {/* 1行目: アカウント名 + フォローボタン */}
+                                        <div className="flex items-center justify-between mb-1">
                                             <button
                                                 onClick={() => setProfileModalUserId(post.userId)}
                                                 className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 -ml-1 transition"
@@ -3505,45 +3508,51 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                                 </div>
                                                 <p className="font-medium text-gray-800 text-sm">{post.author}</p>
                                             </button>
-                                            {/* カテゴリバッジ（ボディメイク/メンタル） */}
-                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                                post.category === 'body'
-                                                    ? 'bg-fuchsia-100 text-fuchsia-700'
-                                                    : 'bg-teal-100 text-teal-700'
-                                            }`}>
-                                                {post.category === 'body' ? 'ボディメイク' : 'メンタル'}
+                                            {/* フォローボタン（自分以外のユーザーのみ表示） */}
+                                            {post.userId !== userId && (
+                                                <FollowButton
+                                                    key={`follow-${post.userId}-${followRefreshKey}`}
+                                                    targetUserId={post.userId}
+                                                    currentUserId={userId}
+                                                    compact={true}
+                                                />
+                                            )}
+                                        </div>
+                                        {/* 2行目: タグ（#付き・色分け） */}
+                                        <div className="flex items-center gap-2 ml-9 mb-1 flex-wrap">
+                                            <span className={`text-xs ${post.category === 'body' ? 'text-fuchsia-600' : 'text-teal-600'}`}>
+                                                #{post.category === 'body' ? 'ボディメイク' : 'メンタル'}
                                             </span>
-                                            {/* 目的タグ（ダイエット/メンテナンス/バルクアップ/リコンプ） */}
                                             {post.goalCategory && post.goalCategory !== 'その他' && (
-                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                                    post.goalCategory === 'ダイエット' ? 'bg-orange-100 text-orange-700' :
-                                                    post.goalCategory === '維持' ? 'bg-blue-100 text-blue-700' :
-                                                    post.goalCategory === 'バルクアップ' ? 'bg-green-100 text-green-700' :
-                                                    post.goalCategory === 'リコンプ' ? 'bg-purple-100 text-purple-700' :
-                                                    'bg-gray-100 text-gray-700'
+                                                <span className={`text-xs ${
+                                                    post.goalCategory === 'ダイエット' ? 'text-orange-600' :
+                                                    post.goalCategory === '維持' ? 'text-blue-600' :
+                                                    post.goalCategory === 'バルクアップ' ? 'text-green-600' :
+                                                    post.goalCategory === 'リコンプ' ? 'text-purple-600' :
+                                                    'text-gray-600'
                                                 }`}>
-                                                    {post.goalCategory === 'ダイエット' ? 'ダイエット' :
-                                                     post.goalCategory === '維持' ? 'メンテナンス' :
-                                                     post.goalCategory === 'バルクアップ' ? 'バルクアップ' :
-                                                     post.goalCategory === 'リコンプ' ? 'リコンプ' :
-                                                     post.goalCategory}
+                                                    #{post.goalCategory === 'ダイエット' ? 'ダイエット' :
+                                                      post.goalCategory === '維持' ? 'メンテナンス' :
+                                                      post.goalCategory === 'バルクアップ' ? 'バルクアップ' :
+                                                      post.goalCategory === 'リコンプ' ? 'リコンプ' :
+                                                      post.goalCategory}
                                                 </span>
                                             )}
-                                            {/* 進捗タイプタグ（新規/経過/結果） */}
                                             {post.progressType && (
-                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                                    post.progressType === 'before' ? 'bg-sky-100 text-sky-700' :
-                                                    post.progressType === 'progress' ? 'bg-amber-100 text-amber-700' :
-                                                    post.progressType === 'after' ? 'bg-emerald-100 text-emerald-700' :
-                                                    'bg-gray-100 text-gray-700'
+                                                <span className={`text-xs ${
+                                                    post.progressType === 'before' ? 'text-sky-600' :
+                                                    post.progressType === 'progress' ? 'text-amber-600' :
+                                                    post.progressType === 'after' ? 'text-emerald-600' :
+                                                    'text-gray-600'
                                                 }`}>
-                                                    {post.progressType === 'before' ? '新規' :
-                                                     post.progressType === 'progress' ? '経過' :
-                                                     post.progressType === 'after' ? '結果' : ''}
+                                                    #{post.progressType === 'before' ? '新規' :
+                                                      post.progressType === 'progress' ? '経過' :
+                                                      post.progressType === 'after' ? '結果' : ''}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-500">
+                                        {/* 3行目: 日付（右寄せ） */}
+                                        <p className="text-xs text-gray-400 text-right">
                                             {new Date(post.timestamp).toLocaleString('ja-JP')}
                                         </p>
                                     </div>
@@ -3574,16 +3583,6 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                                     {/* 投稿内容 */}
                                     <p className="text-gray-600 mb-3 whitespace-pre-wrap">{post.content}</p>
 
-                                    {/* フォローボタン（自分以外の投稿に表示） */}
-                                    {post.userId !== userId && (
-                                        <div className="mb-3">
-                                            <FollowButton
-                                                targetUserId={post.userId}
-                                                currentUserId={userId}
-                                                compact={true}
-                                            />
-                                        </div>
-                                    )}
 
                                     {/* データ連携情報（新形式: bodyData, historyData, usageDays, recordDays） */}
                                     {(post.bodyData || post.historyData || post.usageDays || post.recordDays || post.projectTitle || post.daysSinceStart !== undefined) && (
@@ -4426,6 +4425,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
                         setProfileModalUserId(null);
                         setProfileModalInitialTab('posts');
                     }}
+                    onFollowChange={() => setFollowRefreshKey(prev => prev + 1)}
                 />
             )}
         </div>

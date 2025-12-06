@@ -1049,23 +1049,37 @@ const DataService = {
             }
 
             // フォロー関係を削除
-            const batch = db.batch();
-            followSnapshot.docs.forEach(doc => {
-                batch.delete(doc.ref);
-            });
+            const followDocsToDelete = followSnapshot.docs.map(doc => doc.ref);
 
-            // フォロワー数・フォロー数を更新
-            const followerRef = db.collection('users').doc(followerId);
-            batch.update(followerRef, {
-                followingCount: firebase.firestore.FieldValue.increment(-1)
-            });
+            // トランザクションで0未満にならないように更新
+            await db.runTransaction(async (transaction) => {
+                const followerRef = db.collection('users').doc(followerId);
+                const followingRef = db.collection('users').doc(followingId);
 
-            const followingRef = db.collection('users').doc(followingId);
-            batch.update(followingRef, {
-                followerCount: firebase.firestore.FieldValue.increment(-1)
-            });
+                const followerDoc = await transaction.get(followerRef);
+                const followingDoc = await transaction.get(followingRef);
 
-            await batch.commit();
+                // フォロー関係を削除
+                followDocsToDelete.forEach(ref => {
+                    transaction.delete(ref);
+                });
+
+                // フォロー数を更新（0未満にならないように）
+                if (followerDoc.exists) {
+                    const currentFollowingCount = followerDoc.data().followingCount || 0;
+                    transaction.update(followerRef, {
+                        followingCount: Math.max(0, currentFollowingCount - 1)
+                    });
+                }
+
+                // フォロワー数を更新（0未満にならないように）
+                if (followingDoc.exists) {
+                    const currentFollowerCount = followingDoc.data().followerCount || 0;
+                    transaction.update(followingRef, {
+                        followerCount: Math.max(0, currentFollowerCount - 1)
+                    });
+                }
+            });
 
             return { success: true };
         } catch (error) {

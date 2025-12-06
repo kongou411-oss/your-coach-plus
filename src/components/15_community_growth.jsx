@@ -448,7 +448,7 @@ const MentorApplicationForm = ({ userId, userProfile, userStats, onClose }) => {
 
 
 // ===== ユーザープロフィールモーダル =====
-const UserProfileModal = ({ targetUserId, currentUserId, onClose, initialTab = 'posts' }) => {
+const UserProfileModal = ({ targetUserId, currentUserId, onClose, initialTab = 'posts', onFollowChange }) => {
     const [profile, setProfile] = useState(null);
     const [posts, setPosts] = useState([]);
     const [isFollowing, setIsFollowing] = useState(false);
@@ -517,6 +517,7 @@ const UserProfileModal = ({ targetUserId, currentUserId, onClose, initialTab = '
                         followerCount: Math.max(0, (prev.followerCount || 0) - 1)
                     }));
                     toast.success('フォローを解除しました');
+                    onFollowChange && onFollowChange(targetUserId, false);
                 } else {
                     toast.error(result.error || 'フォロー解除に失敗しました');
                 }
@@ -529,6 +530,7 @@ const UserProfileModal = ({ targetUserId, currentUserId, onClose, initialTab = '
                         followerCount: (prev.followerCount || 0) + 1
                     }));
                     toast.success('フォローしました');
+                    onFollowChange && onFollowChange(targetUserId, true);
                 } else {
                     toast.error(result.error || 'フォローに失敗しました');
                 }
