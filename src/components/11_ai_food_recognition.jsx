@@ -540,13 +540,13 @@ JSONのみ出力、説明文不要`;
                     }
                 }
 
-                let foundMatch = false;
+                // 🆕 スコアリング方式: 全候補を収集してから最適なものを選択
+                // スコア優先度: 完全一致(100) > 前方一致(80) > 検索名を含む(60) > 部分一致(40)
+                // 同スコアの場合は文字列長が短いもの（より具体的）を優先
+                let candidates = [];
+
                 Object.keys(foodDB).forEach(category => {
-                    if (foundMatch) return;  // 既にマッチが見つかっていたらスキップ
-
                     Object.keys(foodDB[category]).forEach(itemName => {
-                        if (foundMatch) return;  // 既にマッチが見つかっていたらスキップ
-
                         // 🆕 鶏卵のMS/SS/S/L/LLサイズはスキップ（Mサイズを優先）
                         const isChickenEgg = itemName.includes('鶏卵');
                         const isUnwantedSize = itemName.match(/鶏卵\s*(SS|MS|S|L|LL)(?!\w)/);
@@ -554,151 +554,184 @@ JSONのみ出力、説明文不要`;
                             return; // MS/SS/S/L/LLサイズはスキップ
                         }
 
-                        // 類義語リストのいずれかとマッチするか確認
-                        const isMatch = searchNames.some(name =>
-                            itemName.includes(name) || name.includes(itemName)
-                        );
-
-                        if (isMatch) {
-                            const dbItem = foodDB[category][itemName];
-
-                            // amountはAIが推定したg数をそのまま使用
-                            const amount = food.amount || 100;
-
-                            // DBアイテムが特殊単位（1個あたり）の場合、100gあたりに換算
-                            let caloriesPer100g, proteinPer100g, fatPer100g, carbsPer100g;
-
-                            if (dbItem.servingSize && dbItem.servingSize !== 100) {
-                                // 例: 鶏卵M（58g）の場合、82kcal（1個）→ 141kcal（100g）
-                                const conversionRatio = 100 / dbItem.servingSize;
-                                caloriesPer100g = (dbItem.calories || 0) * conversionRatio;
-                                proteinPer100g = (dbItem.protein || 0) * conversionRatio;
-                                fatPer100g = (dbItem.fat || 0) * conversionRatio;
-                                carbsPer100g = (dbItem.carbs || 0) * conversionRatio;
-                            } else {
-                                // 通常の100gあたり食材
-                                caloriesPer100g = dbItem.calories || 0;
-                                proteinPer100g = dbItem.protein || 0;
-                                fatPer100g = dbItem.fat || 0;
-                                carbsPer100g = dbItem.carbs || 0;
+                        // スコアを計算
+                        let score = 0;
+                        for (const name of searchNames) {
+                            // 完全一致（最高優先度）
+                            if (itemName === name) {
+                                score = Math.max(score, 100);
                             }
+                            // 前方一致（高優先度）: itemNameがnameで始まる
+                            else if (itemName.startsWith(name)) {
+                                score = Math.max(score, 80);
+                            }
+                            // 検索名がitemNameで始まる（高優先度）
+                            else if (name.startsWith(itemName)) {
+                                score = Math.max(score, 75);
+                            }
+                            // itemNameが検索名を含む（中優先度）
+                            else if (itemName.includes(name)) {
+                                score = Math.max(score, 60);
+                            }
+                            // 検索名がitemNameを含む（低優先度）
+                            else if (name.includes(itemName)) {
+                                score = Math.max(score, 40);
+                            }
+                        }
 
-                            // 実量に換算
-                            const ratio = amount / 100;
-
-                            matchedItem = {
-                                name: itemName,
-                                category: category,
-                                itemType: food.itemType || 'food',
-                                amount: amount,  // g単位
-                                unit: 'g',
-                                calories: Math.round(caloriesPer100g * ratio),
-                                protein: parseFloat((proteinPer100g * ratio).toFixed(1)),
-                                fat: parseFloat((fatPer100g * ratio).toFixed(1)),
-                                carbs: parseFloat((carbsPer100g * ratio).toFixed(1)),
-
-                                // 品質指標（100g基準 - ratio不要）
-                                diaas: dbItem.diaas || null,
-                                gi: dbItem.gi || null,
-
-                                // 脂肪酸（実量にスケーリング）
-                                saturatedFat: dbItem.saturatedFat ? parseFloat((dbItem.saturatedFat * ratio).toFixed(2)) : 0,
-                                monounsaturatedFat: dbItem.monounsaturatedFat ? parseFloat((dbItem.monounsaturatedFat * ratio).toFixed(2)) : 0,
-                                polyunsaturatedFat: dbItem.polyunsaturatedFat ? parseFloat((dbItem.polyunsaturatedFat * ratio).toFixed(2)) : 0,
-                                mediumChainFat: dbItem.mediumChainFat ? parseFloat((dbItem.mediumChainFat * ratio).toFixed(2)) : 0,
-
-                                // 糖質・食物繊維（実量にスケーリング）
-                                sugar: dbItem.sugar ? parseFloat((dbItem.sugar * ratio).toFixed(2)) : 0,
-                                fiber: dbItem.fiber ? parseFloat((dbItem.fiber * ratio).toFixed(2)) : 0,
-                                solubleFiber: dbItem.solubleFiber ? parseFloat((dbItem.solubleFiber * ratio).toFixed(2)) : 0,
-                                insolubleFiber: dbItem.insolubleFiber ? parseFloat((dbItem.insolubleFiber * ratio).toFixed(2)) : 0,
-
-                                // ビタミン（個別キー形式、実量に換算）
-                                vitaminA: dbItem.vitaminA ? parseFloat((dbItem.vitaminA * ratio).toFixed(1)) : null,
-                                vitaminB1: dbItem.vitaminB1 ? parseFloat((dbItem.vitaminB1 * ratio).toFixed(2)) : null,
-                                vitaminB2: dbItem.vitaminB2 ? parseFloat((dbItem.vitaminB2 * ratio).toFixed(2)) : null,
-                                vitaminB6: dbItem.vitaminB6 ? parseFloat((dbItem.vitaminB6 * ratio).toFixed(2)) : null,
-                                vitaminB12: dbItem.vitaminB12 ? parseFloat((dbItem.vitaminB12 * ratio).toFixed(1)) : null,
-                                vitaminC: dbItem.vitaminC ? parseFloat((dbItem.vitaminC * ratio).toFixed(1)) : null,
-                                vitaminD: dbItem.vitaminD ? parseFloat((dbItem.vitaminD * ratio).toFixed(1)) : null,
-                                vitaminE: dbItem.vitaminE ? parseFloat((dbItem.vitaminE * ratio).toFixed(1)) : null,
-                                vitaminK: dbItem.vitaminK ? parseFloat((dbItem.vitaminK * ratio).toFixed(1)) : null,
-                                niacin: dbItem.niacin ? parseFloat((dbItem.niacin * ratio).toFixed(1)) : null,
-                                pantothenicAcid: dbItem.pantothenicAcid ? parseFloat((dbItem.pantothenicAcid * ratio).toFixed(2)) : null,
-                                biotin: dbItem.biotin ? parseFloat((dbItem.biotin * ratio).toFixed(1)) : null,
-                                folicAcid: dbItem.folicAcid ? parseFloat((dbItem.folicAcid * ratio).toFixed(1)) : null,
-
-                                // ミネラル（個別キー形式、実量に換算）
-                                sodium: dbItem.sodium ? parseFloat((dbItem.sodium * ratio).toFixed(1)) : null,
-                                potassium: dbItem.potassium ? parseFloat((dbItem.potassium * ratio).toFixed(1)) : null,
-                                calcium: dbItem.calcium ? parseFloat((dbItem.calcium * ratio).toFixed(1)) : null,
-                                magnesium: dbItem.magnesium ? parseFloat((dbItem.magnesium * ratio).toFixed(1)) : null,
-                                phosphorus: dbItem.phosphorus ? parseFloat((dbItem.phosphorus * ratio).toFixed(1)) : null,
-                                iron: dbItem.iron ? parseFloat((dbItem.iron * ratio).toFixed(1)) : null,
-                                zinc: dbItem.zinc ? parseFloat((dbItem.zinc * ratio).toFixed(1)) : null,
-                                copper: dbItem.copper ? parseFloat((dbItem.copper * ratio).toFixed(2)) : null,
-                                manganese: dbItem.manganese ? parseFloat((dbItem.manganese * ratio).toFixed(2)) : null,
-                                iodine: dbItem.iodine ? parseFloat((dbItem.iodine * ratio).toFixed(1)) : null,
-                                selenium: dbItem.selenium ? parseFloat((dbItem.selenium * ratio).toFixed(1)) : null,
-                                chromium: dbItem.chromium ? parseFloat((dbItem.chromium * ratio).toFixed(1)) : null,
-                                molybdenum: dbItem.molybdenum ? parseFloat((dbItem.molybdenum * ratio).toFixed(1)) : null,
-                                otherNutrients: [],
-                                confidence: food.confidence || 0.5,
-                                _base: {  // 100gあたりの基準値
-                                    calories: caloriesPer100g,
-                                    protein: proteinPer100g,
-                                    fat: fatPer100g,
-                                    carbs: carbsPer100g,
-                                    // 品質指標
-                                    diaas: dbItem.diaas ?? null,
-                                    gi: dbItem.gi ?? null,
-                                    // 脂肪酸
-                                    saturatedFat: dbItem.saturatedFat ?? null,
-                                    monounsaturatedFat: dbItem.monounsaturatedFat ?? null,
-                                    polyunsaturatedFat: dbItem.polyunsaturatedFat ?? null,
-                                    mediumChainFat: dbItem.mediumChainFat ?? null,
-                                    // 糖質・食物繊維
-                                    sugar: dbItem.sugar ?? null,
-                                    fiber: dbItem.fiber ?? null,
-                                    solubleFiber: dbItem.solubleFiber ?? null,
-                                    insolubleFiber: dbItem.insolubleFiber ?? null,
-                                    // ビタミン
-                                    vitaminA: dbItem.vitaminA ?? null,
-                                    vitaminB1: dbItem.vitaminB1 ?? null,
-                                    vitaminB2: dbItem.vitaminB2 ?? null,
-                                    vitaminB6: dbItem.vitaminB6 ?? null,
-                                    vitaminB12: dbItem.vitaminB12 ?? null,
-                                    vitaminC: dbItem.vitaminC ?? null,
-                                    vitaminD: dbItem.vitaminD ?? null,
-                                    vitaminE: dbItem.vitaminE ?? null,
-                                    vitaminK: dbItem.vitaminK ?? null,
-                                    niacin: dbItem.niacin ?? null,
-                                    pantothenicAcid: dbItem.pantothenicAcid ?? null,
-                                    biotin: dbItem.biotin ?? null,
-                                    folicAcid: dbItem.folicAcid ?? null,
-                                    // ミネラル
-                                    sodium: dbItem.sodium ?? null,
-                                    potassium: dbItem.potassium ?? null,
-                                    calcium: dbItem.calcium ?? null,
-                                    magnesium: dbItem.magnesium ?? null,
-                                    phosphorus: dbItem.phosphorus ?? null,
-                                    iron: dbItem.iron ?? null,
-                                    zinc: dbItem.zinc ?? null,
-                                    copper: dbItem.copper ?? null,
-                                    manganese: dbItem.manganese ?? null,
-                                    iodine: dbItem.iodine ?? null,
-                                    selenium: dbItem.selenium ?? null,
-                                    chromium: dbItem.chromium ?? null,
-                                    molybdenum: dbItem.molybdenum ?? null,
-                                    servingSize: 100,
-                                    servingUnit: 'g',
-                                    unit: '100g'
-                                }
-                            };
-                            foundMatch = true;
+                        if (score > 0) {
+                            candidates.push({ itemName, category, score });
                         }
                     });
                 });
+
+                // スコア降順、同スコアなら文字列長昇順でソート
+                candidates.sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    return a.itemName.length - b.itemName.length;
+                });
+
+                // 最適な候補を選択してmatchedItemを作成
+                if (candidates.length > 0) {
+                    const best = candidates[0];
+                    const category = best.category;
+                    const itemName = best.itemName;
+                    const dbItem = foodDB[category][itemName];
+
+                    // amountはAIが推定したg数をそのまま使用
+                    const amount = food.amount || 100;
+
+                    // DBアイテムが特殊単位（1個あたり）の場合、100gあたりに換算
+                    let caloriesPer100g, proteinPer100g, fatPer100g, carbsPer100g;
+
+                    if (dbItem.servingSize && dbItem.servingSize !== 100) {
+                        // 例: 鶏卵M（58g）の場合、82kcal（1個）→ 141kcal（100g）
+                        const conversionRatio = 100 / dbItem.servingSize;
+                        caloriesPer100g = (dbItem.calories || 0) * conversionRatio;
+                        proteinPer100g = (dbItem.protein || 0) * conversionRatio;
+                        fatPer100g = (dbItem.fat || 0) * conversionRatio;
+                        carbsPer100g = (dbItem.carbs || 0) * conversionRatio;
+                    } else {
+                        // 通常の100gあたり食材
+                        caloriesPer100g = dbItem.calories || 0;
+                        proteinPer100g = dbItem.protein || 0;
+                        fatPer100g = dbItem.fat || 0;
+                        carbsPer100g = dbItem.carbs || 0;
+                    }
+
+                    // 実量に換算
+                    const ratio = amount / 100;
+
+                    matchedItem = {
+                        name: itemName,
+                        category: category,
+                        itemType: food.itemType || 'food',
+                        amount: amount,  // g単位
+                        unit: 'g',
+                        calories: Math.round(caloriesPer100g * ratio),
+                        protein: parseFloat((proteinPer100g * ratio).toFixed(1)),
+                        fat: parseFloat((fatPer100g * ratio).toFixed(1)),
+                        carbs: parseFloat((carbsPer100g * ratio).toFixed(1)),
+
+                        // 品質指標（100g基準 - ratio不要）
+                        diaas: dbItem.diaas || null,
+                        gi: dbItem.gi || null,
+
+                        // 脂肪酸（実量にスケーリング）
+                        saturatedFat: dbItem.saturatedFat ? parseFloat((dbItem.saturatedFat * ratio).toFixed(2)) : 0,
+                        monounsaturatedFat: dbItem.monounsaturatedFat ? parseFloat((dbItem.monounsaturatedFat * ratio).toFixed(2)) : 0,
+                        polyunsaturatedFat: dbItem.polyunsaturatedFat ? parseFloat((dbItem.polyunsaturatedFat * ratio).toFixed(2)) : 0,
+                        mediumChainFat: dbItem.mediumChainFat ? parseFloat((dbItem.mediumChainFat * ratio).toFixed(2)) : 0,
+
+                        // 糖質・食物繊維（実量にスケーリング）
+                        sugar: dbItem.sugar ? parseFloat((dbItem.sugar * ratio).toFixed(2)) : 0,
+                        fiber: dbItem.fiber ? parseFloat((dbItem.fiber * ratio).toFixed(2)) : 0,
+                        solubleFiber: dbItem.solubleFiber ? parseFloat((dbItem.solubleFiber * ratio).toFixed(2)) : 0,
+                        insolubleFiber: dbItem.insolubleFiber ? parseFloat((dbItem.insolubleFiber * ratio).toFixed(2)) : 0,
+
+                        // ビタミン（個別キー形式、実量に換算）
+                        vitaminA: dbItem.vitaminA ? parseFloat((dbItem.vitaminA * ratio).toFixed(1)) : null,
+                        vitaminB1: dbItem.vitaminB1 ? parseFloat((dbItem.vitaminB1 * ratio).toFixed(2)) : null,
+                        vitaminB2: dbItem.vitaminB2 ? parseFloat((dbItem.vitaminB2 * ratio).toFixed(2)) : null,
+                        vitaminB6: dbItem.vitaminB6 ? parseFloat((dbItem.vitaminB6 * ratio).toFixed(2)) : null,
+                        vitaminB12: dbItem.vitaminB12 ? parseFloat((dbItem.vitaminB12 * ratio).toFixed(1)) : null,
+                        vitaminC: dbItem.vitaminC ? parseFloat((dbItem.vitaminC * ratio).toFixed(1)) : null,
+                        vitaminD: dbItem.vitaminD ? parseFloat((dbItem.vitaminD * ratio).toFixed(1)) : null,
+                        vitaminE: dbItem.vitaminE ? parseFloat((dbItem.vitaminE * ratio).toFixed(1)) : null,
+                        vitaminK: dbItem.vitaminK ? parseFloat((dbItem.vitaminK * ratio).toFixed(1)) : null,
+                        niacin: dbItem.niacin ? parseFloat((dbItem.niacin * ratio).toFixed(1)) : null,
+                        pantothenicAcid: dbItem.pantothenicAcid ? parseFloat((dbItem.pantothenicAcid * ratio).toFixed(2)) : null,
+                        biotin: dbItem.biotin ? parseFloat((dbItem.biotin * ratio).toFixed(1)) : null,
+                        folicAcid: dbItem.folicAcid ? parseFloat((dbItem.folicAcid * ratio).toFixed(1)) : null,
+
+                        // ミネラル（個別キー形式、実量に換算）
+                        sodium: dbItem.sodium ? parseFloat((dbItem.sodium * ratio).toFixed(1)) : null,
+                        potassium: dbItem.potassium ? parseFloat((dbItem.potassium * ratio).toFixed(1)) : null,
+                        calcium: dbItem.calcium ? parseFloat((dbItem.calcium * ratio).toFixed(1)) : null,
+                        magnesium: dbItem.magnesium ? parseFloat((dbItem.magnesium * ratio).toFixed(1)) : null,
+                        phosphorus: dbItem.phosphorus ? parseFloat((dbItem.phosphorus * ratio).toFixed(1)) : null,
+                        iron: dbItem.iron ? parseFloat((dbItem.iron * ratio).toFixed(1)) : null,
+                        zinc: dbItem.zinc ? parseFloat((dbItem.zinc * ratio).toFixed(1)) : null,
+                        copper: dbItem.copper ? parseFloat((dbItem.copper * ratio).toFixed(2)) : null,
+                        manganese: dbItem.manganese ? parseFloat((dbItem.manganese * ratio).toFixed(2)) : null,
+                        iodine: dbItem.iodine ? parseFloat((dbItem.iodine * ratio).toFixed(1)) : null,
+                        selenium: dbItem.selenium ? parseFloat((dbItem.selenium * ratio).toFixed(1)) : null,
+                        chromium: dbItem.chromium ? parseFloat((dbItem.chromium * ratio).toFixed(1)) : null,
+                        molybdenum: dbItem.molybdenum ? parseFloat((dbItem.molybdenum * ratio).toFixed(1)) : null,
+                        otherNutrients: [],
+                        confidence: food.confidence || 0.5,
+                        _base: {  // 100gあたりの基準値
+                            calories: caloriesPer100g,
+                            protein: proteinPer100g,
+                            fat: fatPer100g,
+                            carbs: carbsPer100g,
+                            // 品質指標
+                            diaas: dbItem.diaas ?? null,
+                            gi: dbItem.gi ?? null,
+                            // 脂肪酸
+                            saturatedFat: dbItem.saturatedFat ?? null,
+                            monounsaturatedFat: dbItem.monounsaturatedFat ?? null,
+                            polyunsaturatedFat: dbItem.polyunsaturatedFat ?? null,
+                            mediumChainFat: dbItem.mediumChainFat ?? null,
+                            // 糖質・食物繊維
+                            sugar: dbItem.sugar ?? null,
+                            fiber: dbItem.fiber ?? null,
+                            solubleFiber: dbItem.solubleFiber ?? null,
+                            insolubleFiber: dbItem.insolubleFiber ?? null,
+                            // ビタミン
+                            vitaminA: dbItem.vitaminA ?? null,
+                            vitaminB1: dbItem.vitaminB1 ?? null,
+                            vitaminB2: dbItem.vitaminB2 ?? null,
+                            vitaminB6: dbItem.vitaminB6 ?? null,
+                            vitaminB12: dbItem.vitaminB12 ?? null,
+                            vitaminC: dbItem.vitaminC ?? null,
+                            vitaminD: dbItem.vitaminD ?? null,
+                            vitaminE: dbItem.vitaminE ?? null,
+                            vitaminK: dbItem.vitaminK ?? null,
+                            niacin: dbItem.niacin ?? null,
+                            pantothenicAcid: dbItem.pantothenicAcid ?? null,
+                            biotin: dbItem.biotin ?? null,
+                            folicAcid: dbItem.folicAcid ?? null,
+                            // ミネラル
+                            sodium: dbItem.sodium ?? null,
+                            potassium: dbItem.potassium ?? null,
+                            calcium: dbItem.calcium ?? null,
+                            magnesium: dbItem.magnesium ?? null,
+                            phosphorus: dbItem.phosphorus ?? null,
+                            iron: dbItem.iron ?? null,
+                            zinc: dbItem.zinc ?? null,
+                            copper: dbItem.copper ?? null,
+                            manganese: dbItem.manganese ?? null,
+                            iodine: dbItem.iodine ?? null,
+                            selenium: dbItem.selenium ?? null,
+                            chromium: dbItem.chromium ?? null,
+                            molybdenum: dbItem.molybdenum ?? null,
+                            servingSize: 100,
+                            servingUnit: 'g',
+                            unit: '100g'
+                        }
+                    };
+                }
 
                 // 【優先度3】Firestoreから取得したcustomFoodsから検索
                 if (!matchedItem) {
