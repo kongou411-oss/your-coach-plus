@@ -1080,14 +1080,17 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                     if (routineDoc.exists) {
                         const routineData = routineDoc.data();
+                        console.log('[Routine] settings/routine data:', routineData);
 
-                        if (routineData.active && routineData.startDate && routineData.days) {
-                            const startDate = new Date(routineData.startDate);
+                        // daysがあればルーティンを読み込む（activeがない旧データも対応）
+                        if (routineData.days && routineData.days.length > 0) {
+                            const startDate = routineData.startDate ? new Date(routineData.startDate) : new Date();
                             const today = new Date();
                             const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
                             const currentDayIndex = daysDiff % routineData.days.length;
                             const currentDayData = routineData.days[currentDayIndex];
                             const currentDayNumber = currentDayIndex + 1;
+                            console.log('[Routine] currentDayNumber:', currentDayNumber, 'currentDayData:', currentDayData);
 
                             // routinesコレクションからテンプレート紐づけ情報を取得
                             const routinesSnapshot = await firebase.firestore()
@@ -1103,23 +1106,30 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
                             if (!routinesSnapshot.empty) {
                                 const routineDetail = routinesSnapshot.docs[0].data();
+                                console.log('[Routine] routineDetail from routines collection:', routineDetail);
                                 mealTemplates = routineDetail.mealTemplates || [];
                                 workoutTemplates = routineDetail.workoutTemplates || [];
+                            } else {
+                                console.log('[Routine] No routine found in routines collection for day:', currentDayNumber);
                             }
 
-                            setCurrentRoutine({
+                            const result = {
                                 splitType: currentDayData.name,
                                 isRestDay: currentDayData.isRestDay,
                                 dayNumber: currentDayNumber,
                                 totalDays: routineData.days.length,
                                 mealTemplates: mealTemplates,
                                 workoutTemplates: workoutTemplates
-                            });
+                            };
+                            console.log('[Routine] setCurrentRoutine:', result);
+                            setCurrentRoutine(result);
                         } else {
+                            console.log('[Routine] No days in routineData');
                             setCurrentRoutine(null);
                         }
                     } else {
                         // Firestoreにルーティンがない場合
+                        console.log('[Routine] settings/routine doc does not exist');
                         setCurrentRoutine(null);
                     }
                 } catch (error) {

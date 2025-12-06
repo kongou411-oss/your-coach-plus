@@ -54,7 +54,8 @@
       "Bash(chmod:*)",
       "Bash(brew install:*)",
       "Bash(export JAVA_HOME:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:www.youtube.com)"
     ],
     "deny": [],
     "ask": []

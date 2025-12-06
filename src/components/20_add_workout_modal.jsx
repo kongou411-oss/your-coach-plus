@@ -661,10 +661,14 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                                                     setWorkoutTemplates(templates || []);
                                                     toast.success('テンプレートを更新しました');
 
+                                                    // 編集モードをリセットしてテンプレート選択画面に戻る
                                                     setEditingTemplateId(null);
                                                     setEditingTemplateObj(null);
                                                     setExercises([]);
-                                                    onClose();
+                                                    setCurrentExercise(null);
+                                                    setSets([]);
+                                                    setIsFromTemplate(false);
+                                                    setShowTemplates(true);
                                                 } catch (error) {
                                                     console.error('テンプレート更新エラー:', error);
                                                     toast.error('テンプレートの更新に失敗しました');

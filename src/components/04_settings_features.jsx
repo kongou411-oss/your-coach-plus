@@ -1070,6 +1070,8 @@ const FeaturesTab = ({
                                     .doc('routine')
                                     .set({
                                         days: days,
+                                        active: true,
+                                        startDate: new Date().toISOString(),
                                         updatedAt: firebase.firestore.Timestamp.now()
                                     }, { merge: true });
 
@@ -1320,7 +1322,7 @@ const FeaturesTab = ({
                                                                                                 onChange={(e) => {
                                                                                                     const current = routine.mealTemplates || [];
                                                                                                     const updated = [...current];
-                                                                                                    updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                    updated[index] = e.target.value;
                                                                                                     updateRoutine(routine.id, { mealTemplates: updated });
                                                                                                 }}
                                                                                                 className="flex-1 p-2 border rounded text-sm"
@@ -1379,7 +1381,7 @@ const FeaturesTab = ({
                                                                                                 onChange={(e) => {
                                                                                                     const current = routine.workoutTemplates || [];
                                                                                                     const updated = [...current];
-                                                                                                    updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                    updated[index] = e.target.value;
                                                                                                     updateRoutine(routine.id, { workoutTemplates: updated });
                                                                                                 }}
                                                                                                 className="flex-1 p-2 border rounded text-sm"
@@ -1543,7 +1545,7 @@ const FeaturesTab = ({
                                                                                                     onChange={(e) => {
                                                                                                         const current = routine.mealTemplates || [];
                                                                                                         const updated = [...current];
-                                                                                                        updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                        updated[index] = e.target.value;
                                                                                                         updateRoutine(routine.id, { mealTemplates: updated });
                                                                                                     }}
                                                                                                     className="flex-1 p-2 border rounded text-sm"
@@ -1602,7 +1604,7 @@ const FeaturesTab = ({
                                                                                                     onChange={(e) => {
                                                                                                         const current = routine.workoutTemplates || [];
                                                                                                         const updated = [...current];
-                                                                                                        updated[index] = parseInt(e.target.value) || e.target.value;
+                                                                                                        updated[index] = e.target.value;
                                                                                                         updateRoutine(routine.id, { workoutTemplates: updated });
                                                                                                     }}
                                                                                                     className="flex-1 p-2 border rounded text-sm"

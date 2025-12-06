@@ -36,6 +36,8 @@ const AddMealModal = ({
 
     // ===== 編集モード判定 =====
     const isEditMode = !!editingMeal;
+    const [isTemplateEditMode, setIsTemplateEditMode] = useState(false); // テンプレート編集モード
+    const [editingTemplateId, setEditingTemplateId] = useState(null); // 編集中のテンプレートID
 
     // ===== State管理 =====
     const [mealName, setMealName] = useState(isEditMode ? editingMeal.name : '食事');
@@ -501,6 +503,8 @@ const AddMealModal = ({
         });
         setAddedItems(items);
         setIsActionsExpanded(false); // アイテム追加後は格納
+        setIsTemplateEditMode(true); // テンプレート編集モードをON
+        setEditingTemplateId(template.id); // 編集中のテンプレートIDを保存
     };
 
     // ===== テンプレートから直接記録 =====
@@ -664,11 +668,48 @@ const AddMealModal = ({
         setAddedItems(updatedItems);
     };
 
-    // ===== 食事を記録 =====
-    const handleRecord = () => {
+    // ===== 食事を記録 / テンプレート更新 =====
+    const handleRecord = async () => {
         if (addedItems.length === 0) {
             toast('食材を追加してください');
             return;
+        }
+
+        // テンプレート編集モードの場合はテンプレートを更新して終了
+        if (isTemplateEditMode && editingTemplateId) {
+            try {
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    toast.error('ログインが必要です');
+                    return;
+                }
+
+                const template = {
+                    id: editingTemplateId,
+                    name: mealName,
+                    items: addedItems,
+                    updatedAt: new Date().toISOString()
+                };
+
+                await window.DataService.saveMealTemplate(user.uid, template);
+                toast.success('テンプレートを更新しました');
+
+                // テンプレート一覧を更新
+                const templates = await window.DataService.getMealTemplates(user.uid);
+                setMealTemplates(templates || []);
+
+                // 編集モードをリセットしてテンプレート選択画面に戻る
+                setIsTemplateEditMode(false);
+                setEditingTemplateId(null);
+                setMealName('食事');
+                setAddedItems([]);
+                setShowTemplateSelector(true);
+                return;
+            } catch (error) {
+                console.error('[AddMealModal] Failed to update template:', error);
+                toast.error('テンプレートの更新に失敗しました');
+                return;
+            }
         }
 
         // 合計カロリー・PFCを計算
@@ -1090,7 +1131,7 @@ const AddMealModal = ({
                                     onClick={handleRecord}
                                     className="flex-1 py-3 rounded-lg font-bold transition bg-[#4A9EFF] text-white hover:bg-[#3b8fef]"
                                 >
-                                    記録
+                                    {(isEditMode || isTemplateEditMode) ? '更新' : '記録'}
                                 </button>
                             </div>
                         </div>
