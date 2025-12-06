@@ -584,6 +584,36 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
         const predictedFatMass = predictedWeight - predictedLBM;
         const predictedBodyFat = (predictedFatMass / predictedWeight) * 100;
 
+        // 目標ペース設定の取得
+        const paceUnit = userProfile.paceUnit || 'kg';
+        let targetPaceValue = null;
+        let targetMonthlyChange = null;
+        let paceComparison = null;
+
+        if (userProfile.customPaceValue !== null && userProfile.customPaceValue !== undefined) {
+            targetPaceValue = userProfile.customPaceValue;
+            // kg/月に換算（体脂肪率%の場合は体重から換算）
+            if (paceUnit === 'bf_percent') {
+                // 体脂肪率1%変化 ≒ 体重の1%の脂肪量変化
+                targetMonthlyChange = (targetPaceValue / 100) * userProfile.weight;
+            } else {
+                targetMonthlyChange = targetPaceValue;
+            }
+            // 実績予測との比較
+            const paceDiff = weightChange - targetMonthlyChange;
+            if (Math.abs(paceDiff) < 0.2) {
+                paceComparison = '適切（目標通り）';
+            } else if (paceDiff > 0) {
+                paceComparison = currentPurpose === 'バルクアップ'
+                    ? `目標より速い（+${paceDiff.toFixed(1)}kg/月）`
+                    : `目標より遅い（${paceDiff.toFixed(1)}kg/月の差）`;
+            } else {
+                paceComparison = currentPurpose === 'バルクアップ'
+                    ? `目標より遅い（${paceDiff.toFixed(1)}kg/月の差）`
+                    : `目標より速い（${Math.abs(paceDiff).toFixed(1)}kg/月速い）`;
+            }
+        }
+
         // セクション1: パフォーマンスレポート
         const section1Prompt = `## 役割
 
@@ -690,6 +720,11 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
 - タンパク質充足率: ${Math.round(proteinRate * 100)}%
 - 30日間このペースを継続した場合
 
+${targetPaceValue !== null ? `**目標ペースとの比較:**
+- 目標ペース: ${targetPaceValue > 0 ? '+' : ''}${targetPaceValue}${paceUnit === 'bf_percent' ? '体脂肪率%' : 'kg'}/月（${targetMonthlyChange > 0 ? '+' : ''}${targetMonthlyChange.toFixed(1)}kg/月相当）
+- 実績予測: ${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)}kg/月
+- 評価: ${paceComparison}
+` : ''}
 **重要**: 体重変化の予測は「実際の収支（TDEE基準）」で計算されます。目的が${currentPurpose}の場合、目標カロリーは${Math.round(targetPFC.calories)}kcalですが、実際の体脂肪増減はTDEE ${Math.round(tdee)}kcalとの差で決まります。
 
 ## 出力形式（厳守）
@@ -731,7 +766,12 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
 - 体重: [現在→1か月後の変化を1文で]
 - LBM: [現在→1か月後の変化を1文で]
 - 体脂肪率: [現在→1か月後の変化を1文で]
-
+${targetPaceValue !== null ? `
+**目標ペースとの比較:**
+- 目標: ${targetPaceValue > 0 ? '+' : ''}${targetPaceValue}${paceUnit === 'bf_percent' ? '体脂肪率%' : 'kg'}/月
+- 実績予測: ${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)}kg/月
+- [目標ペースに対して実績予測が速い/遅い/適切かを1文で評価し、必要なら改善提案を追加]
+` : ''}
 **評価:**
 [目的（${currentPurpose}）に対して、この予測が適切か・改善が必要かを1-2文で評価]
 
