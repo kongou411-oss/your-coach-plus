@@ -16,6 +16,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // 管理者かどうか（UIDベース）
+    function isAdmin() {
+      return isAuthenticated() && request.auth.uid == 'jipZEwO1TPfSdm55qypEmPYwOA02';
+    }
+
     // ============================================
     // giftCodes: クライアントアクセス禁止（Cloud Functionsのみ）
     // ============================================
@@ -24,24 +29,27 @@ service cloud.firestore {
     }
 
     // ============================================
-    // b2b2cOrganizations: クライアントアクセス禁止（Cloud Functionsのみ）
+    // b2b2cOrganizations: 認証済みユーザーのみ読み取り可能
     // ============================================
     match /b2b2cOrganizations/{orgId} {
-      allow read, write: if false;
+      allow read: if isAuthenticated();
+      allow write: if false;
     }
 
     // ============================================
-    // referrals: クライアントアクセス禁止（Cloud Functionsのみ）
+    // referrals: 認証済みユーザーのみ読み取り可能
     // ============================================
     match /referrals/{referralId} {
-      allow read, write: if false;
+      allow read: if isAuthenticated();
+      allow write: if false;
     }
 
     // ============================================
-    // users: ユーザープロフィール（本人のみ）
+    // users: ユーザープロフィール（本人または管理者）
     // ============================================
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId);
 
       // サブコレクション: settings
       match /settings/{settingId} {

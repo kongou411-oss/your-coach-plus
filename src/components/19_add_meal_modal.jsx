@@ -122,6 +122,11 @@ const AddMealModal = ({
     const [hiddenStandardItems, setHiddenStandardItems] = useState([]);
     const [hiddenCategories, setHiddenCategories] = useState([]);
 
+    // 八訂取得用のstate
+    const [isFetchingHachitei, setIsFetchingHachitei] = useState(false);
+    const [hachiteiCandidates, setHachiteiCandidates] = useState([]); // 八訂候補リスト
+    const [showHachiteiCandidates, setShowHachiteiCandidates] = useState(false); // 候補選択モーダル
+
     // ===== キーボード表示時のビューポート高さ監視 =====
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -749,6 +754,254 @@ const AddMealModal = ({
         }
     };
 
+    // ===== 八訂からAPI呼び出し（リトライ付き） =====
+    const callGeminiWithRetry = async (callGemini, params, maxRetries = 5, timeoutMs = 30000) => {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('API call timeout')), timeoutMs)
+                );
+                const apiCallPromise = callGemini(params);
+                return await Promise.race([apiCallPromise, timeoutPromise]);
+            } catch (error) {
+                const is429Error = error.message && (
+                    error.message.includes('429') ||
+                    error.message.includes('Resource exhausted') ||
+                    error.message.includes('Too Many Requests')
+                );
+                const isTimeoutError = error.message && error.message.includes('timeout');
+                if ((is429Error || isTimeoutError) && attempt < maxRetries) {
+                    const waitTime = 3000 * Math.pow(2, attempt);
+                    toast(`AI処理が混雑しています。${waitTime/1000}秒後に再試行... (${attempt + 1}/${maxRetries + 1})`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    continue;
+                }
+                throw error;
+            }
+        }
+    };
+
+    // ===== 八訂から栄養素を取得 =====
+    const fetchNutritionFromHachitei = async (foodName) => {
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const callGemini = functions.httpsCallable('callGemini');
+
+            const promptText = `「${foodName}」の栄養素を日本食品標準成分表2020年版（八訂）から検索してJSON形式で出力してください。
+
+表記揺れ（ひらがな・カタカナ・漢字、調理状態、部位）を考慮して類似候補を3つ検索し、最も一致する候補を選択してください。
+
+出力形式:
+{
+  "searchTerm": "検索した食材名",
+  "candidates": [
+    {"name": "八訂の正式名称", "matchScore": 0-100, "matchReason": "理由"}
+  ],
+  "bestMatch": {
+    "name": "最も一致する候補",
+    "category": "食品分類（肉類/魚介類/卵類/豆類/穀類/野菜類/果実類/きのこ類/藻類/乳類など）",
+    "calories": 100gあたりkcal,
+    "protein": 100gあたりg,
+    "fat": 100gあたりg,
+    "carbs": 100gあたりg,
+    "sugar": 100gあたりg（糖質、八訂に記載がない場合はnull）,
+    "fiber": 100gあたりg（食物繊維総量）,
+    "solubleFiber": 100gあたりg（水溶性食物繊維、八訂に記載がない場合はnull）,
+    "insolubleFiber": 100gあたりg（不溶性食物繊維、八訂に記載がない場合はnull）,
+    "saturatedFat": 100gあたりg（飽和脂肪酸、八訂に記載がない場合はnull）,
+    "monounsaturatedFat": 100gあたりg（一価不飽和脂肪酸、八訂に記載がない場合はnull）,
+    "polyunsaturatedFat": 100gあたりg（多価不飽和脂肪酸、八訂に記載がない場合はnull）,
+    "mediumChainFat": 100gあたりg（中鎖脂肪酸、八訂に記載がない場合はnull）,
+    "vitaminA": 100gあたりμg（レチノール活性当量、八訂に記載がない場合はnull）,
+    "vitaminD": 100gあたりμg（八訂に記載がない場合はnull）,
+    "vitaminE": 100gあたりmg（α-トコフェロール、八訂に記載がない場合はnull）,
+    "vitaminK": 100gあたりμg（八訂に記載がない場合はnull）,
+    "vitaminB1": 100gあたりmg（チアミン、八訂に記載がない場合はnull）,
+    "vitaminB2": 100gあたりmg（リボフラビン、八訂に記載がない場合はnull）,
+    "niacin": 100gあたりmg（ナイアシン当量、八訂に記載がない場合はnull）,
+    "pantothenicAcid": 100gあたりmg（パントテン酸、八訂に記載がない場合はnull）,
+    "vitaminB6": 100gあたりmg（八訂に記載がない場合はnull）,
+    "biotin": 100gあたりμg（八訂に記載がない場合はnull）,
+    "folicAcid": 100gあたりμg（葉酸、八訂に記載がない場合はnull）,
+    "vitaminB12": 100gあたりμg（八訂に記載がない場合はnull）,
+    "vitaminC": 100gあたりmg（八訂に記載がない場合はnull）,
+    "calcium": 100gあたりmg（カルシウム、八訂に記載がない場合はnull）,
+    "iron": 100gあたりmg（鉄、八訂に記載がない場合はnull）,
+    "magnesium": 100gあたりmg（マグネシウム、八訂に記載がない場合はnull）,
+    "phosphorus": 100gあたりmg（リン、八訂に記載がない場合はnull）,
+    "potassium": 100gあたりmg（カリウム、八訂に記載がない場合はnull）,
+    "sodium": 100gあたりmg（ナトリウム、八訂に記載がない場合はnull）,
+    "zinc": 100gあたりmg（亜鉛、八訂に記載がない場合はnull）,
+    "copper": 100gあたりmg（銅、八訂に記載がない場合はnull）,
+    "manganese": 100gあたりmg（マンガン、八訂に記載がない場合はnull）,
+    "selenium": 100gあたりμg（セレン、八訂に記載がない場合はnull）,
+    "iodine": 100gあたりμg（ヨウ素、八訂に記載がない場合はnull）,
+    "chromium": 100gあたりμg（クロム、八訂に記載がない場合はnull）,
+    "molybdenum": 100gあたりμg（モリブデン、八訂に記載がない場合はnull）,
+    "confidence": 0-1,
+    "matchScore": 0-100
+  }
+}
+
+重要: 八訂に記載がない栄養素はnullを設定してください。0と区別するため必ずnullにしてください。
+confidence基準: 1.0=完全一致, 0.95=表記揺れ, 0.9=調理状態違い, 0.85=部位表記違い, 0.8=類似食材
+matchScore基準: 100=完全一致, 90-99=表記揺れ, 80-89=調理状態/部位違い, 70-79=類似食材
+
+JSON形式のみ出力、説明文不要`;
+
+            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const model = isDev ? 'gemini-2.5-flash' : 'gemini-2.5-pro';
+
+            const result = await callGeminiWithRetry(callGemini, {
+                model: model,
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: promptText }]
+                }],
+                generationConfig: {
+                    temperature: 0.2,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 8192,
+                }
+            }, 5, 30000);
+
+            if (!result.data || !result.data.success) {
+                throw new Error('八訂データ取得に失敗しました');
+            }
+
+            if (!result.data.response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                throw new Error('AIからの応答がありませんでした');
+            }
+
+            const candidate = result.data.response.candidates[0];
+            if (candidate.finishReason === 'MAX_TOKENS') {
+                console.warn('[fetchNutritionFromHachitei] MAX_TOKENS: レスポンスが途中で切れました');
+            }
+
+            const textContent = candidate.content.parts[0].text;
+            let jsonText = textContent.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error('栄養素の解析に失敗しました');
+
+            let jsonString = jsonMatch[0];
+            jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+            jsonString = jsonString.replace(/,{2,}/g, ',');
+            jsonString = jsonString.replace(/:\s*NaN/g, ': null').replace(/:\s*Infinity/g, ': null');
+
+            // 不完全なJSON修復
+            let bracketCount = 0, braceCount = 0;
+            for (const char of jsonString) {
+                if (char === '[') bracketCount++;
+                if (char === ']') bracketCount--;
+                if (char === '{') braceCount++;
+                if (char === '}') braceCount--;
+            }
+            jsonString = jsonString.replace(/,\s*"[^"]*"?\s*:?\s*[^,}\]]*$/, '');
+            jsonString = jsonString.replace(/,\s*\{[^}]*$/, '');
+            while (bracketCount > 0) { jsonString += ']'; bracketCount--; }
+            while (braceCount > 0) { jsonString += '}'; braceCount--; }
+
+            const response = JSON.parse(jsonString);
+
+            if (!response.bestMatch?.name) {
+                throw new Error('最適候補が見つかりませんでした');
+            }
+
+            return {
+                success: true,
+                searchTerm: response.searchTerm,
+                candidates: response.candidates || [],
+                bestMatch: response.bestMatch
+            };
+
+        } catch (error) {
+            console.error(`[fetchNutritionFromHachitei] エラー (${foodName}):`, error);
+            let errorMessage = error.message;
+            if (error.message?.includes('timeout')) {
+                errorMessage = '八訂検索がタイムアウトしました。もう一度お試しください。';
+            }
+            return { success: false, error: errorMessage };
+        }
+    };
+
+    // ===== 八訂データをcustomDataに適用 =====
+    const applyHachiteiData = (bestMatch) => {
+        setCustomData(prev => ({
+            ...prev,
+            name: bestMatch.name || prev.name,
+            servingSize: 100,
+            servingUnit: 'g',
+            calories: bestMatch.calories ?? '',
+            protein: bestMatch.protein ?? '',
+            fat: bestMatch.fat ?? '',
+            carbs: bestMatch.carbs ?? '',
+            sugar: bestMatch.sugar ?? '',
+            fiber: bestMatch.fiber ?? '',
+            solubleFiber: bestMatch.solubleFiber ?? '',
+            insolubleFiber: bestMatch.insolubleFiber ?? '',
+            saturatedFat: bestMatch.saturatedFat ?? '',
+            monounsaturatedFat: bestMatch.monounsaturatedFat ?? '',
+            polyunsaturatedFat: bestMatch.polyunsaturatedFat ?? '',
+            mediumChainFat: bestMatch.mediumChainFat ?? '',
+            vitaminA: bestMatch.vitaminA ?? '',
+            vitaminB1: bestMatch.vitaminB1 ?? '',
+            vitaminB2: bestMatch.vitaminB2 ?? '',
+            vitaminB6: bestMatch.vitaminB6 ?? '',
+            vitaminB12: bestMatch.vitaminB12 ?? '',
+            vitaminC: bestMatch.vitaminC ?? '',
+            vitaminD: bestMatch.vitaminD ?? '',
+            vitaminE: bestMatch.vitaminE ?? '',
+            vitaminK: bestMatch.vitaminK ?? '',
+            niacin: bestMatch.niacin ?? '',
+            pantothenicAcid: bestMatch.pantothenicAcid ?? '',
+            biotin: bestMatch.biotin ?? '',
+            folicAcid: bestMatch.folicAcid ?? '',
+            sodium: bestMatch.sodium ?? '',
+            potassium: bestMatch.potassium ?? '',
+            calcium: bestMatch.calcium ?? '',
+            magnesium: bestMatch.magnesium ?? '',
+            phosphorus: bestMatch.phosphorus ?? '',
+            iron: bestMatch.iron ?? '',
+            zinc: bestMatch.zinc ?? '',
+            copper: bestMatch.copper ?? '',
+            manganese: bestMatch.manganese ?? '',
+            iodine: bestMatch.iodine ?? '',
+            selenium: bestMatch.selenium ?? '',
+            chromium: bestMatch.chromium ?? '',
+            molybdenum: bestMatch.molybdenum ?? '',
+        }));
+    };
+
+    // ===== 八訂から取得ボタンハンドラ =====
+    const handleFetchFromHachitei = async () => {
+        if (!customData.name.trim()) {
+            toast.error('食材名を入力してください');
+            return;
+        }
+
+        setIsFetchingHachitei(true);
+        try {
+            const result = await fetchNutritionFromHachitei(customData.name);
+            if (result.success) {
+                // 候補があれば表示
+                if (result.candidates && result.candidates.length > 0) {
+                    setHachiteiCandidates(result.candidates);
+                }
+                // bestMatchを適用
+                applyHachiteiData(result.bestMatch);
+                toast.success(`「${result.bestMatch.name}」の栄養素を取得しました`);
+            } else {
+                toast.error(result.error || '八訂データの取得に失敗しました');
+            }
+        } catch (error) {
+            console.error('八訂取得エラー:', error);
+            toast.error('八訂データの取得に失敗しました');
+        } finally {
+            setIsFetchingHachitei(false);
+        }
+    };
+
     // ===== カスタムアイテムを保存（検索モーダルのカスタムタブ用） =====
     const handleSaveCustomFood = async () => {
         if (!customData.name.trim()) {
@@ -1264,7 +1517,16 @@ const AddMealModal = ({
                 {addedItems.length === 0 && (
                     <div className="border-t p-4 flex-shrink-0">
                         <div className="space-y-2">
-                            {/* 1行目：写真解析（Premium制限あり） */}
+                            {/* 1行目：一覧から検索 */}
+                            <button
+                                onClick={() => setShowSearchModal(true)}
+                                className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3b8fef] transition shadow-md"
+                            >
+                                <Icon name="Search" size={16} className="inline mr-1" />
+                                一覧から検索
+                            </button>
+
+                            {/* 2行目：写真解析（Premium制限あり） */}
                             {(() => {
                                 const isPremium = userProfile?.isPremium;
                                 const isTrial = usageDays < 7;
@@ -1296,22 +1558,13 @@ const AddMealModal = ({
                                 return (
                                     <button
                                         onClick={() => setShowAIFoodRecognition(true)}
-                                        className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3b8fef] transition shadow-md"
+                                        className="w-full px-4 py-3 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 transition shadow-md"
                                     >
                                         <Icon name="Camera" size={16} className="inline mr-1" />
                                         写真解析
                                     </button>
                                 );
                             })()}
-
-                            {/* 2行目：一覧から検索 */}
-                            <button
-                                onClick={() => setShowSearchModal(true)}
-                                className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
-                            >
-                                <Icon name="Search" size={16} className="inline mr-1" />
-                                一覧から検索
-                            </button>
 
                             {/* 3行目：テンプレート */}
                             <button
@@ -1720,16 +1973,43 @@ const AddMealModal = ({
                             {foodTab === 'custom' && (
                                 <div className="flex-1 overflow-y-auto p-4">
                                     <div className="space-y-4">
-                                        {/* 名前 */}
+                                        {/* 名前 + 八訂取得 */}
                                         <div>
                                             <label className="block text-sm font-medium text-gray-600 mb-1">名前</label>
-                                            <input
-                                                type="text"
-                                                value={customData.name}
-                                                onChange={(e) => setCustomData({...customData, name: e.target.value})}
-                                                placeholder="例: 自家製プロテインバー"
-                                                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                                            />
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={customData.name}
+                                                    onChange={(e) => setCustomData({...customData, name: e.target.value})}
+                                                    placeholder="例: 鶏むね肉"
+                                                    className="flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleFetchFromHachitei}
+                                                    disabled={isFetchingHachitei || !customData.name.trim()}
+                                                    className={`px-3 py-2 text-sm font-medium rounded-lg transition flex items-center gap-1 whitespace-nowrap ${
+                                                        isFetchingHachitei || !customData.name.trim()
+                                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                            : 'bg-orange-500 text-white hover:bg-orange-600'
+                                                    }`}
+                                                >
+                                                    {isFetchingHachitei ? (
+                                                        <>
+                                                            <Icon name="Loader2" size={14} className="animate-spin" />
+                                                            検索中
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Icon name="Search" size={14} />
+                                                            検索
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                食材名を入力して「検索」で八訂から栄養素を自動取得
+                                            </p>
                                         </div>
 
                                         {/* カテゴリタブ（食材・サプリ） */}
@@ -3254,17 +3534,17 @@ const AddMealModal = ({
                                             diaas: parseFloat(customData.diaas) || null,
                                             gi: parseFloat(customData.gi) || null,
 
-                                            // 脂肪酸（100g基準）
-                                            saturatedFat: parseFloat(((parseFloat(customData.saturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            monounsaturatedFat: parseFloat(((parseFloat(customData.monounsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            polyunsaturatedFat: parseFloat(((parseFloat(customData.polyunsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            mediumChainFat: parseFloat(((parseFloat(customData.mediumChainFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                            // 脂肪酸（実量にスケーリング - ビタミン・ミネラルと同じ）
+                                            saturatedFat: parseFloat(((parseFloat(customData.saturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
+                                            monounsaturatedFat: parseFloat(((parseFloat(customData.monounsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
+                                            polyunsaturatedFat: parseFloat(((parseFloat(customData.polyunsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
+                                            mediumChainFat: parseFloat(((parseFloat(customData.mediumChainFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
 
-                                            // 糖質・食物繊維（100g基準）
-                                            sugar: parseFloat(((parseFloat(customData.sugar) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            fiber: parseFloat(((parseFloat(customData.fiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            solubleFiber: parseFloat(((parseFloat(customData.solubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            insolubleFiber: parseFloat(((parseFloat(customData.insolubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            // 糖質・食物繊維（実量にスケーリング - ビタミン・ミネラルと同じ）
+                                            sugar: parseFloat(((parseFloat(customData.sugar) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
+                                            fiber: parseFloat(((parseFloat(customData.fiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
+                                            solubleFiber: parseFloat(((parseFloat(customData.solubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
+                                            insolubleFiber: parseFloat(((parseFloat(customData.insolubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
 
                                             category: customData.category,
                                             itemType: customData.itemType,

@@ -55,7 +55,8 @@
       "Bash(brew install:*)",
       "Bash(export JAVA_HOME:*)",
       "Bash(ls:*)",
-      "WebFetch(domain:www.youtube.com)"
+      "WebFetch(domain:www.youtube.com)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

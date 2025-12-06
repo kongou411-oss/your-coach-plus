@@ -801,7 +801,7 @@
                     if (org.licenses !== -1) {
                         totalLicenses += org.licenses;
                     }
-                    usedLicenses += org.usedLicenses || 0;
+                    usedLicenses += org.users ? org.users.length : 0;
                 });
 
                 // 各企業の使用者を取得
@@ -854,7 +854,7 @@
         function createOrgCard(org) {
             const usagePercent = org.licenses === -1
                 ? 0
-                : Math.round((org.usedLicenses / org.licenses) * 100);
+                : Math.round(((org.users ? org.users.length : 0) / org.licenses) * 100);
 
             const planName = getPlanName(org.planId);
             const statusClass = org.status === 'active' ? 'active' : 'cancelled';
@@ -882,7 +882,7 @@
                         <div class="org-info-item">
                             <div class="org-info-label">ライセンス使用状況</div>
                             <div class="org-info-value">
-                                ${org.usedLicenses || 0} / ${org.licenses === -1 ? '無制限' : org.licenses}
+                                ${org.users ? org.users.length : 0} / ${org.licenses === -1 ? '無制限' : org.licenses}
                                 ${org.licenses !== -1 ? `(${usagePercent}%)` : ''}
                             </div>
                             ${org.licenses !== -1 ? `

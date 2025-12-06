@@ -2589,7 +2589,7 @@ exports.getAdminAnalytics = onCall({
   const { adminPassword, period } = request.data;
 
   // 管理者PIN認証
-  if (adminPassword !== '1101') {
+  if (adminPassword !== '0910') {
     throw new HttpsError("permission-denied", "管理者権限が必要です");
   }
 

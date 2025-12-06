@@ -123,6 +123,36 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
             icon: 'Moon',
             isFree: false,
             price: 50
+        },
+        {
+            id: 'ingredients_protein_fat',
+            title: 'タンパク質・脂質の食材教科書',
+            category: '栄養学',
+            path: '/module/Nutrition/ingredients_protein_fat.html',
+            description: 'DIAAS高タンパク質、飽和・中鎖・一価・多価脂肪酸の食材TOP3',
+            icon: 'Beef',
+            isFree: false,
+            price: 50
+        },
+        {
+            id: 'ingredients_carb_fiber',
+            title: '炭水化物・食物繊維の食材教科書',
+            category: '栄養学',
+            path: '/module/Nutrition/ingredients_carb_fiber.html',
+            description: '低GI炭水化物、水溶性・不溶性食物繊維の食材TOP3',
+            icon: 'Wheat',
+            isFree: false,
+            price: 50
+        },
+        {
+            id: 'ingredients_vitamin_mineral',
+            title: 'ビタミン・ミネラルの食材教科書',
+            category: '栄養学',
+            path: '/module/Nutrition/ingredients_vitamin_mineral.html',
+            description: '13種ビタミン・13種ミネラルそれぞれの食材TOP3',
+            icon: 'Sparkles',
+            isFree: false,
+            price: 50
         }
     ];
 
@@ -563,7 +593,7 @@ ${context}
 
             {/* モジュール一覧 */}
             {viewMode === 'modules' && (
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-50" style={{paddingBottom: `${babHeight}px`}}>
                 {filteredModules.length === 0 ? (
                     <div className="text-center py-12">
                         <Icon name="Search" size={48} className="mx-auto mb-4 text-gray-300" />

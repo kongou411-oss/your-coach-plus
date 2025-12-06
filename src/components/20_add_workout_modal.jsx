@@ -702,11 +702,11 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
                         {/* 下部: ボタン群（種目未追加時のみ表示） */}
                         {!currentExercise && !showCustomExerciseForm && exercises.length === 0 && (
                             <div className="border-t pt-4 mt-auto space-y-2">
-                                {/* 一覧から検索（白背景、グレー枠） */}
+                                {/* 一覧から検索（青背景） */}
                                 <button
                                     type="button"
                                     onClick={() => setShowSearchModal(true)}
-                                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg font-semibold transition"
+                                    className="w-full px-4 py-3 bg-[#4A9EFF] text-white rounded-lg font-semibold hover:bg-[#3b8fef] transition shadow-md"
                                 >
                                     <Icon name="Search" size={16} className="inline mr-1" />
                                     一覧から検索
