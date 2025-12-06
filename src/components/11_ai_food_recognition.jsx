@@ -2267,6 +2267,8 @@ JSON形式のみ出力、説明文不要`;
             category: suggestion.category,
             amount: currentAmount,
             confidence: 1.0, // 候補から選択したので信頼度を高く設定
+            isUnknown: false, // 既知の食品に置換したのでフラグをクリア
+            isHachitei: false, // 八訂フラグもクリア（foodDatabaseから取得）
             _base: {
                 calories: dbItem.calories,
                 protein: dbItem.protein,
@@ -3511,6 +3513,43 @@ const levenshteinDistance = (str1, str2) => {
     return matrix[len1][len2];
 };
 
+// 同カテゴリの類似食品を取得する関数（置換候補用）
+const getSimilarFoodsInCategory = (foodName, category, maxCount = 5) => {
+    if (!category || !foodDatabase[category]) return [];
+
+    const candidates = [];
+    const normalizedInput = normalizeFoodName(foodName);
+
+    Object.keys(foodDatabase[category]).forEach(dbName => {
+        if (dbName === foodName) return; // 自分自身は除外
+
+        const dbItem = foodDatabase[category][dbName];
+        const normalizedDbName = normalizeFoodName(dbName);
+
+        // 類似度を計算
+        const distance = levenshteinDistance(normalizedInput, normalizedDbName);
+        const maxLength = Math.max(normalizedInput.length, normalizedDbName.length);
+        const similarity = Math.round((1 - distance / maxLength) * 100);
+
+        candidates.push({
+            name: dbName,
+            category: category,
+            similarity: similarity,
+            calories: dbItem.calories || 0,
+            protein: dbItem.protein || 0,
+            fat: dbItem.fat || 0,
+            carbs: dbItem.carbs || 0,
+            servingSize: dbItem.servingSize || 100,
+            unit: dbItem.unit || 'g'
+        });
+    });
+
+    // 類似度が高い順にソート
+    return candidates
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, maxCount);
+};
+
 // 上位3つの類似度の高い食材を見つける関数
 const findTopMatches = (inputName, topN = 3) => {
     const normalizedInput = normalizeFoodName(inputName);
@@ -3546,11 +3585,21 @@ const findTopMatches = (inputName, topN = 3) => {
 const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onReplace, onOpenCustomCreator, manualFetchHachitei, selectHachiteiCandidate, selectFoodDatabaseCandidate, isEditing }) => {
     // すべての食品に対して候補を検索（上位3つ）
     const [suggestions, setSuggestions] = useState([]);
+    // 置換候補（同カテゴリの類似食品）
+    const [replacementCandidates, setReplacementCandidates] = useState([]);
+    const [showReplacementDropdown, setShowReplacementDropdown] = useState(false);
+
     useEffect(() => {
         // isUnknown フラグに関係なく、全ての食品に候補を提示
         const matches = findTopMatches(food.name, 3);
         setSuggestions(matches);
-    }, [food.name]);
+
+        // 置換候補を取得（同カテゴリから5件）
+        if (food.category) {
+            const similar = getSimilarFoodsInCategory(food.name, food.category, 5);
+            setReplacementCandidates(similar);
+        }
+    }, [food.name, food.category]);
 
     // 栄養素を計算（_baseから100gあたりの値を取得）
     const base = food._base || {
@@ -3645,6 +3694,51 @@ const FoodItemTag = ({ food, foodIndex, onAmountChange, onRemove, onEdit, onRepl
                     </div>
                     {food.category && (
                         <p className="text-xs text-gray-600">{food.category}</p>
+                    )}
+                    {/* 置換ボタン（同カテゴリの候補がある場合のみ表示） */}
+                    {replacementCandidates.length > 0 && !food.isUnknown && (
+                        <div className="relative mt-1">
+                            <button
+                                onClick={() => setShowReplacementDropdown(!showReplacementDropdown)}
+                                className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition"
+                            >
+                                <Icon name="RefreshCw" size={12} />
+                                置換候補 ({replacementCandidates.length})
+                                <Icon name={showReplacementDropdown ? "ChevronUp" : "ChevronDown"} size={12} />
+                            </button>
+                            {/* 置換候補ドロップダウン */}
+                            {showReplacementDropdown && (
+                                <div className="absolute z-20 left-0 mt-1 w-72 bg-white border border-purple-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                                    <div className="p-2 border-b border-purple-100 bg-purple-50">
+                                        <p className="text-xs font-semibold text-purple-800">同カテゴリの類似食品</p>
+                                    </div>
+                                    <div className="p-1 space-y-1">
+                                        {replacementCandidates.map((candidate, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => {
+                                                    if (onReplace) {
+                                                        onReplace(candidate);
+                                                    }
+                                                    setShowReplacementDropdown(false);
+                                                }}
+                                                className="w-full px-2 py-2 text-left hover:bg-purple-50 rounded transition"
+                                            >
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-sm font-medium text-gray-800">{candidate.name}</span>
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-1 text-xs text-gray-600">
+                                                    <span className="text-center">{candidate.calories}kcal</span>
+                                                    <span className="text-center text-red-600">P:{candidate.protein.toFixed(1)}g</span>
+                                                    <span className="text-center text-yellow-600">F:{candidate.fat.toFixed(1)}g</span>
+                                                    <span className="text-center text-green-600">C:{candidate.carbs.toFixed(1)}g</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                     {/* 量表示 */}
                     <div className="flex items-center gap-2 mt-2">
