@@ -926,6 +926,9 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 setDailyRecord(record);
                             }
 
+                            // トラッキング: ダッシュボード表示
+                            if (window.AnalyticsService) window.AnalyticsService.trackDailyEvent(firebaseUser.uid, 'dashboard.view');
+
                             // 前日データから予測を生成
                             const prevDayRecord = await DataService.getPreviousDayRecord(firebaseUser.uid, today);
                             if (prevDayRecord) {
@@ -3782,6 +3785,8 @@ AIコーチなどの高度な機能が解放されます。
                                         // 履歴を開く
                                         setShowHistoryV10(true);
                                         setBottomBarExpanded(false);
+                                        // トラッキング
+                                        if (user?.uid && window.AnalyticsService) window.AnalyticsService.trackDailyEvent(user.uid, 'nav.history');
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showHistoryV10 ? 'bg-blue-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('history')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
@@ -3808,6 +3813,8 @@ AIコーチなどの高度な機能が解放されます。
                                         // PGBASEを開く
                                         setShowPGBaseView(true);
                                         setBottomBarExpanded(false);
+                                        // トラッキング
+                                        if (user?.uid && window.AnalyticsService) window.AnalyticsService.trackDailyEvent(user.uid, 'nav.pgbase');
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showPGBaseView ? 'bg-cyan-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
@@ -3835,6 +3842,8 @@ AIコーチなどの高度な機能が解放されます。
                                         console.error('[App] COMYタブクリック, COMYView:', window.COMYView ? 'exists' : 'undefined');
                                         setShowCOMYView(true);
                                         setBottomBarExpanded(false);
+                                        // トラッキング
+                                        if (user?.uid && window.AnalyticsService) window.AnalyticsService.trackDailyEvent(user.uid, 'nav.comy');
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showCOMYView ? 'bg-fuchsia-100' : ((Array.isArray(unlockedFeatures) && unlockedFeatures.includes('community')) ? 'hover:bg-gray-50 active:bg-gray-100' : 'opacity-50')
@@ -3857,6 +3866,8 @@ AIコーチなどの高度な機能が解放されます。
                                         // 設定を開く
                                         setShowSettings(true);
                                         setBottomBarExpanded(false);
+                                        // トラッキング
+                                        if (user?.uid && window.AnalyticsService) window.AnalyticsService.trackDailyEvent(user.uid, 'nav.settings');
                                     }}
                                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition ${
                                         showSettings ? 'bg-gray-200' : 'hover:bg-gray-50 active:bg-gray-100'

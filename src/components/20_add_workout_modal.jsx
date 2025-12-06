@@ -473,6 +473,9 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
 
                     // 1つのworkoutとして追加
                     onAdd(workoutData);
+                    // トラッキング: 運動追加
+                    const user = firebase.auth().currentUser;
+                    if (user?.uid && window.AnalyticsService) window.AnalyticsService.trackDailyEvent(user.uid, 'workout.add');
                     onClose();
                 };
 

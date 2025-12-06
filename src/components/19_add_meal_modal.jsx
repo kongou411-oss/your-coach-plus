@@ -738,8 +738,14 @@ const AddMealModal = ({
         // 編集モードの場合はonUpdate、新規追加の場合はonAddを呼ぶ
         if (isEditMode && onUpdate) {
             onUpdate(meal);
+            // トラッキング: 食事編集
+            const user = firebase.auth().currentUser;
+            if (user?.uid && window.AnalyticsService) window.AnalyticsService.trackDailyEvent(user.uid, 'meal.edit');
         } else if (onAdd) {
             onAdd(meal);
+            // トラッキング: 食事追加
+            const user = firebase.auth().currentUser;
+            if (user?.uid && window.AnalyticsService) window.AnalyticsService.trackDailyEvent(user.uid, 'meal.add');
         }
     };
 

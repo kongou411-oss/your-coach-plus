@@ -897,6 +897,8 @@ ${section2Prompt}
             if (response.success) {
                 fullAnalysis = response.text;
                 setAiAnalysis(fullAnalysis);
+                // トラッキング: AI分析実行
+                if (window.AnalyticsService) window.AnalyticsService.trackDailyEvent(userId, 'analysis.run');
 
                 // Cloud Functionから返された更新済みクレジット情報で表示を更新
                 if (response.remainingCredits !== undefined) {

@@ -3089,6 +3089,208 @@ const GiftCodeService = {
     }
 };
 
+// ===== AnalyticsService: ユーザー行動トラッキング =====
+const AnalyticsService = {
+    // 全機能リスト（使用/未使用の判定に使用）
+    ALL_FEATURES: {
+        // ダッシュボード
+        'dashboard.view': { name: 'ダッシュボード表示', category: 'dashboard', priority: 'high' },
+        'dashboard.date_change': { name: '日付変更', category: 'dashboard', priority: 'medium' },
+        'dashboard.score_tap': { name: 'スコアタップ', category: 'dashboard', priority: 'low' },
+        // 食事記録
+        'meal.add': { name: '食事追加', category: 'meal', priority: 'high' },
+        'meal.edit': { name: '食事編集', category: 'meal', priority: 'medium' },
+        'meal.delete': { name: '食事削除', category: 'meal', priority: 'low' },
+        'meal.search': { name: '食品検索', category: 'meal', priority: 'high' },
+        'meal.ai_recognition': { name: 'AI食事認識', category: 'meal', priority: 'high' },
+        'meal.template_use': { name: '食事テンプレート使用', category: 'meal', priority: 'medium' },
+        'meal.template_save': { name: '食事テンプレート保存', category: 'meal', priority: 'medium' },
+        'meal.custom_food_add': { name: 'カスタム食材追加', category: 'meal', priority: 'low' },
+        'meal.supplement_add': { name: 'サプリメント追加', category: 'meal', priority: 'medium' },
+        // 運動記録
+        'workout.add': { name: '運動追加', category: 'workout', priority: 'high' },
+        'workout.edit': { name: '運動編集', category: 'workout', priority: 'medium' },
+        'workout.delete': { name: '運動削除', category: 'workout', priority: 'low' },
+        'workout.search': { name: '種目検索', category: 'workout', priority: 'high' },
+        'workout.template_use': { name: '運動テンプレート使用', category: 'workout', priority: 'medium' },
+        'workout.template_save': { name: '運動テンプレート保存', category: 'workout', priority: 'medium' },
+        'workout.rm_calculator': { name: 'RM計算機', category: 'workout', priority: 'medium' },
+        'workout.set_add': { name: 'セット追加', category: 'workout', priority: 'high' },
+        // AI分析
+        'analysis.run': { name: 'AI分析実行', category: 'analysis', priority: 'high' },
+        'analysis.chat': { name: 'AIチャット送信', category: 'analysis', priority: 'high' },
+        'analysis.report_view': { name: 'レポート閲覧', category: 'analysis', priority: 'medium' },
+        // PGBASE
+        'pgbase.view': { name: 'PGBASE表示', category: 'pgbase', priority: 'medium' },
+        'pgbase.chat': { name: 'PGBASEチャット', category: 'pgbase', priority: 'medium' },
+        // COMY
+        'comy.view': { name: 'COMY表示', category: 'comy', priority: 'medium' },
+        'comy.post_create': { name: '投稿作成', category: 'comy', priority: 'high' },
+        'comy.like': { name: 'いいね', category: 'comy', priority: 'low' },
+        'comy.comment': { name: 'コメント', category: 'comy', priority: 'low' },
+        // 履歴
+        'history.view': { name: '履歴表示', category: 'history', priority: 'high' },
+        // 設定
+        'settings.view': { name: '設定表示', category: 'settings', priority: 'medium' },
+        'settings.profile_edit': { name: 'プロフィール編集', category: 'settings', priority: 'medium' },
+        'settings.goal_change': { name: '目標変更', category: 'settings', priority: 'high' },
+        'settings.notification_change': { name: '通知設定変更', category: 'settings', priority: 'medium' },
+        // ナビゲーション
+        'nav.home': { name: 'ホームタブ', category: 'navigation', priority: 'high' },
+        'nav.history': { name: '履歴タブ', category: 'navigation', priority: 'high' },
+        'nav.pgbase': { name: 'PGBASEタブ', category: 'navigation', priority: 'medium' },
+        'nav.comy': { name: 'COMYタブ', category: 'navigation', priority: 'medium' },
+        'nav.settings': { name: '設定タブ', category: 'navigation', priority: 'medium' },
+        // コンディション
+        'condition.sleep_record': { name: '睡眠記録', category: 'condition', priority: 'medium' },
+        'condition.weight_record': { name: '体重記録', category: 'condition', priority: 'high' },
+        'condition.body_fat_record': { name: '体脂肪率記録', category: 'condition', priority: 'medium' },
+        // その他
+        'other.feedback': { name: 'フィードバック送信', category: 'other', priority: 'low' },
+        'other.help': { name: 'ヘルプ閲覧', category: 'other', priority: 'low' },
+        'other.referral_share': { name: '紹介コード共有', category: 'other', priority: 'low' },
+    },
+
+    FEATURE_CATEGORIES: {
+        dashboard: { name: 'ダッシュボード', color: 'blue' },
+        meal: { name: '食事記録', color: 'green' },
+        workout: { name: '運動記録', color: 'orange' },
+        analysis: { name: 'AI分析', color: 'purple' },
+        pgbase: { name: 'PGBASE', color: 'pink' },
+        comy: { name: 'COMY', color: 'teal' },
+        history: { name: '履歴', color: 'gray' },
+        settings: { name: '設定', color: 'slate' },
+        navigation: { name: 'ナビゲーション', color: 'indigo' },
+        condition: { name: 'コンディション', color: 'red' },
+        other: { name: 'その他', color: 'zinc' },
+    },
+
+    // イベントをトラッキング（Firestoreに保存）
+    trackEvent: async (userId, eventName, metadata = {}) => {
+        if (!userId || typeof db === 'undefined') return;
+
+        try {
+            const event = {
+                eventName,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                date: new Date().toISOString().split('T')[0], // 日別集計用
+                metadata,
+            };
+
+            await db.collection('analytics').doc(userId).collection('events').add(event);
+            console.log('[Analytics] Tracked:', eventName);
+        } catch (error) {
+            console.error('[Analytics] Track error:', error);
+        }
+    },
+
+    // 日別イベント集計（重複防止のため、1日1回のみカウント）
+    trackDailyEvent: async (userId, eventName, metadata = {}) => {
+        if (!userId || typeof db === 'undefined') return;
+
+        const today = new Date().toISOString().split('T')[0];
+        const docId = `${today}_${eventName}`;
+
+        try {
+            const docRef = db.collection('analytics').doc(userId).collection('dailyEvents').doc(docId);
+            const doc = await docRef.get();
+
+            if (!doc.exists) {
+                await docRef.set({
+                    eventName,
+                    date: today,
+                    count: 1,
+                    firstAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    metadata,
+                });
+            } else {
+                await docRef.update({
+                    count: firebase.firestore.FieldValue.increment(1),
+                    lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+            }
+            console.log('[Analytics] Daily tracked:', eventName);
+        } catch (error) {
+            console.error('[Analytics] Daily track error:', error);
+        }
+    },
+
+    // ユーザーの使用機能サマリーを取得
+    getUserFeatureSummary: async (userId) => {
+        if (!userId || typeof db === 'undefined') return {};
+
+        try {
+            const snapshot = await db
+                .collection('analytics')
+                .doc(userId)
+                .collection('dailyEvents')
+                .get();
+
+            const summary = {};
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const eventName = data.eventName;
+                if (!summary[eventName]) {
+                    summary[eventName] = { count: 0, lastUsed: null, days: 0 };
+                }
+                summary[eventName].count += data.count || 1;
+                summary[eventName].days++;
+                if (data.lastAt) {
+                    const lastAt = data.lastAt.toDate ? data.lastAt.toDate().toISOString() : data.lastAt;
+                    if (!summary[eventName].lastUsed || lastAt > summary[eventName].lastUsed) {
+                        summary[eventName].lastUsed = lastAt;
+                    }
+                }
+            });
+
+            return summary;
+        } catch (error) {
+            console.error('[Analytics] Get summary error:', error);
+            return {};
+        }
+    },
+
+    // 使用されていない機能リストを取得
+    getUnusedFeatures: (usedFeatures) => {
+        const allFeatureKeys = Object.keys(AnalyticsService.ALL_FEATURES);
+        const usedKeys = Object.keys(usedFeatures);
+        return allFeatureKeys.filter(key => !usedKeys.includes(key));
+    },
+
+    // 機能カテゴリ別の使用率を計算
+    getCategoryUsage: (usedFeatures) => {
+        const categoryStats = {};
+
+        Object.keys(AnalyticsService.FEATURE_CATEGORIES).forEach(cat => {
+            categoryStats[cat] = { total: 0, used: 0, features: [] };
+        });
+
+        Object.entries(AnalyticsService.ALL_FEATURES).forEach(([key, feature]) => {
+            const cat = feature.category;
+            if (categoryStats[cat]) {
+                categoryStats[cat].total++;
+                if (usedFeatures[key]) {
+                    categoryStats[cat].used++;
+                }
+                categoryStats[cat].features.push({
+                    key,
+                    ...feature,
+                    usageCount: usedFeatures[key]?.count || 0,
+                    usageDays: usedFeatures[key]?.days || 0,
+                });
+            }
+        });
+
+        Object.keys(categoryStats).forEach(cat => {
+            const stats = categoryStats[cat];
+            stats.usageRate = stats.total > 0 ? Math.round((stats.used / stats.total) * 100) : 0;
+        });
+
+        return categoryStats;
+    },
+};
+
 // ===== グローバルに公開 =====
 window.DataService = DataService;
 window.GeminiAPI = GeminiAPI;
@@ -3098,3 +3300,4 @@ window.PremiumService = PremiumService;
 window.MFAService = MFAService;
 window.TextbookPurchaseService = TextbookPurchaseService;
 window.GiftCodeService = GiftCodeService;
+window.AnalyticsService = AnalyticsService;

@@ -295,6 +295,9 @@
             <button id="tab-comy" onclick="switchTab('comy')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 💬 COMY投稿
             </button>
+            <button id="tab-analytics" onclick="switchTab('analytics')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                📊 使用状況分析
+            </button>
         </div>
 
         <!-- ギフトコード管理セクション -->
@@ -578,6 +581,123 @@
                 </div>
             </div>
         </div><!-- COMYセクション終了 -->
+
+        <!-- 使用状況分析セクション -->
+        <div id="analytics-section" style="display:none;">
+            <!-- 期間フィルター -->
+            <div class="section mb-6">
+                <div class="section-content">
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <label class="flex items-center gap-2">
+                            <span class="text-sm font-medium">期間:</span>
+                            <select id="analytics-period" onchange="loadAnalytics()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="7">過去7日</option>
+                                <option value="30" selected>過去30日</option>
+                                <option value="90">過去90日</option>
+                                <option value="365">過去1年</option>
+                            </select>
+                        </label>
+                        <button onclick="loadAnalytics()" class="btn-secondary">🔄 更新</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 統計サマリー -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>アクティブユーザー</h3>
+                    <div class="value" id="analytics-users">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>総イベント数</h3>
+                    <div class="value" id="analytics-events">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>使用機能数</h3>
+                    <div class="value" id="analytics-features-used">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>未使用機能数</h3>
+                    <div class="value text-red-600" id="analytics-features-unused">-</div>
+                </div>
+            </div>
+
+            <!-- カテゴリ別使用率 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>📊 カテゴリ別使用率</h2>
+                </div>
+                <div class="section-content">
+                    <div id="analytics-categories" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+                </div>
+            </div>
+
+            <!-- 機能ランキング -->
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <!-- 人気機能TOP10 -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>🔥 人気機能TOP10</h2>
+                    </div>
+                    <div class="section-content">
+                        <div id="analytics-top-features" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- 未使用機能 -->
+                <div class="section">
+                    <div class="section-header">
+                        <h2>⚠️ 未使用機能</h2>
+                    </div>
+                    <div class="section-content">
+                        <div id="analytics-unused-features" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日別推移 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>📈 日別アクティビティ</h2>
+                </div>
+                <div class="section-content">
+                    <div id="analytics-daily" class="overflow-x-auto">
+                        <div class="flex gap-1 min-w-max" id="analytics-daily-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクティブユーザー一覧 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>👥 アクティブユーザーランキング</h2>
+                    <span id="analytics-user-count" class="text-sm text-gray-500"></span>
+                </div>
+                <div class="section-content">
+                    <div id="analytics-loading" class="loading">データを読み込んでいます...</div>
+                    <div id="analytics-users-list" style="display:none;">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">順位</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">ユーザー</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">イベント数</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">使用機能数</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">詳細</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analytics-users-tbody" class="divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="analytics-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">📊</div>
+                        <p>まだ分析データがありません</p>
+                    </div>
+                </div>
+            </div>
+        </div><!-- 使用状況分析セクション終了 -->
     </div>
 
     <!-- Firebase SDK -->
@@ -626,7 +746,7 @@
 
         // タブ切り替え
         function switchTab(tab) {
-            const sections = ['giftcode', 'b2b2c', 'users', 'referrals', 'comy'];
+            const sections = ['giftcode', 'b2b2c', 'users', 'referrals', 'comy', 'analytics'];
             const activeClass = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
             const inactiveClass = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
 
@@ -641,6 +761,7 @@
             if (tab === 'users') loadUsers();
             if (tab === 'referrals') loadReferrals();
             if (tab === 'comy') loadCommunityPosts();
+            if (tab === 'analytics') loadAnalytics();
         }
 
         // ログアウト
@@ -1568,6 +1689,220 @@
                 console.error('Reject post error:', error);
                 alert('❌ 却下に失敗しました: ' + (error.message || error));
             }
+        }
+
+        // ===== 使用状況分析機能 =====
+        let analyticsData = null;
+
+        async function loadAnalytics() {
+            const loading = document.getElementById('analytics-loading');
+            const usersList = document.getElementById('analytics-users-list');
+            const empty = document.getElementById('analytics-empty');
+            const period = parseInt(document.getElementById('analytics-period').value);
+
+            loading.style.display = 'block';
+            usersList.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                const getAdminAnalytics = functions.httpsCallable('getAdminAnalytics');
+                const result = await getAdminAnalytics({ adminPassword, period });
+
+                if (!result.data.success) {
+                    throw new Error('データ取得に失敗しました');
+                }
+
+                analyticsData = result.data;
+                console.log('[Analytics] Data loaded:', analyticsData);
+
+                // 統計サマリー更新
+                document.getElementById('analytics-users').textContent = analyticsData.totalUsers;
+
+                const totalEvents = Object.values(analyticsData.featureUsage).reduce((sum, f) => sum + f.count, 0);
+                document.getElementById('analytics-events').textContent = totalEvents.toLocaleString();
+
+                document.getElementById('analytics-features-used').textContent = Object.keys(analyticsData.featureUsage).length;
+                document.getElementById('analytics-features-unused').textContent = analyticsData.unusedFeatures.length;
+
+                // カテゴリ別使用率
+                renderCategoryStats(analyticsData.categoryStats);
+
+                // 人気機能TOP10
+                renderTopFeatures(analyticsData.featureUsage, analyticsData.allFeatures);
+
+                // 未使用機能
+                renderUnusedFeatures(analyticsData.unusedFeatures);
+
+                // 日別推移
+                renderDailyChart(analyticsData.dailyUsage);
+
+                // ユーザーランキング
+                renderAnalyticsUsers(analyticsData.userStats);
+
+                loading.style.display = 'none';
+
+                if (analyticsData.totalUsers === 0) {
+                    empty.style.display = 'block';
+                } else {
+                    usersList.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Load analytics error:', error);
+                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
+            }
+        }
+
+        function renderCategoryStats(categoryStats) {
+            const container = document.getElementById('analytics-categories');
+            const categoryNames = {
+                dashboard: { name: 'ダッシュボード', icon: '🏠', color: 'blue' },
+                meal: { name: '食事記録', icon: '🍽️', color: 'green' },
+                workout: { name: '運動記録', icon: '💪', color: 'orange' },
+                analysis: { name: 'AI分析', icon: '🧠', color: 'purple' },
+                pgbase: { name: 'PGBASE', icon: '📚', color: 'pink' },
+                comy: { name: 'COMY', icon: '👥', color: 'teal' },
+                history: { name: '履歴', icon: '📅', color: 'gray' },
+                settings: { name: '設定', icon: '⚙️', color: 'slate' },
+                navigation: { name: 'ナビ', icon: '🧭', color: 'indigo' },
+                condition: { name: 'コンディ', icon: '❤️', color: 'red' },
+            };
+
+            container.innerHTML = Object.entries(categoryStats).map(([key, stats]) => {
+                const cat = categoryNames[key] || { name: key, icon: '📊', color: 'gray' };
+                const barColor = stats.usageRate >= 80 ? 'bg-green-500' :
+                                stats.usageRate >= 50 ? 'bg-yellow-500' :
+                                stats.usageRate >= 20 ? 'bg-orange-500' : 'bg-red-500';
+                return `
+                    <div class="bg-white border rounded-lg p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xl">${cat.icon}</span>
+                            <span class="font-medium text-sm">${cat.name}</span>
+                        </div>
+                        <div class="text-2xl font-bold text-${cat.color}-600">${stats.usageRate}%</div>
+                        <div class="text-xs text-gray-500">${stats.used}/${stats.total}機能</div>
+                        <div class="w-full h-2 bg-gray-200 rounded mt-2">
+                            <div class="${barColor} h-2 rounded" style="width: ${stats.usageRate}%"></div>
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">${stats.totalCount.toLocaleString()}回使用</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTopFeatures(featureUsage, allFeatures) {
+            const container = document.getElementById('analytics-top-features');
+
+            const sorted = Object.entries(featureUsage)
+                .sort((a, b) => b[1].count - a[1].count)
+                .slice(0, 10);
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center">データなし</p>';
+                return;
+            }
+
+            const maxCount = sorted[0][1].count;
+
+            container.innerHTML = sorted.map(([key, data], idx) => {
+                const feature = allFeatures[key] || { name: key };
+                const barWidth = Math.round((data.count / maxCount) * 100);
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                return `
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 text-center font-bold">${medal}</span>
+                        <div class="flex-1">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium">${feature.name}</span>
+                                <span class="text-gray-500">${data.count.toLocaleString()}回 (${data.userCount}人)</span>
+                            </div>
+                            <div class="w-full h-2 bg-gray-200 rounded">
+                                <div class="bg-purple-500 h-2 rounded" style="width: ${barWidth}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderUnusedFeatures(unusedFeatures) {
+            const container = document.getElementById('analytics-unused-features');
+
+            if (unusedFeatures.length === 0) {
+                container.innerHTML = '<p class="text-green-600 text-center font-medium">🎉 全機能が使用されています！</p>';
+                return;
+            }
+
+            container.innerHTML = unusedFeatures.map(feature => `
+                <div class="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded">
+                    <span class="text-red-500">⚠️</span>
+                    <span class="text-sm">${feature.name}</span>
+                    <span class="text-xs text-gray-400">(${feature.category})</span>
+                </div>
+            `).join('');
+        }
+
+        function renderDailyChart(dailyUsage) {
+            const container = document.getElementById('analytics-daily-chart');
+
+            // 日付でソート
+            const sorted = Object.entries(dailyUsage).sort((a, b) => a[0].localeCompare(b[0]));
+
+            if (sorted.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">データなし</p>';
+                return;
+            }
+
+            const maxCount = Math.max(...sorted.map(([, d]) => d.count));
+
+            container.innerHTML = sorted.map(([date, data]) => {
+                const barHeight = Math.max(10, Math.round((data.count / maxCount) * 100));
+                const shortDate = date.slice(5); // MM-DD形式
+                return `
+                    <div class="flex flex-col items-center" style="min-width: 30px;">
+                        <div class="text-xs text-gray-500 mb-1">${data.count}</div>
+                        <div class="w-5 bg-purple-500 rounded-t" style="height: ${barHeight}px;"></div>
+                        <div class="text-xs text-gray-400 mt-1 transform -rotate-45 origin-top-left" style="white-space: nowrap;">${shortDate}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderAnalyticsUsers(userStats) {
+            const container = document.getElementById('analytics-users-tbody');
+            document.getElementById('analytics-user-count').textContent = `${userStats.length}人`;
+
+            container.innerHTML = userStats.map((user, idx) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-bold text-purple-600">${idx + 1}</td>
+                    <td class="px-4 py-3">
+                        <div class="font-medium text-gray-900">${user.displayName}</div>
+                        <div class="text-xs text-gray-500">${user.email}</div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">${user.totalEvents.toLocaleString()}</td>
+                    <td class="px-4 py-3 text-gray-600">${user.featureCount}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="showUserAnalyticsDetail('${user.userId}')" class="text-purple-600 hover:underline text-sm">
+                            詳細
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showUserAnalyticsDetail(userId) {
+            const user = analyticsData.userStats.find(u => u.userId === userId);
+            if (!user) return;
+
+            const featureList = Object.entries(user.features)
+                .sort((a, b) => b[1] - a[1])
+                .map(([key, count]) => {
+                    const feature = analyticsData.allFeatures[key] || { name: key };
+                    return `${feature.name}: ${count}回`;
+                })
+                .join('\n');
+
+            alert(`ユーザー: ${user.displayName}\nメール: ${user.email}\n\n【使用機能】\n${featureList}`);
         }
 
     </script>

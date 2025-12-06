@@ -2580,3 +2580,195 @@ exports.fixGiftCodeUsers = onCall({
     throw new HttpsError("internal", "修正に失敗しました", error.message);
   }
 });
+
+// ===== 管理者用: ユーザー行動分析データ取得 =====
+exports.getAdminAnalytics = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  const { adminPassword, period } = request.data;
+
+  // 管理者PIN認証
+  if (adminPassword !== '1101') {
+    throw new HttpsError("permission-denied", "管理者権限が必要です");
+  }
+
+  try {
+    const db = admin.firestore();
+
+    // 期間フィルター（デフォルト: 過去30日）
+    const daysAgo = period || 30;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysAgo);
+    const startDateStr = startDate.toISOString().split('T')[0];
+
+    // 全ユーザーのアナリティクスを取得
+    const analyticsSnapshot = await db.collection('analytics').get();
+
+    const userStats = [];
+    const featureUsage = {};  // 全機能の使用回数
+    const dailyUsage = {};    // 日別使用回数
+
+    for (const userDoc of analyticsSnapshot.docs) {
+      const userId = userDoc.id;
+
+      // ユーザー情報を取得
+      const userDocRef = await db.collection('users').doc(userId).get();
+      const userData = userDocRef.exists ? userDocRef.data() : {};
+
+      // 日別イベントを取得
+      const eventsSnapshot = await db
+        .collection('analytics')
+        .doc(userId)
+        .collection('dailyEvents')
+        .get();
+
+      const userFeatures = {};
+      let totalEvents = 0;
+
+      eventsSnapshot.forEach(doc => {
+        const data = doc.data();
+        const eventName = data.eventName;
+        const count = data.count || 1;
+        const date = data.date;
+
+        // 期間フィルター
+        if (date && date >= startDateStr) {
+          // ユーザー別集計
+          if (!userFeatures[eventName]) {
+            userFeatures[eventName] = 0;
+          }
+          userFeatures[eventName] += count;
+          totalEvents += count;
+
+          // 全体集計
+          if (!featureUsage[eventName]) {
+            featureUsage[eventName] = { count: 0, users: new Set() };
+          }
+          featureUsage[eventName].count += count;
+          featureUsage[eventName].users.add(userId);
+
+          // 日別集計
+          if (!dailyUsage[date]) {
+            dailyUsage[date] = { count: 0, users: new Set() };
+          }
+          dailyUsage[date].count += count;
+          dailyUsage[date].users.add(userId);
+        }
+      });
+
+      if (totalEvents > 0) {
+        userStats.push({
+          userId,
+          email: userData.email || '不明',
+          displayName: userData.displayName || userData.nickname || '未設定',
+          totalEvents,
+          featureCount: Object.keys(userFeatures).length,
+          features: userFeatures,
+        });
+      }
+    }
+
+    // Setをカウントに変換
+    const featureUsageResult = {};
+    Object.entries(featureUsage).forEach(([key, val]) => {
+      featureUsageResult[key] = {
+        count: val.count,
+        userCount: val.users.size,
+      };
+    });
+
+    const dailyUsageResult = {};
+    Object.entries(dailyUsage).forEach(([key, val]) => {
+      dailyUsageResult[key] = {
+        count: val.count,
+        userCount: val.users.size,
+      };
+    });
+
+    // ユーザーをイベント数でソート
+    userStats.sort((a, b) => b.totalEvents - a.totalEvents);
+
+    // 全機能リスト（未使用判定用）
+    const ALL_FEATURES = {
+      'dashboard.view': { name: 'ダッシュボード表示', category: 'dashboard' },
+      'dashboard.date_change': { name: '日付変更', category: 'dashboard' },
+      'meal.add': { name: '食事追加', category: 'meal' },
+      'meal.edit': { name: '食事編集', category: 'meal' },
+      'meal.delete': { name: '食事削除', category: 'meal' },
+      'meal.search': { name: '食品検索', category: 'meal' },
+      'meal.ai_recognition': { name: 'AI食事認識', category: 'meal' },
+      'meal.template_use': { name: '食事テンプレート使用', category: 'meal' },
+      'meal.template_save': { name: '食事テンプレート保存', category: 'meal' },
+      'meal.custom_food_add': { name: 'カスタム食材追加', category: 'meal' },
+      'meal.supplement_add': { name: 'サプリメント追加', category: 'meal' },
+      'workout.add': { name: '運動追加', category: 'workout' },
+      'workout.edit': { name: '運動編集', category: 'workout' },
+      'workout.delete': { name: '運動削除', category: 'workout' },
+      'workout.search': { name: '種目検索', category: 'workout' },
+      'workout.template_use': { name: '運動テンプレート使用', category: 'workout' },
+      'workout.template_save': { name: '運動テンプレート保存', category: 'workout' },
+      'workout.rm_calculator': { name: 'RM計算機', category: 'workout' },
+      'workout.set_add': { name: 'セット追加', category: 'workout' },
+      'analysis.run': { name: 'AI分析実行', category: 'analysis' },
+      'analysis.chat': { name: 'AIチャット送信', category: 'analysis' },
+      'analysis.report_view': { name: 'レポート閲覧', category: 'analysis' },
+      'pgbase.view': { name: 'PGBASE表示', category: 'pgbase' },
+      'pgbase.chat': { name: 'PGBASEチャット', category: 'pgbase' },
+      'comy.view': { name: 'COMY表示', category: 'comy' },
+      'comy.post_create': { name: '投稿作成', category: 'comy' },
+      'comy.like': { name: 'いいね', category: 'comy' },
+      'history.view': { name: '履歴表示', category: 'history' },
+      'settings.view': { name: '設定表示', category: 'settings' },
+      'settings.profile_edit': { name: 'プロフィール編集', category: 'settings' },
+      'settings.goal_change': { name: '目標変更', category: 'settings' },
+      'nav.home': { name: 'ホームタブ', category: 'navigation' },
+      'nav.history': { name: '履歴タブ', category: 'navigation' },
+      'nav.pgbase': { name: 'PGBASEタブ', category: 'navigation' },
+      'nav.comy': { name: 'COMYタブ', category: 'navigation' },
+      'nav.settings': { name: '設定タブ', category: 'navigation' },
+      'condition.weight_record': { name: '体重記録', category: 'condition' },
+      'condition.sleep_record': { name: '睡眠記録', category: 'condition' },
+    };
+
+    // 未使用機能リスト
+    const unusedFeatures = Object.entries(ALL_FEATURES)
+      .filter(([key]) => !featureUsageResult[key])
+      .map(([key, val]) => ({ key, ...val }));
+
+    // カテゴリ別集計
+    const categoryStats = {};
+    Object.entries(ALL_FEATURES).forEach(([key, feature]) => {
+      const cat = feature.category;
+      if (!categoryStats[cat]) {
+        categoryStats[cat] = { total: 0, used: 0, totalCount: 0 };
+      }
+      categoryStats[cat].total++;
+      if (featureUsageResult[key]) {
+        categoryStats[cat].used++;
+        categoryStats[cat].totalCount += featureUsageResult[key].count;
+      }
+    });
+
+    // 使用率計算
+    Object.keys(categoryStats).forEach(cat => {
+      const stats = categoryStats[cat];
+      stats.usageRate = stats.total > 0 ? Math.round((stats.used / stats.total) * 100) : 0;
+    });
+
+    return {
+      success: true,
+      period: daysAgo,
+      totalUsers: userStats.length,
+      userStats: userStats.slice(0, 100), // 上位100ユーザー
+      featureUsage: featureUsageResult,
+      dailyUsage: dailyUsageResult,
+      unusedFeatures,
+      categoryStats,
+      allFeatures: ALL_FEATURES,
+    };
+  } catch (error) {
+    console.error('[AdminAnalytics] Error:', error);
+    throw new HttpsError("internal", "データ取得に失敗しました", error.message);
+  }
+});
