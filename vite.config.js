@@ -14,6 +14,10 @@ export default defineConfig({
         drop_console: true,  // console.log, console.warn, console.debug を削除
         drop_debugger: true, // debugger文を削除
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'] // これらの関数呼び出しを削除
+      },
+      mangle: {
+        // exif-jsはminificationで壊れるため、変数名変換を緩和
+        reserved: ['EXIF', 'getData', 'getTag', 'readFromBinaryFile']
       }
     },
     chunkSizeWarningLimit: 1000,

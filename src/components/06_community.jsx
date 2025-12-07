@@ -1666,49 +1666,57 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                 'OPPO Camera', 'Vivo Camera', 'Sony Camera', 'LG Camera'
             ];
 
-            EXIF.getData(file, function() {
-                const software = EXIF.getTag(this, 'Software') || '';
-                const make = EXIF.getTag(this, 'Make') || '';
-                const model = EXIF.getTag(this, 'Model') || '';
-                const imageDescription = EXIF.getTag(this, 'ImageDescription') || '';
+            try {
+                EXIF.getData(file, function() {
+                    try {
+                        const software = EXIF.getTag(this, 'Software') || '';
+                        const make = EXIF.getTag(this, 'Make') || '';
+                        const model = EXIF.getTag(this, 'Model') || '';
+                        const imageDescription = EXIF.getTag(this, 'ImageDescription') || '';
 
-                console.log('[EXIF] Software:', software, 'Make:', make, 'Model:', model);
+                        // 加工アプリで編集されたか判定
+                        let isEdited = false;
+                        let editedApp = null;
 
-                // 加工アプリで編集されたか判定
-                let isEdited = false;
-                let editedApp = null;
+                        const allMetadata = (software + ' ' + imageDescription).toLowerCase();
 
-                const allMetadata = (software + ' ' + imageDescription).toLowerCase();
+                        for (const app of editingApps) {
+                            if (allMetadata.includes(app.toLowerCase())) {
+                                isEdited = true;
+                                editedApp = app;
+                                break;
+                            }
+                        }
 
-                for (const app of editingApps) {
-                    if (allMetadata.includes(app.toLowerCase())) {
-                        isEdited = true;
-                        editedApp = app;
-                        break;
+                        // ノーマルカメラアプリかチェック
+                        let isNormalCamera = false;
+                        for (const app of normalCameraApps) {
+                            if (allMetadata.includes(app.toLowerCase())) {
+                                isNormalCamera = true;
+                                break;
+                            }
+                        }
+
+                        // MakeやModelがあれば、それはカメラで撮影された可能性が高い
+                        const hasDeviceInfo = make || model;
+
+                        resolve({
+                            software: software,
+                            make: make,
+                            model: model,
+                            isEdited: isEdited,
+                            editedApp: editedApp,
+                            isNormalCamera: isNormalCamera || (hasDeviceInfo && !isEdited)
+                        });
+                    } catch (innerErr) {
+                        // EXIFパース中のエラーはスキップしてデフォルト値を返す
+                        resolve({ software: '', make: '', model: '', isEdited: false, editedApp: null, isNormalCamera: true });
                     }
-                }
-
-                // ノーマルカメラアプリかチェック
-                let isNormalCamera = false;
-                for (const app of normalCameraApps) {
-                    if (allMetadata.includes(app.toLowerCase())) {
-                        isNormalCamera = true;
-                        break;
-                    }
-                }
-
-                // MakeやModelがあれば、それはカメラで撮影された可能性が高い
-                const hasDeviceInfo = make || model;
-
-                resolve({
-                    software: software,
-                    make: make,
-                    model: model,
-                    isEdited: isEdited,
-                    editedApp: editedApp,
-                    isNormalCamera: isNormalCamera || (hasDeviceInfo && !isEdited)
                 });
-            });
+            } catch (err) {
+                // EXIF.getDataでのエラーはスキップしてデフォルト値を返す
+                resolve({ software: '', make: '', model: '', isEdited: false, editedApp: null, isNormalCamera: true });
+            }
         });
     };
 
