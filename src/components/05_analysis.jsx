@@ -1858,11 +1858,11 @@ ${conversationContext}
                     className="fixed left-0 right-0 border-t bg-white shadow-lg z-[9990]"
                     style={{ bottom: `${babHeight}px` }}
                 >
-                    <div className="flex items-center gap-2 p-3">
+                    <div className="flex items-center gap-1.5 p-2">
                         <button
                             onClick={() => setShowHelpModal(true)}
-                            className="p-2 hover:bg-indigo-50 rounded-lg transition flex-shrink-0 btn-icon-sm"
-                            style={{color: '#4A9EFF'}}
+                            className="p-1.5 hover:bg-indigo-50 rounded-lg transition flex-shrink-0"
+                            style={{color: '#4A9EFF', minWidth: '32px', minHeight: '32px'}}
                         >
                             <Icon name="HelpCircle" size={16} />
                         </button>
@@ -1872,15 +1872,16 @@ ${conversationContext}
                             onChange={(e) => setUserQuestion(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleUserQuestion()}
                             placeholder="質問..."
-                            className="flex-1 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                            className="flex-1 min-w-0 px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                             disabled={qaLoading}
                         />
                         <button
                             onClick={handleUserQuestion}
                             disabled={!userQuestion.trim() || qaLoading}
-                            className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 btn-icon-sm"
+                            className="bg-[#4A9EFF] text-white p-1.5 rounded-lg hover:bg-[#3b8fef] shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                            style={{minWidth: '36px', minHeight: '36px'}}
                         >
-                            <Icon name="Send" size={20} />
+                            <Icon name="Send" size={18} />
                         </button>
                         {/* 保存ボタン（分析タブのみ表示） */}
                         {activeTab === 'analysis' && aiAnalysis && !selectedReport && (
@@ -1889,10 +1890,11 @@ ${conversationContext}
                                     setReportTitle('デイリー分析');
                                     setShowSaveReportModal(true);
                                 }}
-                                className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition flex-shrink-0 btn-icon-sm"
+                                className="bg-[#4A9EFF] text-white p-1.5 rounded-lg hover:bg-[#3b8fef] shadow-md transition flex-shrink-0"
+                                style={{minWidth: '36px', minHeight: '36px'}}
                                 title="レポートを保存"
                             >
-                                <Icon name="Save" size={20} />
+                                <Icon name="Save" size={18} />
                             </button>
                         )}
                     </div>
