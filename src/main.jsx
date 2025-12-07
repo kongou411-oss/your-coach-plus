@@ -8,6 +8,32 @@ import { StatusBar, Style } from '@capacitor/status-bar'
 // ネイティブアプリかどうか判定
 const isNativeApp = Capacitor.isNativePlatform();
 
+// ========================================
+// viewport高さ・ナビゲーションバー高さの動的更新
+// フォントサイズ・表示サイズ変更、ナビゲーションバー表示/非表示に対応
+// ========================================
+const updateViewportVariables = () => {
+    const root = document.documentElement;
+
+    // 動的viewport高さ（visualViewportがあればそちらを優先）
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    root.style.setProperty('--viewport-height', `${viewportHeight}px`);
+
+    // Androidナビゲーションバーの高さを算出
+    if (window.visualViewport) {
+        const navBarHeight = window.innerHeight - window.visualViewport.height;
+        root.style.setProperty('--navigation-bar-height', `${Math.max(0, navBarHeight)}px`);
+    }
+};
+
+// 初回実行
+updateViewportVariables();
+
+// イベントリスナー登録（フォントサイズ変更・ナビゲーションバー表示/非表示）
+window.addEventListener('resize', updateViewportVariables);
+window.visualViewport?.addEventListener('resize', updateViewportVariables);
+window.visualViewport?.addEventListener('scroll', updateViewportVariables);
+
 // ネイティブアプリ時のセーフエリア対応
 if (isNativeApp) {
     document.body.classList.add('native-app');

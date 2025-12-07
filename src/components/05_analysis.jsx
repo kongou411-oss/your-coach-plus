@@ -1861,7 +1861,7 @@ ${conversationContext}
                     <div className="flex items-center gap-2 p-3">
                         <button
                             onClick={() => setShowHelpModal(true)}
-                            className="p-2 hover:bg-indigo-50 rounded-lg transition flex-shrink-0"
+                            className="p-2 hover:bg-indigo-50 rounded-lg transition flex-shrink-0 btn-icon-sm"
                             style={{color: '#4A9EFF'}}
                         >
                             <Icon name="HelpCircle" size={16} />
@@ -1878,7 +1878,7 @@ ${conversationContext}
                         <button
                             onClick={handleUserQuestion}
                             disabled={!userQuestion.trim() || qaLoading}
-                            className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                            className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 btn-icon-sm"
                         >
                             <Icon name="Send" size={20} />
                         </button>
@@ -1889,7 +1889,7 @@ ${conversationContext}
                                     setReportTitle('デイリー分析');
                                     setShowSaveReportModal(true);
                                 }}
-                                className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition flex-shrink-0"
+                                className="bg-[#4A9EFF] text-white p-2 rounded-lg hover:bg-[#3b8fef] shadow-md transition flex-shrink-0 btn-icon-sm"
                                 title="レポートを保存"
                             >
                                 <Icon name="Save" size={20} />
@@ -1901,8 +1901,8 @@ ${conversationContext}
 
             {/* ヘルプモーダル */}
             {showHelpModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowHelpModal(false)}>
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4 modal-safe-area" onClick={() => setShowHelpModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-md modal-content-safe overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -1943,8 +1943,8 @@ ${conversationContext}
 
             {/* クレジット消費説明モーダル */}
             {showCreditInfoModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4" onClick={() => setShowCreditInfoModal(false)}>
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4 modal-safe-area" onClick={() => setShowCreditInfoModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-md modal-content-safe overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         {/* ヘッダー */}
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">

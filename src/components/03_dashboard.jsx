@@ -3393,7 +3393,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">睡眠時間</span>
                             </div>
-                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1 flex-button-group">
                                 {[
                                     { value: 1, label: '5h↓' },
                                     { value: 2, label: '6h' },
@@ -3438,7 +3438,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2 px-1 text-center text-[11px] font-medium transition-all duration-150 focus:outline-none min-w-0 truncate ${
                                             item.value === ((dailyRecord.conditions?.sleepHours) || 0)
                                                 ? 'bg-[#4A9EFF] text-white shadow'
                                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
@@ -3455,7 +3455,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">睡眠の質</span>
                             </div>
-                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1 flex-button-group">
                                 {[
                                     { value: 1, label: '最悪' },
                                     { value: 2, label: '悪' },
@@ -3500,7 +3500,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2 px-1 text-center text-[11px] font-medium transition-all duration-150 focus:outline-none min-w-0 truncate ${
                                             item.value === ((dailyRecord.conditions?.sleepQuality) || 0)
                                                 ? 'bg-[#4A9EFF] text-white shadow'
                                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
@@ -3517,7 +3517,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">腸内環境</span>
                             </div>
-                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1 flex-button-group">
                                 {[
                                     { value: 1, label: '不調' },
                                     { value: 2, label: 'やや悪' },
@@ -3562,7 +3562,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2 px-1 text-center text-[11px] font-medium transition-all duration-150 focus:outline-none min-w-0 truncate ${
                                             item.value === ((dailyRecord.conditions?.digestion) || 0)
                                                 ? 'bg-[#4A9EFF] text-white shadow'
                                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
@@ -3579,7 +3579,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">集中力</span>
                             </div>
-                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1 flex-button-group">
                                 {[
                                     { value: 1, label: '最低' },
                                     { value: 2, label: '低' },
@@ -3624,7 +3624,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2 px-1 text-center text-[11px] font-medium transition-all duration-150 focus:outline-none min-w-0 truncate ${
                                             item.value === ((dailyRecord.conditions?.focus) || 0)
                                                 ? 'bg-[#4A9EFF] text-white shadow'
                                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
@@ -3641,7 +3641,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mb-2">
                                 <span className="text-sm text-gray-600 font-bold">ストレス</span>
                             </div>
-                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1.5">
+                            <div className="flex w-full items-center rounded-full bg-gray-100 p-1.5 gap-1 flex-button-group">
                                 {[
                                     { value: 1, label: '極大' },
                                     { value: 2, label: '高' },
@@ -3686,7 +3686,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                                                 }
                                             })();
                                         }}
-                                        className={`flex-1 rounded-full py-2.5 text-center text-xs font-medium transition-all duration-150 focus:outline-none ${
+                                        className={`flex-1 rounded-full py-2 px-1 text-center text-[11px] font-medium transition-all duration-150 focus:outline-none min-w-0 truncate ${
                                             item.value === ((dailyRecord.conditions?.stress) || 0)
                                                 ? 'bg-[#4A9EFF] text-white shadow'
                                                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'

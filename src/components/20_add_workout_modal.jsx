@@ -1650,8 +1650,8 @@ const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile
 
                         {/* 保存方法説明モーダル */}
                         {showExerciseSaveMethodInfo && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center p-4">
-                                <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] overflow-y-auto">
+                            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10003] flex items-center justify-center p-4 modal-safe-area">
+                                <div className="bg-white rounded-lg w-full max-w-md modal-content-safe overflow-y-auto">
                                     <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-lg flex justify-between items-center z-10">
                                         <h3 className="font-bold">保存方法について</h3>
                                         <button
@@ -2292,8 +2292,8 @@ RM回数と重量を別々に入力してください。`
 
                     {/* 運動記録の使い方モーダル */}
                     {showWorkoutInfoModal && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10002] flex items-center justify-center p-4 modal-safe-area">
+                            <div className="bg-white rounded-2xl w-full max-w-3xl modal-content-safe overflow-y-auto">
                                 {/* ヘッダー */}
                                 <div className="sticky top-0 bg-orange-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
                                     <h3 className="text-lg font-bold flex items-center gap-2">
@@ -2433,8 +2433,8 @@ RM回数と重量を別々に入力してください。`
 
                     {/* WorkoutInfoModal */}
                     {workoutInfoModal.show && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full modal-content-safe overflow-y-auto">
                                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
                                     <h3 className="text-lg font-bold">{workoutInfoModal.title}</h3>
                                     <button onClick={() => setWorkoutInfoModal({ show: false, title: '', content: '' })} className="text-gray-400 hover:text-gray-600">

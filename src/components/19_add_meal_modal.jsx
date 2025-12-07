@@ -1179,15 +1179,14 @@ JSON形式のみ出力、説明文不要`;
     const totalPFC = calculateTotalPFC();
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4" onClick={(e) => {
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area" onClick={(e) => {
             // モーダル外をタップした場合は閉じる
             if (e.target === e.currentTarget) {
                 onClose();
             }
         }}>
             <div
-                className="bg-white rounded-2xl w-full max-w-md overflow-hidden flex flex-col"
-                style={{ maxHeight: `${viewportHeight * 0.9}px` }}
+                className="bg-white rounded-2xl w-full max-w-md overflow-hidden flex flex-col modal-content-safe"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* ヘッダー */}
