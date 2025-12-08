@@ -3170,11 +3170,11 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                         {dailyRecord.workouts?.length > 0 ? (
                             <div className="space-y-3">
                                 {dailyRecord.workouts.map((workout, index) => (
-                                    <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md border border-gray-200 ${
-                                        workout.isPredicted ? 'border-2 border-sky-300 bg-sky-50 shadow-sky-200/50' :
-                                        workout.isRoutine ? 'border-2 border-amber-300 bg-amber-50 shadow-amber-200/50' :
-                                        workout.isTemplate ? 'border-2 border-purple-300 bg-purple-50 shadow-purple-200/50' :
-                                        ''
+                                    <div key={workout.id || index} className={`bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 shadow-md ${
+                                        workout.isPredicted ? 'border-2 border-sky-500 shadow-sky-200/50' :
+                                        workout.isRoutine ? 'border-2 border-amber-500 shadow-amber-200/50' :
+                                        workout.isTemplate ? 'border-2 border-purple-500 shadow-purple-200/50' :
+                                        'border border-gray-200'
                                     }`}>
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex-1">
