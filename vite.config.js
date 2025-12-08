@@ -16,8 +16,18 @@ export default defineConfig({
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'] // これらの関数呼び出しを削除
       },
       mangle: {
-        // exif-jsはminificationで壊れるため、変数名変換を緩和
-        reserved: ['EXIF', 'getData', 'getTag', 'readFromBinaryFile']
+        // exif-jsはminificationで壊れるため、主要な変数・関数名を保護
+        reserved: [
+          // exif-js public API
+          'EXIF', 'getData', 'getTag', 'readFromBinaryFile', 'getAllTags', 'pretty',
+          // exif-js internal functions
+          'findEXIFinJPEG', 'findIPTCinJPEG', 'findXMPinJPEG', 'readTags', 'readTagValue',
+          'getImageData', 'imageHasData', 'base64ToArrayBuffer', 'objectURLToBlob',
+          'handleBinaryFile', 'readIPTCData', 'getNextIFDOffset', 'readThumbnailImage',
+          'getStringFromDB', 'readEXIFData',
+          // exif-js internal variables
+          'ExifTags', 'TiffTags', 'GPSTags', 'IFD1Tags', 'StringValues', 'IptcFieldMap'
+        ]
       }
     },
     chunkSizeWarningLimit: 1000,
@@ -42,6 +52,10 @@ export default defineConfig({
           // Lucide React（アイコン）を分離
           if (id.includes('node_modules/lucide-react')) {
             return 'icons';
+          }
+          // exif-js を別チャンクに分離（minification問題回避）
+          if (id.includes('node_modules/exif-js')) {
+            return 'exif';
           }
           // その他の大きなライブラリを分離
           if (id.includes('node_modules')) {
