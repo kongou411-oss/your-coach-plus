@@ -2689,10 +2689,10 @@ JSON形式のみ出力、説明文不要`;
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content-safe">
                 {/* ヘッダー */}
-                <div className="sticky top-0 text-white p-4 rounded-t-2xl flex justify-between items-center z-10" style={{ backgroundColor: '#4A9EFF' }}>
+                <div className="sticky top-0 text-white rounded-t-2xl flex justify-between items-center z-10" style={{ backgroundColor: '#4A9EFF', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Camera" size={20} />
                         写真解析
@@ -2703,13 +2703,13 @@ JSON形式のみ出力、説明文不要`;
                             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                             title="使い方"
                         >
-                            <Icon name="HelpCircle" size={16} />
+                            <Icon name="HelpCircle" size={18} />
                         </button>
                         <button
                             onClick={onClose}
                             className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                         >
-                            <Icon name="X" size={20} />
+                            <Icon name="X" size={24} />
                         </button>
                     </div>
                 </div>

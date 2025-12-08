@@ -2204,12 +2204,12 @@ const OnboardingScreen = ({ user, onComplete }) => {
 
             {/* Visual Guide Modal */}
             {visualGuideModal.show && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white p-4 flex justify-between items-center z-10">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-safe-area">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto modal-content-safe">
+                        <div className="sticky top-0 bg-gradient-to-r from-orange-600 to-pink-600 text-white flex justify-between items-center z-10 rounded-t-lg" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
                             <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
-                            <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
-                                <Icon name="X" size={20} />
+                            <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2">
+                                <Icon name="X" size={24} />
                             </button>
                         </div>
                         <div className="p-6 space-y-4">

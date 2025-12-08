@@ -478,12 +478,12 @@ const SettingsView = ({
 
         {/* 情報モーダル */}
         {infoModal.show && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
-                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                    <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 flex justify-between items-center z-10">
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area" onClick={() => setInfoModal({ show: false, title: '', content: '' })}>
+                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto modal-content-safe" onClick={(e) => e.stopPropagation()}>
+                    <div className="sticky top-0 bg-[#4A9EFF] text-white flex justify-between items-center z-10 rounded-t-2xl" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
                         <h3 className="font-bold text-lg">{infoModal.title}</h3>
-                        <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
-                            <Icon name="X" size={20} />
+                        <button onClick={() => setInfoModal({ show: false, title: '', content: '' })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2">
+                            <Icon name="X" size={24} />
                         </button>
                     </div>
                     <div className="p-6">
@@ -495,12 +495,12 @@ const SettingsView = ({
 
         {/* Visual Guide Modal */}
         {visualGuideModal.show && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div className="sticky top-0 bg-orange-600 text-white p-4 flex justify-between items-center z-10">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-safe-area">
+                <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto modal-content-safe">
+                    <div className="sticky top-0 bg-orange-600 text-white flex justify-between items-center z-10 rounded-t-lg" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
                         <h3 className="font-bold text-lg">外見から体脂肪率を推定</h3>
-                        <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1">
-                            <Icon name="X" size={20} />
+                        <button onClick={() => setVisualGuideModal({ ...visualGuideModal, show: false })} className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2">
+                            <Icon name="X" size={24} />
                         </button>
                     </div>
                     <div className="p-6 space-y-4">

@@ -751,10 +751,10 @@ const DataTab = ({
 
                             {/* 編集モーダル */}
                             {showEditModal && editingItem && (
-                                <div className="fixed inset-0 bg-black bg-opacity-60 z-[10001] flex items-center justify-center p-4">
-                                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto">
+                                <div className="fixed inset-0 bg-black bg-opacity-60 z-[10001] flex items-center justify-center p-4 modal-safe-area">
+                                    <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto modal-content-safe">
                                         {/* ヘッダー */}
-                                        <div className="sticky top-0 bg-[#4A9EFF] text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+                                        <div className="sticky top-0 bg-[#4A9EFF] text-white rounded-t-2xl flex justify-between items-center z-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
                                             <h3 className="text-lg font-bold flex items-center gap-2">
                                                 <Icon name="Edit" size={20} />
                                                 カスタムアイテムを編集
@@ -766,7 +766,7 @@ const DataTab = ({
                                                 }}
                                                 className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                                             >
-                                                <Icon name="X" size={20} />
+                                                <Icon name="X" size={24} />
                                             </button>
                                         </div>
 

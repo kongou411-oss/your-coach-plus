@@ -61,15 +61,16 @@ const WhatsNewModal = ({ show, version, releaseNote, onClose }) => {
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden slide-up">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area">
+            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden slide-up modal-content-safe">
                 {/* ヘッダー */}
-                <div className="bg-[#4A9EFF] text-white p-6 text-center relative">
+                <div className="bg-[#4A9EFF] text-white text-center relative" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)', paddingBottom: '24px', paddingLeft: '24px', paddingRight: '24px' }}>
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition"
+                        className="absolute right-4 p-2 hover:bg-white/20 rounded-full transition"
+                        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
                     >
-                        <Icon name="X" size={20} />
+                        <Icon name="X" size={24} />
                     </button>
                     <div className="mb-3">
                         <Icon name="Sparkles" size={48} className="mx-auto mb-2" />
@@ -135,16 +136,17 @@ const PremiumRestrictionModal = ({ show, featureName, onClose, onUpgrade }) => {
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up">
-                {/* ヘッダー（紫グラデーション） */}
-                <div className="bg-[#FFF59A] p-6 text-gray-800 text-center relative overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-[10001] flex items-center justify-center p-4 modal-safe-area">
+            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-md shadow-2xl overflow-hidden animate-slide-up modal-content-safe">
+                {/* ヘッダー */}
+                <div className="bg-[#FFF59A] text-gray-800 text-center relative overflow-hidden" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)', paddingBottom: '24px', paddingLeft: '24px', paddingRight: '24px' }}>
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition z-20"
+                        className="absolute right-4 p-2 hover:bg-black/10 rounded-full transition z-20"
+                        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}
                     >
-                        <Icon name="X" size={20} />
+                        <Icon name="X" size={24} className="text-gray-700" />
                     </button>
                     <div className="mb-3 relative z-10">
                         <Icon name="Lock" size={48} className="mx-auto mb-2" />

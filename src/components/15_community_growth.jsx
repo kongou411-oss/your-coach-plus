@@ -203,9 +203,9 @@ const ThemeSpaceSelector = ({ userId, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-gradient-to-r from-sky-600 to-sky-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 modal-safe-area">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content-safe">
+                <div className="sticky top-0 bg-gradient-to-r from-sky-600 to-sky-600 text-white rounded-t-2xl flex justify-between items-center z-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Users" size={20} />
                         テーマ別スペース
@@ -214,7 +214,7 @@ const ThemeSpaceSelector = ({ userId, onClose }) => {
                         onClick={onClose}
                         className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                     >
-                        <Icon name="X" size={20} />
+                        <Icon name="X" size={24} />
                     </button>
                 </div>
 
@@ -328,9 +328,9 @@ const MentorApplicationForm = ({ userId, userProfile, userStats, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-gradient-to-r from-yellow-600 to-orange-600 text-white p-4 rounded-t-2xl flex justify-between items-center z-10">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 modal-safe-area">
+            <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto modal-content-safe">
+                <div className="sticky top-0 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-t-2xl flex justify-between items-center z-10" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Award" size={20} />
                         メンター申請
@@ -339,7 +339,7 @@ const MentorApplicationForm = ({ userId, userProfile, userStats, onClose }) => {
                         onClick={onClose}
                         className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition"
                     >
-                        <Icon name="X" size={20} />
+                        <Icon name="X" size={24} />
                     </button>
                 </div>
 

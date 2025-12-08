@@ -56,10 +56,10 @@ const TemplateGuideModal = ({ show, onClose }) => {
     const currentStepData = steps[currentStep - 1];
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4 modal-safe-area">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto modal-content-safe">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-4 rounded-t-2xl">
+                <div className="sticky top-0 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 rounded-t-2xl" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px' }}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
@@ -69,9 +69,9 @@ const TemplateGuideModal = ({ show, onClose }) => {
                         </div>
                         <button
                             onClick={handleClose}
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
                         >
-                            <X size={20} />
+                            <X size={24} />
                         </button>
                     </div>
                 </div>
