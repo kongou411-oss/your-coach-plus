@@ -1471,21 +1471,8 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     return;
                 }
 
-                // PG BASE
+                // PG BASE（無料で利用可能）
                 if (type === 'pgbase') {
-                    if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
-                        const accessCheck = await checkPremiumAccessRequired(
-                            user?.uid,
-                            'pg_base',
-                            userProfile
-                        );
-                        if (!accessCheck.allowed) {
-                            setRestrictedFeatureName('PG BASE');
-                            setShowPremiumRestriction(true);
-                            setFabOpen(false);
-                            return;
-                        }
-                    }
                     setShowPGBaseView(true);
                     setFabOpen(false);
                     return;
@@ -1623,18 +1610,9 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                         setBottomBarExpanded(false);
                         break;
                     case 'open_pgbase':
-                        const pgBaseAccessCheck = checkPremiumAccessRequired(
-                            user?.uid,
-                            'pg_base',
-                            userProfile
-                        );
-                        if (pgBaseAccessCheck.allowed) {
-                            setShowPGBaseView(true);
-                            setBottomBarExpanded(false);
-                        } else {
-                            setRestrictedFeatureName('PG BASE');
-                            setShowPremiumRestriction(true);
-                        }
+                        // PG BASEは無料で利用可能
+                        setShowPGBaseView(true);
+                        setBottomBarExpanded(false);
                         break;
                     case 'open_community':
                         const comyAccessCheck = checkPremiumAccessRequired(
@@ -3633,31 +3611,15 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
-                                            const accessCheck = checkPremiumAccessRequired(
-                                                user?.uid,
-                                                'pg_base',
-                                                userProfile
-                                            );
-                                            if (!accessCheck.allowed) {
-                                                setRestrictedFeatureName('PG BASE');
-                                                setShowPremiumRestriction(true);
-                                            }
-                                            return;
-                                        }
+                                        // PG BASEは無料で利用可能
                                         setShowPGBaseView(true);
                                         setBottomBarMenu(null);
                                         setBottomBarExpanded(false);
                                     }}
-                                    className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
-                                        (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
-                                    }`}
+                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition hover:bg-blue-100"
                                 >
                                     <Icon name="BookOpen" size={18} className="text-cyan-600" />
                                     <span className="text-xs text-gray-600">教科書</span>
-                                    {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) && (
-                                        <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
-                                    )}
                                 </button>
                                 <button
                                     onClick={() => {
