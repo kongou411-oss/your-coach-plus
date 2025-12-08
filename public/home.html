@@ -36,12 +36,17 @@
             overflow-y: auto;
         }
         .scroll-hint {
-            position: absolute;
+            position: fixed;
             bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
             animation: bounce 2s infinite;
             z-index: 50;
+            transition: opacity 0.3s ease;
+        }
+        .scroll-hint.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
         @keyframes bounce {
             0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
@@ -82,10 +87,6 @@
                         アプリ紹介動画を見る
                     </a>
                     <p class="text-gray-400 text-sm mt-3">使い方・設計思想を動画で解説</p>
-                </div>
-                <div class="scroll-hint text-white text-center">
-                    <p class="text-xs text-gray-400 mb-2">スワイプして続きを見る</p>
-                    <svg class="w-6 h-6 mx-auto text-[#4A9EFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                 </div>
             </section>
 
@@ -193,9 +194,7 @@
                                 </ul>
                             </div>
                             <div class="flex-1 flex justify-center">
-                                <div class="w-48 md:w-56 h-[300px] md:h-[400px] bg-gray-100 rounded-3xl border-4 border-gray-300 flex items-center justify-center text-gray-400">
-                                    <span class="text-sm text-center">COMY<br>スクリーンショット</span>
-                                </div>
+                                <img src="/guide-images/FEATURE3.png" alt="COMYコミュニティ画面" class="w-48 md:w-56 h-[300px] md:h-[400px] object-cover rounded-3xl border-4 border-gray-300 shadow-lg">
                             </div>
                         </div>
                     </div>
@@ -256,9 +255,7 @@
                         <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">開発者について</h2>
                         <div class="flex flex-col md:flex-row items-center gap-8">
                             <div class="flex-shrink-0">
-                                <div class="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-[#4A9EFF] to-blue-600 rounded-full flex items-center justify-center text-white text-5xl shadow-lg">
-                                    🏋️
-                                </div>
+                                <img src="/guide-images/developer.jpg" alt="開発者" class="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-lg">
                             </div>
                             <div class="flex-1 text-center md:text-left">
                                 <div class="inline-block bg-[#4A9EFF]/10 text-[#4A9EFF] font-bold px-3 py-1 rounded-full text-sm mb-2">
@@ -475,16 +472,31 @@
         </div>
     </div>
 
+    <!-- Scroll Hint (fixed position) -->
+    <div class="scroll-hint text-white text-center" id="scroll-hint">
+        <p class="text-xs text-gray-400 mb-2">スワイプして続きを見る</p>
+        <svg class="w-6 h-6 mx-auto text-[#4A9EFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+    </div>
+
     <!-- Fullpage Script -->
     <script>
     (function() {
         const wrapper = document.getElementById('fullpage-wrapper');
         const sections = document.querySelectorAll('.section');
+        const scrollHint = document.getElementById('scroll-hint');
         let currentSection = 0;
         const totalSections = sections.length;
         let isScrolling = false;
         let touchStartY = 0;
         let touchEndY = 0;
+
+        function updateScrollHint() {
+            if (currentSection >= totalSections - 1) {
+                scrollHint.classList.add('hidden');
+            } else {
+                scrollHint.classList.remove('hidden');
+            }
+        }
 
         function goToSection(index) {
             if (index < 0 || index >= totalSections || isScrolling) return;
@@ -492,6 +504,7 @@
             isScrolling = true;
             currentSection = index;
             wrapper.style.transform = `translateY(-${currentSection * 100}vh)`;
+            updateScrollHint();
 
             setTimeout(() => { isScrolling = false; }, 700);
         }
