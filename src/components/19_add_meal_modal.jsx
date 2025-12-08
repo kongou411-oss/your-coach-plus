@@ -1045,11 +1045,13 @@ JSON形式のみ出力、説明文不要`;
                 createdAt: new Date().toISOString()
             };
 
+            // 名前をドキュメントIDとして保存（統一仕様）
             await firebase.firestore()
                 .collection('users')
                 .doc(currentUser.uid)
                 .collection('customFoods')
-                .add(customFood);
+                .doc(customFood.name)
+                .set(customFood, { merge: true });
 
             toast.success('カスタムアイテムを保存しました');
 

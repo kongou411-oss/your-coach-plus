@@ -82,11 +82,12 @@ const DataTab = ({
                     const deleteItem = async (item) => {
                         showConfirm('アイテム削除の確認', `「${item.name}」を削除しますか？`, async () => {
                             try {
+                                // item.id（ドキュメントID）を使用して削除
                                 await firebase.firestore()
                                     .collection('users')
                                     .doc(userId)
                                     .collection('customFoods')
-                                    .doc(item.name)
+                                    .doc(item.id)
                                     .delete();
 
                                 toast.success('削除しました');
@@ -108,11 +109,12 @@ const DataTab = ({
                             try {
                                 const batch = firebase.firestore().batch();
                                 itemsToDelete.forEach(item => {
+                                    // item.id（ドキュメントID）を使用して削除
                                     const docRef = firebase.firestore()
                                         .collection('users')
                                         .doc(userId)
                                         .collection('customFoods')
-                                        .doc(item.name);
+                                        .doc(item.id);
                                     batch.delete(docRef);
                                 });
 
@@ -160,6 +162,7 @@ const DataTab = ({
                     const editItem = (item) => {
                         // vitamins/mineralsをフラットな構造に展開
                         const editData = {
+                            id: item.id, // ドキュメントIDを保持
                             name: item.name,
                             itemType: item.itemType || 'food',
                             category: item.category || '穀類',
@@ -381,7 +384,7 @@ const DataTab = ({
                                                                             .collection('users')
                                                                             .doc(userId)
                                                                             .collection('customFoods')
-                                                                            .doc(item.name)
+                                                                            .doc(item.id)
                                                                             .update({ hidden: !item.hidden });
                                                                         toast.success(item.hidden ? '表示しました' : '非表示にしました');
                                                                         loadCustomFoods();
@@ -475,7 +478,7 @@ const DataTab = ({
                                                                             .collection('users')
                                                                             .doc(userId)
                                                                             .collection('customFoods')
-                                                                            .doc(item.name)
+                                                                            .doc(item.id)
                                                                             .update({ hidden: !item.hidden });
                                                                         toast.success(item.hidden ? '表示しました' : '非表示にしました');
                                                                         loadCustomFoods();
@@ -569,7 +572,7 @@ const DataTab = ({
                                                                             .collection('users')
                                                                             .doc(userId)
                                                                             .collection('customFoods')
-                                                                            .doc(item.name)
+                                                                            .doc(item.id)
                                                                             .update({ hidden: !item.hidden });
                                                                         toast.success(item.hidden ? '表示しました' : '非表示にしました');
                                                                         loadCustomFoods();
@@ -1577,11 +1580,12 @@ const DataTab = ({
                                                                 updatedAt: new Date().toISOString()
                                                             };
 
+                                                            // editingItem.id（ドキュメントID）を使用して更新
                                                             await firebase.firestore()
                                                                 .collection('users')
                                                                 .doc(userId)
                                                                 .collection('customFoods')
-                                                                .doc(customFood.name)
+                                                                .doc(editingItem.id)
                                                                 .set(customFood, { merge: true });
 
                                                             toast.success('更新しました');
