@@ -2086,21 +2086,21 @@ const CreditService = {
         const trialStatus = CreditService.checkFreeTrialStatus(userProfile);
 
         if (!trialStatus.isActive && !userProfile.isFreeTrialExpired) {
-            // 無料期間終了：残りクレジットを0にする
+            // 無料期間終了：無料クレジットを0にする（有料クレジットは残す）
             await DataService.saveUserProfile(userId, {
                 ...userProfile,
-                analysisCredits: 0,
+                freeCredits: 0,
                 isFreeTrialExpired: true
             });
 
-            console.log(`[Credit] User ${userId} free trial expired. Credits cleared.`);
+            console.log(`[Credit] User ${userId} free trial expired. Free credits cleared.`);
             return true; // 期限切れ処理実行
         }
 
         return false;
     },
 
-    // 分析アクセス可否チェック
+    // 分析アクセス可否チェック（freeCredits + paidCredits統一）
     canAccessAnalysis: async (userId, userProfile) => {
         // 開発モード：Premium機能有効化
         if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
@@ -2120,12 +2120,16 @@ const CreditService = {
 
         // 再取得（期限切れ処理で更新された可能性があるため）
         const updatedProfile = await DataService.getUserProfile(userId);
-        const hasCredits = (updatedProfile.analysisCredits || 0) > 0;
+        const freeCredits = updatedProfile?.freeCredits || 0;
+        const paidCredits = updatedProfile?.paidCredits || 0;
+        const totalCredits = freeCredits + paidCredits;
         const trialStatus = CreditService.checkFreeTrialStatus(updatedProfile);
 
         return {
-            allowed: hasCredits,
-            remainingCredits: updatedProfile.analysisCredits || 0,
+            allowed: totalCredits > 0,
+            remainingCredits: totalCredits,
+            freeCredits,
+            paidCredits,
             tier: updatedProfile.subscriptionTier,
             freeTrialActive: trialStatus.isActive,
             freeTrialDaysRemaining: trialStatus.daysRemaining,
@@ -2133,7 +2137,7 @@ const CreditService = {
         };
     },
 
-    // クレジット消費
+    // クレジット消費（ExperienceService.consumeCreditsに委譲）
     consumeCredit: async (userId, userProfile) => {
         // 開発モード：クレジット消費をスキップ
         if (typeof DEV_PREMIUM_MODE !== 'undefined' && DEV_PREMIUM_MODE) {
@@ -2152,12 +2156,19 @@ const CreditService = {
             throw new Error('NO_CREDITS');
         }
 
-        const profile = accessCheck.profile;
-        const newCredits = profile.analysisCredits - 1;
+        // ExperienceService.consumeCreditsを使用（freeCredits優先消費）
+        const result = await ExperienceService.consumeCredits(userId, 1);
 
+        if (!result.success) {
+            throw new Error('NO_CREDITS');
+        }
+
+        // 使用回数を更新
+        const profile = accessCheck.profile;
         await DataService.saveUserProfile(userId, {
             ...profile,
-            analysisCredits: newCredits,
+            freeCredits: result.freeCredits,
+            paidCredits: result.paidCredits,
             totalAnalysisUsed: (profile.totalAnalysisUsed || 0) + 1,
             currentMonthUsed: (profile.currentMonthUsed || 0) + 1,
             freeTrialCreditsUsed: profile.subscriptionTier === 'free'
@@ -2165,16 +2176,16 @@ const CreditService = {
                 : profile.freeTrialCreditsUsed
         });
 
-        console.log(`[Credit] User ${userId} consumed 1 credit. Remaining: ${newCredits}`);
+        console.log(`[Credit] User ${userId} consumed 1 credit. Remaining: ${result.totalCredits}`);
 
         return {
             success: true,
-            remainingCredits: newCredits,
+            remainingCredits: result.totalCredits,
             isFirstAnalysis: (profile.totalAnalysisUsed || 0) === 0 // 初回分析判定
         };
     },
 
-    // Premium会員の月次クレジットリセット
+    // Premium会員の月次クレジットリセット（freeCreditsに付与）
     checkAndResetMonthlyCredits: async (userId, userProfile) => {
         if (userProfile.subscriptionTier !== 'premium') return false;
 
@@ -2190,7 +2201,7 @@ const CreditService = {
 
             await DataService.saveUserProfile(userId, {
                 ...userProfile,
-                analysisCredits: 100, // 毎月100クレジット付与
+                freeCredits: 100, // 毎月100クレジット付与
                 currentMonthUsed: 0,
                 creditsResetDate: timestamp
             });
@@ -2202,18 +2213,21 @@ const CreditService = {
         return false;
     },
 
-    // クレジット追加購入
+    // クレジット追加購入（paidCreditsに追加）
     addPurchasedCredits: async (userId, amount) => {
-        const userProfile = await DataService.getUserProfile(userId);
+        const result = await ExperienceService.addPaidCredits(userId, amount);
 
-        await DataService.saveUserProfile(userId, {
-            ...userProfile,
-            analysisCredits: (userProfile.analysisCredits || 0) + amount,
-            lifetimeCreditsPurchased: (userProfile.lifetimeCreditsPurchased || 0) + amount
-        });
+        if (result.success) {
+            // 購入累計も更新
+            const userProfile = await DataService.getUserProfile(userId);
+            await DataService.saveUserProfile(userId, {
+                ...userProfile,
+                lifetimeCreditsPurchased: (userProfile.lifetimeCreditsPurchased || 0) + amount
+            });
+        }
 
         console.log(`[Credit] User ${userId} purchased ${amount} credits`);
-        return { success: true, totalCredits: (userProfile.analysisCredits || 0) + amount };
+        return result;
     }
 };
 

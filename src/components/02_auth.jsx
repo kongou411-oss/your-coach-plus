@@ -1131,17 +1131,17 @@ const OnboardingScreen = ({ user, onComplete }) => {
             subscriptionTier: 'free',
             subscriptionStatus: 'none',
 
-            // クレジットシステム（21回分付与：レポート7+質問7+履歴分析7）
-            analysisCredits: 21,
+            // クレジットシステム（freeCredits + paidCredits統一）
+            // 初回21回分付与：レポート7+質問7+履歴分析7
             totalAnalysisUsed: 0,
             currentMonthUsed: 0,
             lifetimeCreditsPurchased: 0,
 
-            // 経験値・レベル・クレジットシステム（新）
+            // 経験値・レベル・クレジットシステム
             experience: 0,
             level: 1,
-            // freeCreditsは常に設定（ExperienceServiceの初期化トリガー防止）
-            freeCredits: 14,
+            // freeCreditsは常に設定（21回分付与）
+            freeCredits: 21,
             // コード検証済みの場合、paidCreditsはCloud Functionで設定済みなので上書きしない
             ...((codeValidated || wasCodeValidated) ? {} : {
                 paidCredits: 0,

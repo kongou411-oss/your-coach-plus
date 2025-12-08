@@ -760,8 +760,17 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     if (alreadyShown) return;
 
                     try {
-                        const expData = await ExperienceService.getUserExperience(user.uid);
-                        if (expData.totalCredits === 0) {
+                        // Firestoreから最新のプロファイルを取得
+                        const latestProfile = await DataService.getUserProfile(user.uid);
+
+                        // freeCredits + paidCredits統一システム
+                        const freeCredits = latestProfile?.freeCredits || 0;
+                        const paidCredits = latestProfile?.paidCredits || 0;
+                        const totalCredits = freeCredits + paidCredits;
+
+                        console.log(`[App] Credit check - free: ${freeCredits}, paid: ${paidCredits}, total: ${totalCredits}`);
+
+                        if (totalCredits === 0) {
                             setShowCreditWarning(true);
                             sessionStorage.setItem('creditWarningShown', 'true');
                         }
