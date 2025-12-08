@@ -1471,8 +1471,18 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     return;
                 }
 
-                // PG BASE（無料で利用可能）
+                // PG BASE（初回分析完了後に開放、Premium不要）
                 if (type === 'pgbase') {
+                    if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
+                        // 未開放の場合はメッセージ表示
+                        setInfoModal({
+                            show: true,
+                            title: 'PG BASE',
+                            content: '初回の分析を完了するとPG BASEが開放されます。まずは食事・運動・コンディションを記録して分析を実行してください。'
+                        });
+                        setFabOpen(false);
+                        return;
+                    }
                     setShowPGBaseView(true);
                     setFabOpen(false);
                     return;
@@ -1610,9 +1620,17 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                         setBottomBarExpanded(false);
                         break;
                     case 'open_pgbase':
-                        // PG BASEは無料で利用可能
-                        setShowPGBaseView(true);
-                        setBottomBarExpanded(false);
+                        // PG BASEは初回分析完了後に開放（Premium不要）
+                        if (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) {
+                            setShowPGBaseView(true);
+                            setBottomBarExpanded(false);
+                        } else {
+                            setInfoModal({
+                                show: true,
+                                title: 'PG BASE',
+                                content: '初回の分析を完了するとPG BASEが開放されます。まずは食事・運動・コンディションを記録して分析を実行してください。'
+                            });
+                        }
                         break;
                     case 'open_community':
                         const comyAccessCheck = checkPremiumAccessRequired(
@@ -3611,15 +3629,28 @@ AIコーチなどの高度な機能が解放されます。
                                 </button>
                                 <button
                                     onClick={() => {
-                                        // PG BASEは無料で利用可能
+                                        // PG BASEは初回分析完了後に開放（Premium不要）
+                                        if (!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base'))) {
+                                            setInfoModal({
+                                                show: true,
+                                                title: 'PG BASE',
+                                                content: '初回の分析を完了するとPG BASEが開放されます。まずは食事・運動・コンディションを記録して分析を実行してください。'
+                                            });
+                                            return;
+                                        }
                                         setShowPGBaseView(true);
                                         setBottomBarMenu(null);
                                         setBottomBarExpanded(false);
                                     }}
-                                    className="flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition hover:bg-blue-100"
+                                    className={`flex flex-col items-center gap-1 p-2 bg-white rounded-lg transition relative ${
+                                        (Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) ? 'hover:bg-blue-100' : 'opacity-50 cursor-not-allowed'
+                                    }`}
                                 >
                                     <Icon name="BookOpen" size={18} className="text-cyan-600" />
                                     <span className="text-xs text-gray-600">教科書</span>
+                                    {!(Array.isArray(unlockedFeatures) && unlockedFeatures.includes('pg_base')) && (
+                                        <Icon name="Lock" size={10} className="text-gray-400 absolute top-1 right-1" />
+                                    )}
                                 </button>
                                 <button
                                     onClick={() => {
