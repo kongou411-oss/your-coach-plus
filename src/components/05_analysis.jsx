@@ -1414,13 +1414,19 @@ ${conversationContext}
                 }`}>
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-600">クレジット:</span>
-                        <span className={`text-sm font-bold ${
-                            creditInfo.totalCredits <= 3 ? 'text-red-600' :
-                            creditInfo.totalCredits <= 10 ? 'text-orange-600' :
-                            'text-green-600'
-                        }`}>
-                            {creditInfo.totalCredits}
-                        </span>
+                        <div className="flex items-center gap-1">
+                            <span className={`text-sm font-bold ${
+                                creditInfo.freeCredits <= 0 ? 'text-gray-400' : 'text-blue-600'
+                            }`} title="無料クレジット">
+                                {creditInfo.freeCredits || 0}
+                            </span>
+                            <span className="text-xs text-gray-400">/</span>
+                            <span className={`text-sm font-bold ${
+                                creditInfo.paidCredits <= 0 ? 'text-gray-400' : 'text-amber-600'
+                            }`} title="有料クレジット">
+                                {creditInfo.paidCredits || 0}
+                            </span>
+                        </div>
                         <button
                             onClick={() => setShowCreditInfoModal(true)}
                             className="p-1 hover:bg-white/50 rounded transition"

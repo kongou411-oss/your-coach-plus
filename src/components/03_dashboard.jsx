@@ -4847,7 +4847,9 @@ const LevelBanner = ({ user, setInfoModal }) => {
                 <div className="flex items-center gap-1.5">
                     <div className="flex items-center gap-1">
                         <Icon name="Award" size={14} className="text-white" />
-                        <span className="text-sm font-bold text-white">{expData.totalCredits}</span>
+                        <span className="text-sm font-bold text-blue-200" title="無料クレジット">{expData.freeCredits || 0}</span>
+                        <span className="text-xs text-white/60">/</span>
+                        <span className="text-sm font-bold text-amber-200" title="有料クレジット">{expData.paidCredits || 0}</span>
                     </div>
                     <button
                         onClick={() => setInfoModal({
