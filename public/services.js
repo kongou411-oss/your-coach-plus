@@ -2185,7 +2185,7 @@ const CreditService = {
         };
     },
 
-    // Premium会員の月次クレジットリセット（freeCreditsに付与）
+    // Premium会員の月次クレジットリセット（paidCreditsに付与）
     checkAndResetMonthlyCredits: async (userId, userProfile) => {
         if (userProfile.subscriptionTier !== 'premium') return false;
 
@@ -2201,12 +2201,12 @@ const CreditService = {
 
             await DataService.saveUserProfile(userId, {
                 ...userProfile,
-                freeCredits: 100, // 毎月100クレジット付与
+                paidCredits: 100, // 毎月100クレジット付与（有料クレジット）
                 currentMonthUsed: 0,
                 creditsResetDate: timestamp
             });
 
-            console.log(`[Credit] Premium user ${userId} received 100 credits for new month`);
+            console.log(`[Credit] Premium user ${userId} received 100 paid credits for new month`);
             return true;
         }
 
