@@ -1,9 +1,28 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// exif-jsのコードを修正するカスタムプラグイン
+// exif-jsには「var n」の宣言漏れバグがあり、minification後にエラーになる
+const fixExifJsPlugin = () => ({
+  name: 'fix-exif-js',
+  transform(code, id) {
+    if (id.includes('exif-js')) {
+      // getStringFromDB関数内の「for(n=」を「for(var n=」に修正
+      return code.replace(
+        /for\s*\(\s*n\s*=/g,
+        'for(var n='
+      );
+    }
+    return null;
+  }
+});
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    fixExifJsPlugin()
+  ],
   publicDir: 'public',
   build: {
     outDir: 'dist',
@@ -14,20 +33,6 @@ export default defineConfig({
         drop_console: true,  // console.log, console.warn, console.debug を削除
         drop_debugger: true, // debugger文を削除
         pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'] // これらの関数呼び出しを削除
-      },
-      mangle: {
-        // exif-jsはminificationで壊れるため、主要な変数・関数名を保護
-        reserved: [
-          // exif-js public API
-          'EXIF', 'getData', 'getTag', 'readFromBinaryFile', 'getAllTags', 'pretty',
-          // exif-js internal functions
-          'findEXIFinJPEG', 'findIPTCinJPEG', 'findXMPinJPEG', 'readTags', 'readTagValue',
-          'getImageData', 'imageHasData', 'base64ToArrayBuffer', 'objectURLToBlob',
-          'handleBinaryFile', 'readIPTCData', 'getNextIFDOffset', 'readThumbnailImage',
-          'getStringFromDB', 'readEXIFData',
-          // exif-js internal variables
-          'ExifTags', 'TiffTags', 'GPSTags', 'IFD1Tags', 'StringValues', 'IptcFieldMap'
-        ]
       }
     },
     chunkSizeWarningLimit: 1000,
@@ -53,7 +58,7 @@ export default defineConfig({
           if (id.includes('node_modules/lucide-react')) {
             return 'icons';
           }
-          // exif-js を別チャンクに分離（minification問題回避）
+          // exif-js を別チャンクに分離
           if (id.includes('node_modules/exif-js')) {
             return 'exif';
           }

@@ -183,3 +183,26 @@ body {
 .fixed.inset-0 > div[class*="max-h-"] {
   max-height: calc(var(--viewport-height, 100vh) * 0.85 - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
 }
+
+/* 設定画面専用スクロールバー */
+.settings-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.settings-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.settings-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+.settings-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}

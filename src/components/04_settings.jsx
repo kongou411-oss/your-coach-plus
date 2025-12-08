@@ -378,8 +378,8 @@ const SettingsView = ({
                     </div>
                 </div>
 
-                {/* コンテンツエリア（スクロール可能） */}
-                <div className="flex-1 overflow-y-auto p-4 pb-20">
+                {/* コンテンツエリア（スクロール可能・スクロールバー常時表示） */}
+                <div className="flex-1 overflow-y-scroll p-4 pb-20 settings-scrollbar">
                     {/* 基本タブ */}
                     {activeTab === 'basic' && (
                         <BasicTab
