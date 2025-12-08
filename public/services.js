@@ -218,6 +218,7 @@ const DataService = {
     // ユーザープロファイル取得
     getUserProfile: async (userId) => {
         let profile = null;
+        let source = 'server';
 
         try {
             // サーバー優先で取得（キャッシュを使わない）
@@ -227,6 +228,7 @@ const DataService = {
             // ネットワークエラーの場合はキャッシュから取得を試みる
             if (error.code === 'unavailable') {
                 console.warn('[DataService] Network unavailable, trying cache for user profile');
+                source = 'cache';
                 try {
                     const doc = await db.collection('users').doc(userId).get({ source: 'cache' });
                     profile = doc.exists ? doc.data() : null;
@@ -241,6 +243,11 @@ const DataService = {
                 console.error('Error fetching user profile:', error);
                 return null;
             }
+        }
+
+        // デバッグログ：データソースと経験値情報
+        if (profile) {
+            console.log(`[DataService] getUserProfile (${source}): user=${userId}, exp=${profile.experience}, level=${profile.level}, free=${profile.freeCredits}, paid=${profile.paidCredits}`);
         }
 
         // 既存データの互換性処理: 旧スタイル名を「ボディメイカー」に変換
@@ -2269,31 +2276,27 @@ const ExperienceService = {
     getUserExperience: async (userId) => {
         const profile = await DataService.getUserProfile(userId);
 
-        // 既存ユーザーでクレジット情報がない場合、初期化する
-        // ※ paidCreditsが既に設定されている場合（ギフトコード等）は上書きしない
-        if (profile && profile.freeCredits === undefined) {
-            console.log('[ExperienceService] Existing user without credits detected. Initializing...');
-            profile.experience = profile.experience || 0;
-            profile.level = profile.level || 1;
-            profile.freeCredits = 14; // 初回クレジット
-            // paidCreditsは上書きしない（ギフトコード等で既に設定されている可能性）
-            if (profile.paidCredits === undefined) {
-                profile.paidCredits = 0;
-            }
-            profile.processedScoreDates = profile.processedScoreDates || [];
-            profile.processedDirectiveDates = profile.processedDirectiveDates || [];
-            profile.registrationDate = profile.registrationDate || profile.joinDate || new Date().toISOString();
-
-            // 保存
-            await DataService.saveUserProfile(userId, profile);
-            console.log('[ExperienceService] Initialized credits for existing user:', userId);
+        // profileがnullの場合はエラーログを出力
+        if (!profile) {
+            console.error('[ExperienceService] getUserExperience: profile is null for user:', userId);
+            return {
+                experience: 0,
+                level: 1,
+                freeCredits: 0,
+                paidCredits: 0,
+                totalCredits: 0,
+                registrationDate: new Date().toISOString()
+            };
         }
 
-        const experience = profile?.experience || 0;
-        const level = profile?.level || 1;
-        const freeCredits = profile?.freeCredits || 0;
-        const paidCredits = profile?.paidCredits || 0;
-        const registrationDate = profile?.registrationDate || profile?.joinDate || new Date().toISOString();
+        const experience = profile.experience ?? 0;
+        const level = profile.level ?? 1;
+        const freeCredits = profile.freeCredits ?? 0;
+        const paidCredits = profile.paidCredits ?? 0;
+        const registrationDate = profile.registrationDate || profile.joinDate || new Date().toISOString();
+
+        // デバッグログ：経験値データの取得状況
+        console.log(`[ExperienceService] getUserExperience: user=${userId}, exp=${experience}, level=${level}, free=${freeCredits}, paid=${paidCredits}`);
 
         return {
             experience,
