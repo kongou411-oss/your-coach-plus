@@ -2797,6 +2797,47 @@ const CommunityPostView = ({ onClose, onSubmitPost, userProfile, usageDays, hist
                         </div>
                     </div>
 
+                    {/* テンプレート選択 */}
+                    <div>
+                        <label className="block font-semibold text-gray-800 mb-2">
+                            <Icon name="FileText" size={16} className="inline mr-1" />
+                            テンプレートから選択
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[
+                                {
+                                    label: '体重報告',
+                                    icon: 'Scale',
+                                    text: '【変化】体重○kg→○kg（○kg減/増）\n【体脂肪率】○%→○%\n【気づき】\n【今後の目標】'
+                                },
+                                {
+                                    label: 'トレーニング報告',
+                                    icon: 'Dumbbell',
+                                    text: '【今日のトレーニング】\n【ベスト記録】\n【体の変化】\n【次回の目標】'
+                                },
+                                {
+                                    label: '食事報告',
+                                    icon: 'Utensils',
+                                    text: '【食事の変化】\n【PFC達成率】P○% / F○% / C○%\n【工夫したこと】\n【課題】'
+                                },
+                                {
+                                    label: 'モチベーション',
+                                    icon: 'Flame',
+                                    text: '【今の気持ち】\n【頑張れた理由】\n【次の目標】\n【みんなへ一言】'
+                                }
+                            ].map((template, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setProgressCaption(template.text)}
+                                    className="p-3 border border-gray-200 rounded-lg text-left hover:border-teal-400 hover:bg-teal-50 transition flex items-center gap-2"
+                                >
+                                    <Icon name={template.icon} size={18} className="text-teal-600 flex-shrink-0" />
+                                    <span className="text-sm font-medium text-gray-700">{template.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* 詳細 */}
                     <div>
                         <label className="block font-semibold text-gray-800 mb-2">詳細（任意）</label>
