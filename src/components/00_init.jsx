@@ -7,7 +7,7 @@ import { FIREBASE_CONFIG } from '../config.js';
 
 // ===== Firebase初期化 =====
 // Firebase設定はconfig.jsから読み込む（APIキーを一箇所で管理）
-let auth, db, storage, functions;
+let auth, db, storage, functions, analytics;
 
 // Firebase初期化関数
 const initializeFirebase = () => {
@@ -38,6 +38,12 @@ const initializeFirebase = () => {
         functions = firebase.app().functions('asia-northeast2');
         // messaging は削除（ネイティブはCapacitor Push Notificationsを使用）
 
+        // Firebase Analytics 初期化
+        if (firebase.analytics) {
+            analytics = firebase.analytics();
+            console.log('✅ Firebase Analytics初期化成功');
+        }
+
         console.log('✅ Firebase初期化成功');
 
         // グローバルに公開（他のコンポーネントから使用できるように）
@@ -45,6 +51,7 @@ const initializeFirebase = () => {
         window.db = db;
         window.storage = storage;
         window.functions = functions;
+        window.analytics = analytics;
         window.firebase = firebase; // firebase オブジェクト全体も公開
     } catch (error) {
         console.error('❌ Firebase初期化失敗:', error);

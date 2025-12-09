@@ -4,6 +4,7 @@ import { GlobalConfirmModal } from './00_confirm_modal.jsx';
 import { isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler } from '../capacitor-push';
 import { BiometricAuthService } from '../biometric-auth.js';
 import useBABHeight from '../hooks/useBABHeight.js';
+import { useReviewPrompt, FeedbackPromptModal, ReviewPromptModal } from './24_review_prompt.jsx';
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
@@ -298,6 +299,9 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             // What's New モーダル
             const [showWhatsNew, setShowWhatsNew] = useState(false);
 
+            // ストアレビュー促進
+            const reviewPrompt = useReviewPrompt(user?.uid);
+
             // 生体認証関連
             const [biometricLocked, setBiometricLocked] = useState(false); // 認証待ち状態
             const [biometricChecking, setBiometricChecking] = useState(true); // 認証チェック中
@@ -435,6 +439,26 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     setShowCookieConsent(false);
                 }
             };
+
+            // Retention計測: アプリ起動時にアクティビティを記録
+            useEffect(() => {
+                if (!user) return;
+
+                const recordActivity = async () => {
+                    try {
+                        if (window.RetentionService) {
+                            const result = await window.RetentionService.recordActivity(user.uid);
+                            if (result) {
+                                console.log(`[App] User activity recorded: streak=${result.streak}, totalDays=${result.totalDays}`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[App] Failed to record activity:', error);
+                    }
+                };
+
+                recordActivity();
+            }, [user]);
 
             // What's Newモーダル表示チェック（マイナーバージョン比較）
             useEffect(() => {
@@ -4021,6 +4045,20 @@ AIコーチなどの高度な機能が解放されます。
 
                     {/* Global Confirm Modal（グローバル） */}
                     <GlobalConfirmModal />
+
+                    {/* ストアレビュー促進モーダル */}
+                    <FeedbackPromptModal
+                        isOpen={reviewPrompt.showFeedbackPrompt}
+                        onClose={reviewPrompt.handleClose}
+                        onPositive={reviewPrompt.handlePositiveFeedback}
+                        onNegative={reviewPrompt.handleNegativeFeedback}
+                    />
+                    <ReviewPromptModal
+                        isOpen={reviewPrompt.showReviewPrompt}
+                        onClose={reviewPrompt.handleClose}
+                        onReview={reviewPrompt.handleReview}
+                        onLater={reviewPrompt.handleLater}
+                    />
 
                     {/* Cookie Consent Banner（グローバル） */}
                     <CookieConsentBanner show={showCookieConsent} onAccept={handleCookieConsent} />

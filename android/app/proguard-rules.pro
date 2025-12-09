@@ -19,6 +19,11 @@
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**
 
+# Firebase Crashlytics
+-keepattributes *Annotation*
+-keep class com.google.firebase.crashlytics.** { *; }
+-dontwarn com.google.firebase.crashlytics.**
+
 # Google Auth
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.android.gms.**

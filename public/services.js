@@ -3209,6 +3209,15 @@ const AnalyticsService = {
             };
 
             await db.collection('analytics').doc(userId).collection('events').add(event);
+
+            // Firebase Analyticsにも送信
+            if (window.analytics) {
+                window.analytics.logEvent(eventName.replace(/\./g, '_'), {
+                    user_id: userId,
+                    ...metadata
+                });
+            }
+
             console.log('[Analytics] Tracked:', eventName);
         } catch (error) {
             console.error('[Analytics] Track error:', error);
@@ -3322,6 +3331,244 @@ const AnalyticsService = {
     },
 };
 
+// ===== リテンション計測サービス =====
+const RetentionService = {
+    // ユーザーのアクティビティを記録
+    recordActivity: async (userId) => {
+        if (!userId) return;
+
+        try {
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+
+            // 初回登録日を設定（なければ今日）
+            const registrationDate = userData.registrationDate || today;
+
+            // 最終アクティブ日を更新
+            const lastActiveDate = userData.lastActiveDate;
+
+            // アクティブ日数を計算
+            let activeDays = userData.activeDays || [];
+            if (!activeDays.includes(today)) {
+                activeDays.push(today);
+                // 直近90日分のみ保持（配列肥大化防止）
+                if (activeDays.length > 90) {
+                    activeDays = activeDays.slice(-90);
+                }
+            }
+
+            // 連続記録日数を計算
+            const streak = RetentionService.calculateStreak(activeDays);
+
+            await userRef.set({
+                registrationDate,
+                lastActiveDate: today,
+                activeDays,
+                streak,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            console.log(`[RetentionService] Activity recorded for ${userId}: streak=${streak}, totalDays=${activeDays.length}`);
+            return { streak, totalDays: activeDays.length, registrationDate };
+        } catch (error) {
+            console.error('[RetentionService] Failed to record activity:', error);
+            return null;
+        }
+    },
+
+    // 連続記録日数を計算
+    calculateStreak: (activeDays) => {
+        if (!activeDays || activeDays.length === 0) return 0;
+
+        const sortedDays = [...activeDays].sort().reverse();
+        const today = new Date().toISOString().split('T')[0];
+
+        // 今日または昨日がアクティブでなければストリークは0
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        if (!sortedDays.includes(today) && !sortedDays.includes(yesterday)) {
+            return 0;
+        }
+
+        let streak = 0;
+        let checkDate = new Date(sortedDays[0]);
+
+        for (const day of sortedDays) {
+            const dayDate = new Date(day);
+            const diff = Math.round((checkDate - dayDate) / 86400000);
+
+            if (diff <= 1) {
+                streak++;
+                checkDate = dayDate;
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    },
+
+    // リテンション統計を取得（管理者用）
+    getRetentionStats: async (adminPassword) => {
+        if (adminPassword !== '0910') {
+            throw new Error('Unauthorized');
+        }
+
+        try {
+            const usersSnapshot = await db.collection('users')
+                .where('registrationDate', '!=', null)
+                .get();
+
+            const stats = {
+                totalUsers: 0,
+                day1Retention: { eligible: 0, retained: 0 },
+                day7Retention: { eligible: 0, retained: 0 },
+                day30Retention: { eligible: 0, retained: 0 },
+                averageStreak: 0,
+                activeToday: 0,
+                activeLast7Days: 0,
+                activeLast30Days: 0,
+                cohorts: {}
+            };
+
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+
+            let totalStreak = 0;
+
+            usersSnapshot.forEach(doc => {
+                const user = doc.data();
+                if (!user.registrationDate) return;
+
+                stats.totalUsers++;
+                const regDate = new Date(user.registrationDate);
+                const daysSinceReg = Math.floor((today - regDate) / 86400000);
+                const activeDays = user.activeDays || [];
+
+                // ストリーク集計
+                totalStreak += user.streak || 0;
+
+                // 今日アクティブ
+                if (activeDays.includes(todayStr)) {
+                    stats.activeToday++;
+                }
+
+                // 直近7日間でアクティブ
+                const last7Days = [];
+                for (let i = 0; i < 7; i++) {
+                    last7Days.push(new Date(Date.now() - i * 86400000).toISOString().split('T')[0]);
+                }
+                if (activeDays.some(d => last7Days.includes(d))) {
+                    stats.activeLast7Days++;
+                }
+
+                // 直近30日間でアクティブ
+                const last30Days = [];
+                for (let i = 0; i < 30; i++) {
+                    last30Days.push(new Date(Date.now() - i * 86400000).toISOString().split('T')[0]);
+                }
+                if (activeDays.some(d => last30Days.includes(d))) {
+                    stats.activeLast30Days++;
+                }
+
+                // Day-1 リテンション（登録翌日にアクティブか）
+                if (daysSinceReg >= 1) {
+                    stats.day1Retention.eligible++;
+                    const day1Date = new Date(regDate.getTime() + 86400000).toISOString().split('T')[0];
+                    if (activeDays.includes(day1Date)) {
+                        stats.day1Retention.retained++;
+                    }
+                }
+
+                // Day-7 リテンション
+                if (daysSinceReg >= 7) {
+                    stats.day7Retention.eligible++;
+                    const day7Date = new Date(regDate.getTime() + 7 * 86400000).toISOString().split('T')[0];
+                    if (activeDays.includes(day7Date)) {
+                        stats.day7Retention.retained++;
+                    }
+                }
+
+                // Day-30 リテンション
+                if (daysSinceReg >= 30) {
+                    stats.day30Retention.eligible++;
+                    const day30Date = new Date(regDate.getTime() + 30 * 86400000).toISOString().split('T')[0];
+                    if (activeDays.includes(day30Date)) {
+                        stats.day30Retention.retained++;
+                    }
+                }
+
+                // 週単位コホート集計
+                const cohortWeek = RetentionService.getWeekNumber(regDate);
+                if (!stats.cohorts[cohortWeek]) {
+                    stats.cohorts[cohortWeek] = { users: 0, retained7: 0, retained30: 0 };
+                }
+                stats.cohorts[cohortWeek].users++;
+            });
+
+            // 平均ストリーク
+            stats.averageStreak = stats.totalUsers > 0
+                ? Math.round(totalStreak / stats.totalUsers * 10) / 10
+                : 0;
+
+            // リテンション率を計算
+            stats.day1RetentionRate = stats.day1Retention.eligible > 0
+                ? Math.round(stats.day1Retention.retained / stats.day1Retention.eligible * 100)
+                : 0;
+            stats.day7RetentionRate = stats.day7Retention.eligible > 0
+                ? Math.round(stats.day7Retention.retained / stats.day7Retention.eligible * 100)
+                : 0;
+            stats.day30RetentionRate = stats.day30Retention.eligible > 0
+                ? Math.round(stats.day30Retention.retained / stats.day30Retention.eligible * 100)
+                : 0;
+
+            console.log('[RetentionService] Stats:', stats);
+            return stats;
+        } catch (error) {
+            console.error('[RetentionService] Failed to get stats:', error);
+            throw error;
+        }
+    },
+
+    // 週番号を取得（YYYY-WW形式）
+    getWeekNumber: (date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+        const yearStart = new Date(d.getFullYear(), 0, 1);
+        const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+        return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    },
+
+    // ユーザーのリテンション情報を取得
+    getUserRetentionInfo: async (userId) => {
+        if (!userId) return null;
+
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) return null;
+
+            const userData = userDoc.data();
+            const today = new Date();
+            const regDate = userData.registrationDate ? new Date(userData.registrationDate) : null;
+            const daysSinceReg = regDate ? Math.floor((today - regDate) / 86400000) : 0;
+
+            return {
+                registrationDate: userData.registrationDate,
+                lastActiveDate: userData.lastActiveDate,
+                activeDays: userData.activeDays?.length || 0,
+                streak: userData.streak || 0,
+                daysSinceRegistration: daysSinceReg,
+                isActiveToday: userData.activeDays?.includes(today.toISOString().split('T')[0]) || false
+            };
+        } catch (error) {
+            console.error('[RetentionService] Failed to get user info:', error);
+            return null;
+        }
+    }
+};
+
 // ===== グローバルに公開 =====
 window.DataService = DataService;
 window.GeminiAPI = GeminiAPI;
@@ -3332,3 +3579,4 @@ window.MFAService = MFAService;
 window.TextbookPurchaseService = TextbookPurchaseService;
 window.GiftCodeService = GiftCodeService;
 window.AnalyticsService = AnalyticsService;
+window.RetentionService = RetentionService;

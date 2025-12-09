@@ -1,6 +1,28 @@
 // ===== グローバルエラーハンドラ =====
 // すべてのエラーを捕捉し、開発者に自動送信
 // iOS Safari、Android Chrome、PC Chromeのすべてで動作
+// Firebase Crashlytics連携
+
+// Crashlyticsにエラーを送信（ネイティブアプリ向け）
+const sendToCrashlytics = async (errorInfo) => {
+    try {
+        // Firebase Analytics/Crashlyticsが利用可能な場合
+        if (typeof firebase !== 'undefined' && firebase.analytics) {
+            const analytics = firebase.analytics();
+            // カスタムイベントとしてエラーを記録
+            analytics.logEvent('app_exception', {
+                description: errorInfo.message?.substring(0, 100) || 'Unknown error',
+                fatal: false,
+                source: errorInfo.source?.substring(0, 100) || 'Unknown',
+                line: errorInfo.lineno || 0,
+                timestamp: errorInfo.timestamp
+            });
+            console.log('[ErrorHandler] Error logged to Firebase Analytics');
+        }
+    } catch (e) {
+        console.warn('[ErrorHandler] Failed to log to Crashlytics:', e);
+    }
+};
 
 // エラー情報を開発者に送信
 const sendErrorReport = async (errorInfo) => {
@@ -157,6 +179,9 @@ window.addEventListener('error', (event) => {
     // エラー画面を表示
     showErrorScreen(errorInfo);
 
+    // Crashlyticsにエラーを送信
+    sendToCrashlytics(errorInfo);
+
     // エラー情報を開発者に送信
     sendErrorReport(errorInfo);
 
@@ -179,6 +204,9 @@ window.addEventListener('unhandledrejection', (event) => {
 
     // エラー画面を表示
     showErrorScreen(errorInfo);
+
+    // Crashlyticsにエラーを送信
+    sendToCrashlytics(errorInfo);
 
     // エラー情報を開発者に送信
     sendErrorReport(errorInfo);

@@ -834,8 +834,8 @@ exports.sendFeedback = onCall({
       },
     });
 
-    // メール送信
-    const mailOptions = {
+    // 1. 管理者へのフィードバック送信
+    const adminMailOptions = {
       from: gmailUser.value(),
       to: "official@your-coach-plus.com",
       subject: `[Your Coach+] ユーザーフィードバック from ${userEmail}`,
@@ -850,9 +850,55 @@ exports.sendFeedback = onCall({
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await transporter.sendMail(adminMailOptions);
+    console.log(`[Feedback] Sent to admin from ${userId} (${userEmail})`);
 
-    console.log(`[Feedback] Sent from ${userId} (${userEmail})`);
+    // 2. ユーザーへの自動返信メール
+    if (userEmail && userEmail !== '未登録' && userEmail.includes('@')) {
+      const autoReplyOptions = {
+        from: `"Your Coach+ サポート" <${gmailUser.value()}>`,
+        to: userEmail,
+        subject: "[Your Coach+] フィードバックを受け付けました",
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #4F46E5; margin-bottom: 10px;">Your Coach+</h1>
+            </div>
+
+            <p style="font-size: 16px; color: #333;">フィードバックをお送りいただき、ありがとうございます。</p>
+
+            <p style="font-size: 14px; color: #666; line-height: 1.6;">
+              いただいたご意見は開発チームにて確認し、サービス改善の参考にさせていただきます。<br>
+              内容によっては、個別にご連絡を差し上げる場合がございます。
+            </p>
+
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <p style="font-size: 12px; color: #666; margin: 0 0 10px 0;"><strong>送信内容:</strong></p>
+              <p style="font-size: 14px; color: #333; white-space: pre-wrap; margin: 0;">${feedback.substring(0, 500)}${feedback.length > 500 ? '...' : ''}</p>
+            </div>
+
+            <p style="font-size: 14px; color: #666;">
+              引き続きYour Coach+をよろしくお願いいたします。
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 12px; color: #999; text-align: center;">
+              このメールは自動送信されています。<br>
+              ご質問がある場合は、official@your-coach-plus.com までご連絡ください。
+            </p>
+          </div>
+        `,
+      };
+
+      try {
+        await transporter.sendMail(autoReplyOptions);
+        console.log(`[Feedback] Auto-reply sent to ${userEmail}`);
+      } catch (autoReplyError) {
+        // 自動返信の失敗はログに残すが、エラーにはしない
+        console.error(`[Feedback] Auto-reply failed to ${userEmail}:`, autoReplyError.message);
+      }
+    }
 
     return {
       success: true,
@@ -2753,6 +2799,122 @@ exports.getAdminAnalytics = onCall({
       stats.usageRate = stats.total > 0 ? Math.round((stats.used / stats.total) * 100) : 0;
     });
 
+    // ===== オンボーディング完了率とリテンション統計 =====
+    const allUsersSnapshot = await db.collection('users').get();
+
+    const onboardingStats = {
+      total: 0,
+      completed: 0,
+      completionRate: 0,
+    };
+
+    const retentionStats = {
+      totalWithRegDate: 0,
+      day1: { eligible: 0, retained: 0, rate: 0 },
+      day7: { eligible: 0, retained: 0, rate: 0 },
+      day30: { eligible: 0, retained: 0, rate: 0 },
+      activeToday: 0,
+      activeLast7Days: 0,
+      activeLast30Days: 0,
+      averageStreak: 0,
+    };
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    let totalStreak = 0;
+
+    allUsersSnapshot.forEach(doc => {
+      const userData = doc.data();
+
+      // オンボーディング統計
+      onboardingStats.total++;
+      if (userData.onboardingCompleted === true) {
+        onboardingStats.completed++;
+      }
+
+      // リテンション統計（registrationDateがあるユーザーのみ）
+      if (userData.registrationDate) {
+        retentionStats.totalWithRegDate++;
+        const regDate = new Date(userData.registrationDate);
+        const daysSinceReg = Math.floor((today - regDate) / 86400000);
+        const activeDays = userData.activeDays || [];
+
+        // ストリーク集計
+        totalStreak += userData.streak || 0;
+
+        // 今日アクティブ
+        if (activeDays.includes(todayStr)) {
+          retentionStats.activeToday++;
+        }
+
+        // 直近7日間でアクティブ
+        const last7Days = [];
+        for (let i = 0; i < 7; i++) {
+          last7Days.push(new Date(Date.now() - i * 86400000).toISOString().split('T')[0]);
+        }
+        if (activeDays.some(d => last7Days.includes(d))) {
+          retentionStats.activeLast7Days++;
+        }
+
+        // 直近30日間でアクティブ
+        const last30Days = [];
+        for (let i = 0; i < 30; i++) {
+          last30Days.push(new Date(Date.now() - i * 86400000).toISOString().split('T')[0]);
+        }
+        if (activeDays.some(d => last30Days.includes(d))) {
+          retentionStats.activeLast30Days++;
+        }
+
+        // Day-1 リテンション
+        if (daysSinceReg >= 1) {
+          retentionStats.day1.eligible++;
+          const day1Date = new Date(regDate.getTime() + 86400000).toISOString().split('T')[0];
+          if (activeDays.includes(day1Date)) {
+            retentionStats.day1.retained++;
+          }
+        }
+
+        // Day-7 リテンション
+        if (daysSinceReg >= 7) {
+          retentionStats.day7.eligible++;
+          const day7Date = new Date(regDate.getTime() + 7 * 86400000).toISOString().split('T')[0];
+          if (activeDays.includes(day7Date)) {
+            retentionStats.day7.retained++;
+          }
+        }
+
+        // Day-30 リテンション
+        if (daysSinceReg >= 30) {
+          retentionStats.day30.eligible++;
+          const day30Date = new Date(regDate.getTime() + 30 * 86400000).toISOString().split('T')[0];
+          if (activeDays.includes(day30Date)) {
+            retentionStats.day30.retained++;
+          }
+        }
+      }
+    });
+
+    // オンボーディング完了率
+    onboardingStats.completionRate = onboardingStats.total > 0
+      ? Math.round(onboardingStats.completed / onboardingStats.total * 100)
+      : 0;
+
+    // リテンション率計算
+    retentionStats.day1.rate = retentionStats.day1.eligible > 0
+      ? Math.round(retentionStats.day1.retained / retentionStats.day1.eligible * 100)
+      : 0;
+    retentionStats.day7.rate = retentionStats.day7.eligible > 0
+      ? Math.round(retentionStats.day7.retained / retentionStats.day7.eligible * 100)
+      : 0;
+    retentionStats.day30.rate = retentionStats.day30.eligible > 0
+      ? Math.round(retentionStats.day30.retained / retentionStats.day30.eligible * 100)
+      : 0;
+
+    // 平均ストリーク
+    retentionStats.averageStreak = retentionStats.totalWithRegDate > 0
+      ? Math.round(totalStreak / retentionStats.totalWithRegDate * 10) / 10
+      : 0;
+
     return {
       success: true,
       period: daysAgo,
@@ -2763,6 +2925,8 @@ exports.getAdminAnalytics = onCall({
       unusedFeatures,
       categoryStats,
       allFeatures: ALL_FEATURES,
+      onboardingStats,
+      retentionStats,
     };
   } catch (error) {
     console.error('[AdminAnalytics] Error:', error);
