@@ -56,11 +56,21 @@ const DataTab = ({
                         }
                     };
 
-                    // LocalStorageからカスタム運動を読み込み
-                    const loadCustomExercises = () => {
+                    // Firestoreからカスタム運動を読み込み
+                    const loadCustomExercises = async () => {
+                        if (!userId) return;
                         try {
-                            const saved = localStorage.getItem('customExercises');
-                            const exercises = saved ? JSON.parse(saved) : [];
+                            const customExercisesSnapshot = await firebase.firestore()
+                                .collection('users')
+                                .doc(userId)
+                                .collection('customExercises')
+                                .get();
+
+                            const exercises = customExercisesSnapshot.docs.map(doc => ({
+                                id: doc.id,
+                                firestoreId: doc.id,
+                                ...doc.data()
+                            }));
                             setCustomExercises(exercises);
                         } catch (error) {
                             console.error('[Settings] customExercises読み込みエラー:', error);
@@ -76,7 +86,6 @@ const DataTab = ({
 
                     // itemTypeが未設定の古いデータはデフォルトで'food'として扱う
                     const foodItems = customFoods.filter(item => !item.itemType || item.itemType === 'food');
-                    const recipeItems = customFoods.filter(item => item.itemType === 'recipe');
                     const supplementItems = customFoods.filter(item => item.itemType === 'supplement');
 
                     const deleteItem = async (item) => {
@@ -100,7 +109,7 @@ const DataTab = ({
                     };
 
                     const deleteAllByType = async (itemType) => {
-                        const typeName = itemType === 'food' ? '食材' : itemType === 'recipe' ? '料理' : 'サプリ';
+                        const typeName = itemType === 'food' ? '食材' : 'サプリ';
                         const itemsToDelete = customFoods.filter(item =>
                             itemType === 'food' ? (!item.itemType || item.itemType === 'food') : item.itemType === itemType
                         );
@@ -130,12 +139,14 @@ const DataTab = ({
 
                     // カスタム運動の削除
                     const deleteExercise = (exercise) => {
-                        showConfirm('種目削除の確認', `「${exercise.name}」を削除しますか？`, () => {
+                        showConfirm('種目削除の確認', `「${exercise.name}」を削除しますか？`, async () => {
                             try {
-                                const saved = localStorage.getItem('customExercises');
-                                const exercises = saved ? JSON.parse(saved) : [];
-                                const filtered = exercises.filter(ex => ex.id !== exercise.id);
-                                localStorage.setItem('customExercises', JSON.stringify(filtered));
+                                await firebase.firestore()
+                                    .collection('users')
+                                    .doc(userId)
+                                    .collection('customExercises')
+                                    .doc(exercise.firestoreId || exercise.id)
+                                    .delete();
                                 toast.success('削除しました');
                                 loadCustomExercises(); // 再読み込み
                             } catch (error) {
@@ -147,9 +158,18 @@ const DataTab = ({
 
                     // カスタム運動の全削除
                     const deleteAllExercises = () => {
-                        showConfirm('全削除の確認', `すべての運動（${customExercises.length}件）を削除しますか？`, () => {
+                        showConfirm('全削除の確認', `すべての運動（${customExercises.length}件）を削除しますか？`, async () => {
                             try {
-                                localStorage.setItem('customExercises', JSON.stringify([]));
+                                const batch = firebase.firestore().batch();
+                                customExercises.forEach(exercise => {
+                                    const docRef = firebase.firestore()
+                                        .collection('users')
+                                        .doc(userId)
+                                        .collection('customExercises')
+                                        .doc(exercise.firestoreId || exercise.id);
+                                    batch.delete(docRef);
+                                });
+                                await batch.commit();
                                 toast.success('運動を全削除しました');
                                 loadCustomExercises(); // 再読み込み
                             } catch (error) {
@@ -223,17 +243,17 @@ const DataTab = ({
                                     更新
                                 </button>
                             </div>
-                            <p className="text-sm text-gray-600 mb-3">AI解析や手動で作成した食材・料理・サプリ・運動を管理できます。</p>
+                            <p className="text-sm text-gray-600 mb-3">AI解析や手動で作成した食材・サプリ・運動を管理できます。</p>
 
                             {/* 食事/運動 切り替え */}
                             <div className="flex gap-2 mb-3">
                                 <button
                                     onClick={() => {
-                                        const isFoodTab = ['food', 'recipe', 'supplement'].includes(customItemTab);
+                                        const isFoodTab = ['food', 'supplement'].includes(customItemTab);
                                         if (!isFoodTab) setCustomItemTab('food');
                                     }}
                                     className={`flex-1 py-2 px-4 rounded-lg font-medium transition text-sm ${
-                                        ['food', 'recipe', 'supplement'].includes(customItemTab)
+                                        ['food', 'supplement'].includes(customItemTab)
                                             ? 'bg-green-600 text-white'
                                             : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                     }`}
@@ -256,7 +276,7 @@ const DataTab = ({
                             </div>
 
                             {/* タブ切り替え */}
-                            {['food', 'recipe', 'supplement'].includes(customItemTab) && (
+                            {['food', 'supplement'].includes(customItemTab) && (
                                 <div className="flex gap-2 border-b mb-3">
                                     <button
                                         onClick={() => setCustomItemTab('food')}
@@ -267,16 +287,6 @@ const DataTab = ({
                                         }`}
                                     >
                                         食材 ({foodItems.length})
-                                    </button>
-                                    <button
-                                        onClick={() => setCustomItemTab('recipe')}
-                                        className={`px-4 py-2 font-medium transition text-sm ${
-                                            customItemTab === 'recipe'
-                                                ? 'border-b-2 border-green-600 text-green-600'
-                                                : 'text-gray-600 hover:text-gray-600'
-                                        }`}
-                                    >
-                                        料理 ({recipeItems.length})
                                     </button>
                                     <button
                                         onClick={() => setCustomItemTab('supplement')}
@@ -355,100 +365,6 @@ const DataTab = ({
                                                                 </span>
                                                             )}
                                                             {item.category && item.category !== 'カスタム食材' && (
-                                                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                                                    {item.category}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        {/* 3行目: 栄養情報（色分け） */}
-                                                        <div className="text-xs space-y-0.5">
-                                                            <p className="text-gray-600">{item.servingSize}{item.servingUnit}あたり</p>
-                                                            <p>
-                                                                <span className="text-blue-600 font-semibold">{item.calories}kcal</span>
-                                                                <span className="text-gray-600"> | </span>
-                                                                <span className="text-red-500 font-semibold">P:{item.protein}g</span>
-                                                                <span className="text-gray-600"> </span>
-                                                                <span className="text-yellow-600 font-semibold">F:{item.fat}g</span>
-                                                                <span className="text-gray-600"> </span>
-                                                                <span className="text-green-600 font-semibold">C:{item.carbs}g</span>
-                                                            </p>
-                                                        </div>
-
-                                                        {/* 4行目: アイコンボタン */}
-                                                        <div className="flex gap-2 justify-end">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        await firebase.firestore()
-                                                                            .collection('users')
-                                                                            .doc(userId)
-                                                                            .collection('customFoods')
-                                                                            .doc(item.id)
-                                                                            .update({ hidden: !item.hidden });
-                                                                        toast.success(item.hidden ? '表示しました' : '非表示にしました');
-                                                                        loadCustomFoods();
-                                                                    } catch (error) {
-                                                                        console.error('表示切替エラー:', error);
-                                                                        toast.error('更新に失敗しました');
-                                                                    }
-                                                                }}
-                                                                className={`p-1 transition ${
-                                                                    item.hidden
-                                                                        ? 'text-gray-400 hover:text-gray-600'
-                                                                        : 'text-green-600 hover:text-green-800'
-                                                                }`}
-                                                                title={item.hidden ? '表示する' : '非表示にする'}
-                                                            >
-                                                                <Icon name={item.hidden ? 'EyeOff' : 'Eye'} size={18} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => editItem(item)}
-                                                                className="p-1 text-blue-600 hover:text-blue-800 transition"
-                                                            >
-                                                                <Icon name="Edit" size={18} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => deleteItem(item)}
-                                                                className="p-1 text-red-600 hover:text-red-800 transition"
-                                                            >
-                                                                <Icon name="Trash2" size={18} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </>
-                                        )}
-                                    </>
-                                )}
-
-                                {customItemTab === 'recipe' && (
-                                    <>
-                                        {recipeItems.length === 0 ? (
-                                            <p className="text-sm text-gray-600 py-4 text-center">カスタム料理はありません</p>
-                                        ) : (
-                                            <>
-                                                <div className="flex justify-end mb-2">
-                                                    <button
-                                                        onClick={() => deleteAllByType('recipe')}
-                                                        className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition"
-                                                    >
-                                                        すべて削除
-                                                    </button>
-                                                </div>
-                                                {recipeItems.map((item, idx) => (
-                                                    <div key={item.id || idx} className="bg-white p-2 rounded-lg border space-y-1">
-                                                        {/* 1行目: アイテム名 */}
-                                                        <p className="font-bold text-sm">{item.name}</p>
-
-                                                        {/* 2行目: タグ */}
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            {item.customLabel && (
-                                                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                                                    {item.customLabel}
-                                                                </span>
-                                                            )}
-                                                            {item.category && item.category !== 'カスタム料理' && (
                                                                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                                                                     {item.category}
                                                                 </span>
@@ -794,7 +710,6 @@ const DataTab = ({
                                                     className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                                 >
                                                     <option value="food">食材</option>
-                                                    <option value="recipe">料理</option>
                                                     <option value="supplement">サプリ</option>
                                                 </select>
                                             </div>
