@@ -2038,10 +2038,7 @@ exports.redeemGiftCode = onCall({
 
       const codeData = codeDoc.data();
 
-      // 重複使用チェック
-      if (codeData.usedBy?.includes(userId)) {
-        throw new HttpsError("already-exists", "このコードは既に使用済みです");
-      }
+      // 同一ユーザーでも再入力でクレジット再付与可能（重複チェックなし）
 
       // ユーザー情報を取得
       const userRef = admin.firestore().collection('users').doc(userId);
@@ -2070,7 +2067,7 @@ exports.redeemGiftCode = onCall({
           giftCodeActivatedAt: admin.firestore.FieldValue.serverTimestamp(),
           status: 'active'
         },
-        paidCredits: 999999999,  // 無制限（実質∞）
+        paidCredits: 99999,  // クレジット付与
       };
 
       if (userDoc.exists) {
