@@ -1122,10 +1122,50 @@ const OnboardingScreen = ({ user, onComplete }) => {
             customFatRatio: profile.customFatRatio || null,
             customCarbRatio: profile.customCarbRatio || null,
 
-            // PFCバランス比率（%）
-            proteinRatio: profile.proteinRatioPercent || 30,
-            fatRatioPercent: profile.fatRatioPercent || 25,
-            carbRatio: profile.carbRatioPercent || 45,
+            // PFCバランス比率（%）- スタイルに応じてLBMベースで計算
+            ...(() => {
+                // ユーザーがカスタム値を設定していればそれを優先
+                if (profile.proteinRatioPercent || profile.fatRatioPercent || profile.carbRatioPercent) {
+                    return {
+                        proteinRatio: profile.proteinRatioPercent || 30,
+                        fatRatioPercent: profile.fatRatioPercent || 25,
+                        carbRatio: profile.carbRatioPercent || 45
+                    };
+                }
+
+                // LBMベースでデフォルト値を計算
+                const lbm = LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
+                const fatMass = (profile.weight || 70) - lbm;
+                const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel || 3, profile.customActivityMultiplier, fatMass);
+
+                // カロリー調整を適用
+                const defaults = { 'ダイエット': -300, 'バルクアップ': +300, 'メンテナンス': 0, 'リコンプ': 0 };
+                const calorieAdjustment = profile.calorieAdjustment ?? (defaults[profile.purpose] || 0);
+                const adjustedCalories = tdee + calorieAdjustment;
+
+                // スタイル判定: ボディメイカー系はLBM×2.5、一般はLBM×1.2
+                const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
+                const isBodymaker = bodymakerStyles.includes(profile.style);
+                const proteinCoefficient = isBodymaker ? 2.5 : 1.2;
+
+                // タンパク質をLBMベースで計算し、%に変換
+                const proteinG = lbm * proteinCoefficient;
+                const proteinCal = proteinG * 4;
+                const proteinPercent = Math.round((proteinCal / adjustedCalories) * 100);
+
+                // 脂質は25%固定、炭水化物は残り
+                const fatPercent = 25;
+
+                // 範囲制限
+                const clampedProtein = Math.max(15, Math.min(50, proteinPercent));
+                const clampedCarb = Math.max(15, Math.min(60, 100 - clampedProtein - fatPercent));
+
+                return {
+                    proteinRatio: clampedProtein,
+                    fatRatioPercent: fatPercent,
+                    carbRatio: clampedCarb
+                };
+            })(),
 
             // サブスクリプション情報
             subscriptionTier: 'free',

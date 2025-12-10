@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import useBABHeight from '../hooks/useBABHeight.js';
 import EXIF from 'exif-js';
 // ===== Community Components =====
-const PGBaseView = ({ onClose, userId, userProfile }) => {
+const PGBaseView = ({ onClose, userId, userProfile, usageDays }) => {
     const [selectedModule, setSelectedModule] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [viewMode, setViewMode] = useState('modules'); // 'modules' | 'ai' | 'history'
@@ -14,6 +14,9 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     const aiChatContainerRef = useRef(null);
     const babHeight = useBABHeight(64); // BAB高さ（カスタムフック）
     const aiInputContainerRef = useRef(null);
+
+    // クレジット情報
+    const [creditInfo, setCreditInfo] = useState(null);
 
     // 確認モーダル（グローバル確認関数を使用）
     const showConfirm = (title, message, callback) => {
@@ -160,6 +163,29 @@ const PGBaseView = ({ onClose, userId, userProfile }) => {
     useEffect(() => {
         loadAIChatHistory();
     }, []);
+
+    // クレジット情報の読み込み
+    useEffect(() => {
+        const fetchCreditInfo = async () => {
+            try {
+                const ExperienceService = window.ExperienceService;
+                const PremiumService = window.PremiumService;
+                if (ExperienceService && PremiumService) {
+                    const expInfo = await ExperienceService.getUserExperience(userId);
+                    const isPremium = PremiumService.isPremiumUser(userProfile, usageDays || 0);
+                    setCreditInfo({
+                        tier: isPremium ? 'premium' : 'free',
+                        freeCredits: expInfo.freeCredits,
+                        paidCredits: expInfo.paidCredits,
+                        totalCredits: expInfo.totalCredits
+                    });
+                }
+            } catch (error) {
+                console.error('[PGBase] クレジット情報取得エラー:', error);
+            }
+        };
+        fetchCreditInfo();
+    }, [userId, userProfile, usageDays]);
 
     // 購入済みモジュールと有料クレジットの読み込み
     useEffect(() => {
@@ -671,6 +697,29 @@ ${context}
             {/* AIモード */}
             {viewMode === 'ai' && (
                 <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+                    {/* クレジット表示バー */}
+                    {creditInfo && (
+                        <div className={`px-4 py-2 border-b flex items-center ${
+                            creditInfo.tier === 'premium' ? 'bg-[#FFF59A]/10' : 'bg-blue-50'
+                        }`}>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-600">クレジット:</span>
+                                <div className="flex items-center gap-1">
+                                    <span className={`text-sm font-bold ${
+                                        creditInfo.freeCredits <= 0 ? 'text-gray-400' : 'text-blue-600'
+                                    }`} title="無料クレジット">
+                                        {creditInfo.freeCredits || 0}
+                                    </span>
+                                    <span className="text-xs text-gray-400">/</span>
+                                    <span className={`text-sm font-bold ${
+                                        creditInfo.paidCredits <= 0 ? 'text-gray-400' : 'text-amber-600'
+                                    }`} title="有料クレジット">
+                                        {creditInfo.paidCredits || 0}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {/* チャット履歴 */}
                     <div
                         ref={aiChatContainerRef}

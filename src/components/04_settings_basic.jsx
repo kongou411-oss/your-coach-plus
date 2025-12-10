@@ -2262,7 +2262,24 @@ const BasicTab = ({
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <button
                                             type="button"
-                                            onClick={() => setProfile({...profile, style: '一般'})}
+                                            onClick={() => {
+                                                setProfile({...profile, style: '一般'});
+                                                // 一般: LBM×1.2 でPFC比率を自動計算
+                                                const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
+                                                const fatMass = (profile.weight || 70) - lbm;
+                                                const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel || 3, profile.customActivityMultiplier, fatMass);
+                                                const adjustedCalories = tdee + (profile.calorieAdjustment || 0);
+                                                const proteinG = lbm * 1.2;
+                                                const proteinPercent = Math.round((proteinG * 4 / adjustedCalories) * 100);
+                                                const clampedProtein = Math.max(15, Math.min(50, proteinPercent));
+                                                const clampedCarb = Math.max(15, Math.min(60, 100 - clampedProtein - 25));
+                                                setAdvancedSettings({
+                                                    ...advancedSettings,
+                                                    proteinRatio: clampedProtein,
+                                                    fatRatioPercent: 25,
+                                                    carbRatio: clampedCarb
+                                                });
+                                            }}
                                             className={`p-4 rounded-lg border-2 transition ${
                                                 profile.style === '一般'
                                                     ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
@@ -2274,7 +2291,24 @@ const BasicTab = ({
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => setProfile({...profile, style: 'ボディメイカー'})}
+                                            onClick={() => {
+                                                setProfile({...profile, style: 'ボディメイカー'});
+                                                // ボディメイカー: LBM×2.5 でPFC比率を自動計算
+                                                const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
+                                                const fatMass = (profile.weight || 70) - lbm;
+                                                const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel || 3, profile.customActivityMultiplier, fatMass);
+                                                const adjustedCalories = tdee + (profile.calorieAdjustment || 0);
+                                                const proteinG = lbm * 2.5;
+                                                const proteinPercent = Math.round((proteinG * 4 / adjustedCalories) * 100);
+                                                const clampedProtein = Math.max(15, Math.min(50, proteinPercent));
+                                                const clampedCarb = Math.max(15, Math.min(60, 100 - clampedProtein - 25));
+                                                setAdvancedSettings({
+                                                    ...advancedSettings,
+                                                    proteinRatio: clampedProtein,
+                                                    fatRatioPercent: 25,
+                                                    carbRatio: clampedCarb
+                                                });
+                                            }}
                                             className={`p-4 rounded-lg border-2 transition ${
                                                 profile.style === 'ボディメイカー'
                                                     ? 'border-[#4A9EFF] bg-blue-50 shadow-md'
@@ -2409,11 +2443,40 @@ const BasicTab = ({
                                         <button
                                             type="button"
                                             onClick={() => {
+                                                // スタイルに応じたLBMベースのデフォルトPFC比率を計算
+                                                const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
+                                                const fatMass = (profile.weight || 70) - lbm;
+                                                const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel || 3, profile.customActivityMultiplier, fatMass);
+
+                                                // カロリー調整を適用
+                                                const calorieAdjustment = profile.calorieAdjustment || 0;
+                                                const adjustedCalories = tdee + calorieAdjustment;
+
+                                                // スタイル判定: ボディメイカー系はLBM×2.5、一般はLBM×1.2
+                                                const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
+                                                const isBodymaker = bodymakerStyles.includes(profile.style);
+                                                const proteinCoefficient = isBodymaker ? 2.5 : 1.2;
+
+                                                // タンパク質をLBMベースで計算し、%に変換
+                                                const proteinG = lbm * proteinCoefficient;
+                                                const proteinCal = proteinG * 4;
+                                                const proteinPercent = Math.round((proteinCal / adjustedCalories) * 100);
+
+                                                // 脂質は25%固定
+                                                const fatPercent = 25;
+
+                                                // 炭水化物は残り
+                                                const carbPercent = 100 - proteinPercent - fatPercent;
+
+                                                // 範囲制限（P: 15-50%, F: 15-40%, C: 15-60%）
+                                                const clampedProtein = Math.max(15, Math.min(50, proteinPercent));
+                                                const clampedCarb = Math.max(15, Math.min(60, 100 - clampedProtein - fatPercent));
+
                                                 setAdvancedSettings({
                                                     ...advancedSettings,
-                                                    proteinRatio: 30,
-                                                    fatRatioPercent: 25,
-                                                    carbRatio: 45
+                                                    proteinRatio: clampedProtein,
+                                                    fatRatioPercent: fatPercent,
+                                                    carbRatio: clampedCarb
                                                 });
                                             }}
                                             className="text-xs text-[#4A9EFF] hover:text-[#3b8fef] underline"

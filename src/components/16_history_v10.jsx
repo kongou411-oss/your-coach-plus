@@ -1,8 +1,9 @@
 import React from 'react';
+import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from '../capacitor-push';
 import useBABHeight from '../hooks/useBABHeight.js';
 // ===== History V10 Component (Direct iframe to v10.html) =====
-const HistoryV10View = ({ onClose, userId, userProfile }) => {
+const HistoryV10View = ({ onClose, userId, userProfile, usageDays }) => {
     const iframeRef = React.useRef(null);
     // キャッシュを完全に回避するため、マウント時のタイムスタンプを使用
     const [cacheKey] = React.useState(() => Date.now());
@@ -10,6 +11,31 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
     const native = isNativeApp();
     // BAB高さ（動的取得）
     const babHeight = useBABHeight(64);
+    // クレジット情報
+    const [creditInfo, setCreditInfo] = React.useState(null);
+
+    // クレジット情報を取得
+    React.useEffect(() => {
+        const fetchCreditInfo = async () => {
+            try {
+                const ExperienceService = window.ExperienceService;
+                const PremiumService = window.PremiumService;
+                if (ExperienceService && PremiumService) {
+                    const expInfo = await ExperienceService.getUserExperience(userId);
+                    const isPremium = PremiumService.isPremiumUser(userProfile, usageDays || 0);
+                    setCreditInfo({
+                        tier: isPremium ? 'premium' : 'free',
+                        freeCredits: expInfo.freeCredits,
+                        paidCredits: expInfo.paidCredits,
+                        totalCredits: expInfo.totalCredits
+                    });
+                }
+            } catch (error) {
+                console.error('[HistoryV10] クレジット情報取得エラー:', error);
+            }
+        };
+        fetchCreditInfo();
+    }, [userId, userProfile, usageDays]);
 
     React.useEffect(() => {
         // iframeが読み込まれたら、親ウィンドウからユーザー情報とデータを渡す
@@ -43,7 +69,8 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
                 userId: userId,
                 userProfile: userProfile,
                 allRecords: allRecords,  // 履歴データも一緒に送信
-                babHeight: babHeight  // BAB高さも送信
+                babHeight: babHeight,  // BAB高さも送信
+                creditInfo: creditInfo  // クレジット情報も送信
             }, '*');
         };
 
@@ -63,7 +90,17 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
                 window.removeEventListener('message', handleMessage);
             };
         }
-    }, [userId, userProfile, onClose, babHeight]);
+    }, [userId, userProfile, onClose, babHeight, creditInfo]);
+
+    // クレジット情報が取得されたらiframeに通知
+    React.useEffect(() => {
+        if (creditInfo && iframeRef.current && iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+                type: 'SET_CREDIT_INFO',
+                creditInfo: creditInfo
+            }, '*');
+        }
+    }, [creditInfo]);
 
     // BAB高さが変わったらiframeに通知
     React.useEffect(() => {
@@ -75,9 +112,21 @@ const HistoryV10View = ({ onClose, userId, userProfile }) => {
         }
     }, [babHeight]);
 
+    // プラットフォーム判定
+    const isAndroid = native && Capacitor.getPlatform() === 'android';
+    const isIOS = native && Capacitor.getPlatform() === 'ios';
+
+    // iframeのtop位置（Androidは固定24px、iOSはCSS変数使用）
+    const getTopStyle = () => {
+        if (isAndroid) return { top: '24px' };
+        if (isIOS) return { top: 'env(safe-area-inset-top, 0px)' };
+        return {};
+    };
+
     return (
         <div
             className="fixed inset-0 bg-gray-50 z-50 fullscreen-view"
+            style={getTopStyle()}
         >
             {/* Full v10.html in iframe (no header - use iframe's own header) */}
             <iframe

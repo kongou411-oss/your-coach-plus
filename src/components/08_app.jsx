@@ -2782,6 +2782,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             onClose={() => setShowHistoryV10(false)}
                             userId={user.uid}
                             userProfile={userProfile}
+                            usageDays={usageDays}
                         />
                     )}
 
@@ -2854,6 +2855,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             onClose={() => setShowPGBaseView(false)}
                             userId={user.uid}
                             userProfile={userProfile}
+                            usageDays={usageDays}
                         />
                     )}
 

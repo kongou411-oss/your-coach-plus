@@ -941,12 +941,15 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     const [levelUpData, setLevelUpData] = useState(null);
 
     // 経験値・レベル情報を読み込む関数
-    const loadExperienceData = async () => {
+    const loadExperienceData = React.useCallback(async () => {
         if (!user) {
+            console.log('[Dashboard] loadExperienceData: user is null, skipping');
             return;
         }
         try {
+            console.log('[Dashboard] loadExperienceData: fetching for user', user.uid);
             const data = await ExperienceService.getUserExperience(user.uid);
+            console.log('[Dashboard] loadExperienceData: data received', data);
             const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
             const progress = Math.round((expToNext.current / expToNext.required) * 100);
 
@@ -957,6 +960,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             const finalPaidCredits = Math.max(propsPaidCredits, dataPaidCredits);
             const finalFreeCredits = data.freeCredits || 0;
 
+            console.log('[Dashboard] loadExperienceData: setting expData', { freeCredits: finalFreeCredits, paidCredits: finalPaidCredits });
             setExpData({
                 level: data.level,
                 experience: data.experience,
@@ -970,7 +974,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         } catch (error) {
             console.error('[Dashboard] Failed to load experience data:', error);
         }
-    };
+    }, [user, profile?.paidCredits]);
 
     // 指示書を読み込む関数（Firestoreから）
     const loadDirective = React.useCallback(async () => {
@@ -1037,7 +1041,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             window.removeEventListener('levelUp', handleLevelUp);
             window.removeEventListener('creditUpdated', handleCreditUpdate);
         };
-    }, [user, profile?.paidCredits]); // profile.paidCreditsが更新されたら再読み込み
+    }, [loadExperienceData]); // loadExperienceDataが更新されたら再読み込み
 
     // 指示書を完了にする
     const handleCompleteDirective = async () => {

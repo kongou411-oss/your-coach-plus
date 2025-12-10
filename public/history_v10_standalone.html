@@ -344,6 +344,18 @@
         </div>
     </div>
 
+    <!-- クレジット表示バー -->
+    <div id="credit-bar" class="px-4 py-2 border-b flex items-center justify-between bg-blue-50 hidden">
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-600">クレジット:</span>
+            <div class="flex items-center gap-1">
+                <span id="credit-free" class="text-sm font-bold text-blue-600" title="無料クレジット">0</span>
+                <span class="text-xs text-gray-400">/</span>
+                <span id="credit-paid" class="text-sm font-bold text-amber-600" title="有料クレジット">0</span>
+            </div>
+        </div>
+    </div>
+
     <!-- デバッグ情報表示エリア（本番では非表示） -->
     <div id="debug-info" class="mx-4 mb-2 p-2 bg-yellow-100 border border-yellow-400 rounded text-xs hidden" style="display: none !important;">
         <div class="font-bold text-yellow-800">デバッグ情報:</div>
@@ -4305,10 +4317,43 @@
 
         // 初期表示
         // 親ウィンドウからのユーザー情報を受け取る
+        // クレジット表示バーを更新する関数
+        function updateCreditBar(creditInfo) {
+            const creditBar = document.getElementById('credit-bar');
+            const creditFree = document.getElementById('credit-free');
+            const creditPaid = document.getElementById('credit-paid');
+
+            if (creditBar && creditFree && creditPaid) {
+                creditFree.textContent = creditInfo.freeCredits || 0;
+                creditPaid.textContent = creditInfo.paidCredits || 0;
+
+                // クレジットが0の場合はグレー表示
+                creditFree.className = `text-sm font-bold ${(creditInfo.freeCredits || 0) <= 0 ? 'text-gray-400' : 'text-blue-600'}`;
+                creditPaid.className = `text-sm font-bold ${(creditInfo.paidCredits || 0) <= 0 ? 'text-gray-400' : 'text-amber-600'}`;
+
+                // プレミアムユーザーは背景色変更
+                if (creditInfo.tier === 'premium') {
+                    creditBar.className = 'px-4 py-2 border-b flex items-center justify-between bg-[#FFF59A]/10';
+                } else {
+                    creditBar.className = 'px-4 py-2 border-b flex items-center justify-between bg-blue-50';
+                }
+
+                creditBar.classList.remove('hidden');
+                console.log('[履歴グラフ] クレジット表示更新:', creditInfo.freeCredits, '/', creditInfo.paidCredits);
+            }
+        }
+
         // BAB高さを適用する関数
+        let currentBabHeight = 0;
         function applyBabHeight(height) {
             if (height && height > 0) {
+                currentBabHeight = height;
                 document.body.style.paddingBottom = (height + 16) + 'px';
+                // モーダルのmax-heightも調整（BAB分を引く）
+                const modal = document.querySelector('#history-analysis-report-modal > div');
+                if (modal) {
+                    modal.style.maxHeight = `calc(90vh - ${height}px)`;
+                }
                 console.log('[履歴グラフ] BAB高さ適用:', height + 'px');
             }
         }
@@ -4334,6 +4379,11 @@
                     applyBabHeight(event.data.babHeight);
                 }
 
+                // クレジット情報を表示
+                if (event.data.creditInfo) {
+                    updateCreditBar(event.data.creditInfo);
+                }
+
                 // ユーザー情報を受け取ったらデータを再読み込み
                 if (typeof loadRealData === 'function') {
                     showDebug('loadRealData 呼び出し開始');
@@ -4349,6 +4399,11 @@
             } else if (event.data && event.data.type === 'SET_BAB_HEIGHT') {
                 // BAB高さ変更メッセージを受信
                 applyBabHeight(event.data.babHeight);
+            } else if (event.data && event.data.type === 'SET_CREDIT_INFO') {
+                // クレジット情報メッセージを受信
+                if (event.data.creditInfo) {
+                    updateCreditBar(event.data.creditInfo);
+                }
             } else if (event.data && event.data.type === 'RELOAD_DATA') {
                 // データ再読み込みメッセージを受信
                 console.log('[履歴グラフ] データ再読み込み要求を受信');
@@ -4780,7 +4835,7 @@ ${nutritionStats.sugar ? `- 糖質平均: ${nutritionStats.sugar.avg}g（最低$
                 // レポートモーダルを表示
                 document.getElementById('history-analysis-period').textContent = `食事タブ 個別分析（過去${days}日間）`;
                 document.getElementById('history-analysis-report-content').innerHTML = report;
-                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+                openHistoryAnalysisModal();
 
                 // アイコンを再描画
                 lucide.createIcons();
@@ -4910,7 +4965,7 @@ ${trainingStats.cardio_duration ? `- 有酸素運動時間平均: ${trainingStat
                 // レポートモーダルを表示
                 document.getElementById('history-analysis-period').textContent = `運動タブ 個別分析（過去${days}日間）`;
                 document.getElementById('history-analysis-report-content').innerHTML = report;
-                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+                openHistoryAnalysisModal();
 
                 // アイコンを再描画
                 lucide.createIcons();
@@ -5049,7 +5104,7 @@ ${conditionStats.stress ? `- ストレス平均: ${conditionStats.stress.avgLabe
                 // レポートモーダルを表示
                 document.getElementById('history-analysis-period').textContent = `コンディションタブ 個別分析（過去${days}日間）`;
                 document.getElementById('history-analysis-report-content').innerHTML = report;
-                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+                openHistoryAnalysisModal();
 
                 // アイコンを再描画
                 lucide.createIcons();
@@ -5195,7 +5250,7 @@ ${directiveSummary}
                 // レポートモーダルを表示
                 document.getElementById('history-analysis-period').textContent = `パフォーマンスタブ 個別分析（過去${days}日間）`;
                 document.getElementById('history-analysis-report-content').innerHTML = report;
-                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+                openHistoryAnalysisModal();
 
                 // アイコンを再描画
                 lucide.createIcons();
@@ -5222,7 +5277,7 @@ ${directiveSummary}
                 // レポートモーダルを表示
                 document.getElementById('history-analysis-period').textContent = `過去${days}日間の分析`;
                 document.getElementById('history-analysis-report-content').innerHTML = report;
-                document.getElementById('history-analysis-report-modal').classList.remove('hidden');
+                openHistoryAnalysisModal();
 
                 // アイコンを再描画
                 lucide.createIcons();
@@ -5378,6 +5433,17 @@ ${stats.stress ? `- ストレス平均: ${stats.stress.avgLabel || stats.stress.
                 .replace(/^(.+)$/gm, '<p class="mb-3">$1</p>');
 
             return html;
+        }
+
+        // 履歴分析モーダルを開く（BAB高さ適用）
+        function openHistoryAnalysisModal() {
+            const modal = document.getElementById('history-analysis-report-modal');
+            const modalContent = modal.querySelector(':scope > div');
+            // BAB高さを適用
+            if (currentBabHeight > 0 && modalContent) {
+                modalContent.style.maxHeight = `calc(90vh - ${currentBabHeight}px)`;
+            }
+            modal.classList.remove('hidden');
         }
 
         // 履歴分析モーダルを閉じる
