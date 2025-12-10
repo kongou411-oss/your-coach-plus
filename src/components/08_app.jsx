@@ -505,9 +505,10 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 const migrateLocalStorageToFirestore = async () => {
                     try {
                         const { STORAGE_KEYS } = window;
-                        const migrationKey = 'yourCoachBeta_dataM migrated';
+                        // v2: customFoods移行を追加、マージ方式に変更
+                        const migrationKey = 'yourCoachBeta_dataMigrated_v2';
 
-                        // すでに移行済みの場合はスキップ
+                        // すでにv2移行済みの場合はスキップ
                         if (localStorage.getItem(migrationKey) === 'true') {
                             return;
                         }
@@ -587,22 +588,25 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             }
                         }
 
-                        // 3. カスタム運動の移行
+                        // 3. カスタム運動の移行（マージ方式：既存データと重複しないものだけ追加）
                         const savedExercises = localStorage.getItem('customExercises');
                         if (savedExercises) {
                             const exercises = JSON.parse(savedExercises);
                             if (Array.isArray(exercises) && exercises.length > 0) {
-                                // Firestoreにカスタム運動が既に存在するか確認
+                                // Firestoreの既存カスタム運動を取得
                                 const exercisesSnapshot = await firebase.firestore()
                                     .collection('users')
                                     .doc(user.uid)
                                     .collection('customExercises')
-                                    .limit(1)
                                     .get();
 
-                                if (exercisesSnapshot.empty) {
+                                const existingNames = new Set(exercisesSnapshot.docs.map(doc => doc.data().name));
+
+                                // 重複しないものだけ追加
+                                const newExercises = exercises.filter(ex => !existingNames.has(ex.name));
+                                if (newExercises.length > 0) {
                                     const batch = firebase.firestore().batch();
-                                    exercises.forEach(exercise => {
+                                    newExercises.forEach(exercise => {
                                         const docRef = firebase.firestore()
                                             .collection('users')
                                             .doc(user.uid)
@@ -611,11 +615,49 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                         batch.set(docRef, exercise);
                                     });
                                     await batch.commit();
+                                    console.log(`[Migration] カスタム運動 ${newExercises.length}件を移行しました`);
                                 }
                             }
                         }
 
-                        // 4. 分析キャッシュの移行（analysesコレクションに既にデータがある場合はスキップ）
+                        // 4. カスタム食材の移行（マージ方式）
+                        const savedFoods = localStorage.getItem('customFoods');
+                        if (savedFoods) {
+                            const foods = JSON.parse(savedFoods);
+                            if (Array.isArray(foods) && foods.length > 0) {
+                                // Firestoreの既存カスタム食材を取得
+                                const foodsSnapshot = await firebase.firestore()
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .collection('customFoods')
+                                    .get();
+
+                                const existingFoodNames = new Set(foodsSnapshot.docs.map(doc => doc.data().name));
+
+                                // 重複しないものだけ追加
+                                const newFoods = foods.filter(food => !existingFoodNames.has(food.name));
+                                if (newFoods.length > 0) {
+                                    const batch = firebase.firestore().batch();
+                                    newFoods.forEach(food => {
+                                        // 名前をドキュメントIDとして保存（19_add_meal_modalと統一）
+                                        const docRef = firebase.firestore()
+                                            .collection('users')
+                                            .doc(user.uid)
+                                            .collection('customFoods')
+                                            .doc(food.name);
+                                        batch.set(docRef, {
+                                            ...food,
+                                            isCustom: true,
+                                            migratedAt: new Date().toISOString()
+                                        });
+                                    });
+                                    await batch.commit();
+                                    console.log(`[Migration] カスタム食材 ${newFoods.length}件を移行しました`);
+                                }
+                            }
+                        }
+
+                        // 5. 分析キャッシュの移行（analysesコレクションに既にデータがある場合はスキップ）
                         const savedAnalyses = localStorage.getItem(STORAGE_KEYS.DAILY_ANALYSES);
                         if (savedAnalyses) {
                             const analyses = JSON.parse(savedAnalyses);
@@ -660,6 +702,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                         localStorage.removeItem(STORAGE_KEYS.DIRECTIVES);
                         localStorage.removeItem(STORAGE_KEYS.DAILY_ANALYSES);
                         localStorage.removeItem('customExercises');
+                        localStorage.removeItem('customFoods');
 
                     } catch (error) {
                         console.error('[Migration] データ移行エラー:', error);
