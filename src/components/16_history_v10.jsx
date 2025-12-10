@@ -112,21 +112,10 @@ const HistoryV10View = ({ onClose, userId, userProfile, usageDays }) => {
         }
     }, [babHeight]);
 
-    // プラットフォーム判定
-    const isAndroid = native && Capacitor.getPlatform() === 'android';
-    const isIOS = native && Capacitor.getPlatform() === 'ios';
-
-    // iframeのtop位置（Androidは固定24px、iOSはCSS変数使用）
-    const getTopStyle = () => {
-        if (isAndroid) return { top: '24px' };
-        if (isIOS) return { top: 'env(safe-area-inset-top, 0px)' };
-        return {};
-    };
-
+    // iframe内でセーフエリア対応しているため、親divにtopは不要
     return (
         <div
             className="fixed inset-0 bg-gray-50 z-50 fullscreen-view"
-            style={getTopStyle()}
         >
             {/* Full v10.html in iframe (no header - use iframe's own header) */}
             <iframe

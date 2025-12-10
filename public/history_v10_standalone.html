@@ -43,8 +43,13 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
     <style>
         /* セーフエリア対応（ネイティブアプリ時） */
+        /* iOS: env(safe-area-inset-top)を使用 */
         body.native-app .history-header {
             padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+        }
+        /* Android: env()が0の場合、固定値24pxを使用 */
+        body.native-app.android .history-header {
+            padding-top: calc(24px + 12px) !important;
         }
         /* ヘッダー上部の背景を同じ色で埋める（白線を消す） */
         body.native-app .history-header::before {
@@ -55,6 +60,10 @@
             right: 0;
             height: env(safe-area-inset-top, 0px);
             background: inherit;
+        }
+        body.native-app.android .history-header::before {
+            top: -24px;
+            height: 24px;
         }
 
         /* スクロールバーを完全非表示 */
@@ -1449,7 +1458,12 @@
         const isNativeApp = urlParams.get('native') === 'true';
         if (isNativeApp) {
             document.body.classList.add('native-app');
-            showDebug('ネイティブアプリモード: ON');
+            // Android判定（User-Agentベース）
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            if (isAndroid) {
+                document.body.classList.add('android');
+            }
+            showDebug('ネイティブアプリモード: ON' + (isAndroid ? ' (Android)' : ' (iOS)'));
         }
 
         // ===== Firebase初期化 =====
