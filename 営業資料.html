@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Your Coach+ 法人導入提案資料</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet"/>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            background-color: #000;
+        }
+        * { font-family: 'Noto Sans JP', sans-serif; }
+        .text-accent { color: #4A9EFF; }
+        .bg-accent { background-color: #4A9EFF; }
+        .border-accent { border-color: #4A9EFF; }
+        .card-gradient { background: linear-gradient(180deg, rgba(26,26,26,1) 0%, rgba(10,10,10,1) 100%); }
+        .pro-gradient { background: linear-gradient(180deg, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%); }
+
+        /* Fullpage styles */
+        .fullpage-container {
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        .fullpage-wrapper {
+            transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+        .section {
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .section-content {
+            width: 100%;
+            height: 100%;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+        /* Hide scrollbar */
+        .section-content::-webkit-scrollbar { display: none; }
+        .section-content { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Scroll hint */
+        .scroll-hint {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            z-index: 50;
+            transition: opacity 0.3s ease;
+        }
+        .scroll-hint.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* Page indicator */
+        .page-indicator {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .page-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .page-dot.active {
+            background: #4A9EFF;
+            transform: scale(1.3);
+        }
+        .page-dot:hover {
+            background: rgba(255,255,255,0.6);
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Indicator Dots -->
+    <div class="page-indicator" id="pageIndicator">
+        <div class="page-dot active" data-section="0"></div>
+        <div class="page-dot" data-section="1"></div>
+        <div class="page-dot" data-section="2"></div>
+        <div class="page-dot" data-section="3"></div>
+        <div class="page-dot" data-section="4"></div>
+        <div class="page-dot" data-section="5"></div>
+        <div class="page-dot" data-section="6"></div>
+        <div class="page-dot" data-section="7"></div>
+    </div>
+
+    <!-- Scroll Hint -->
+    <div class="scroll-hint text-white text-center" id="scroll-hint">
+        <p class="text-xs text-gray-400 mb-2">スワイプして続きを見る</p>
+        <svg class="w-6 h-6 mx-auto text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+        </svg>
+    </div>
+
+    <div class="fullpage-container">
+        <div class="fullpage-wrapper" id="fullpage-wrapper">
+
+            <!-- Section 0: 表紙 -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex w-full h-full max-w-6xl mx-auto px-8">
+                        <div class="flex-1 flex flex-col justify-center">
+                            <h1 class="text-5xl font-black leading-tight mb-4">
+                                <span class="text-white">会員様の</span><br/>
+                                <span class="text-accent">『結果』</span><span class="text-white">と</span><span class="text-accent">『継続率』</span><span class="text-white">を</span><br/>
+                                <span class="text-white">最大化する</span><br/>
+                                <span class="text-accent">AIフィットネスパートナー</span><span class="text-white">のご提案</span>
+                            </h1>
+                            <h2 class="text-3xl font-bold text-gray-300 mb-6">Your Coach+ 法人導入プラン</h2>
+                            <p class="text-2xl font-bold text-accent mb-8">最速1分。本格分析。</p>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center">
+                            <div class="w-80 h-96 bg-gray-900 rounded-3xl shadow-2xl flex items-center justify-center">
+                                <div class="w-72 h-80 bg-gray-800 rounded-2xl overflow-hidden">
+                                    <div class="h-full w-full bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col">
+                                        <div class="p-4">
+                                            <div class="flex justify-between items-center mb-4">
+                                                <div class="text-white font-bold text-sm">Your Coach+</div>
+                                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                            </div>
+                                            <div class="bg-white bg-opacity-20 rounded-lg p-3 mb-3">
+                                                <div class="text-white text-xs mb-1">本日の目標達成率</div>
+                                                <div class="text-white text-2xl font-bold">85%</div>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 flex items-center justify-center">
+                                            <div class="text-white text-center">
+                                                <div class="text-4xl font-bold mb-2">AI分析</div>
+                                                <div class="text-lg">最新の栄養データを</div>
+                                                <div class="text-lg">自動で解析中</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 1: 自己紹介・開発背景 -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex w-full h-full max-w-6xl mx-auto px-8">
+                        <div class="w-2/5 flex items-center justify-center">
+                            <div class="w-64 h-80 bg-gray-900 rounded-2xl overflow-hidden flex items-center justify-center">
+                                <div class="text-center text-gray-500">
+                                    <i class="fas fa-user text-6xl mb-4"></i>
+                                    <p class="text-sm">開発者写真</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col justify-center px-8">
+                            <h1 class="text-4xl font-black mb-6 leading-tight">
+                                <span class="text-white">競技者としての</span><br/>
+                                <span class="text-accent">『痛み』</span><span class="text-white">と</span><span class="text-accent">『理想』</span><span class="text-white">から</span><br/>
+                                <span class="text-white">生まれました</span>
+                            </h1>
+                            <p class="text-lg text-gray-300 mb-6 leading-relaxed">
+                                既存のアプリは『入力が面倒』か『分析が素人向け』のどちらか。<br/>
+                                だから、本気で体を変えたい人のための正解を作りました。
+                            </p>
+                            <div class="grid grid-cols-2 gap-6 mb-6">
+                                <div class="bg-gray-900 rounded-lg p-4">
+                                    <div class="text-accent text-sm font-bold mb-1">肩書</div>
+                                    <div class="text-white font-bold">ウエイトリフティング元国体入賞者</div>
+                                </div>
+                                <div class="bg-gray-900 rounded-lg p-4">
+                                    <div class="text-accent text-sm font-bold mb-1">BIG3記録</div>
+                                    <div class="text-white text-sm">
+                                        <span class="font-bold">BP 140kg</span> / <span class="font-bold">DL 230kg</span> / <span class="font-bold">SQ 240kg</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-blue-900 bg-opacity-20 rounded-lg p-4 border-l-4 border-accent">
+                                <div class="text-accent font-bold mb-2">開発コンセプト</div>
+                                <div class="text-white text-lg font-bold">「入力は最速、分析は本格」</div>
+                            </div>
+                            <div class="mt-6 text-gray-400 text-sm italic">
+                                「私は単なるエンジニアではありません。バーベルを握ってきた人間です。<br/>現場の指導者様と同じ言語で話せます。」
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: 課題提起 -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex flex-col items-center justify-between py-10 px-16 w-full max-w-6xl mx-auto text-white">
+                        <!-- Title Section -->
+                        <div class="w-full text-center mb-6">
+                            <h1 class="text-5xl font-black leading-tight">
+                                <span class="text-white">指導現場で、</span>
+                                <span class="text-accent">こんな課題</span>
+                                <span class="text-white">はありませんか？</span>
+                            </h1>
+                        </div>
+                        <!-- Cards Section -->
+                        <div class="w-full grid grid-cols-3 gap-8 mb-6 flex-1">
+                            <!-- Card 1 -->
+                            <div class="bg-gray-900 rounded-3xl p-6 flex flex-col items-center text-center border border-gray-800 relative shadow-lg">
+                                <div class="absolute -top-5 w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-700 text-lg font-bold text-gray-400">01</div>
+                                <div class="mt-2 mb-4 w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-accent">
+                                    <i class="fas fa-hourglass-half text-3xl"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold mb-3 text-white leading-snug">マンツーマン指導以外の<br/>時間の管理ができない</h3>
+                                <div class="w-10 h-1 bg-accent mb-4 rounded"></div>
+                                <p class="text-gray-300 text-lg leading-relaxed">
+                                    週168時間のうち<br/>指導時間はわずか1-2時間。<br/>
+                                    <span class="text-white font-bold border-b border-gray-500">残り166時間は放置状態？</span>
+                                </p>
+                            </div>
+                            <!-- Card 2 -->
+                            <div class="bg-gray-900 rounded-3xl p-6 flex flex-col items-center text-center border border-gray-800 relative shadow-lg">
+                                <div class="absolute -top-5 w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-700 text-lg font-bold text-gray-400">02</div>
+                                <div class="mt-2 mb-4 w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-accent">
+                                    <i class="fas fa-chalkboard-user text-3xl"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold mb-3 text-white leading-snug">「食事・栄養の基礎指導」に<br/>毎回時間が取られる</h3>
+                                <div class="w-10 h-1 bg-accent mb-4 rounded"></div>
+                                <p class="text-gray-300 text-lg leading-relaxed">
+                                    同じ説明を何十回も繰り返す<br/>
+                                    <span class="text-white font-bold border-b border-gray-500">非効率なオペレーション</span><br/>
+                                    が発生していませんか？
+                                </p>
+                            </div>
+                            <!-- Card 3 -->
+                            <div class="bg-gray-900 rounded-3xl p-6 flex flex-col items-center text-center border border-gray-800 relative shadow-lg">
+                                <div class="absolute -top-5 w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-700 text-lg font-bold text-gray-400">03</div>
+                                <div class="mt-2 mb-4 w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-accent">
+                                    <i class="fas fa-user-xmark text-3xl"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold mb-3 text-white leading-snug">成果が出る前に<br/>モチベーションが落ちる</h3>
+                                <div class="w-10 h-1 bg-accent mb-4 rounded"></div>
+                                <p class="text-gray-300 text-lg leading-relaxed">
+                                    3ヶ月で退会してしまう。<br/>
+                                    それは大きな<br/>
+                                    <span class="text-white font-bold border-b border-gray-500">LTV（顧客生涯価値）の損失</span>です。
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Bridge Section -->
+                        <div class="w-full mt-2">
+                            <div class="flex flex-col items-center justify-center">
+                                <div class="mb-2 text-accent opacity-80">
+                                    <i class="fas fa-chevron-down text-2xl"></i>
+                                </div>
+                                <div class="w-full bg-gray-800 border-l-8 border-accent rounded-r-xl p-5 flex items-center justify-between shadow-2xl">
+                                    <div class="flex items-center">
+                                        <div class="bg-accent text-black font-black px-3 py-1 rounded mr-6 text-sm tracking-wider">SOLUTION</div>
+                                        <p class="text-2xl font-bold text-white">
+                                            「Your Coach+」がトレーナーの分身として、<span class="text-accent">ジム外の24時間をサポート</span><span class="text-white">します。</span>
+                                        </p>
+                                    </div>
+                                    <div class="text-accent text-3xl mr-4">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: 解決策① 指導効率化 -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex w-full h-full max-w-6xl mx-auto px-8 text-white">
+                        <div class="flex-1 flex flex-col justify-center pr-8">
+                            <h1 class="text-4xl font-black mb-6 leading-tight">
+                                <span class="text-white">基礎知識はアプリが教えます。</span><br/>
+                                <span class="text-accent">トレーナーは『高度な指導』に集中を。</span>
+                            </h1>
+                            <div class="bg-gray-900 rounded-2xl p-6 mb-6 border border-gray-800">
+                                <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+                                    <i class="fas fa-book-open text-accent mr-3"></i>
+                                    PGBASE（教科書機能）
+                                </h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <div class="text-accent text-sm font-bold mb-2">無料教科書</div>
+                                        <ul class="text-white text-sm space-y-1">
+                                            <li>・YourCoach+の教科書</li>
+                                            <li>・タンパク質・炭水化物・脂質</li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <div class="text-accent text-sm font-bold mb-2">有料教科書（各50クレジット）</div>
+                                        <ul class="text-white text-sm space-y-1">
+                                            <li>・メンタル、リカバリー</li>
+                                            <li>・ビタミン・ミネラル、サプリメント</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+                                <div class="flex items-center mb-3">
+                                    <div class="text-accent text-sm font-bold mr-4">学習サイクル</div>
+                                    <div class="flex-1 h-px bg-gray-700"></div>
+                                </div>
+                                <div class="flex justify-between items-center text-white text-sm">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-black font-bold mr-2">1</div>
+                                        <span>教科書で学ぶ</span>
+                                    </div>
+                                    <i class="fas fa-arrow-right text-gray-500"></i>
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-black font-bold mr-2">2</div>
+                                        <span>実践</span>
+                                    </div>
+                                    <i class="fas fa-arrow-right text-gray-500"></i>
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-black font-bold mr-2">3</div>
+                                        <span>AIが分析</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-6 bg-blue-900 bg-opacity-20 rounded-lg p-4 border-l-4 border-accent">
+                                <div class="text-accent font-bold mb-2">メリット</div>
+                                <div class="text-white text-base">
+                                    新人スタッフでも、アプリを使わせることでベテラン並みの知識ベースを提供可能。
+                                    <span class="font-bold">教育コストの大幅削減。</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center">
+                            <div class="w-80 h-96 bg-gray-900 rounded-3xl shadow-2xl flex items-center justify-center">
+                                <div class="w-72 h-80 bg-gray-800 rounded-2xl overflow-hidden">
+                                    <div class="h-full w-full bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col">
+                                        <div class="p-4">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <div class="text-white font-bold text-sm">PGBASE</div>
+                                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                            </div>
+                                            <div class="bg-white bg-opacity-20 rounded-lg p-2 mb-2">
+                                                <div class="text-white text-xs mb-1">進捗状況</div>
+                                                <div class="flex justify-between text-white text-xs">
+                                                    <span>栄養学習</span>
+                                                    <span class="font-bold">75%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 flex items-center justify-center">
+                                            <div class="text-white text-center">
+                                                <div class="text-3xl font-bold mb-2">学習中</div>
+                                                <div class="text-sm">基礎栄養知識</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: 解決策② LBM差別化 -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex flex-col w-full max-w-6xl mx-auto px-8 text-white py-8">
+                        <div class="w-full text-center mb-6">
+                            <h1 class="text-4xl font-black leading-tight">
+                                <span class="text-white">『体重を減らす』から</span>
+                                <span class="text-accent">『中身を変える』</span>
+                                <span class="text-white">指導へ</span>
+                            </h1>
+                        </div>
+                        <div class="flex-1 flex items-center justify-center">
+                            <div class="flex w-full">
+                                <div class="flex-1 flex flex-col justify-center pr-8">
+                                    <div class="mb-6">
+                                        <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+                                            <i class="fas fa-chart-pie text-accent mr-3"></i>
+                                            8軸栄養評価
+                                        </h3>
+                                        <div class="grid grid-cols-4 gap-2">
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">タンパク質</div>
+                                            </div>
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">脂質</div>
+                                            </div>
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">炭水化物</div>
+                                            </div>
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">カロリー</div>
+                                            </div>
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">DIAAS</div>
+                                            </div>
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">脂肪酸バランス</div>
+                                            </div>
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">GL値</div>
+                                            </div>
+                                            <div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800">
+                                                <div class="text-accent text-xs font-bold">食物繊維</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-6">
+                                        <div class="flex items-center mb-2">
+                                            <div class="text-accent text-sm font-bold mr-4">詳細追跡</div>
+                                            <div class="flex-1 h-px bg-gray-700"></div>
+                                        </div>
+                                        <div class="text-white text-base">
+                                            <span class="font-bold">40項目以上</span> - PFC・ビタミン・ミネラル自動計算
+                                        </div>
+                                    </div>
+                                    <div class="mb-6">
+                                        <div class="flex items-center mb-2">
+                                            <div class="text-accent text-sm font-bold mr-4">コンディション</div>
+                                            <div class="flex-1 h-px bg-gray-700"></div>
+                                        </div>
+                                        <div class="flex justify-between text-white text-sm">
+                                            <span>睡眠</span>
+                                            <span>ストレス</span>
+                                            <span>消化</span>
+                                            <span>集中力</span>
+                                            <span>体重</span>
+                                        </div>
+                                    </div>
+                                    <div class="bg-blue-900 bg-opacity-20 rounded-lg p-4 border-l-4 border-accent">
+                                        <div class="text-accent font-bold mb-2">設計思想</div>
+                                        <div class="text-white text-base">
+                                            <span class="font-bold">LBM（除脂肪体重）</span>こそがボディメイクの中心。<br/>
+                                            筋肉量を維持・増加させながら体脂肪を減らす。<br/>
+                                            これが本当の<span class="text-accent font-bold">『体づくり』</span>。
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1 flex flex-col justify-center">
+                                    <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800">
+                                        <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+                                            <i class="fas fa-brain text-accent mr-3"></i>
+                                            メリット
+                                        </h3>
+                                        <div class="text-white text-base leading-relaxed">
+                                            AI×データで科学的管理<br/>＝明確な差別化<br/>
+                                            <span class="text-accent font-bold">「ウチはAIとデータで科学的に管理する」</span><br/>というブランディングが可能。
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: 解決策③ 退会防止 -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex w-full h-full max-w-6xl mx-auto px-8 text-white">
+                        <!-- Left Column: Text Content -->
+                        <div class="flex-1 flex flex-col justify-center pr-8">
+                            <div class="mb-2 text-accent font-bold tracking-widest uppercase text-sm">解決策③：退会防止</div>
+                            <h1 class="text-4xl font-black mb-8 leading-tight">
+                                <span class="text-white">ボディメイクを</span><br/>
+                                <span class="text-accent">『孤独な作業』から<br/>『チームプロジェクト』へ</span>
+                            </h1>
+                            <div class="bg-gray-900 rounded-2xl p-6 mb-6 border border-gray-800">
+                                <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+                                    <i class="fas fa-users text-accent mr-3"></i>
+                                    COMY（コミュニティ）
+                                </h3>
+                                <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-check-circle text-accent mt-1 mr-2 text-xs"></i>
+                                        <div>
+                                            <div class="font-bold text-sm mb-1 text-gray-200">プロジェクト作成</div>
+                                            <p class="text-xs text-gray-400">目標・期間を設定して可視化</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <i class="fas fa-check-circle text-accent mt-1 mr-2 text-xs"></i>
+                                        <div>
+                                            <div class="font-bold text-sm mb-1 text-gray-200">進捗共有</div>
+                                            <p class="text-xs text-gray-400">いいね・コメントで励まし合い</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <i class="fas fa-check-circle text-accent mt-1 mr-2 text-xs"></i>
+                                        <div>
+                                            <div class="font-bold text-sm mb-1 text-gray-200">自動投稿</div>
+                                            <p class="text-xs text-gray-400">日々の記録を自動でシェア</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <i class="fas fa-check-circle text-accent mt-1 mr-2 text-xs"></i>
+                                        <div>
+                                            <div class="font-bold text-sm mb-1 text-gray-200">経験値・レベル</div>
+                                            <p class="text-xs text-gray-400">ゲーミフィケーションで継続</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 bg-blue-900 bg-opacity-20 rounded-lg p-5 border-l-4 border-accent">
+                                <div class="text-accent font-bold mb-1 flex items-center">
+                                    <i class="fas fa-thumbs-up mr-2"></i>メリット
+                                </div>
+                                <p class="text-white text-base leading-relaxed">
+                                    会員同士、トレーナーとのエンゲージメントを高め、<br/>
+                                    <span class="font-bold text-white border-b-2 border-accent pb-0.5">モチベーション低下による退会（LTV損失）を防ぎます。</span>
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Right Column: Visual (Mockup) -->
+                        <div class="flex-1 flex items-center justify-center relative">
+                            <!-- Decorative background elements -->
+                            <div class="absolute w-96 h-96 bg-accent opacity-5 rounded-full filter blur-3xl transform translate-x-10 translate-y-10"></div>
+                            <!-- Phone Mockup -->
+                            <div class="relative z-10 w-80 h-auto bg-gray-900 rounded-3xl shadow-2xl border-4 border-gray-800 p-2">
+                                <!-- Screen Content -->
+                                <div class="bg-gray-800 rounded-2xl overflow-hidden h-96 flex flex-col relative">
+                                    <!-- Header -->
+                                    <div class="bg-gray-900 p-4 flex justify-between items-center border-b border-gray-700">
+                                        <div class="text-white font-bold text-sm">COMY Feed</div>
+                                        <div class="flex space-x-2">
+                                            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                    <!-- Feed Content -->
+                                    <div class="p-3 space-y-3 overflow-hidden flex-1">
+                                        <!-- Post 1 -->
+                                        <div class="bg-gray-700 rounded-lg p-3">
+                                            <div class="flex items-center mb-2">
+                                                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold text-white mr-2">TN</div>
+                                                <div>
+                                                    <div class="text-xs font-bold text-white">田中 太郎</div>
+                                                    <div class="text-[10px] text-gray-400">Lv.12 • 2分前</div>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-200 mb-2">今日のスクワット、自己ベスト更新！</p>
+                                            <div class="flex text-gray-400 text-[10px] space-x-4">
+                                                <span><i class="fas fa-heart text-red-400 mr-1"></i> 12</span>
+                                                <span><i class="fas fa-comment mr-1"></i> 3</span>
+                                            </div>
+                                        </div>
+                                        <!-- Level Up Notification -->
+                                        <div class="bg-gradient-to-r from-blue-900 to-blue-800 rounded-lg p-3 border border-blue-700">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center">
+                                                    <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-black mr-2">
+                                                        <i class="fas fa-crown text-xs"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="text-xs font-bold text-white">レベルアップ！</div>
+                                                        <div class="text-[10px] text-blue-200">鈴木 さんがLv.5に</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Bottom Nav -->
+                                    <div class="bg-gray-900 p-3 flex justify-around text-gray-500 text-lg border-t border-gray-700">
+                                        <i class="fas fa-home"></i>
+                                        <i class="fas fa-dumbbell"></i>
+                                        <i class="fas fa-users text-accent"></i>
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 6: 導入プラン -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex flex-col w-full max-w-6xl mx-auto px-8 text-white py-8">
+                        <!-- Header -->
+                        <div class="text-center mb-6">
+                            <h1 class="text-4xl font-black leading-tight">
+                                <span class="text-white">法人・ジム向け</span>
+                                <span class="text-accent">導入プラン（定価）</span>
+                            </h1>
+                            <p class="text-gray-400 mt-2 text-sm">※表示価格はすべて税込です</p>
+                        </div>
+                        <!-- Pricing Cards -->
+                        <div class="flex-1 grid grid-cols-3 gap-6 items-end mb-6">
+                            <!-- Beginner Plan -->
+                            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-72 flex flex-col relative card-gradient">
+                                <div class="text-gray-400 font-bold text-lg mb-2">ビギナー</div>
+                                <div class="mb-4">
+                                    <span class="text-3xl font-bold">¥107,160</span><span class="text-sm text-gray-500">/年</span>
+                                </div>
+                                <div class="bg-gray-800 rounded-lg py-1 px-3 inline-block self-start text-xs text-gray-300 mb-4">
+                                    定価より <span class="font-bold text-white">5% OFF</span>
+                                </div>
+                                <div class="space-y-3 flex-1">
+                                    <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+                                        <span class="text-sm text-gray-400">人数上限</span>
+                                        <span class="font-bold text-lg">最大10人</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-400">1人あたり/月</span>
+                                        <span class="font-bold text-accent">¥893</span>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <div class="w-full py-2 rounded-lg border border-gray-600 text-gray-300 text-sm">小規模スタジオ向け</div>
+                                </div>
+                            </div>
+                            <!-- Pro Plan (Highlighted) -->
+                            <div class="bg-gray-900 border-2 border-accent rounded-2xl p-6 h-80 flex flex-col relative shadow-lg pro-gradient transform -translate-y-2">
+                                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-accent text-black font-black px-4 py-1 rounded-full text-sm shadow-lg">
+                                    おすすめ
+                                </div>
+                                <div class="text-accent font-bold text-2xl mb-2 mt-2">プロ</div>
+                                <div class="mb-4">
+                                    <span class="text-4xl font-bold">¥304,560</span><span class="text-sm text-gray-500">/年</span>
+                                </div>
+                                <div class="bg-blue-900 bg-opacity-30 rounded-lg py-1 px-3 inline-block self-start text-xs text-accent mb-4 border border-blue-800">
+                                    定価より <span class="font-black text-white text-sm">10% OFF</span>
+                                </div>
+                                <div class="space-y-3 flex-1">
+                                    <div class="flex items-center justify-between border-b border-gray-700 pb-2">
+                                        <span class="text-sm text-gray-300">人数上限</span>
+                                        <span class="font-bold text-2xl text-white">最大30人</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-300">1人あたり/月</span>
+                                        <div class="text-right">
+                                            <span class="font-bold text-accent text-xl">¥846</span>
+                                            <p class="text-[10px] text-gray-500">コストパフォーマンスNo.1</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <div class="w-full py-3 rounded-lg bg-accent text-black font-bold shadow-lg">標準的なジムに最適</div>
+                                </div>
+                            </div>
+                            <!-- MAX Plan -->
+                            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-72 flex flex-col relative card-gradient">
+                                <div class="text-gray-400 font-bold text-lg mb-2">MAX</div>
+                                <div class="mb-4">
+                                    <span class="text-3xl font-bold">¥600,000</span><span class="text-sm text-gray-500">/年</span>
+                                </div>
+                                <div class="bg-gray-800 rounded-lg py-1 px-3 inline-block self-start text-xs text-gray-300 mb-4">
+                                    定価より <span class="font-bold text-white">15% OFF</span>
+                                </div>
+                                <div class="space-y-3 flex-1">
+                                    <div class="flex items-center justify-between border-b border-gray-800 pb-2">
+                                        <span class="text-sm text-gray-400">人数上限</span>
+                                        <span class="font-bold text-lg text-accent">無制限</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-400">1人あたり/月</span>
+                                        <div class="text-right">
+                                            <span class="font-bold text-accent">¥799</span>
+                                            <p class="text-[10px] text-gray-600">※約63人分相当で計算</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <div class="w-full py-2 rounded-lg border border-gray-600 text-gray-300 text-sm">大規模店舗向け</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Common Features -->
+                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                            <div class="flex items-center mb-3">
+                                <div class="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-700 pb-1">全プラン共通機能</div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-8">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-accent mr-3 border border-gray-700">
+                                        <i class="fas fa-robot text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-white text-sm">AI分析 100回/月/人</p>
+                                        <p class="text-xs text-gray-500">高精度なフィードバック</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-accent mr-3 border border-gray-700">
+                                        <i class="fas fa-crown text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-white text-sm">全Premium機能利用可能</p>
+                                        <p class="text-xs text-gray-500">制限なしのフルアクセス</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-accent mr-3 border border-gray-700">
+                                        <i class="fas fa-book text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-white text-sm">PGBASE・COMY無制限</p>
+                                        <p class="text-xs text-gray-500">教科書＆コミュニティ</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 7: まとめ -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex flex-col w-full max-w-6xl mx-auto px-8 text-white py-8">
+                        <!-- Header -->
+                        <div class="text-center mb-8">
+                            <h1 class="text-4xl font-black leading-tight">
+                                <span class="text-white">共に</span>
+                                <span class="text-accent">『結果が出るジム』</span>
+                                <span class="text-white">を作りませんか？</span>
+                            </h1>
+                        </div>
+                        <!-- Value Propositions -->
+                        <div class="grid grid-cols-3 gap-6 mb-6">
+                            <!-- Value 1 -->
+                            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+                                <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-accent text-2xl mx-auto mb-4 border-2 border-accent">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-white mb-3">指導効率化</h3>
+                                <p class="text-gray-400 text-sm leading-relaxed">
+                                    基礎教育の自動化で<br/>
+                                    トレーナーは高度な指導に集中
+                                </p>
+                            </div>
+                            <!-- Value 2 -->
+                            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+                                <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-accent text-2xl mx-auto mb-4 border-2 border-accent">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-white mb-3">差別化</h3>
+                                <p class="text-gray-400 text-sm leading-relaxed">
+                                    LBM×8軸評価×AI分析で<br/>
+                                    <span class="text-accent font-bold">科学的ジム</span>ブランディング
+                                </p>
+                            </div>
+                            <!-- Value 3 -->
+                            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+                                <div class="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-accent text-2xl mx-auto mb-4 border-2 border-accent">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-white mb-3">退会防止</h3>
+                                <p class="text-gray-400 text-sm leading-relaxed">
+                                    コミュニティ×ゲーミフィケーションで<br/>
+                                    エンゲージメント向上
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Next Steps -->
+                        <div class="flex-1 bg-gray-900 border border-gray-800 rounded-xl p-6">
+                            <div class="flex justify-between items-center h-full">
+                                <!-- Steps -->
+                                <div class="flex-1">
+                                    <div class="text-center mb-4">
+                                        <h3 class="text-xl font-bold text-white">次のステップ</h3>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <!-- Step 1 -->
+                                        <div class="flex-1 text-center">
+                                            <div class="w-12 h-12 bg-accent rounded-full flex items-center justify-center text-black font-bold text-lg mx-auto mb-3">1</div>
+                                            <h4 class="font-bold text-white text-sm mb-2">無料トライアル</h4>
+                                            <p class="text-gray-400 text-xs">スタッフ様向け<br/>まずはお試し</p>
+                                        </div>
+                                        <!-- Arrow -->
+                                        <div class="flex items-center justify-center px-4">
+                                            <i class="fas fa-arrow-right text-gray-600 text-xl"></i>
+                                        </div>
+                                        <!-- Step 2 -->
+                                        <div class="flex-1 text-center">
+                                            <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3">2</div>
+                                            <h4 class="font-bold text-white text-sm mb-2">導入効果の検証</h4>
+                                            <p class="text-gray-400 text-xs">1-2ヶ月で<br/>効果を実感</p>
+                                        </div>
+                                        <!-- Arrow -->
+                                        <div class="flex items-center justify-center px-4">
+                                            <i class="fas fa-arrow-right text-gray-600 text-xl"></i>
+                                        </div>
+                                        <!-- Step 3 -->
+                                        <div class="flex-1 text-center">
+                                            <div class="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3">3</div>
+                                            <h4 class="font-bold text-white text-sm mb-2">本契約・展開</h4>
+                                            <p class="text-gray-400 text-xs">会員様へ<br/>本格導入</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Contact Info -->
+                                <div class="w-80 bg-gray-800 rounded-lg p-4 ml-8">
+                                    <div class="text-center mb-3">
+                                        <div class="text-accent font-bold text-sm">お問い合わせ</div>
+                                    </div>
+                                    <div class="space-y-3 text-sm">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-envelope text-accent w-5"></i>
+                                            <span class="text-white ml-2">official@your-coach-plus.com</span>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <i class="fab fa-youtube text-accent w-5"></i>
+                                            <span class="text-white ml-2">@YourCoachPlusOFFICIAL</span>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <i class="fas fa-qrcode text-accent w-5"></i>
+                                            <span class="text-white ml-2">アプリDL準備中</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- Fullpage Script -->
+    <script>
+    (function() {
+        const wrapper = document.getElementById('fullpage-wrapper');
+        const sections = document.querySelectorAll('.section');
+        const scrollHint = document.getElementById('scroll-hint');
+        const pageDots = document.querySelectorAll('.page-dot');
+        let currentSection = 0;
+        const totalSections = sections.length;
+        let isScrolling = false;
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        function updateScrollHint() {
+            if (currentSection >= totalSections - 1) {
+                scrollHint.classList.add('hidden');
+            } else {
+                scrollHint.classList.remove('hidden');
+            }
+        }
+
+        function updatePageIndicator() {
+            pageDots.forEach((dot, index) => {
+                if (index === currentSection) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function goToSection(index) {
+            if (index < 0 || index >= totalSections || isScrolling) return;
+
+            isScrolling = true;
+            currentSection = index;
+            wrapper.style.transform = `translateY(-${currentSection * 100}vh)`;
+            updateScrollHint();
+            updatePageIndicator();
+
+            setTimeout(() => { isScrolling = false; }, 700);
+        }
+
+        function nextSection() { goToSection(currentSection + 1); }
+        function prevSection() { goToSection(currentSection - 1); }
+
+        // Mouse wheel
+        document.addEventListener('wheel', (e) => {
+            if (isScrolling) return;
+            if (e.deltaY > 0) nextSection();
+            else prevSection();
+        }, { passive: true });
+
+        // Touch events
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (isScrolling) return;
+            touchEndY = e.changedTouches[0].screenY;
+            const diff = touchStartY - touchEndY;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) nextSection();
+                else prevSection();
+            }
+        }, { passive: true });
+
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+                e.preventDefault();
+                nextSection();
+            }
+            if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+                e.preventDefault();
+                prevSection();
+            }
+            if (e.key === 'Home') goToSection(0);
+            if (e.key === 'End') goToSection(totalSections - 1);
+        });
+
+        // Page dot clicks
+        pageDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                goToSection(index);
+            });
+        });
+
+        // Initialize
+        updatePageIndicator();
+    })();
+    </script>
+</body>
+</html>
