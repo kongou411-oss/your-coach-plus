@@ -10,6 +10,7 @@ const { CloudTasksClient } = require("@google-cloud/tasks");
 const gmailUser = defineSecret("GMAIL_USER");
 const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
+const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 
 admin.initializeApp();
 
@@ -1012,10 +1013,10 @@ exports.createCheckoutSession = onCall({
 // Stripe Webhook処理
 exports.handleStripeWebhook = onRequest({
   region: "asia-northeast2",
-  secrets: [stripeSecretKey, gmailUser, gmailAppPassword],
+  secrets: [stripeSecretKey, stripeWebhookSecret, gmailUser, gmailAppPassword],
 }, async (req, res) => {
   const stripe = require('stripe')(stripeSecretKey.value().trim());
-  const webhookSecret = 'whsec_aEmcIkxZi3UBOMbDv8BLIv5BdJYBceNA';
+  const webhookSecret = stripeWebhookSecret.value().trim();
 
   let event;
 
@@ -2000,17 +2001,29 @@ exports.validateB2B2CCode = onCall({
       }
     }
 
-    // 5. ユーザーが既に別の企業コードを使用していないかチェック
+    // 5. ユーザーが既に企業コードを使用していないかチェック
     const userDoc = await admin.firestore()
       .collection('users')
       .doc(userId)
       .get();
 
-    if (userDoc.exists) {
-      const userData = userDoc.data();
-      if (userData.b2b2cOrgId && userData.b2b2cOrgId !== orgDoc.id) {
-        throw new HttpsError("already-exists", "既に別の企業コードを使用しています");
-      }
+    const userData = userDoc.exists ? userDoc.data() : {};
+
+    // 5a. 別の企業に所属している場合はエラー
+    if (userData.b2b2cOrgId && userData.b2b2cOrgId !== orgDoc.id) {
+      throw new HttpsError("already-exists", "既に別の企業コードを使用しています。変更するには管理者にお問い合わせください。");
+    }
+
+    // 5b. 同じ企業に既に登録済みの場合はスキップ（重複登録防止）
+    if (userData.b2b2cOrgId === orgDoc.id) {
+      console.log(`[B2B2C] User ${userId} already registered with org ${orgDoc.id}`);
+      return {
+        success: true,
+        message: "既にこの企業コードで登録済みです。",
+        organizationName: org.name,
+        planName: org.planId,
+        alreadyRegistered: true
+      };
     }
 
     // 6. ユーザーアカウントを更新（存在しない場合は作成）
@@ -2021,10 +2034,10 @@ exports.validateB2B2CCode = onCall({
       b2b2cOrgName: org.name,
       b2b2cAccessCode: accessCode,
       b2b2cJoinedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paidCredits: (userDoc.exists && userDoc.data().paidCredits ? userDoc.data().paidCredits : 0) + 100,
+      paidCredits: (userData.paidCredits || 0) + 100,
     }, { merge: true });
 
-    // 7. 使用ライセンス数をインクリメント
+    // 7. 使用ライセンス数をインクリメント（新規登録時のみ）
     await orgDoc.ref.update({
       usedLicenses: admin.firestore.FieldValue.increment(1),
       users: admin.firestore.FieldValue.arrayUnion(userId),
@@ -2084,7 +2097,10 @@ exports.redeemGiftCode = onCall({
 
       const codeData = codeDoc.data();
 
-      // 同一ユーザーでも再入力でクレジット再付与可能（重複チェックなし）
+      // 重複使用チェック: 同一ユーザーが既に使用済みの場合はエラー
+      if (codeData.usedBy && codeData.usedBy.includes(userId)) {
+        throw new HttpsError("already-exists", "このコードは既に使用済みです");
+      }
 
       // ユーザー情報を取得
       const userRef = admin.firestore().collection('users').doc(userId);

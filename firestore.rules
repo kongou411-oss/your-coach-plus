@@ -47,12 +47,37 @@ service cloud.firestore {
     // ============================================
     // users: ユーザープロフィール
     // - 読み取り: 認証済みユーザー全員（コミュニティ機能でプロフィール表示のため）
-    // - 書き込み: 本人のみ
+    // - 書き込み: 本人のみ（ただし課金関連フィールドはCloud Functionsのみ）
     // ============================================
     match /users/{userId} {
       allow read: if isAuthenticated();
-      // 本人は全フィールド書き込み可能
-      allow write: if isOwner(userId);
+
+      // 課金・サブスクリプション関連の保護フィールド（Cloud Functionsのみ変更可能）
+      function isProtectedFieldChanged() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'subscription',
+          'subscriptionStatus',
+          'subscriptionTier',
+          'paidCredits',
+          'freeCredits',
+          'stripeCustomerId',
+          'b2b2cOrgId',
+          'b2b2cOrgName',
+          'b2b2cAccessCode',
+          'b2b2cJoinedAt',
+          'isPremium',
+          'referralCode',
+          'referredBy',
+          'referralCodeUsed',
+          'referralCreditsEarned'
+        ]);
+      }
+
+      // 本人は保護フィールド以外のみ書き込み可能
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && !isProtectedFieldChanged();
+      allow delete: if isOwner(userId);
+
       // 他の認証済みユーザーはfollowerCountのみ更新可能（フォロー機能用）
       allow update: if isAuthenticated()
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount']);
