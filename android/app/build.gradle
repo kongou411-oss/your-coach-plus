@@ -18,8 +18,8 @@ android {
         applicationId "com.yourcoach.plus"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 53
-        versionName "1.0.52"
+        versionCode 54
+        versionName "1.0.53"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -54,10 +54,11 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 
-    // Firebase Crashlytics
+    // Firebase Crashlytics（広告ID不要）
+    // ※ firebase-analytics は広告IDパーミッションを自動追加するため削除
+    // ※ カスタム Analytics Service（Firestore記録）で代替済み
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-crashlytics'
-    implementation 'com.google.firebase:firebase-analytics'
 }
 
 apply from: 'capacitor.build.gradle'
