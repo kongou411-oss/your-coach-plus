@@ -2290,12 +2290,17 @@ const ExperienceService = {
         }
 
         const experience = profile.experience ?? 0;
-        const level = profile.level ?? 1;
+        // 保存されたlevelではなく、経験値から正確に計算（不整合防止）
+        const level = ExperienceService.calculateLevel(experience);
         const freeCredits = profile.freeCredits ?? 0;
         const paidCredits = profile.paidCredits ?? 0;
         const registrationDate = profile.registrationDate || profile.joinDate || new Date().toISOString();
 
         // デバッグログ：経験値データの取得状況
+        const savedLevel = profile.level ?? 1;
+        if (savedLevel !== level) {
+            console.warn(`[ExperienceService] Level mismatch detected: saved=${savedLevel}, calculated=${level}, exp=${experience}`);
+        }
         console.log(`[ExperienceService] getUserExperience: user=${userId}, exp=${experience}, level=${level}, free=${freeCredits}, paid=${paidCredits}`);
 
         return {
@@ -2313,7 +2318,8 @@ const ExperienceService = {
         const profile = await DataService.getUserProfile(userId);
 
         const currentExp = profile?.experience || 0;
-        const currentLevel = profile?.level || 1;
+        // 保存されたlevelではなく、経験値から正確に計算（不整合防止）
+        const currentLevel = ExperienceService.calculateLevel(currentExp);
         const newExp = currentExp + expPoints;
         const newLevel = ExperienceService.calculateLevel(newExp);
 

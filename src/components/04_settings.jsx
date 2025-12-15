@@ -66,6 +66,9 @@ const SettingsView = ({
     const [expData, setExpData] = useState(null);
     const [milestones, setMilestones] = useState([]);
 
+    // キーボード表示時のビューポート高さ対応
+    const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
+
     // テンプレート関連
     const [mealTemplates, setMealTemplates] = useState([]);
     const [workoutTemplates, setWorkoutTemplates] = useState([]);
@@ -78,6 +81,31 @@ const SettingsView = ({
 
     // 確認モーダル
     const { showConfirm, hideConfirm, ConfirmModalComponent } = useConfirmModal();
+
+    // ===== キーボード表示時のビューポート高さ監視 =====
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const updateViewportHeight = () => {
+            // visualViewportがあればそちらを優先（キーボード表示時に正確な高さを取得）
+            const height = window.visualViewport?.height || window.innerHeight;
+            setViewportHeight(height);
+        };
+
+        // 初回計測
+        updateViewportHeight();
+
+        // リサイズイベント監視
+        window.addEventListener('resize', updateViewportHeight);
+        window.visualViewport?.addEventListener('resize', updateViewportHeight);
+        window.visualViewport?.addEventListener('scroll', updateViewportHeight);
+
+        return () => {
+            window.removeEventListener('resize', updateViewportHeight);
+            window.visualViewport?.removeEventListener('resize', updateViewportHeight);
+            window.visualViewport?.removeEventListener('scroll', updateViewportHeight);
+        };
+    }, []);
 
     // ===== 初期化・副作用 =====
     useEffect(() => {
@@ -349,7 +377,10 @@ const SettingsView = ({
     return (
         <>
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[10000] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden slide-up">
+            <div
+                className="bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl flex flex-col overflow-hidden slide-up"
+                style={{ maxHeight: `${viewportHeight * 0.9}px` }}
+            >
                 {/* ヘッダー（固定） */}
                 <div className="flex-shrink-0 bg-white border-b">
                     <div className="p-4 flex justify-between items-center">
