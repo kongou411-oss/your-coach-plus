@@ -32,60 +32,62 @@
         <div class="max-w-6xl mx-auto px-4 py-16">
             <h2 class="text-3xl font-bold text-center mb-12 text-white">料金プラン</h2>
 
-            <div class="grid md:grid-cols-3 gap-8 mb-16">
-                <!-- ビギナープラン -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl hover:shadow-[#4A9EFF]/20 transition" data-plan="beginner">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-900">ビギナープラン</h3>
-                    <div class="text-4xl font-bold text-[#4A9EFF] mb-2">¥107,160</div>
-                    <p class="text-gray-600 mb-6">年間プラン（税込）</p>
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <!-- スタンダードプラン -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl hover:shadow-[#4A9EFF]/20 transition" data-plan="standard">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">スタンダード</h3>
+                    <div class="text-4xl font-bold text-[#4A9EFF] mb-2">¥108,000</div>
+                    <p class="text-gray-600 mb-2">年間プラン（税込）</p>
+                    <p class="text-sm text-gray-500 mb-6">月額換算 ¥9,000</p>
 
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">最大10人までご利用可能</span>
+                            <span class="text-sm text-gray-700">最大<strong>10人</strong>までご利用可能</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">1人あたり¥893/月</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">通常価格より5%割引</span>
+                            <span class="text-sm text-gray-700">1人あたり<strong>¥900/月</strong></span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
                             <span class="text-sm text-gray-700">全Premium機能利用可能</span>
                         </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#4A9EFF]">✓</span>
+                            <span class="text-sm text-gray-700">小規模パーソナルジム向け</span>
+                        </li>
                     </ul>
 
-                    <button onclick="selectPlan('beginner')" class="w-full bg-[#4A9EFF] text-white font-bold py-3 rounded-lg hover:bg-[#3b8fef] transition">
+                    <button onclick="selectPlan('standard')" class="w-full bg-[#4A9EFF] text-white font-bold py-3 rounded-lg hover:bg-[#3b8fef] transition">
                         このプランを選択
                     </button>
                 </div>
 
                 <!-- プロプラン -->
                 <div class="bg-white rounded-2xl shadow-xl p-8 border-4 border-[#4A9EFF] transform scale-105 hover:shadow-2xl hover:shadow-[#4A9EFF]/30 transition" data-plan="pro">
-                    <div class="bg-[#4A9EFF] text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4">おすすめ</div>
-                    <h3 class="text-2xl font-bold mb-4 text-gray-900">プロプラン</h3>
-                    <div class="text-4xl font-bold text-[#4A9EFF] mb-2">¥304,560</div>
-                    <p class="text-gray-600 mb-6">年間プラン（税込）</p>
+                    <div class="bg-[#4A9EFF] text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4">人気No.1</div>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">プロ</h3>
+                    <div class="text-4xl font-bold text-[#4A9EFF] mb-2">¥297,000</div>
+                    <p class="text-gray-600 mb-2">年間プラン（税込）</p>
+                    <p class="text-sm text-gray-500 mb-6">月額換算 ¥24,750</p>
 
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">最大30人までご利用可能</span>
+                            <span class="text-sm text-gray-700">最大<strong>30人</strong>までご利用可能</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">1人あたり¥846/月</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">通常価格より10%割引</span>
+                            <span class="text-sm text-gray-700">1人あたり<strong>¥825/月</strong></span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
                             <span class="text-sm text-gray-700">全Premium機能利用可能</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[#4A9EFF]">✓</span>
+                            <span class="text-sm text-gray-700">中規模フィットネスジム向け</span>
                         </li>
                     </ul>
 
@@ -94,34 +96,61 @@
                     </button>
                 </div>
 
-                <!-- MAXプラン -->
-                <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl hover:shadow-[#4A9EFF]/20 transition" data-plan="max">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-900">MAXプラン</h3>
-                    <div class="text-4xl font-bold text-[#4A9EFF] mb-2">¥600,000</div>
-                    <p class="text-gray-600 mb-6">年間プラン（税込）</p>
+                <!-- エリートプラン -->
+                <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl hover:shadow-[#4A9EFF]/20 transition" data-plan="elite">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900">エリート</h3>
+                    <div class="text-4xl font-bold text-[#4A9EFF] mb-2">¥594,000</div>
+                    <p class="text-gray-600 mb-2">年間プラン（税込）</p>
+                    <p class="text-sm text-gray-500 mb-6">月額換算 ¥49,500</p>
 
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">無制限でご利用可能</span>
+                            <span class="text-sm text-gray-700">最大<strong>100人</strong>までご利用可能</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">1人あたり¥799/月（約63人分）</span>
+                            <span class="text-sm text-gray-700">1人あたり<strong>¥495/月</strong></span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">通常価格より15%割引</span>
+                            <span class="text-sm text-gray-700">全Premium機能利用可能</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="text-[#4A9EFF]">✓</span>
-                            <span class="text-sm text-gray-700">大規模ジム・フランチャイズ向け</span>
+                            <span class="text-sm text-gray-700">大規模ジム・チェーン向け</span>
                         </li>
                     </ul>
 
-                    <button onclick="selectPlan('max')" class="w-full bg-[#4A9EFF] text-white font-bold py-3 rounded-lg hover:bg-[#3b8fef] transition">
+                    <button onclick="selectPlan('elite')" class="w-full bg-[#4A9EFF] text-white font-bold py-3 rounded-lg hover:bg-[#3b8fef] transition">
                         このプランを選択
                     </button>
+                </div>
+            </div>
+
+            <!-- マスタープラン（問い合わせ） -->
+            <div class="max-w-2xl mx-auto mb-16">
+                <div class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl shadow-lg p-8 text-center border border-gray-700">
+                    <h3 class="text-2xl font-bold mb-4 text-white">マスタープラン</h3>
+                    <div class="text-3xl font-bold text-[#4A9EFF] mb-2">無制限利用</div>
+                    <p class="text-gray-400 mb-6">100名以上・フランチャイズ・複数店舗展開をお考えの企業様向け</p>
+                    <ul class="text-left max-w-md mx-auto space-y-2 mb-6">
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <span class="text-[#4A9EFF]">✓</span>
+                            <span class="text-sm">ライセンス数無制限</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <span class="text-[#4A9EFF]">✓</span>
+                            <span class="text-sm">専任サポート担当</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-gray-300">
+                            <span class="text-[#4A9EFF]">✓</span>
+                            <span class="text-sm">カスタマイズ対応可</span>
+                        </li>
+                    </ul>
+                    <a href="mailto:official@your-coach-plus.com?subject=マスタープラン問い合わせ" class="inline-block bg-[#4A9EFF] text-white font-bold py-3 px-8 rounded-lg hover:bg-[#3b8fef] transition">
+                        お問い合わせ
+                    </a>
                 </div>
             </div>
 
@@ -218,20 +247,20 @@
         let selectedPlanId = null;
 
         const plans = {
-            'beginner': {
-                name: 'ビギナープラン',
-                price: '¥107,160/年',
+            'standard': {
+                name: 'スタンダードプラン',
+                price: '¥108,000/年（税込）',
                 licenses: 10
             },
             'pro': {
                 name: 'プロプラン',
-                price: '¥304,560/年',
+                price: '¥297,000/年（税込）',
                 licenses: 30
             },
-            'max': {
-                name: 'MAXプラン',
-                price: '¥600,000/年',
-                licenses: '無制限'
+            'elite': {
+                name: 'エリートプラン',
+                price: '¥594,000/年（税込）',
+                licenses: 100
             }
         };
 

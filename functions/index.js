@@ -1754,43 +1754,31 @@ exports.createB2B2CCheckoutSession = onCall({
   try {
     const stripe = require("stripe")(stripeSecretKey.value().trim());
 
-    // config.jsからプラン情報を取得（ハードコード）
+    // B2B法人プラン定義（本番用）
     const plans = {
-      'beginner': {
-        stripePriceId: 'price_1SXKzH0l4euKovIjn199zOey',
-        name: 'ビギナープラン',
+      'test': {
+        stripePriceId: 'price_1Sf4qX0IbeDUi2GQcdIskLuw',
+        name: 'テストプラン',
+        licenses: 1,
+        price: 100
+      },
+      'standard': {
+        stripePriceId: 'price_1Sf4pV0IbeDUi2GQLq4GfKrq',
+        name: 'スタンダードプラン',
         licenses: 10,
-        price: 107160
+        price: 108000
       },
       'pro': {
-        stripePriceId: 'price_1SXL080l4euKovIjfd3Ta2ji',
+        stripePriceId: 'price_1Sf4rJ0IbeDUi2GQCAhZzQXA',
         name: 'プロプラン',
         licenses: 30,
-        price: 304560
+        price: 297000
       },
-      'max': {
-        stripePriceId: 'price_1SXL1h0l4euKovIjo6HYZLsU',
-        name: 'MAXプラン',
-        licenses: -1,
-        price: 600000
-      },
-      'custom_beginner': {
-        stripePriceId: 'price_1SXL4x0l4euKovIjpXt16kpD',
-        name: 'カスタムビギナー',
-        licenses: 10,
-        price: 78960
-      },
-      'custom_pro': {
-        stripePriceId: 'price_1SXL5x0l4euKovIjCNo9bqRp',
-        name: 'カスタムプロ',
-        licenses: 30,
-        price: 236880
-      },
-      'custom_max': {
-        stripePriceId: 'price_1SXL7U0l4euKovIjC97PopcE',
-        name: 'カスタムMAX',
-        licenses: -1,
-        price: 500000
+      'elite': {
+        stripePriceId: 'price_1Sf4rl0IbeDUi2GQKnhFWnxa',
+        name: 'エリートプラン',
+        licenses: 100,
+        price: 594000
       }
     };
 
