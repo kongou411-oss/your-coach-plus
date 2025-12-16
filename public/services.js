@@ -215,34 +215,58 @@ const DataService = {
         }
     },
 
-    // ユーザープロファイル取得
+    // ユーザープロファイル取得（キャッシュファースト戦略）
     getUserProfile: async (userId) => {
         let profile = null;
-        let source = 'server';
+        let source = 'cache';
 
         try {
-            // サーバー優先で取得（キャッシュを使わない）
-            const doc = await db.collection('users').doc(userId).get({ source: 'server' });
-            profile = doc.exists ? doc.data() : null;
-        } catch (error) {
-            // ネットワークエラーの場合はキャッシュから取得を試みる
-            if (error.code === 'unavailable') {
-                console.warn('[DataService] Network unavailable, trying cache for user profile');
-                source = 'cache';
-                try {
-                    const doc = await db.collection('users').doc(userId).get({ source: 'cache' });
-                    profile = doc.exists ? doc.data() : null;
-                } catch (cacheError) {
-                    console.error('[DataService] Cache fetch failed for user profile:', cacheError);
+            // まずキャッシュから即座に取得を試みる（高速）
+            const cacheDoc = await db.collection('users').doc(userId).get({ source: 'cache' });
+            if (cacheDoc.exists) {
+                profile = cacheDoc.data();
+                console.log(`[DataService] getUserProfile (cache-first): cache hit for user=${userId}`);
+            }
+        } catch (cacheError) {
+            // キャッシュがない場合は無視（サーバーから取得する）
+            console.log('[DataService] No cache available, fetching from server');
+        }
+
+        // キャッシュがない、または最新データが必要な場合はサーバーから取得
+        if (!profile) {
+            source = 'server';
+            try {
+                const serverDoc = await db.collection('users').doc(userId).get({ source: 'server' });
+                profile = serverDoc.exists ? serverDoc.data() : null;
+            } catch (error) {
+                if (error.code === 'permission-denied') {
+                    // 権限エラー（新規ユーザー）の場合は静かに null を返す
+                    return null;
+                } else if (error.code === 'unavailable') {
+                    console.warn('[DataService] Network unavailable and no cache');
+                    return null;
+                } else {
+                    console.error('Error fetching user profile:', error);
                     return null;
                 }
-            } else if (error.code === 'permission-denied') {
-                // 権限エラー（新規ユーザー）の場合は静かに null を返す
-                return null;
-            } else {
-                console.error('Error fetching user profile:', error);
-                return null;
             }
+        } else {
+            // キャッシュから取得した場合、バックグラウンドでサーバーから最新データを取得してキャッシュを更新
+            db.collection('users').doc(userId).get({ source: 'server' }).then(serverDoc => {
+                if (serverDoc.exists) {
+                    const serverData = serverDoc.data();
+                    // 経験値やクレジットに差分があれば通知（UIを更新するため）
+                    if (profile.experience !== serverData.experience ||
+                        profile.freeCredits !== serverData.freeCredits ||
+                        profile.paidCredits !== serverData.paidCredits ||
+                        profile.level !== serverData.level) {
+                        console.log('[DataService] Server data differs from cache, dispatching update event');
+                        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { userId } }));
+                    }
+                }
+            }).catch(err => {
+                console.warn('[DataService] Background server fetch failed:', err);
+            });
         }
 
         // デバッグログ：データソースと経験値情報

@@ -460,6 +460,40 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 recordActivity();
             }, [user]);
 
+            // 経験値・レベル・クレジット更新イベントをリッスンしてuserProfileを再取得
+            useEffect(() => {
+                if (!user) return;
+
+                const refreshUserProfile = async () => {
+                    try {
+                        const profile = await DataService.getUserProfile(user.uid);
+                        if (profile) {
+                            setUserProfile(profile);
+                            console.log('[App] userProfile refreshed after experience/level/credit update');
+                        }
+                    } catch (error) {
+                        console.error('[App] Failed to refresh userProfile:', error);
+                    }
+                };
+
+                const handleLevelUp = () => refreshUserProfile();
+                const handleExperienceUpdated = () => refreshUserProfile();
+                const handleCreditUpdated = () => refreshUserProfile();
+                const handleProfileUpdated = () => refreshUserProfile();
+
+                window.addEventListener('levelUp', handleLevelUp);
+                window.addEventListener('experienceUpdated', handleExperienceUpdated);
+                window.addEventListener('creditUpdated', handleCreditUpdated);
+                window.addEventListener('profileUpdated', handleProfileUpdated);
+
+                return () => {
+                    window.removeEventListener('levelUp', handleLevelUp);
+                    window.removeEventListener('experienceUpdated', handleExperienceUpdated);
+                    window.removeEventListener('creditUpdated', handleCreditUpdated);
+                    window.removeEventListener('profileUpdated', handleProfileUpdated);
+                };
+            }, [user]);
+
             // What's Newモーダル表示チェック（マイナーバージョン比較）
             useEffect(() => {
                 if (!user) return;
