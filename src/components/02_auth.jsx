@@ -30,8 +30,6 @@ const LoginScreen = () => {
 
     // 利用規約・プライバシーポリシー関連
     const [agreedToTerms, setAgreedToTerms] = useState(false);
-    const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-    const [showTermsModal, setShowTermsModal] = useState(false);
 
     // 認証方法の説明モーダル
     const [showAuthInfoModal, setShowAuthInfoModal] = useState(false);
@@ -66,17 +64,6 @@ const LoginScreen = () => {
         initGoogleAuth();
     }, []);
 
-    // iframe内からのpostMessageを受け取ってモーダルを閉じる
-    useEffect(() => {
-        const handleMessage = (event) => {
-            if (event.data === 'closeModal') {
-                setShowPrivacyModal(false);
-                setShowTermsModal(false);
-            }
-        };
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
 
     // パスワード強度チェック
     const checkPasswordStrength = (pwd) => {
@@ -573,23 +560,25 @@ const LoginScreen = () => {
                                     className="w-4 h-4 flex-shrink-0"
                                 />
                                 <label htmlFor="agreeToTerms" className="text-sm text-gray-600">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowTermsModal(true)}
+                                    <a
+                                        href="/terms.html"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="font-medium hover:underline"
                                         style={{color: '#4A9EFF'}}
                                     >
                                         利用規約
-                                    </button>
+                                    </a>
                                     と
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPrivacyModal(true)}
+                                    <a
+                                        href="/privacy.html"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="font-medium hover:underline"
                                         style={{color: '#4A9EFF'}}
                                     >
                                         プライバシーポリシー
-                                    </button>
+                                    </a>
                                     に同意します
                                 </label>
                             </div>
@@ -742,39 +731,6 @@ const LoginScreen = () => {
                 </div>
             )}
 
-            {/* プライバシーポリシーモーダル */}
-            {showPrivacyModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-1" onClick={() => setShowPrivacyModal(false)}>
-                    <div className="bg-white rounded-lg w-[98vw] h-[98vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
-                            <h2 className="text-xl md:text-2xl font-bold">プライバシーポリシー</h2>
-                            <button onClick={() => setShowPrivacyModal(false)} className="text-gray-600 hover:text-gray-600">
-                                <Icon name="X" size={24} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <iframe src="/privacy.html" className="w-full h-full border-0"></iframe>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* 利用規約モーダル */}
-            {showTermsModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-1" onClick={() => setShowTermsModal(false)}>
-                    <div className="bg-white rounded-lg w-[98vw] h-[98vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex-shrink-0 bg-white border-b p-4 flex justify-between items-center">
-                            <h2 className="text-xl md:text-2xl font-bold">利用規約</h2>
-                            <button onClick={() => setShowTermsModal(false)} className="text-gray-600 hover:text-gray-600">
-                                <Icon name="X" size={24} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <iframe src="/terms.html" className="w-full h-full border-0"></iframe>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* 認証方法の説明モーダル */}
             {showAuthInfoModal && (
