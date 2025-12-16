@@ -1432,8 +1432,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
 
             // ルーティンデータ読み込み関数
             const loadRoutineData = async () => {
-                if (!currentRoutine || currentRoutine.isRestDay) {
-                    toast.error('休息日にはルーティン入力は使用できません');
+                if (!currentRoutine) {
                     return;
                 }
 
@@ -1504,11 +1503,16 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     }
                 });
 
-                // dailyRecordに追加
+                // dailyRecordに追加（routine情報も保存して分析で休養日判定できるようにする）
                 const updatedRecord = {
                     ...dailyRecord,
                     meals: [...(dailyRecord.meals || []), ...newMeals],
-                    workouts: [...(dailyRecord.workouts || []), ...newWorkouts]
+                    workouts: [...(dailyRecord.workouts || []), ...newWorkouts],
+                    routine: {
+                        name: currentRoutine.name,
+                        type: currentRoutine.splitType || '',
+                        is_rest_day: currentRoutine.isRestDay || false
+                    }
                 };
 
                 setDailyRecord(updatedRecord);
