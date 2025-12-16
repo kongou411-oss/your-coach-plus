@@ -62,7 +62,8 @@
       "Bash(firebase functions:secrets:set:*)",
       "Bash(firebase firestore:rules:list:*)",
       "Bash(firebase functions:secrets:get:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(firebase functions:secrets:access:*)"
     ],
     "deny": [],
     "ask": []
