@@ -837,7 +837,7 @@ exports.sendFeedback = onCall({
 
     // 1. 管理者へのフィードバック送信
     const adminMailOptions = {
-      from: gmailUser.value(),
+      from: `"Your Coach+ フィードバック" <${gmailUser.value()}>`,
       to: "official@your-coach-plus.com",
       subject: `[Your Coach+] ユーザーフィードバック from ${userEmail}`,
       html: `
@@ -1897,7 +1897,7 @@ async function handleB2B2CCheckout(session) {
       });
 
       const mailOptions = {
-        from: gmailUser.value(),
+        from: `"Your Coach+" <${gmailUser.value()}>`,
         to: companyEmail,
         subject: '[Your Coach+] 企業プランのご登録ありがとうございます',
         html: `
