@@ -2692,7 +2692,7 @@ JSON形式のみ出力、説明文不要`;
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area">
             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto modal-content-safe">
                 {/* ヘッダー */}
-                <div className="sticky top-0 text-white rounded-t-2xl flex justify-between items-center z-10" style={{ backgroundColor: '#4A9EFF', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px' }}>
+                <div className="sticky top-0 text-white rounded-t-2xl flex justify-between items-center z-10 p-4" style={{ backgroundColor: '#4A9EFF' }}>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Icon name="Camera" size={20} />
                         写真解析

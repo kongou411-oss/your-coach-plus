@@ -21,6 +21,11 @@
         .border-accent { border-color: #4A9EFF; }
         .card-gradient { background: linear-gradient(180deg, rgba(26,26,26,1) 0%, rgba(10,10,10,1) 100%); }
         .pro-gradient { background: linear-gradient(180deg, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%); }
+        /* Custom orange colors for Tailwind v2 */
+        .bg-custom-orange { background-color: #f97316; }
+        .bg-custom-orange-dark { background-color: rgba(154, 52, 18, 0.4); }
+        .border-custom-orange { border-color: #c2410c; }
+        .text-custom-orange { color: #fb923c; }
 
         /* Fullpage styles */
         .fullpage-container {
@@ -107,6 +112,7 @@
         <div class="page-dot" data-section="5"></div>
         <div class="page-dot" data-section="6"></div>
         <div class="page-dot" data-section="7"></div>
+        <div class="page-dot" data-section="8"></div>
     </div>
 
     <!-- Scroll Hint -->
@@ -288,7 +294,175 @@
                 </div>
             </section>
 
-            <!-- Section 3: 解決策① 指導効率化 -->
+            <!-- Section 3: なぜ続かないのか（認知リソース保護） -->
+            <section class="section bg-black">
+                <div class="section-content flex items-center justify-center">
+                    <div class="flex flex-col items-center justify-center py-6 px-16 w-full max-w-6xl mx-auto text-white">
+                        <!-- Title Section -->
+                        <div class="w-full text-center mb-6">
+                            <div class="mb-2 text-accent font-bold tracking-widest uppercase text-sm">Deep Dive</div>
+                            <h1 class="text-4xl font-black leading-tight mb-2">
+                                <span class="text-accent">『認知リソースの保護』</span><span class="text-white">で</span>
+                                <span class="text-white">3つの壁を突破</span>
+                            </h1>
+                            <p class="text-lg text-gray-400">面倒・使い方不明・効果不明 → Your Coach+の具体的解決策</p>
+                        </div>
+
+                        <!-- 3 Barriers with Solutions -->
+                        <div class="w-full grid grid-cols-3 gap-6 mb-6">
+                            <!-- Barrier 1: 面倒 → 最速入力 -->
+                            <div class="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg">
+                                <!-- Problem Header -->
+                                <div class="bg-red-900 bg-opacity-30 p-4 border-b border-red-900">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">壁①</span>
+                                        <i class="fas fa-tired text-red-400 text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-red-400">面倒</h3>
+                                    <p class="text-gray-400 text-sm">入力が手間で続かない</p>
+                                </div>
+                                <!-- Solution -->
+                                <div class="p-4">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-arrow-down text-accent mr-2"></i>
+                                        <span class="text-accent font-bold text-sm">Your Coach+ の解決策</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-bookmark text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">テンプレート</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">よく食べる食品をワンタップで記録。「鶏胸肉200g」も1秒</p>
+                                        </div>
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-magic text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">予測入力</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">入力履歴から候補を自動表示。タップ1回で入力完了</p>
+                                        </div>
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-calculator text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">自動計算</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">PFC・カロリー・40項目以上を自動算出。手計算ゼロ</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Barrier 2: 使い方不明 → シンプルUI -->
+                            <div class="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg">
+                                <!-- Problem Header -->
+                                <div class="bg-yellow-900 bg-opacity-30 p-4 border-b border-yellow-900">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="bg-yellow-600 text-white text-xs font-bold px-2 py-1 rounded">壁②</span>
+                                        <i class="fas fa-question-circle text-yellow-400 text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-yellow-400">使い方不明</h3>
+                                    <p class="text-gray-400 text-sm">機能が多すぎて迷う</p>
+                                </div>
+                                <!-- Solution -->
+                                <div class="p-4">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-arrow-down text-accent mr-2"></i>
+                                        <span class="text-accent font-bold text-sm">Your Coach+ の解決策</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-bullseye text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">ダッシュボード集約</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">今日やるべきことが一目瞭然。迷わず開いてすぐ使える</p>
+                                        </div>
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-clipboard-list text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">指示書</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">AIが翌日の行動を具体的に指示。迷わず実行できる</p>
+                                        </div>
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-book-open text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">PGBASE教科書</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">「なぜこれをやるのか」を体系的に学べる教材内蔵</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Barrier 3: 効果不明 → 即時フィードバック -->
+                            <div class="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-lg">
+                                <!-- Problem Header -->
+                                <div class="bg-custom-orange-dark p-4 border-b border-custom-orange">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="bg-custom-orange text-white text-xs font-bold px-2 py-1 rounded">壁③</span>
+                                        <i class="fas fa-chart-line text-custom-orange text-xl"></i>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-custom-orange">効果不明</h3>
+                                    <p class="text-gray-400 text-sm">数字の意味がわからない</p>
+                                </div>
+                                <!-- Solution -->
+                                <div class="p-4">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-arrow-down text-accent mr-2"></i>
+                                        <span class="text-accent font-bold text-sm">Your Coach+ の解決策</span>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-robot text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">AI分析レポート</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">「何が良くて何が悪いか」をAIが日本語で解説</p>
+                                        </div>
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-chart-pie text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">8軸レーダーチャート</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">栄養バランスを視覚化。弱点が一目でわかる</p>
+                                        </div>
+                                        <div class="bg-gray-800 rounded-lg p-3">
+                                            <div class="flex items-center mb-1">
+                                                <i class="fas fa-trophy text-accent mr-2"></i>
+                                                <span class="text-white font-bold text-sm">経験値・レベル</span>
+                                            </div>
+                                            <p class="text-gray-400 text-xs">継続するほど成長を実感。ゲーム感覚で楽しく継続</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Message -->
+                        <div class="w-full bg-gradient-to-r from-gray-900 to-gray-800 border-l-8 border-accent rounded-r-xl p-5 shadow-2xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="bg-accent text-black font-black px-4 py-2 rounded mr-6 text-sm tracking-wider">
+                                        <i class="fas fa-brain mr-2"></i>設計思想
+                                    </div>
+                                    <div>
+                                        <p class="text-xl font-bold text-white mb-1">
+                                            <span class="text-accent">『考えさせない』</span><span class="text-white">から続く。続くから</span><span class="text-accent">『結果が出る』</span>
+                                        </p>
+                                        <p class="text-gray-400 text-sm">
+                                            ユーザーの認知負荷を最小化 → 習慣化のハードルを徹底的に下げる
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: 解決策① 指導効率化 -->
             <section class="section bg-black">
                 <div class="section-content flex items-center justify-center">
                     <div class="flex w-full h-full max-w-6xl mx-auto px-8 text-white">

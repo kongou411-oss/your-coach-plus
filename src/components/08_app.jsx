@@ -460,26 +460,51 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 recordActivity();
             }, [user]);
 
-            // 経験値・レベル・クレジット更新イベントをリッスンしてuserProfileを再取得
+            // 経験値・レベル・クレジット更新イベントをリッスンしてuserProfileを更新
             useEffect(() => {
                 if (!user) return;
 
-                const refreshUserProfile = async () => {
+                // サーバーから最新データを取得（バックグラウンド）
+                const refreshFromServer = async () => {
                     try {
-                        const profile = await DataService.getUserProfile(user.uid);
-                        if (profile) {
-                            setUserProfile(profile);
-                            console.log('[App] userProfile refreshed after experience/level/credit update');
+                        const doc = await db.collection('users').doc(user.uid).get({ source: 'server' });
+                        if (doc.exists) {
+                            const profile = doc.data();
+                            setUserProfile(prev => ({ ...prev, ...profile }));
+                            console.log('[App] userProfile refreshed from server');
                         }
                     } catch (error) {
-                        console.error('[App] Failed to refresh userProfile:', error);
+                        console.error('[App] Failed to refresh from server:', error);
                     }
                 };
 
-                const handleLevelUp = () => refreshUserProfile();
-                const handleExperienceUpdated = () => refreshUserProfile();
-                const handleCreditUpdated = () => refreshUserProfile();
-                const handleProfileUpdated = () => refreshUserProfile();
+                // 経験値更新: event.detailから即座に更新
+                const handleExperienceUpdated = (event) => {
+                    if (event.detail) {
+                        setUserProfile(prev => ({
+                            ...prev,
+                            experience: event.detail.experience,
+                            level: event.detail.level
+                        }));
+                        console.log('[App] userProfile updated from experienceUpdated event:', event.detail);
+                    }
+                };
+
+                // レベルアップ: クレジット付与を含む更新
+                const handleLevelUp = (event) => {
+                    if (event.detail) {
+                        setUserProfile(prev => ({
+                            ...prev,
+                            level: event.detail.level,
+                            freeCredits: (prev?.freeCredits || 0) + (event.detail.creditsEarned || 0)
+                        }));
+                        console.log('[App] userProfile updated from levelUp event:', event.detail);
+                    }
+                };
+
+                // クレジット更新: サーバーから取得
+                const handleCreditUpdated = () => refreshFromServer();
+                const handleProfileUpdated = () => refreshFromServer();
 
                 window.addEventListener('levelUp', handleLevelUp);
                 window.addEventListener('experienceUpdated', handleExperienceUpdated);
@@ -1940,7 +1965,7 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             return (
                 <div className="min-h-screen bg-gray-50 pb-24">
                     {/* レベル・経験値バナー */}
-                    <LevelBanner user={user} setInfoModal={setInfoModal} />
+                    <LevelBanner user={user} userProfile={userProfile} setInfoModal={setInfoModal} />
 
                     {/* 日付ナビゲーション＋ルーティン統合ヘッダー */}
                     <div className="bg-white shadow-md">

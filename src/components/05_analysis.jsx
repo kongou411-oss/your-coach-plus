@@ -1048,10 +1048,19 @@ ${section2Prompt}
                 const today = getTodayDate();
                 const expResult = await ExperienceService.processDailyScore(userId, today, scores);
 
+                // 経験値更新イベントを発火（成功時のみ）
+                if (expResult.success) {
+                    window.dispatchEvent(new CustomEvent('experienceUpdated', {
+                        detail: {
+                            experience: expResult.experience,
+                            level: expResult.level
+                        }
+                    }));
+                    console.log('[Analysis] experienceUpdated event dispatched:', expResult.experience, expResult.level);
+                }
+
                 // レベルアップ時の通知
                 if (expResult.leveledUp) {
-                    // レベルアップモーダルを表示する処理は後ほど実装
-                    // グローバルイベントを発火してダッシュボードに通知
                     window.dispatchEvent(new CustomEvent('levelUp', {
                         detail: {
                             level: expResult.level,

@@ -58,7 +58,11 @@
       "WebFetch(domain:www.youtube.com)",
       "Bash(node -e:*)",
       "Bash(python3:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(firebase functions:secrets:set:*)",
+      "Bash(firebase firestore:rules:list:*)",
+      "Bash(firebase functions:secrets:get:*)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []

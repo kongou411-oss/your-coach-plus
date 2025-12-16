@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import toast from 'react-hot-toast';
 
 // ===== Score Doughnut Chart Component =====
@@ -4771,65 +4771,45 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 };
 
 // ===== Level Banner Component =====
-const LevelBanner = ({ user, setInfoModal }) => {
-    const [expData, setExpData] = useState(null);
+const LevelBanner = ({ user, userProfile, setInfoModal }) => {
+    // userProfileから直接経験値・レベルを計算（キャッシュ不整合を防ぐ）
+    const expData = useMemo(() => {
+        if (!userProfile) return null;
 
-    // 経験値・レベル情報を読み込む関数
-    const loadExperienceData = async () => {
-        if (!user) return;
-        try {
-            const data = await ExperienceService.getUserExperience(user.uid);
-            const expToNext = ExperienceService.getExpToNextLevel(data.level, data.experience);
-            const progress = Math.round((expToNext.current / expToNext.required) * 100);
+        const experience = userProfile.experience || 0;
 
-            setExpData({
-                level: data.level,
-                experience: data.experience,
-                totalCredits: data.totalCredits,
-                freeCredits: data.freeCredits,
-                paidCredits: data.paidCredits,
-                expProgress: progress,
-                expCurrent: expToNext.current,
-                expRequired: expToNext.required
-            });
-        } catch (error) {
-            console.error('[LevelBanner] Failed to load experience data:', error);
+        // ExperienceServiceと同じ計算式: 100 * level * (level - 1) / 2
+        const getRequiredExpForLevel = (level) => 100 * level * (level - 1) / 2;
+
+        // 現在のレベルを計算
+        let level = 1;
+        while (getRequiredExpForLevel(level + 1) <= experience) {
+            level++;
         }
-    };
 
-    useEffect(() => {
-        let isMounted = true;
+        // 次のレベルまでの経験値を計算
+        const currentLevelRequired = getRequiredExpForLevel(level);
+        const nextLevelRequired = getRequiredExpForLevel(level + 1);
+        const expCurrent = experience - currentLevelRequired;
+        const expRequired = nextLevelRequired - currentLevelRequired;
+        const expProgress = Math.round((expCurrent / expRequired) * 100);
 
-        const loadData = async () => {
-            if (isMounted) {
-                await loadExperienceData();
-            }
+        // クレジット計算
+        const freeCredits = userProfile.freeCredits || 0;
+        const paidCredits = userProfile.paidCredits || 0;
+        const totalCredits = freeCredits + paidCredits;
+
+        return {
+            level,
+            experience,
+            expCurrent,
+            expRequired,
+            expProgress,
+            freeCredits,
+            paidCredits,
+            totalCredits
         };
-
-        loadData();
-
-        // レベルアップイベントと経験値更新イベントをリッスン
-        const handleLevelUp = (event) => {
-            if (isMounted) loadExperienceData();
-        };
-        const handleExperienceUpdate = (event) => {
-            if (isMounted) loadExperienceData();
-        };
-        const handleCreditUpdate = () => {
-            if (isMounted) loadExperienceData();
-        };
-
-        window.addEventListener('levelUp', handleLevelUp);
-        window.addEventListener('experienceUpdated', handleExperienceUpdate);
-        window.addEventListener('creditUpdated', handleCreditUpdate);
-
-        return () => {
-            isMounted = false;
-            window.removeEventListener('levelUp', handleLevelUp);
-            window.removeEventListener('experienceUpdated', handleExperienceUpdate);
-            window.removeEventListener('creditUpdated', handleCreditUpdate);
-        };
-    }, [user]);
+    }, [userProfile]);
 
     if (!expData) {
         return null; // ローディング中は何も表示しない
