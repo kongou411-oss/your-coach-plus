@@ -1099,10 +1099,10 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 const calorieAdjustment = profile.calorieAdjustment ?? (defaults[profile.purpose] || 0);
                 const adjustedCalories = tdee + calorieAdjustment;
 
-                // スタイル判定: ボディメイカー系はLBM×2.5、一般はLBM×1.2
+                // スタイル判定: ボディメイカー系はLBM×2.3、一般はLBM×1.2
                 const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
                 const isBodymaker = bodymakerStyles.includes(profile.style);
-                const proteinCoefficient = isBodymaker ? 2.5 : 1.2;
+                const proteinCoefficient = isBodymaker ? 2.3 : 1.2;
 
                 // タンパク質をLBMベースで計算し、%に変換
                 const proteinG = lbm * proteinCoefficient;
@@ -1366,7 +1366,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     <div className="text-xs text-gray-600">本格的な筋トレ・競技力向上</div>
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-600 mt-2">※ボディメイカーはタンパク質の推奨量が一般の約2倍（一般 LBM×1.2、ボディメイカー LBM×2.5）、ビタミン・ミネラルの推奨量が3倍（耐容上限5倍）、食物繊維の推奨量が1.2倍になります</p>
+                            <p className="text-xs text-gray-600 mt-2">※ボディメイカーはタンパク質の推奨量が一般の約2倍（一般 LBM×1.2、ボディメイカー LBM×2.3）、ビタミン・ミネラルの推奨量が3倍（耐容上限5倍）、食物繊維の推奨量が1.2倍になります</p>
                         </div>
                     </div>
                 )}

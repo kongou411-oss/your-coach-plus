@@ -319,7 +319,7 @@ const LBMUtils = {
             };
         }
 
-        // タンパク質係数（LBMあたり）- 一般: 1.2（固定）、ボディメイカー: 2.5（固定）
+        // タンパク質係数（LBMあたり）- 一般: 1.2（固定）、ボディメイカー: 2.3（固定）
         let proteinCoefficient = 1.2; // デフォルト
 
         // スタイル判定（一般 or ボディメイカー系）
@@ -328,7 +328,7 @@ const LBMUtils = {
 
         // 目的に関わらず、スタイルのみで係数を決定
         if (isBodymaker) {
-            proteinCoefficient = 2.5; // 固定
+            proteinCoefficient = 2.3; // 固定
         } else {
             proteinCoefficient = 1.2; // 固定
         }

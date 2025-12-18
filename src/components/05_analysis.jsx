@@ -1356,7 +1356,7 @@ ${conversationContext}
 
         const recommendations = [];
         if (avgProtein < profile.leanBodyMass * 2 && profile.purpose && profile.purpose.includes('バルクアップ')) {
-            recommendations.push('バルクアップ目的でタンパク質がやや不足傾向です。LBM×2.5g/日を目指しましょう。');
+            recommendations.push('バルクアップ目的でタンパク質がやや不足傾向です。LBM×2.3g/日を目指しましょう。');
         }
         if (workoutFrequency < 50) {
             recommendations.push('トレーニング頻度が週3回未満です。週4-5回のトレーニングで成長ホルモン分泌を最大化できます。');

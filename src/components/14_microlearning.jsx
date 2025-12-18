@@ -267,7 +267,7 @@ export const MicroLearningLibrary = {
                 type: 'text',
                 title: 'なぜタンパク質が重要なのか？',
                 content: 'タンパク質は筋肉を作る材料です。\n\nトレーニングで筋繊維を破壊し、タンパク質で修復することで筋肉が成長します。\n\n不足すると筋肉が分解されてしまいます。',
-                note: 'LBM（除脂肪体重）1kgあたりの推奨量\n• 一般：1.2g\n• ボディメイカー：2.5g'
+                note: 'LBM（除脂肪体重）1kgあたりの推奨量\n• 一般：1.2g\n• ボディメイカー：2.3g'
             },
             {
                 type: 'video',

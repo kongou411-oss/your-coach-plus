@@ -1959,7 +1959,7 @@ const BasicTab = ({
     const fatMass = profile.weight - lbm;
     return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass) - 300);
 })()}kcal
-• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.5' : '1.2'}
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.3' : '1.2'}
 • 推奨ペース：週0.5〜0.7kg減
 
 【メンテナンス（現状維持）】
@@ -1979,7 +1979,7 @@ const BasicTab = ({
     const fatMass = profile.weight - lbm;
     return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass) + 300);
 })()}kcal
-• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.5' : '1.2'}
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.3' : '1.2'}
 • 炭水化物：多め（筋肉合成のエネルギー）
 • 推奨ペース：週0.5kg増
 
@@ -1990,7 +1990,7 @@ const BasicTab = ({
     const fatMass = profile.weight - lbm;
     return Math.round(LBMUtils.calculateTDEE(lbm, profile.activityLevel, profile.customActivityMultiplier, fatMass));
 })()}kcal
-• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.5' : '1.2'}
+• タンパク質：LBM × ${profile.style === 'ボディメイカー' ? '2.3' : '1.2'}
 • トレーニング強度が最重要
 
 目的はいつでも変更できます。`
@@ -2293,12 +2293,12 @@ const BasicTab = ({
                                             type="button"
                                             onClick={() => {
                                                 setProfile({...profile, style: 'ボディメイカー'});
-                                                // ボディメイカー: LBM×2.5 でPFC比率を自動計算
+                                                // ボディメイカー: LBM×2.3 でPFC比率を自動計算
                                                 const lbm = profile.leanBodyMass || LBMUtils.calculateLBM(profile.weight || 70, profile.bodyFatPercentage || 15);
                                                 const fatMass = (profile.weight || 70) - lbm;
                                                 const tdee = LBMUtils.calculateTDEE(lbm, profile.activityLevel || 3, profile.customActivityMultiplier, fatMass);
                                                 const adjustedCalories = tdee + (profile.calorieAdjustment || 0);
-                                                const proteinG = lbm * 2.5;
+                                                const proteinG = lbm * 2.3;
                                                 const proteinPercent = Math.round((proteinG * 4 / adjustedCalories) * 100);
                                                 const clampedProtein = Math.max(15, Math.min(50, proteinPercent));
                                                 const clampedCarb = Math.max(15, Math.min(60, 100 - clampedProtein - 25));
@@ -2321,7 +2321,7 @@ const BasicTab = ({
                                     </div>
                                     <p className="text-xs text-gray-600 mt-2">
                                         ※ボディメイカーはタンパク質の推奨量が一般の約2倍<br/>
-                                        （一般 LBM×1.2、ボディメイカー LBM×2.5）、<br/>
+                                        （一般 LBM×1.2、ボディメイカー LBM×2.3）、<br/>
                                         ビタミン・ミネラルの推奨量が3倍（耐容上限5倍）、食物繊維の推奨量が1.2倍になります
                                     </p>
                                 </div>
@@ -2452,10 +2452,10 @@ const BasicTab = ({
                                                 const calorieAdjustment = profile.calorieAdjustment || 0;
                                                 const adjustedCalories = tdee + calorieAdjustment;
 
-                                                // スタイル判定: ボディメイカー系はLBM×2.5、一般はLBM×1.2
+                                                // スタイル判定: ボディメイカー系はLBM×2.3、一般はLBM×1.2
                                                 const bodymakerStyles = ['筋肥大', '筋力', '持久力', 'バランス', 'ボディメイカー'];
                                                 const isBodymaker = bodymakerStyles.includes(profile.style);
-                                                const proteinCoefficient = isBodymaker ? 2.5 : 1.2;
+                                                const proteinCoefficient = isBodymaker ? 2.3 : 1.2;
 
                                                 // タンパク質をLBMベースで計算し、%に変換
                                                 const proteinG = lbm * proteinCoefficient;

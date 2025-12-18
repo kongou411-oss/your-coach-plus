@@ -2383,6 +2383,15 @@ const ExperienceService = {
             console.log(`[Experience] Level up! Earned ${creditsEarned} credits (${levelsGained * ExperienceService.LEVEL_UP_CREDITS} from levels + ${creditsEarned - levelsGained * ExperienceService.LEVEL_UP_CREDITS} from milestones)`);
         }
 
+        // クレジットが変更された場合、更新イベントを発火（UI即時反映用）
+        if (creditsEarned > 0 && typeof window !== 'undefined') {
+            const newFreeCredits = (profile?.freeCredits || 0) + creditsEarned;
+            const paidCredits = profile?.paidCredits || 0;
+            window.dispatchEvent(new CustomEvent('creditUpdated', {
+                detail: { freeCredits: newFreeCredits, paidCredits, totalCredits: newFreeCredits + paidCredits }
+            }));
+        }
+
         return {
             success: true,
             experience: newExp,
@@ -2432,6 +2441,13 @@ const ExperienceService = {
 
         console.log(`[Experience] User ${userId} consumed ${amount} credits. Remaining: ${freeCredits + paidCredits} (free: ${freeCredits}, paid: ${paidCredits})`);
 
+        // クレジット更新イベントを発火（UI即時反映用）
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('creditUpdated', {
+                detail: { freeCredits, paidCredits, totalCredits: freeCredits + paidCredits }
+            }));
+        }
+
         return {
             success: true,
             freeCredits,
@@ -2453,10 +2469,18 @@ const ExperienceService = {
 
         console.log(`[Experience] User ${userId} purchased ${amount} paid credits. Total paid: ${newPaidCredits}`);
 
+        // クレジット更新イベントを発火（UI即時反映用）
+        const freeCredits = profile?.freeCredits || 0;
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('creditUpdated', {
+                detail: { freeCredits, paidCredits: newPaidCredits, totalCredits: freeCredits + newPaidCredits }
+            }));
+        }
+
         return {
             success: true,
             paidCredits: newPaidCredits,
-            totalCredits: (profile?.freeCredits || 0) + newPaidCredits
+            totalCredits: freeCredits + newPaidCredits
         };
     },
 
