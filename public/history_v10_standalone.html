@@ -2210,7 +2210,7 @@
             const max = Math.max(...data).toFixed(1);
             const min = Math.min(...data).toFixed(1);
             const trend = (data[data.length - 1] - data[0]).toFixed(1);
-            const trendPercent = ((trend / data[0]) * 100).toFixed(1);
+            const trendPercent = data[0] !== 0 ? ((trend / data[0]) * 100).toFixed(1) : '0.0';
             const stdDev = calculateStdDev(data).toFixed(1);
 
             // トレンド判定
@@ -2921,7 +2921,7 @@
 
                 // トレンドを計算
                 const trend = (data[data.length - 1] - data[0]).toFixed(1);
-                const trendPercent = ((trend / data[0]) * 100).toFixed(1);
+                const trendPercent = data[0] !== 0 ? ((trend / data[0]) * 100).toFixed(1) : '0.0';
 
                 let trendLabel = '横ばい';
                 let trendIcon = '→';
@@ -4737,7 +4737,7 @@
 
                 // 栄養データの統計計算
                 const nutritionStats = {};
-                const nutritionKeys = ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium', 'sugar'];
+                const nutritionKeys = ['calories', 'protein', 'fat', 'carbs', 'fiber', 'sodium', 'sugar', 'solubleFiber', 'insolubleFiber', 'gl', 'diaas', 'saturatedFat', 'monounsaturatedFat', 'polyunsaturatedFat', 'vitamin_score', 'mineral_score'];
 
                 for (const key of nutritionKeys) {
                     if (Array.isArray(periodData[key]) && periodData[key].length > 0) {
@@ -4790,10 +4790,24 @@ ${nutritionStats.protein ? `- タンパク質平均: ${nutritionStats.protein.av
 ${nutritionStats.fat ? `- 脂質平均: ${nutritionStats.fat.avg}g（目標: ${targetFat}g）\n  最低${nutritionStats.fat.min}～最高${nutritionStats.fat.max}g` : '- 脂質データなし'}
 ${nutritionStats.carbs ? `- 炭水化物平均: ${nutritionStats.carbs.avg}g（目標: ${targetCarbs}g）\n  最低${nutritionStats.carbs.min}～最高${nutritionStats.carbs.max}g` : '- 炭水化物データなし'}
 
-### 微量栄養素
-${nutritionStats.fiber ? `- 食物繊維平均: ${nutritionStats.fiber.avg}g（最低${nutritionStats.fiber.min}～最高${nutritionStats.fiber.max}g）` : '- 食物繊維データなし'}
-${nutritionStats.sodium ? `- 塩分平均: ${nutritionStats.sodium.avg}g（最低${nutritionStats.sodium.min}～最高${nutritionStats.sodium.max}g）` : '- 塩分データなし'}
+### 食物繊維・糖質
+${nutritionStats.fiber ? `- 食物繊維平均: ${nutritionStats.fiber.avg}g（推奨20g、最低${nutritionStats.fiber.min}～最高${nutritionStats.fiber.max}g）` : '- 食物繊維データなし'}
+${nutritionStats.solubleFiber ? `  - 水溶性: ${nutritionStats.solubleFiber.avg}g（推奨7g）` : ''}
+${nutritionStats.insolubleFiber ? `  - 不溶性: ${nutritionStats.insolubleFiber.avg}g（推奨13g）` : ''}
 ${nutritionStats.sugar ? `- 糖質平均: ${nutritionStats.sugar.avg}g（最低${nutritionStats.sugar.min}～最高${nutritionStats.sugar.max}g）` : '- 糖質データなし'}
+${nutritionStats.gl ? `- GL値平均: ${nutritionStats.gl.avg}（目標120以下、最低${nutritionStats.gl.min}～最高${nutritionStats.gl.max}）` : '- GL値データなし'}
+
+### 栄養品質
+${nutritionStats.diaas ? `- DIAAS（タンパク質の質）平均: ${nutritionStats.diaas.avg}（100以上が理想、最低${nutritionStats.diaas.min}～最高${nutritionStats.diaas.max}）` : '- DIAASデータなし'}
+${nutritionStats.saturatedFat || nutritionStats.monounsaturatedFat || nutritionStats.polyunsaturatedFat ? `- 脂肪酸バランス:
+  - 飽和脂肪酸: ${nutritionStats.saturatedFat ? nutritionStats.saturatedFat.avg + 'g' : 'データなし'}（理想30%）
+  - 一価不飽和: ${nutritionStats.monounsaturatedFat ? nutritionStats.monounsaturatedFat.avg + 'g' : 'データなし'}（理想40%）
+  - 多価不飽和: ${nutritionStats.polyunsaturatedFat ? nutritionStats.polyunsaturatedFat.avg + 'g' : 'データなし'}（理想25%）` : '- 脂肪酸データなし'}
+${nutritionStats.vitamin_score ? `- ビタミン達成率平均: ${nutritionStats.vitamin_score.avg}%（最低${nutritionStats.vitamin_score.min}～最高${nutritionStats.vitamin_score.max}%）` : '- ビタミンデータなし'}
+${nutritionStats.mineral_score ? `- ミネラル達成率平均: ${nutritionStats.mineral_score.avg}%（最低${nutritionStats.mineral_score.min}～最高${nutritionStats.mineral_score.max}%）` : '- ミネラルデータなし'}
+
+### その他
+${nutritionStats.sodium ? `- 塩分平均: ${nutritionStats.sodium.avg}g（最低${nutritionStats.sodium.min}～最高${nutritionStats.sodium.max}g）` : '- 塩分データなし'}
 
 ## 出力形式（厳守）
 
@@ -4809,9 +4823,9 @@ ${nutritionStats.sugar ? `- 糖質平均: ${nutritionStats.sugar.avg}g（最低$
 
 ② 傾向と特徴
 
-**カロリー**: [カロリー摂取の傾向を1文で]
-**PFC**: [タンパク質・脂質・炭水化物の傾向を1-2文で]
-**微量栄養素**: [食物繊維・塩分・糖質の傾向を1文で]
+**カロリー・PFC**: [カロリー・タンパク質・脂質・炭水化物の傾向を1-2文で]
+**食物繊維・GL**: [食物繊維（水溶性・不溶性）・GL値の傾向を1文で]
+**栄養品質**: [DIAAS・脂肪酸バランス・ビタミン・ミネラルの傾向を1-2文で]
 
 ---
 
@@ -4831,7 +4845,10 @@ ${nutritionStats.sugar ? `- 糖質平均: ${nutritionStats.sugar.avg}g（最低$
 - 冒頭は必ず「過去${days}日間の栄養データ、お疲れ様でした！」から開始
 - 最後は必ず「ナイストライ！」で終了
 - ${currentPurpose}の目的を意識した評価を行う
-- 数値は具体的に示す`;
+- 数値は具体的に示す
+- **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
+- **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
+- **太字**: **太字**は継続使用可能（見出しや強調のため）`;
 
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
@@ -4961,7 +4978,10 @@ ${trainingStats.cardio_duration ? `- 有酸素運動時間平均: ${trainingStat
 - 冒頭は必ず「過去${days}日間の運動データ、お疲れ様でした！」から開始
 - 最後は必ず「ナイストライ！」で終了
 - ${currentPurpose}の目的を意識した評価を行う
-- 数値は具体的に示す`;
+- 数値は具体的に示す
+- **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
+- **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
+- **太字**: **太字**は継続使用可能（見出しや強調のため）`;
 
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
@@ -5100,7 +5120,10 @@ ${conditionStats.stress ? `- ストレス平均: ${conditionStats.stress.avgLabe
 - 冒頭は必ず「過去${days}日間のコンディションデータ、お疲れ様でした！」から開始
 - 最後は必ず「ナイストライ！」で終了
 - ${currentPurpose}の目的を意識した評価を行う
-- 数値は具体的に示す（ラベル表示を活用）`;
+- 数値は具体的に示す（ラベル表示を活用）
+- **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
+- **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
+- **太字**: **太字**は継続使用可能（見出しや強調のため）`;
 
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
@@ -5246,7 +5269,10 @@ ${directiveSummary}
 - 冒頭は必ず「過去${days}日間のパフォーマンスデータ、お疲れ様でした！」から開始
 - 最後は必ず「ナイストライ！」で終了
 - ${currentPurpose}の目的を意識した評価を行う
-- 数値は具体的に示す（変化量を明示）`;
+- 数値は具体的に示す（変化量を明示）
+- **書式統一**: リスト表記は必ず「-」を使用（他の記号は使わない）
+- **参考文献禁止**: 参考文献、注釈、アスタリスク（*）による補足説明は一切記載しない
+- **太字**: **太字**は継続使用可能（見出しや強調のため）`;
 
                 // Cloud Functions経由でAI分析を実行
                 const response = await GeminiAPI.sendMessage(prompt, [], userProfile, 'gemini-2.5-pro');
