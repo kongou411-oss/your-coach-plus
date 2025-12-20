@@ -4,7 +4,7 @@ import { GlobalConfirmModal } from './00_confirm_modal.jsx';
 import { isNativeApp, initPushNotifications, createNotificationChannel, initBackButtonHandler, removeBackButtonHandler } from '../capacitor-push';
 import { BiometricAuthService } from '../biometric-auth.js';
 import useBABHeight from '../hooks/useBABHeight.js';
-import { useReviewPrompt, FeedbackPromptModal, ReviewPromptModal } from './24_review_prompt.jsx';
+import { useReviewPrompt, FeedbackPromptModal, FeedbackInputModal } from './24_review_prompt.jsx';
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
@@ -4154,18 +4154,19 @@ AIコーチなどの高度な機能が解放されます。
                     {/* Global Confirm Modal（グローバル） */}
                     <GlobalConfirmModal />
 
-                    {/* ストアレビュー促進モーダル */}
+                    {/* フィードバック収集モーダル */}
                     <FeedbackPromptModal
                         isOpen={reviewPrompt.showFeedbackPrompt}
                         onClose={reviewPrompt.handleClose}
                         onPositive={reviewPrompt.handlePositiveFeedback}
                         onNegative={reviewPrompt.handleNegativeFeedback}
                     />
-                    <ReviewPromptModal
-                        isOpen={reviewPrompt.showReviewPrompt}
+                    <FeedbackInputModal
+                        isOpen={reviewPrompt.showFeedbackInput}
                         onClose={reviewPrompt.handleClose}
-                        onReview={reviewPrompt.handleReview}
-                        onLater={reviewPrompt.handleLater}
+                        category={reviewPrompt.feedbackCategory}
+                        userId={reviewPrompt.userId}
+                        onSubmitSuccess={reviewPrompt.handleSubmitSuccess}
                     />
 
                     {/* Cookie Consent Banner（グローバル） */}
