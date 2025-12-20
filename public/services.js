@@ -2503,16 +2503,12 @@ const ExperienceService = {
             return { success: false, error: 'Already processed', alreadyProcessed: true };
         }
 
-        // 経験値を追加
+        // 経験値を追加（この中でprofile全体が保存される）
         const result = await ExperienceService.addExperience(userId, totalScore);
 
-        // 処理済み日付リストに追加
+        // 処理済み日付リストのみを更新（経験値・レベル・クレジットはaddExperienceで保存済み）
         processedDates.push(date);
         await DataService.saveUserProfile(userId, {
-            ...profile,
-            experience: result.experience,
-            level: result.level,
-            freeCredits: result.totalCredits - (profile?.paidCredits || 0),
             processedScoreDates: processedDates
         });
 
