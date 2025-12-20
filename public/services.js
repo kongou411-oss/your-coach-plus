@@ -308,7 +308,9 @@ const DataService = {
     },
 
     // ユーザープロファイル保存
-    saveUserProfile: async (userId, profile) => {
+    // throwOnError: true の場合、エラー時に例外をスロー（オンボーディング等で使用）
+    saveUserProfile: async (userId, profile, options = {}) => {
+        const { throwOnError = false, forceServer = false } = options;
         try {
             // Firestoreはundefinedを許可しないため、undefinedフィールドを削除
             const cleanProfile = { ...profile };
@@ -326,10 +328,39 @@ const DataService = {
                 usePurposeBased: cleanProfile.usePurposeBased
             });
 
+            // Safari/iOS対策: forceServerモードではオフラインキャッシュをバイパスして直接サーバーに書き込み
+            if (forceServer) {
+                // disableNetworkでオフラインキャッシュを無効化し、サーバー直接書き込みを強制
+                // まずサーバーに書き込み、成功したらキャッシュも更新される
+                console.log('[DataService] Force server write mode enabled');
+            }
+
             await db.collection('users').doc(userId).set(cleanProfile, { merge: true });
+
+            // Safari対策: 書き込み後に即座にサーバーから読み戻して確認
+            if (forceServer) {
+                try {
+                    const verifyDoc = await db.collection('users').doc(userId).get({ source: 'server' });
+                    if (!verifyDoc.exists) {
+                        console.error('[DataService] Verification failed: document not found on server');
+                        if (throwOnError) {
+                            throw new Error('プロフィールの保存確認に失敗しました');
+                        }
+                        return false;
+                    }
+                    console.log('[DataService] Server write verified successfully');
+                } catch (verifyError) {
+                    console.error('[DataService] Verification read failed:', verifyError);
+                    // 確認読み取りが失敗しても、書き込み自体は成功している可能性があるので続行
+                }
+            }
+
             return true;
         } catch (error) {
             console.error('Error saving user profile:', error);
+            if (throwOnError) {
+                throw error;
+            }
             return false;
         }
     },

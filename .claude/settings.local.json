@@ -66,7 +66,8 @@
       "Bash(firebase functions:secrets:access:*)",
       "Bash(curl -s https://your-coach-plus.web.app/robots.txt)",
       "WebFetch(domain:macrofactorapp.com)",
-      "WebFetch(domain:www.asken.jp)"
+      "WebFetch(domain:www.asken.jp)",
+      "Bash(git show:*)"
     ],
     "deny": [],
     "ask": []

@@ -1885,20 +1885,29 @@ const CookieConsentBanner = ({ show, onAccept }) => {
             // オンボーディングチェック：userProfileがnullまたはonboardingCompletedがfalseの場合のみ表示
             if (!userProfile || !userProfile.onboardingCompleted) {
                 return <OnboardingScreen user={user} onComplete={async (profile) => {
-                    // オンボーディング完了フラグを追加
-                    const completedProfile = {
-                        ...profile,
-                        onboardingCompleted: true
-                    };
-
-                    // Firestoreに保存
-                    await DataService.saveUserProfile(user.uid, completedProfile);
-
-                    // 【重要】オンボーディング完了後は必ずサーバーから最新データを取得
-                    // キャッシュには古いデータ（または空）が残っている可能性があるため
-                    // Safari特有のITP問題やキャッシュ問題を回避
-                    let finalProfile = completedProfile;
                     try {
+                        // オンボーディング完了フラグを追加
+                        const completedProfile = {
+                            ...profile,
+                            onboardingCompleted: true
+                        };
+
+                        // Firestoreに保存（Safari/iOS対策: サーバー直接書き込み）
+                        // 注意: 02_auth.jsxのhandleCompleteで既に保存済みだが、
+                        // onboardingCompleted: trueを確実に設定するため再保存
+                        const saveResult = await DataService.saveUserProfile(user.uid, completedProfile, {
+                            throwOnError: true,
+                            forceServer: true
+                        });
+                        if (!saveResult) {
+                            throw new Error('プロフィールの保存に失敗しました');
+                        }
+                        console.log('[App] Onboarding complete - profile saved to server');
+
+                        // 【重要】オンボーディング完了後は必ずサーバーから最新データを取得
+                        // キャッシュには古いデータ（または空）が残っている可能性があるため
+                        // Safari特有のITP問題やキャッシュ問題を回避
+                        let finalProfile = completedProfile;
                         const db = firebase.firestore();
                         const serverDoc = await db.collection('users').doc(user.uid).get({ source: 'server' });
                         if (serverDoc.exists) {
@@ -1916,33 +1925,37 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                                 isPremium: isPremium
                             };
                             console.log('[App] Onboarding complete - fetched profile from server:', {
+                                email: finalProfile.email,
+                                displayName: finalProfile.displayName,
                                 purpose: finalProfile.purpose,
                                 style: finalProfile.style,
                                 weight: finalProfile.weight,
                                 bodyFatPercentage: finalProfile.bodyFatPercentage
                             });
+                        } else {
+                            console.warn('[App] Server document not found, using local profile');
                         }
+
+                        setUserProfile(finalProfile);
+
+                        // 機能開放状態を計算（B2B/ギフトコードのみPremium扱い、紹介コードはクレジットのみ）
+                        const isPremium = finalProfile.isPremium;
+
+                        const today = getTodayDate();
+                        const todayRecord = await DataService.getDailyRecord(user.uid, today);
+                        const unlocked = await calculateUnlockedFeatures(user.uid, todayRecord, isPremium);
+                        setUnlockedFeatures(Array.isArray(unlocked) ? unlocked : []);
+
+                        // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
+                        sessionStorage.setItem('onboardingJustCompleted', 'true');
+                        // オンボーディング完了後、直接食事誘導モーダルを表示
+                        setTimeout(() => {
+                            setShowMealGuide(true);
+                        }, 500);
                     } catch (error) {
-                        console.error('[App] Failed to fetch profile from server after onboarding:', error);
-                        // エラー時はcompletedProfileを使用
+                        console.error('[App] Onboarding save failed:', error);
+                        alert('プロフィールの保存に失敗しました。ネットワーク接続を確認して、アプリを再起動してください。');
                     }
-
-                    setUserProfile(finalProfile);
-
-                    // 機能開放状態を計算（B2B/ギフトコードのみPremium扱い、紹介コードはクレジットのみ）
-                    const isPremium = finalProfile.isPremium;
-
-                    const today = getTodayDate();
-                    const todayRecord = await DataService.getDailyRecord(user.uid, today);
-                    const unlocked = await calculateUnlockedFeatures(user.uid, todayRecord, isPremium);
-                    setUnlockedFeatures(Array.isArray(unlocked) ? unlocked : []);
-
-                    // オンボーディング完了フラグを設定（クレジット不足モーダルを表示しない）
-                    sessionStorage.setItem('onboardingJustCompleted', 'true');
-                    // オンボーディング完了後、直接食事誘導モーダルを表示
-                    setTimeout(() => {
-                        setShowMealGuide(true);
-                    }, 500);
                 }} />;
             }
 

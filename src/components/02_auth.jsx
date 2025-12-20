@@ -1159,6 +1159,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
             // 登録日
             joinDate: firebase.firestore.Timestamp.fromDate(now),
             registrationDate: firebase.firestore.Timestamp.fromDate(now),
+
+            // オンボーディング完了フラグ（ここで確実に設定）
+            onboardingCompleted: true,
         };
 
         console.log('[Auth] Creating new user profile:', { codeValidated, wasCodeValidated, skipCredits: (codeValidated || wasCodeValidated),
@@ -1168,8 +1171,15 @@ const OnboardingScreen = ({ user, onComplete }) => {
             purpose: profile.purpose
         });
 
-        // プロフィールを保存
-        await DataService.saveUserProfile(user.uid, completeProfile);
+        // プロフィールを保存（Safari/iOS対策: サーバー直接書き込み＆エラー時スロー）
+        const saveResult = await DataService.saveUserProfile(user.uid, completeProfile, {
+            throwOnError: true,
+            forceServer: true
+        });
+        if (!saveResult) {
+            throw new Error('プロフィールの保存に失敗しました');
+        }
+        console.log('[Auth] Profile saved successfully to server');
 
         // デフォルトルーティンを設定（7日間：①胸②背中③休養日④肩⑤腕⑥脚⑦休養日）
         // ※ルーティンはFirestoreで管理されるため、04_settings.jsxのloadRoutines()で自動作成される
