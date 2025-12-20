@@ -461,11 +461,20 @@ ${context}
 - データは正確に解釈する（休養日除外済み、LBM比計算済み）
 `;
 
-        const fullMessage = systemPrompt + '\n\n【ユーザーの質問】\n' + userMessage;
+        // 過去の会話履歴をプロンプトに含める（最新5往復まで）
+        let conversationContext = '';
+        if (aiChatHistory.length > 0) {
+            const recentHistory = aiChatHistory.slice(-10); // 最新10メッセージ（5往復）
+            conversationContext = '\n\n【これまでの会話】\n' + recentHistory.map(msg =>
+                `${msg.role === 'user' ? 'ユーザー' : 'AI'}: ${msg.content.substring(0, 500)}${msg.content.length > 500 ? '...' : ''}`
+            ).join('\n');
+        }
+
+        const fullMessage = systemPrompt + conversationContext + '\n\n【ユーザーの質問】\n' + userMessage;
 
         try {
-            // PG BASE：学習推奨機能、gemini-2.5-proを使用
-            const response = await GeminiAPI.sendMessage(fullMessage, aiChatHistory, userProfile, 'gemini-2.5-pro');
+            // PG BASE：学習推奨機能、gemini-2.5-proを使用（履歴は空配列で毎回新規セッション）
+            const response = await GeminiAPI.sendMessage(fullMessage, [], userProfile, 'gemini-2.5-pro');
 
             if (response.success) {
                 const updatedHistory = [...newHistory, {
