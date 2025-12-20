@@ -1036,6 +1036,7 @@ const OnboardingScreen = ({ user, onComplete }) => {
     };
 
     const handleComplete = async (wasCodeValidated = false) => {
+        try {
         // 無料トライアル終了日（7日後）
         const now = new Date();
         const trialEndDate = new Date();
@@ -1226,6 +1227,10 @@ const OnboardingScreen = ({ user, onComplete }) => {
             if (onComplete) onComplete(latestProfile);
         } else {
             if (onComplete) onComplete(completeProfile);
+        }
+        } catch (error) {
+            console.error('[Auth] handleComplete failed:', error);
+            alert('プロフィールの保存に失敗しました。ネットワーク接続を確認して再度お試しください。');
         }
     };
 

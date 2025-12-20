@@ -928,7 +928,7 @@ const BasicTab = ({
                     <Icon name="ChevronDown" size={16} className="ml-auto text-gray-400" />
                 </summary>
                 <div className="p-4 pt-0 border-t">
-                    <div className="space-y-4 max-h-[70vh] overflow-y-auto pb-4">
+                    <div className="space-y-4 pb-4">
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="space-y-3">
                                 <div>
@@ -1547,7 +1547,7 @@ const BasicTab = ({
                 </summary>
                 <div className="p-4 border-t">
                     {/* プロフィール入力 */}
-                    <div className="space-y-3 max-h-[70vh] overflow-y-auto overflow-x-hidden pb-4">
+                    <div className="space-y-3 pb-4">
 
                             {/* 計算ロジック解説 */}
                             <details className="bg-blue-50 border-2 border-blue-200 rounded-lg mb-4">

@@ -1894,10 +1894,38 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                     // Firestoreに保存
                     await DataService.saveUserProfile(user.uid, completedProfile);
 
-                    // 【重要】Cloud Functionsでギフト/B2Bコードが適用された場合、
-                    // Firestoreから最新のプロフィールを再取得して subscription 情報を反映
-                    const latestProfile = await DataService.getUserProfile(user.uid);
-                    const finalProfile = latestProfile || completedProfile;
+                    // 【重要】オンボーディング完了後は必ずサーバーから最新データを取得
+                    // キャッシュには古いデータ（または空）が残っている可能性があるため
+                    // Safari特有のITP問題やキャッシュ問題を回避
+                    let finalProfile = completedProfile;
+                    try {
+                        const db = firebase.firestore();
+                        const serverDoc = await db.collection('users').doc(user.uid).get({ source: 'server' });
+                        if (serverDoc.exists) {
+                            const serverData = serverDoc.data();
+                            // サーバーから取得したデータにデフォルト値を適用
+                            const isPremium = serverData.subscription?.status === 'active'
+                                || serverData.b2b2cOrgId
+                                || serverData.subscription?.giftCodeActive === true;
+                            finalProfile = {
+                                ...serverData,
+                                freeCredits: serverData.freeCredits ?? 14,
+                                paidCredits: serverData.paidCredits ?? 0,
+                                onboardingCompleted: true,
+                                subscriptionStatus: isPremium ? 'active' : 'free',
+                                isPremium: isPremium
+                            };
+                            console.log('[App] Onboarding complete - fetched profile from server:', {
+                                purpose: finalProfile.purpose,
+                                style: finalProfile.style,
+                                weight: finalProfile.weight,
+                                bodyFatPercentage: finalProfile.bodyFatPercentage
+                            });
+                        }
+                    } catch (error) {
+                        console.error('[App] Failed to fetch profile from server after onboarding:', error);
+                        // エラー時はcompletedProfileを使用
+                    }
 
                     setUserProfile(finalProfile);
 
