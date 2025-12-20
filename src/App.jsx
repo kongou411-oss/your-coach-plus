@@ -42,8 +42,8 @@ function AppWrapper() {
           reverseOrder={false}
           containerStyle={{
             zIndex: 10001,
-            // ネイティブアプリ時はステータスバー分下げる
-            top: isNativeApp ? 'env(safe-area-inset-top, 24px)' : 0,
+            // ネイティブアプリ時はステータスバー分下げる + 余白追加
+            top: isNativeApp ? 'calc(env(safe-area-inset-top, 24px) + 12px)' : 12,
           }}
           toastOptions={{
             duration: 3000,
