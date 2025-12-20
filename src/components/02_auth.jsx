@@ -1048,7 +1048,9 @@ const OnboardingScreen = ({ user, onComplete }) => {
             displayName: profile.displayName || profile.nickname || '',
             age: profile.age || 25,
             gender: profile.gender || '男性',
-            height: profile.height || 170,
+            height: parseFloat(profile.height) || 170,
+            weight: parseFloat(profile.weight) || 70,
+            bodyFatPercentage: parseFloat(profile.bodyFatPercentage) || 15,
             mealsPerDay: profile.mealsPerDay || 5, // 想定食事回数（デフォルト5回）
 
             // 活動レベル
@@ -1202,8 +1204,8 @@ const OnboardingScreen = ({ user, onComplete }) => {
         const initialDailyRecord = {
             date: todayDate,
             bodyComposition: {
-                weight: profile.weight,
-                bodyFatPercentage: profile.bodyFatPercentage
+                weight: parseFloat(profile.weight) || 70,
+                bodyFatPercentage: parseFloat(profile.bodyFatPercentage) || 15
             },
             meals: [],
             exercises: [],

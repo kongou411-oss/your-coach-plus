@@ -1918,11 +1918,13 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                 }} />;
             }
 
-            // LBM計算
-            const lbm = userProfile.leanBodyMass || LBMUtils.calculateLBM(userProfile.weight, userProfile.bodyFatPercentage || 15);
+            // LBM計算（weight/bodyFatPercentageが未設定の場合はデフォルト値を使用）
+            const weight = parseFloat(userProfile.weight) || 70;
+            const bodyFatPercentage = parseFloat(userProfile.bodyFatPercentage) || 15;
+            const lbm = userProfile.leanBodyMass || LBMUtils.calculateLBM(weight, bodyFatPercentage);
 
             // Fat Mass計算
-            const fatMass = (userProfile.weight || 70) - lbm;
+            const fatMass = weight - lbm;
 
             // TDEE計算
             const tdee = LBMUtils.calculateTDEE(

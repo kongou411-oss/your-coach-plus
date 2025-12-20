@@ -334,6 +334,105 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
         }
     };
 
+    // 会話内容を指示書として保存（AIで指示書形式に変換）
+    const saveConversationAsDirective = async (content) => {
+        if (!content || !userId) return;
+
+        const loadingToast = toast.loading('指示書を生成中...');
+
+        try {
+            // AIに会話内容から指示書形式を生成してもらう
+            const directivePrompt = `## タスク
+以下のAI回答から、明日実行すべき具体的なアクションを抽出し、指示書形式に変換してください。
+
+## AI回答
+${content}
+
+## 出力形式（厳守）
+
+**結論**
+- [具体的な行動1（食材名/運動種目名 + 数値のみ）]
+- [具体的な行動2（食材名/運動種目名 + 数値のみ）]
+- [具体的な行動3（必要な場合のみ）]
+
+**根拠**
+[上記指示書の理由を1-2文で簡潔に説明]
+
+## ルール
+- 結論は箇条書き形式（「-」で始まる）で記載
+- 各項目は簡潔に1文で完結（5-10語程度）
+- 数値必須（g、kg、回数、時間など）
+- 「○○するため」などの理由は結論に含めず、根拠セクションに記載
+- 最大3項目まで（最も重要なものを選択）
+- 元の回答に具体的なアクションがない場合は、回答の主旨から最も重要な行動を1つ抽出`;
+
+            const response = await GeminiAPI.sendMessage(directivePrompt, [], userProfile, 'gemini-2.5-pro');
+
+            if (!response.success) {
+                throw new Error('指示書の生成に失敗しました');
+            }
+
+            // 「**結論**」と「**根拠**」の間から箇条書きを抽出
+            const directiveSection = response.text.match(/\*\*結論\*\*([\s\S]*?)\*\*根拠\*\*/);
+            if (!directiveSection) {
+                throw new Error('指示書形式の抽出に失敗しました');
+            }
+
+            // 箇条書き（「- 」で始まる行）を抽出
+            const bulletPoints = directiveSection[1].match(/^- (.+)$/gm);
+            if (!bulletPoints || bulletPoints.length === 0) {
+                throw new Error('具体的なアクションを抽出できませんでした');
+            }
+
+            // 箇条書きを改行区切りで結合
+            const message = bulletPoints.map(point => point.trim()).join('\n');
+
+            // カテゴリーを内容から推測
+            const fullText = message.toLowerCase();
+            let type = 'meal';
+            if (fullText.includes('運動') || fullText.includes('トレーニング') || fullText.includes('筋トレ') || fullText.includes('有酸素') || fullText.includes('セット') || fullText.includes('rep')) {
+                type = 'exercise';
+            } else if (fullText.includes('睡眠') || fullText.includes('就寝') || fullText.includes('起床') || fullText.includes('時間')) {
+                type = 'condition';
+            }
+
+            // 翌日の日付を計算
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+            // 翌日の23:59を期限として設定
+            const deadline = new Date(tomorrow);
+            deadline.setHours(23, 59, 59, 999);
+
+            // 指示書をFirestoreに保存（上書き）
+            const newDirective = {
+                date: tomorrowStr,
+                message: message,
+                type: type,
+                completed: false,
+                deadline: deadline.toISOString(),
+                createdAt: new Date().toISOString()
+            };
+
+            await firebase.firestore()
+                .collection('users')
+                .doc(userId)
+                .collection('directives')
+                .doc(tomorrowStr)
+                .set(newDirective);
+
+            // directiveUpdatedイベントを発火してダッシュボードを更新
+            window.dispatchEvent(new Event('directiveUpdated'));
+            toast.dismiss(loadingToast);
+            toast.success('明日の指示書として保存しました');
+        } catch (error) {
+            console.error('[Analysis] Failed to save conversation as directive:', error);
+            toast.dismiss(loadingToast);
+            toast.error(error.message || '指示書の保存に失敗しました');
+        }
+    };
+
     // AI分析生成
     const generateAIAnalysis = async (currentAnalysis, insights, isFirstAnalysisParam = false, scores = null) => {
         // クレジットチェック
@@ -1585,6 +1684,16 @@ ${conversationContext}
                                                 <div className="text-sm text-gray-800 leading-relaxed">
                                                     <MarkdownRenderer text={msg.content} />
                                                 </div>
+                                                {/* 指示書として保存ボタン */}
+                                                <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+                                                    <button
+                                                        onClick={() => saveConversationAsDirective(msg.content)}
+                                                        className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 hover:bg-teal-50 px-2 py-1 rounded transition"
+                                                    >
+                                                        <Icon name="ClipboardList" size={14} />
+                                                        <span>指示書として保存</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1714,6 +1823,16 @@ ${conversationContext}
                                                     <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-200">
                                                         <div className="text-sm text-gray-800 leading-relaxed">
                                                             <MarkdownRenderer text={msg.content} />
+                                                        </div>
+                                                        {/* 指示書として保存ボタン */}
+                                                        <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+                                                            <button
+                                                                onClick={() => saveConversationAsDirective(msg.content)}
+                                                                className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 hover:bg-teal-50 px-2 py-1 rounded transition"
+                                                            >
+                                                                <Icon name="ClipboardList" size={14} />
+                                                                <span>指示書として保存</span>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
