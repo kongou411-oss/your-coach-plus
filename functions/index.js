@@ -2937,3 +2937,77 @@ exports.getAdminAnalytics = onCall({
     throw new HttpsError("internal", "データ取得に失敗しました", error.message);
   }
 });
+
+// ===== 教科書購入（有料クレジット消費） =====
+exports.purchaseTextbook = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+  const { moduleId, price } = request.data;
+
+  if (!moduleId || typeof price !== 'number' || price <= 0) {
+    throw new HttpsError("invalid-argument", "モジュールIDと価格が必要です");
+  }
+
+  try {
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(userId);
+
+    // トランザクションで購入処理
+    const result = await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists) {
+        throw new HttpsError("not-found", "ユーザーが見つかりません");
+      }
+
+      const userData = userDoc.data();
+      const paidCredits = userData.paidCredits || 0;
+      const purchasedModules = userData.purchasedModules || [];
+
+      // 既に購入済みかチェック
+      if (purchasedModules.includes(moduleId)) {
+        throw new HttpsError("already-exists", "既に購入済みです");
+      }
+
+      // 有料クレジット残高チェック
+      if (paidCredits < price) {
+        throw new HttpsError("resource-exhausted", "有料クレジットが不足しています");
+      }
+
+      // 購入処理
+      const newPaidCredits = paidCredits - price;
+      const newPurchasedModules = [...purchasedModules, moduleId];
+
+      transaction.update(userRef, {
+        paidCredits: newPaidCredits,
+        purchasedModules: newPurchasedModules
+      });
+
+      return {
+        remainingPaidCredits: newPaidCredits,
+        purchasedModules: newPurchasedModules
+      };
+    });
+
+    console.log(`[Textbook] User ${userId} purchased module ${moduleId} for ${price} credits`);
+
+    return {
+      success: true,
+      remainingPaidCredits: result.remainingPaidCredits,
+      purchasedModules: result.purchasedModules
+    };
+
+  } catch (error) {
+    console.error(`[Textbook] Purchase failed for user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "購入に失敗しました", error.message);
+  }
+});

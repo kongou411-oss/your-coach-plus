@@ -2732,7 +2732,7 @@ const TextbookPurchaseService = {
     },
 
     /**
-     * 教科書を購入（有料クレジットのみ使用可能）
+     * 教科書を購入（Cloud Function経由で有料クレジット消費）
      * @param {string} userId
      * @param {string} moduleId
      * @param {number} price - 必要な有料クレジット数
@@ -2740,65 +2740,33 @@ const TextbookPurchaseService = {
      */
     purchaseModule: async (userId, moduleId, price) => {
         try {
-            const userRef = db.collection('users').doc(userId);
-
-            // トランザクションで購入処理
-            const result = await db.runTransaction(async (transaction) => {
-                const userDoc = await transaction.get(userRef);
-
-                if (!userDoc.exists) {
-                    throw new Error('USER_NOT_FOUND');
-                }
-
-                const userData = userDoc.data();
-                const paidCredits = userData.paidCredits || 0;
-                const purchasedModules = userData.purchasedModules || [];
-
-                // 既に購入済みかチェック
-                if (purchasedModules.includes(moduleId)) {
-                    throw new Error('ALREADY_PURCHASED');
-                }
-
-                // 有料クレジット残高チェック
-                if (paidCredits < price) {
-                    throw new Error('INSUFFICIENT_PAID_CREDITS');
-                }
-
-                // 購入処理
-                const newPaidCredits = paidCredits - price;
-                const newPurchasedModules = [...purchasedModules, moduleId];
-
-                transaction.update(userRef, {
-                    paidCredits: newPaidCredits,
-                    purchasedModules: newPurchasedModules
-                });
-
-                return {
-                    success: true,
-                    remainingPaidCredits: newPaidCredits,
-                    purchasedModules: newPurchasedModules
-                };
-            });
+            const functions = firebase.app().functions('asia-northeast2');
+            const purchaseTextbook = functions.httpsCallable('purchaseTextbook');
+            const result = await purchaseTextbook({ moduleId, price });
 
             console.log('[TextbookPurchase] User ' + userId + ' purchased module ' + moduleId + ' for ' + price + ' paid credits');
-            return result;
+            return result.data;
 
         } catch (error) {
             console.error('[TextbookPurchase] Purchase failed:', error);
 
             let errorMessage = '購入に失敗しました';
-            if (error.message === 'USER_NOT_FOUND') {
+            const errorCode = error.code || error.message;
+
+            if (errorCode === 'functions/not-found' || errorCode === 'not-found') {
                 errorMessage = 'ユーザーが見つかりません';
-            } else if (error.message === 'ALREADY_PURCHASED') {
+            } else if (errorCode === 'functions/already-exists' || errorCode === 'already-exists') {
                 errorMessage = '既に購入済みです';
-            } else if (error.message === 'INSUFFICIENT_PAID_CREDITS') {
+            } else if (errorCode === 'functions/resource-exhausted' || errorCode === 'resource-exhausted') {
                 errorMessage = '有料クレジットが不足しています';
+            } else if (error.message) {
+                errorMessage = error.message;
             }
 
             return {
                 success: false,
                 error: errorMessage,
-                errorCode: error.message
+                errorCode: errorCode
             };
         }
     }
