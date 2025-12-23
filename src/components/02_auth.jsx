@@ -1126,27 +1126,14 @@ const OnboardingScreen = ({ user, onComplete }) => {
                 };
             })(),
 
-            // サブスクリプション情報
-            subscriptionTier: 'free',
-            subscriptionStatus: 'none',
-
-            // クレジットシステム（freeCredits + paidCredits統一）
-            // 初回21回分付与：レポート7+質問7+履歴分析7
+            // クレジットシステム（使用統計のみ - 保護フィールドはCloud Functionで初期化）
             totalAnalysisUsed: 0,
             currentMonthUsed: 0,
             lifetimeCreditsPurchased: 0,
 
-            // 経験値・レベル・クレジットシステム
-            experience: 0,
-            level: 1,
-            // freeCreditsは常に設定（21回分付与）
-            freeCredits: 21,
-            // コード検証済みの場合、paidCreditsはCloud Functionで設定済みなので上書きしない
-            ...((codeValidated || wasCodeValidated) ? {} : {
-                paidCredits: 0,
-            }),
-            processedScoreDates: [],
-            processedDirectiveDates: [],
+            // 保護フィールド（以下はCloud Functionで初期化）:
+            // subscriptionTier, subscriptionStatus, experience, level,
+            // freeCredits, paidCredits, processedScoreDates, processedDirectiveDates
 
             // 無料トライアル（コード検証済みの場合はトライアル日付を設定しない）
             ...((codeValidated || wasCodeValidated) ? {} : {
@@ -1180,6 +1167,17 @@ const OnboardingScreen = ({ user, onComplete }) => {
             throw new Error('プロフィールの保存に失敗しました');
         }
         console.log('[Auth] Profile saved successfully to server');
+
+        // 保護フィールドをCloud Function経由で初期化
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const initializeNewUser = functions.httpsCallable('initializeNewUser');
+            const initResult = await initializeNewUser({ codeValidated: codeValidated || wasCodeValidated });
+            console.log('[Auth] Protected fields initialized via Cloud Function:', initResult.data);
+        } catch (initError) {
+            console.error('[Auth] Failed to initialize protected fields:', initError);
+            // 初期化失敗してもオンボーディングは続行（後で再試行可能）
+        }
 
         // デフォルトルーティンを設定（7日間：①胸②背中③休養日④肩⑤腕⑥脚⑦休養日）
         // ※ルーティンはFirestoreで管理されるため、04_settings.jsxのloadRoutines()で自動作成される

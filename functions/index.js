@@ -3306,3 +3306,78 @@ exports.processDirectiveCompletion = onCall({
     throw new HttpsError("internal", "指示書完了処理に失敗しました", error.message);
   }
 });
+
+// ===== initializeNewUser: 新規ユーザーの保護フィールド初期化 =====
+exports.initializeNewUser = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const userId = request.auth.uid;
+
+  const { codeValidated = false } = request.data || {};
+
+  try {
+    const userRef = admin.firestore().collection("users").doc(userId);
+    const userDoc = await userRef.get();
+
+    // 初期化データ
+    const initData = {
+      experience: 0,
+      level: 1,
+      freeCredits: 21, // 初回21回分付与
+      processedScoreDates: [],
+      processedDirectiveDates: [],
+      subscriptionTier: 'free',
+      subscriptionStatus: 'none',
+    };
+
+    // コード検証済みでない場合のみpaidCreditsを0に設定
+    if (!codeValidated) {
+      initData.paidCredits = 0;
+    }
+
+    if (userDoc.exists) {
+      // 既存ユーザー：保護フィールドのみ更新（既に値がある場合は上書きしない）
+      const userData = userDoc.data();
+      const updateData = {};
+
+      // 各フィールドが未設定の場合のみ初期値を設定
+      if (userData.experience === undefined) updateData.experience = initData.experience;
+      if (userData.level === undefined) updateData.level = initData.level;
+      if (userData.freeCredits === undefined) updateData.freeCredits = initData.freeCredits;
+      if (userData.processedScoreDates === undefined) updateData.processedScoreDates = initData.processedScoreDates;
+      if (userData.processedDirectiveDates === undefined) updateData.processedDirectiveDates = initData.processedDirectiveDates;
+      if (userData.subscriptionTier === undefined) updateData.subscriptionTier = initData.subscriptionTier;
+      if (userData.subscriptionStatus === undefined) updateData.subscriptionStatus = initData.subscriptionStatus;
+      if (!codeValidated && userData.paidCredits === undefined) updateData.paidCredits = 0;
+
+      if (Object.keys(updateData).length > 0) {
+        await userRef.update(updateData);
+        console.log(`[InitUser] Updated protected fields for user ${userId}:`, updateData);
+      } else {
+        console.log(`[InitUser] All protected fields already set for user ${userId}`);
+      }
+    } else {
+      // 新規ユーザー：ドキュメント作成
+      await userRef.set(initData);
+      console.log(`[InitUser] Created new user document for ${userId}`);
+    }
+
+    return {
+      success: true,
+      initialized: true,
+      freeCredits: initData.freeCredits,
+      level: initData.level
+    };
+  } catch (error) {
+    console.error(`[InitUser] Failed to initialize user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "ユーザー初期化に失敗しました", error.message);
+  }
+});
