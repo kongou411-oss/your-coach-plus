@@ -811,9 +811,13 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         try {
             const calorieOverride = {
                 templateName: name,
-                calorieAdjustment: adjustment,
                 appliedAt: new Date().toISOString()
             };
+
+            // カロリー調整がある場合のみ追加（undefinedの場合は目的ベースの調整を維持）
+            if (adjustment !== undefined) {
+                calorieOverride.calorieAdjustment = adjustment;
+            }
 
             // PFCオーバーライドがある場合は追加
             if (pfcOverride) {
@@ -829,9 +833,9 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
 
             let message = name;
-            if (adjustment !== 0) {
+            if (adjustment !== undefined && adjustment !== 0) {
                 message += ` (${adjustment > 0 ? '+' : ''}${adjustment}kcal)`;
-            } else {
+            } else if (adjustment === 0) {
                 message += ' (±0kcal)';
             }
             if (pfcOverride) {
@@ -4747,13 +4751,16 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                             <div className="mt-4 pt-4 border-t">
                                 <button
                                     onClick={() => {
-                                        const calorieValue = customCalorieAdjustment ? parseInt(customCalorieAdjustment) : 0;
-                                        if (customCalorieAdjustment && isNaN(calorieValue)) {
+                                        // 入力がある場合のみ数値化、空欄ならundefined（目的ベースのカロリー調整を維持）
+                                        const calorieValue = customCalorieAdjustment !== ''
+                                            ? parseInt(customCalorieAdjustment)
+                                            : undefined;
+                                        if (customCalorieAdjustment !== '' && isNaN(calorieValue)) {
                                             toast.error('有効なカロリー値を入力してください');
                                             return;
                                         }
                                         // 名前を決定：カロリー調整ありなら「カスタム」、なければ「PFCバランスのみ」
-                                        const name = calorieValue !== 0 ? 'カスタム' : 'PFCバランスのみ';
+                                        const name = calorieValue !== undefined && calorieValue !== 0 ? 'カスタム' : 'PFCバランスのみ';
                                         applyCalorieOverride(name, calorieValue, customPFC);
                                     }}
                                     className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition flex items-center justify-center gap-2"
