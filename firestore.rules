@@ -52,7 +52,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
 
-      // 課金・サブスクリプション関連の保護フィールド（Cloud Functionsのみ変更可能）
+      // 課金・サブスクリプション・ゲーミフィケーション関連の保護フィールド（Cloud Functionsのみ変更可能）
       function isProtectedFieldChanged() {
         return request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'subscription',
@@ -69,7 +69,11 @@ service cloud.firestore {
           'referralCode',
           'referredBy',
           'referralCodeUsed',
-          'referralCreditsEarned'
+          'referralCreditsEarned',
+          'experience',
+          'level',
+          'processedScoreDates',
+          'processedDirectiveDates'
         ]);
       }
 

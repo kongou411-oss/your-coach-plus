@@ -2368,71 +2368,35 @@ const ExperienceService = {
         };
     },
 
-    // 経験値を追加してレベルアップをチェック
+    // 経験値を追加してレベルアップをチェック（Cloud Function経由）
     addExperience: async (userId, expPoints) => {
-        const profile = await DataService.getUserProfile(userId);
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const addExperienceFunc = functions.httpsCallable('addExperience');
+            const result = await addExperienceFunc({ expPoints });
 
-        const currentExp = profile?.experience || 0;
-        // 保存されたlevelではなく、経験値から正確に計算（不整合防止）
-        const currentLevel = ExperienceService.calculateLevel(currentExp);
-        const newExp = currentExp + expPoints;
-        const newLevel = ExperienceService.calculateLevel(newExp);
+            const data = result.data;
+            console.log(`[Experience] User ${userId} gained ${expPoints} XP via Cloud Function. Level: ${data.level}`);
 
-        // レベルアップの判定
-        const leveledUp = newLevel > currentLevel;
-        const levelsGained = newLevel - currentLevel;
-
-        // レベルアップ報酬の計算
-        let creditsEarned = 0;
-        let milestoneReached = [];
-
-        if (leveledUp) {
-            // 通常レベルアップ報酬
-            creditsEarned = levelsGained * ExperienceService.LEVEL_UP_CREDITS;
-
-            // マイルストーン報酬（10, 20, 30...レベル）
-            for (let i = currentLevel + 1; i <= newLevel; i++) {
-                if (i % ExperienceService.MILESTONE_INTERVAL === 0) {
-                    creditsEarned += ExperienceService.MILESTONE_CREDITS;
-                    milestoneReached.push(i);
-                }
+            // クレジットが変更された場合、更新イベントを発火（UI即時反映用）
+            if (data.creditsEarned > 0 && typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('creditUpdated', {
+                    detail: { freeCredits: data.freeCredits, paidCredits: 0, totalCredits: data.totalCredits }
+                }));
             }
+
+            // 経験値更新イベントを発火（UI即時反映用）
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('experienceUpdated', {
+                    detail: { experience: data.experience, level: data.level }
+                }));
+            }
+
+            return data;
+        } catch (error) {
+            console.error('[Experience] addExperience Cloud Function failed:', error);
+            return { success: false, error: error.message };
         }
-
-        // プロフィール更新
-        const updatedProfile = {
-            ...profile,
-            experience: newExp,
-            level: newLevel,
-            freeCredits: (profile?.freeCredits || 0) + creditsEarned
-        };
-
-        await DataService.saveUserProfile(userId, updatedProfile);
-
-        console.log(`[Experience] User ${userId} gained ${expPoints} XP. New level: ${newLevel} (${leveledUp ? '+' + levelsGained : 'no change'})`);
-        if (leveledUp) {
-            console.log(`[Experience] Level up! Earned ${creditsEarned} credits (${levelsGained * ExperienceService.LEVEL_UP_CREDITS} from levels + ${creditsEarned - levelsGained * ExperienceService.LEVEL_UP_CREDITS} from milestones)`);
-        }
-
-        // クレジットが変更された場合、更新イベントを発火（UI即時反映用）
-        if (creditsEarned > 0 && typeof window !== 'undefined') {
-            const newFreeCredits = (profile?.freeCredits || 0) + creditsEarned;
-            const paidCredits = profile?.paidCredits || 0;
-            window.dispatchEvent(new CustomEvent('creditUpdated', {
-                detail: { freeCredits: newFreeCredits, paidCredits, totalCredits: newFreeCredits + paidCredits }
-            }));
-        }
-
-        return {
-            success: true,
-            experience: newExp,
-            level: newLevel,
-            leveledUp,
-            levelsGained,
-            creditsEarned,
-            milestoneReached,
-            totalCredits: (profile?.freeCredits || 0) + creditsEarned + (profile?.paidCredits || 0)
-        };
     },
 
     // クレジットを消費（無料→有料の順）
@@ -2515,41 +2479,41 @@ const ExperienceService = {
         };
     },
 
-    // 日次スコアから経験値を計算して加算
+    // 日次スコアから経験値を計算して加算（Cloud Function経由）
     processDailyScore: async (userId, date, scores) => {
-        // スコアの合計を経験値として加算
-        const totalScore = (scores.food?.score || 0) + (scores.exercise?.score || 0) + (scores.condition?.score || 0);
+        try {
+            const functions = firebase.app().functions('asia-northeast2');
+            const processDailyScoreFunc = functions.httpsCallable('processDailyScore');
+            const result = await processDailyScoreFunc({ date, scores });
 
-        if (totalScore <= 0) {
-            console.log(`[Experience] No score to process for ${date}`);
-            return { success: false, error: 'No score available' };
+            const data = result.data;
+
+            if (!data.success) {
+                console.log(`[Experience] processDailyScore: ${data.error || 'Failed'}`);
+                return data;
+            }
+
+            console.log(`[Experience] Processed score for ${date}: ${data.scoreTotal} XP via Cloud Function`);
+
+            // クレジットが変更された場合、更新イベントを発火（UI即時反映用）
+            if (data.creditsEarned > 0 && typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('creditUpdated', {
+                    detail: { freeCredits: data.freeCredits, paidCredits: 0, totalCredits: data.totalCredits }
+                }));
+            }
+
+            // 経験値更新イベントを発火（UI即時反映用）
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('experienceUpdated', {
+                    detail: { experience: data.experience, level: data.level }
+                }));
+            }
+
+            return data;
+        } catch (error) {
+            console.error('[Experience] processDailyScore Cloud Function failed:', error);
+            return { success: false, error: error.message };
         }
-
-        // 既にこの日付のスコアを処理済みかチェック
-        const profile = await DataService.getUserProfile(userId);
-        const processedDates = profile?.processedScoreDates || [];
-
-        if (processedDates.includes(date)) {
-            console.log(`[Experience] Score for ${date} already processed`);
-            return { success: false, error: 'Already processed', alreadyProcessed: true };
-        }
-
-        // 経験値を追加（この中でprofile全体が保存される）
-        const result = await ExperienceService.addExperience(userId, totalScore);
-
-        // 処理済み日付リストのみを更新（経験値・レベル・クレジットはaddExperienceで保存済み）
-        processedDates.push(date);
-        await DataService.saveUserProfile(userId, {
-            processedScoreDates: processedDates
-        });
-
-        console.log(`[Experience] Processed score for ${date}: ${totalScore} XP`);
-
-        return {
-            ...result,
-            scoreDate: date,
-            scoreTotal: totalScore
-        };
     },
 
     // マイルストーン（リワード）一覧を取得
@@ -2593,48 +2557,39 @@ const ExperienceService = {
         return result;
     },
 
-    // 指示書完了で経験値付与（1日1回のみ）
+    // 指示書完了で経験値付与（1日1回のみ）（Cloud Function経由）
     processDirectiveCompletion: async (userId, date) => {
         try {
-            const userRef = db.collection('users').doc(userId);
+            const functions = firebase.app().functions('asia-northeast2');
+            const processDirectiveCompletionFunc = functions.httpsCallable('processDirectiveCompletion');
+            const result = await processDirectiveCompletionFunc({ date });
 
-            const userDoc = await userRef.get();
-            const userData = userDoc.exists ? userDoc.data() : null;
+            const data = result.data;
 
-            if (!userData) {
-                console.error('[Experience] User not found');
-                return { success: false, error: 'User not found' };
+            if (!data.success) {
+                console.log(`[Experience] processDirectiveCompletion: ${data.alreadyProcessed ? 'Already processed' : 'Failed'}`);
+                return data;
             }
 
-            // 既に処理済みかチェック
-            const processedDates = userData.processedDirectiveDates || [];
-            if (processedDates.includes(date)) {
-                console.log(`[Experience] Directive already processed for date: ${date}`);
-                return { success: false, alreadyProcessed: true };
+            console.log(`[Experience] Directive completion processed for ${date}: +10 XP via Cloud Function`);
+
+            // クレジットが変更された場合、更新イベントを発火（UI即時反映用）
+            if (data.creditsEarned > 0 && typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('creditUpdated', {
+                    detail: { freeCredits: data.freeCredits, paidCredits: 0, totalCredits: data.totalCredits }
+                }));
             }
 
-            // 10XP付与
-            const expResult = await ExperienceService.addExperience(userId, 10);
+            // 経験値更新イベントを発火（UI即時反映用）
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('experienceUpdated', {
+                    detail: { experience: data.experience, level: data.level }
+                }));
+            }
 
-            // 処理済み日付を記録
-            processedDates.push(date);
-
-            await userRef.update({
-                processedDirectiveDates: processedDates
-            });
-
-            console.log(`[Experience] Directive completion processed for ${date}: +10 XP`);
-
-            return {
-                success: true,
-                experience: expResult.experience,
-                level: expResult.level,
-                leveledUp: expResult.leveledUp,
-                creditsEarned: expResult.creditsEarned,
-                milestoneReached: expResult.milestoneReached
-            };
+            return data;
         } catch (error) {
-            console.error('[Experience] Failed to process directive completion:', error);
+            console.error('[Experience] processDirectiveCompletion Cloud Function failed:', error);
             return { success: false, error: error.message };
         }
     },

@@ -3011,3 +3011,298 @@ exports.purchaseTextbook = onCall({
     throw new HttpsError("internal", "購入に失敗しました", error.message);
   }
 });
+
+// ===== 経験値システム（Cloud Function化） =====
+
+// 定数
+const EXPERIENCE_CONFIG = {
+  LEVEL_UP_CREDITS: 3,
+  MILESTONE_INTERVAL: 10,
+  MILESTONE_CREDITS: 5
+};
+
+// レベルアップに必要な累計経験値を計算
+function getRequiredExpForLevel(level) {
+  return 100 * level * (level - 1) / 2;
+}
+
+// 現在の経験値から現在のレベルを計算
+function calculateLevel(experience) {
+  let level = 1;
+  while (getRequiredExpForLevel(level + 1) <= experience) {
+    level++;
+  }
+  return level;
+}
+
+// ===== addExperience: 経験値追加とレベルアップ処理 =====
+exports.addExperience = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const userId = request.auth.uid;
+
+  const { expPoints } = request.data;
+  if (typeof expPoints !== 'number' || expPoints <= 0) {
+    throw new HttpsError("invalid-argument", "経験値は正の数値である必要があります");
+  }
+
+  try {
+    const userRef = admin.firestore().collection("users").doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const userData = userDoc.data();
+    const currentExp = userData.experience || 0;
+    const currentLevel = calculateLevel(currentExp);
+    const newExp = currentExp + expPoints;
+    const newLevel = calculateLevel(newExp);
+
+    // レベルアップの判定
+    const leveledUp = newLevel > currentLevel;
+    const levelsGained = newLevel - currentLevel;
+
+    // レベルアップ報酬の計算
+    let creditsEarned = 0;
+    let milestoneReached = [];
+
+    if (leveledUp) {
+      // 通常レベルアップ報酬
+      creditsEarned = levelsGained * EXPERIENCE_CONFIG.LEVEL_UP_CREDITS;
+
+      // マイルストーン報酬（10, 20, 30...レベル）
+      for (let i = currentLevel + 1; i <= newLevel; i++) {
+        if (i % EXPERIENCE_CONFIG.MILESTONE_INTERVAL === 0) {
+          creditsEarned += EXPERIENCE_CONFIG.MILESTONE_CREDITS;
+          milestoneReached.push(i);
+        }
+      }
+    }
+
+    // プロフィール更新
+    const newFreeCredits = (userData.freeCredits || 0) + creditsEarned;
+    await userRef.update({
+      experience: newExp,
+      level: newLevel,
+      freeCredits: newFreeCredits
+    });
+
+    console.log(`[Experience] User ${userId} gained ${expPoints} XP. Level: ${currentLevel} -> ${newLevel}`);
+    if (leveledUp) {
+      console.log(`[Experience] Level up! Earned ${creditsEarned} credits`);
+    }
+
+    return {
+      success: true,
+      experience: newExp,
+      level: newLevel,
+      leveledUp,
+      levelsGained,
+      creditsEarned,
+      milestoneReached,
+      freeCredits: newFreeCredits,
+      totalCredits: newFreeCredits + (userData.paidCredits || 0)
+    };
+  } catch (error) {
+    console.error(`[Experience] addExperience failed:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "経験値の追加に失敗しました", error.message);
+  }
+});
+
+// ===== processDailyScore: 日次スコアから経験値を計算して加算 =====
+exports.processDailyScore = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const userId = request.auth.uid;
+
+  const { date, scores } = request.data;
+  if (!date || !scores) {
+    throw new HttpsError("invalid-argument", "日付とスコアは必須です");
+  }
+
+  // スコアの合計を経験値として加算
+  const totalScore = (scores.food?.score || 0) + (scores.exercise?.score || 0) + (scores.condition?.score || 0);
+
+  if (totalScore <= 0) {
+    return { success: false, error: 'No score available' };
+  }
+
+  try {
+    const userRef = admin.firestore().collection("users").doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const userData = userDoc.data();
+    const processedDates = userData.processedScoreDates || [];
+
+    // 既にこの日付のスコアを処理済みかチェック
+    if (processedDates.includes(date)) {
+      console.log(`[Experience] Score for ${date} already processed`);
+      return { success: false, error: 'Already processed', alreadyProcessed: true };
+    }
+
+    // 経験値計算とレベルアップ処理
+    const currentExp = userData.experience || 0;
+    const currentLevel = calculateLevel(currentExp);
+    const newExp = currentExp + totalScore;
+    const newLevel = calculateLevel(newExp);
+
+    const leveledUp = newLevel > currentLevel;
+    const levelsGained = newLevel - currentLevel;
+
+    let creditsEarned = 0;
+    let milestoneReached = [];
+
+    if (leveledUp) {
+      creditsEarned = levelsGained * EXPERIENCE_CONFIG.LEVEL_UP_CREDITS;
+      for (let i = currentLevel + 1; i <= newLevel; i++) {
+        if (i % EXPERIENCE_CONFIG.MILESTONE_INTERVAL === 0) {
+          creditsEarned += EXPERIENCE_CONFIG.MILESTONE_CREDITS;
+          milestoneReached.push(i);
+        }
+      }
+    }
+
+    // 処理済み日付を追加
+    processedDates.push(date);
+
+    // プロフィール更新（トランザクションで一括更新）
+    const newFreeCredits = (userData.freeCredits || 0) + creditsEarned;
+    await userRef.update({
+      experience: newExp,
+      level: newLevel,
+      freeCredits: newFreeCredits,
+      processedScoreDates: processedDates
+    });
+
+    console.log(`[Experience] Processed score for ${date}: ${totalScore} XP`);
+
+    return {
+      success: true,
+      experience: newExp,
+      level: newLevel,
+      leveledUp,
+      levelsGained,
+      creditsEarned,
+      milestoneReached,
+      scoreDate: date,
+      scoreTotal: totalScore,
+      freeCredits: newFreeCredits,
+      totalCredits: newFreeCredits + (userData.paidCredits || 0)
+    };
+  } catch (error) {
+    console.error(`[Experience] processDailyScore failed:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "スコア処理に失敗しました", error.message);
+  }
+});
+
+// ===== processDirectiveCompletion: 指示書達成で経験値付与 =====
+exports.processDirectiveCompletion = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const userId = request.auth.uid;
+
+  const { date } = request.data;
+  if (!date) {
+    throw new HttpsError("invalid-argument", "日付は必須です");
+  }
+
+  try {
+    const userRef = admin.firestore().collection("users").doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const userData = userDoc.data();
+    const processedDates = userData.processedDirectiveDates || [];
+
+    // 既に処理済みかチェック
+    if (processedDates.includes(date)) {
+      console.log(`[Experience] Directive already processed for date: ${date}`);
+      return { success: false, alreadyProcessed: true };
+    }
+
+    // 10XP付与
+    const expPoints = 10;
+    const currentExp = userData.experience || 0;
+    const currentLevel = calculateLevel(currentExp);
+    const newExp = currentExp + expPoints;
+    const newLevel = calculateLevel(newExp);
+
+    const leveledUp = newLevel > currentLevel;
+    const levelsGained = newLevel - currentLevel;
+
+    let creditsEarned = 0;
+    let milestoneReached = [];
+
+    if (leveledUp) {
+      creditsEarned = levelsGained * EXPERIENCE_CONFIG.LEVEL_UP_CREDITS;
+      for (let i = currentLevel + 1; i <= newLevel; i++) {
+        if (i % EXPERIENCE_CONFIG.MILESTONE_INTERVAL === 0) {
+          creditsEarned += EXPERIENCE_CONFIG.MILESTONE_CREDITS;
+          milestoneReached.push(i);
+        }
+      }
+    }
+
+    // 処理済み日付を追加
+    processedDates.push(date);
+
+    // プロフィール更新
+    const newFreeCredits = (userData.freeCredits || 0) + creditsEarned;
+    await userRef.update({
+      experience: newExp,
+      level: newLevel,
+      freeCredits: newFreeCredits,
+      processedDirectiveDates: processedDates
+    });
+
+    console.log(`[Experience] Directive completion processed for ${date}: +${expPoints} XP`);
+
+    return {
+      success: true,
+      experience: newExp,
+      level: newLevel,
+      leveledUp,
+      levelsGained,
+      creditsEarned,
+      milestoneReached,
+      freeCredits: newFreeCredits,
+      totalCredits: newFreeCredits + (userData.paidCredits || 0)
+    };
+  } catch (error) {
+    console.error(`[Experience] processDirectiveCompletion failed:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "指示書完了処理に失敗しました", error.message);
+  }
+});
