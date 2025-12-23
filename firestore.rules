@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ============================================
-    // ヘルパー関数
+    // ヘルパー関数（2024-12-24 updated）
     // ============================================
 
     // 認証済みユーザーかどうか
@@ -52,9 +52,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
 
-      // 課金・サブスクリプション・ゲーミフィケーション関連の保護フィールド（Cloud Functionsのみ変更可能）
-      function isProtectedFieldChanged() {
-        return request.resource.data.diff(resource.data).affectedKeys().hasAny([
+      // 本人は保護フィールド以外のみ書き込み可能
+      // 他の認証済みユーザーはfollowerCountのみ更新可能（フォロー機能用）
+      allow create: if isOwner(userId);
+      allow update: if (isOwner(userId)
+                    && resource.data != null
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'subscription',
           'subscriptionStatus',
           'subscriptionTier',
@@ -74,17 +77,11 @@ service cloud.firestore {
           'level',
           'processedScoreDates',
           'processedDirectiveDates'
-        ]);
-      }
-
-      // 本人は保護フィールド以外のみ書き込み可能
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && !isProtectedFieldChanged();
+        ]))
+                    || (isAuthenticated()
+                    && resource.data != null
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount']));
       allow delete: if isOwner(userId);
-
-      // 他の認証済みユーザーはfollowerCountのみ更新可能（フォロー機能用）
-      allow update: if isAuthenticated()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount']);
 
       // サブコレクション: settings
       match /settings/{settingId} {

@@ -67,7 +67,9 @@
       "Bash(curl -s https://your-coach-plus.web.app/robots.txt)",
       "WebFetch(domain:macrofactorapp.com)",
       "WebFetch(domain:www.asken.jp)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "Bash(firebase firestore:rules:get:*)",
+      "Bash(npx firebase-tools:*)"
     ],
     "deny": [],
     "ask": []
