@@ -1981,15 +1981,26 @@ ${userProfile ? `
         } catch (error) {
             console.error('Cloud Function call failed:', error);
 
-            // エラーメッセージを解析
-            let errorMessage = error.message || 'サーバーエラーが発生しました。';
-
+            // エラーコード別にメッセージを設定
             if (error.code === 'unauthenticated') {
-                errorMessage = 'ログインが必要です。';
+                return {
+                    success: false,
+                    error: 'ログインが必要です。再度ログインしてください。'
+                };
             } else if (error.code === 'permission-denied') {
-                errorMessage = 'AI分析クレジットが不足しています。';
+                return {
+                    success: false,
+                    error: 'AI分析クレジットが不足しています。設定画面からクレジットを購入するか、レベルアップでクレジットを獲得してください。'
+                };
+            } else if (error.code === 'resource-exhausted') {
+                return {
+                    success: false,
+                    error: 'AIサービスが混み合っています。5〜10分後に再度お試しください。'
+                };
             }
 
+            // その他のエラー
+            const errorMessage = error.message || 'サーバーエラーが発生しました。';
             return {
                 success: false,
                 error: `API通信エラーが発生しました。(${errorMessage})`

@@ -99,6 +99,11 @@ exports.callGemini = onCall({
   } catch (error) {
     console.error("Vertex AI call failed:", error);
 
+    // 既にHttpsErrorの場合はそのまま再スロー（permission-denied, unauthenticated等）
+    if (error.code && ['permission-denied', 'unauthenticated', 'not-found', 'invalid-argument'].includes(error.code)) {
+      throw error;
+    }
+
     // 429エラー（レート制限）の場合
     if (error.code === 429 || error.status === "RESOURCE_EXHAUSTED") {
       throw new HttpsError(
