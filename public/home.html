@@ -15,15 +15,11 @@
         }
         .fullpage-container {
             height: 100vh;
-            overflow: hidden;
-            position: relative;
-        }
-        .fullpage-wrapper {
-            transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+            overflow-y: auto;
+            scroll-behavior: smooth;
         }
         .section {
-            height: 100vh;
-            overflow-y: auto;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -34,24 +30,6 @@
             padding: 1rem;
             max-height: 100vh;
             overflow-y: auto;
-        }
-        .scroll-hint {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            animation: bounce 2s infinite;
-            z-index: 50;
-            transition: opacity 0.3s ease;
-        }
-        .scroll-hint.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
-            40% { transform: translateX(-50%) translateY(-10px); }
-            60% { transform: translateX(-50%) translateY(-5px); }
         }
         /* Hide scrollbar */
         .section-content::-webkit-scrollbar { display: none; }
@@ -267,100 +245,66 @@
             <!-- Section 6: Comparison -->
             <section class="section bg-black">
                 <div class="section-content">
-                    <h2 class="text-3xl font-bold text-white mb-6 text-center">他サービスとの違い</h2>
+                    <h2 class="text-3xl font-bold text-white mb-8 text-center">従来のアプリとの違い</h2>
 
-                    <!-- 3大課題の排除（強調表示） -->
-                    <div class="bg-gradient-to-r from-purple-900/30 to-[#4A9EFF]/20 rounded-2xl p-6 border border-purple-500/30 mb-4">
-                        <p class="text-center text-white font-bold text-base mb-4">🚫 Your Coach+ が徹底排除した3つの課題</p>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead>
-                                    <tr class="border-b border-gray-700">
-                                        <th class="py-2 px-2 text-left text-gray-400">課題</th>
-                                        <th class="py-2 px-2 text-center text-[#4A9EFF] font-bold">Your Coach+</th>
-                                        <th class="py-2 px-2 text-center text-white">Macrofactor</th>
-                                        <th class="py-2 px-2 text-center text-white">あすけん</th>
-                                        <th class="py-2 px-2 text-center text-white">ChatGPT等</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="text-white">
-                                    <tr class="border-b border-gray-800">
-                                        <td class="py-2 px-2 text-purple-400 font-bold">❌ 面倒</td>
-                                        <td class="py-2 px-2 text-center"><span class="text-[#4A9EFF] font-bold text-lg">◎</span><br><span class="text-gray-400 text-xs">テンプレ・写真AI・指示書</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-yellow-400">○</span><br><span class="text-gray-400 text-xs">音声入力</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-yellow-400">○</span><br><span class="text-gray-400 text-xs">バーコード</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span><br><span class="text-gray-400 text-xs">毎回プロンプト</span></td>
-                                    </tr>
-                                    <tr class="border-b border-gray-800">
-                                        <td class="py-2 px-2 text-purple-400 font-bold">❌ 使い方不明</td>
-                                        <td class="py-2 px-2 text-center"><span class="text-[#4A9EFF] font-bold text-lg">◎</span><br><span class="text-gray-400 text-xs">?アイコン・教科書・AI対話</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-yellow-400">○</span><br><span class="text-gray-400 text-xs">週次コーチング</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-gray-500">△</span><br><span class="text-gray-400 text-xs">記事のみ</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-gray-500">△</span><br><span class="text-gray-400 text-xs">質問次第</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="py-2 px-2 text-purple-400 font-bold">❌ 効果不明</td>
-                                        <td class="py-2 px-2 text-center"><span class="text-[#4A9EFF] font-bold text-lg">◎</span><br><span class="text-gray-400 text-xs">8軸分析・履歴・COMY</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-emerald-400">◎</span><br><span class="text-gray-400 text-xs">TDEE追跡</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-yellow-400">○</span><br><span class="text-gray-400 text-xs">点数表示</span></td>
-                                        <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span><br><span class="text-gray-400 text-xs">履歴消失</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    <!-- 2列比較表 -->
+                    <div class="space-y-4">
+                        <!-- 入力の手間 -->
+                        <div class="bg-gray-900/50 rounded-2xl p-5 border border-gray-800">
+                            <p class="text-gray-400 text-sm mb-3 text-center">入力の手間</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <p class="text-red-400 text-2xl mb-1">❌</p>
+                                    <p class="text-white font-bold mb-1">面倒</p>
+                                    <p class="text-gray-500 text-xs">バーコードや手入力が必須</p>
+                                </div>
+                                <div class="text-center bg-[#4A9EFF]/10 rounded-xl p-3 border border-[#4A9EFF]/30">
+                                    <p class="text-[#4A9EFF] text-2xl mb-1">⚡</p>
+                                    <p class="text-[#4A9EFF] font-bold mb-1">秒速</p>
+                                    <p class="text-gray-400 text-xs">写真を撮るだけでAI解析</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- アドバイス -->
+                        <div class="bg-gray-900/50 rounded-2xl p-5 border border-gray-800">
+                            <p class="text-gray-400 text-sm mb-3 text-center">アドバイス</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <p class="text-yellow-400 text-2xl mb-1">🤖</p>
+                                    <p class="text-white font-bold mb-1">定型文</p>
+                                    <p class="text-gray-500 text-xs">「野菜を食べましょう」ばかり</p>
+                                </div>
+                                <div class="text-center bg-[#4A9EFF]/10 rounded-xl p-3 border border-[#4A9EFF]/30">
+                                    <p class="text-[#4A9EFF] text-2xl mb-1">🏋️</p>
+                                    <p class="text-[#4A9EFF] font-bold mb-1">専属コーチ</p>
+                                    <p class="text-gray-400 text-xs">あなたの目標に合わせた個別指導</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 継続性 -->
+                        <div class="bg-gray-900/50 rounded-2xl p-5 border border-gray-800">
+                            <p class="text-gray-400 text-sm mb-3 text-center">継続性</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <p class="text-red-400 text-2xl mb-1">😩</p>
+                                    <p class="text-white font-bold mb-1">三日坊主</p>
+                                    <p class="text-gray-500 text-xs">孤独な戦いで挫折する</p>
+                                </div>
+                                <div class="text-center bg-[#4A9EFF]/10 rounded-xl p-3 border border-[#4A9EFF]/30">
+                                    <p class="text-[#4A9EFF] text-2xl mb-1">💪</p>
+                                    <p class="text-[#4A9EFF] font-bold mb-1">続く</p>
+                                    <p class="text-gray-400 text-xs">AIが毎日励ましてくれる</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 機能比較表 -->
-                    <div class="bg-gray-900/50 rounded-2xl p-4 border border-gray-800 overflow-x-auto mb-4">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-gray-700">
-                                    <th class="py-2 px-2 text-left text-gray-400">機能</th>
-                                    <th class="py-2 px-2 text-center text-[#4A9EFF] font-bold">YC+</th>
-                                    <th class="py-2 px-2 text-center text-white">MF</th>
-                                    <th class="py-2 px-2 text-center text-white">あすけん</th>
-                                    <th class="py-2 px-2 text-center text-white">GPT</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-white">
-                                <tr class="border-b border-gray-800">
-                                    <td class="py-2 px-2 text-gray-400">日本食DB</td>
-                                    <td class="py-2 px-2 text-center"><span class="text-[#4A9EFF] font-bold">◎</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-gray-500">△</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-emerald-400">◎</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                </tr>
-                                <tr class="border-b border-gray-800">
-                                    <td class="py-2 px-2 text-gray-400">筋トレ記録</td>
-                                    <td class="py-2 px-2 text-center"><span class="text-[#4A9EFF] font-bold">◎</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-emerald-400">◎</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                </tr>
-                                <tr class="border-b border-gray-800">
-                                    <td class="py-2 px-2 text-gray-400">DIAAS対応</td>
-                                    <td class="py-2 px-2 text-center"><span class="text-[#4A9EFF] font-bold">◎</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="py-2 px-2 text-gray-400">コミュニティ</td>
-                                    <td class="py-2 px-2 text-center"><span class="text-[#4A9EFF] font-bold">◎</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-gray-500">△</span></td>
-                                    <td class="py-2 px-2 text-center"><span class="text-red-400">✗</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 価格比較 -->
-                    <div class="flex justify-center gap-6 text-sm text-gray-400">
-                        <span><span class="text-[#4A9EFF] font-bold">YC+</span> ¥940/月</span>
-                        <span><span class="text-white">MF</span> ¥767〜</span>
-                        <span><span class="text-white">あすけん</span> ¥475</span>
-                        <span><span class="text-white">GPT</span> ¥0〜3,300</span>
+                    <!-- ラベル -->
+                    <div class="flex justify-center gap-8 mt-6 text-sm">
+                        <span class="text-gray-500">従来のアプリ</span>
+                        <span class="text-[#4A9EFF] font-bold">Your Coach+</span>
                     </div>
                 </div>
             </section>
@@ -612,77 +556,5 @@
 
         </div>
     </div>
-
-    <!-- Scroll Hint (fixed position) -->
-    <div class="scroll-hint text-white text-center" id="scroll-hint">
-        <p class="text-xs text-gray-400 mb-2">スワイプして続きを見る</p>
-        <svg class="w-6 h-6 mx-auto text-[#4A9EFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-    </div>
-
-    <!-- Fullpage Script -->
-    <script>
-    (function() {
-        const wrapper = document.getElementById('fullpage-wrapper');
-        const sections = document.querySelectorAll('.section');
-        const scrollHint = document.getElementById('scroll-hint');
-        let currentSection = 0;
-        const totalSections = sections.length;
-        let isScrolling = false;
-        let touchStartY = 0;
-        let touchEndY = 0;
-
-        function updateScrollHint() {
-            if (currentSection >= totalSections - 1) {
-                scrollHint.classList.add('hidden');
-            } else {
-                scrollHint.classList.remove('hidden');
-            }
-        }
-
-        function goToSection(index) {
-            if (index < 0 || index >= totalSections || isScrolling) return;
-
-            isScrolling = true;
-            currentSection = index;
-            wrapper.style.transform = `translateY(-${currentSection * 100}vh)`;
-            updateScrollHint();
-
-            setTimeout(() => { isScrolling = false; }, 700);
-        }
-
-        function nextSection() { goToSection(currentSection + 1); }
-        function prevSection() { goToSection(currentSection - 1); }
-
-        // Mouse wheel
-        document.addEventListener('wheel', (e) => {
-            if (isScrolling) return;
-            if (e.deltaY > 0) nextSection();
-            else prevSection();
-        }, { passive: true });
-
-        // Touch events
-        document.addEventListener('touchstart', (e) => {
-            touchStartY = e.changedTouches[0].screenY;
-        }, { passive: true });
-
-        document.addEventListener('touchend', (e) => {
-            if (isScrolling) return;
-            touchEndY = e.changedTouches[0].screenY;
-            const diff = touchStartY - touchEndY;
-            if (Math.abs(diff) > 50) {
-                if (diff > 0) nextSection();
-                else prevSection();
-            }
-        }, { passive: true });
-
-        // Keyboard
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowDown' || e.key === 'PageDown') nextSection();
-            if (e.key === 'ArrowUp' || e.key === 'PageUp') prevSection();
-            if (e.key === 'Home') goToSection(0);
-            if (e.key === 'End') goToSection(totalSections - 1);
-        });
-    })();
-    </script>
 </body>
 </html>
