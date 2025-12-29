@@ -3243,17 +3243,29 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
         // 初回計測
         updateBabHeight();
 
-        // ResizeObserverでBAB高さ変化を監視
+        // ResizeObserverでBAB高さ変化を監視（Android 8.1未満はフォールバック）
         let observer = null;
+        let resizeHandler = null;
         const babs = document.querySelectorAll('.fixed.bottom-0.z-\\[9999\\]');
-        for (let el of babs) {
-            if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
-                observer = new ResizeObserver(() => {
-                    if (isMounted) updateBabHeight();
-                });
-                observer.observe(el);
-                break;
+
+        if (typeof ResizeObserver !== 'undefined') {
+            // ResizeObserver対応ブラウザ（Chrome 64+ / Android 9.0+）
+            for (let el of babs) {
+                if (el.classList.contains('border-t') && el.classList.contains('bg-white')) {
+                    observer = new ResizeObserver(() => {
+                        if (isMounted) updateBabHeight();
+                    });
+                    observer.observe(el);
+                    break;
+                }
             }
+        } else {
+            // フォールバック: window.resizeイベントで監視（Android 6.0-8.1）
+            resizeHandler = () => {
+                if (isMounted) updateBabHeight();
+            };
+            window.addEventListener('resize', resizeHandler);
+            console.log('[Community] ResizeObserver not available, using resize event fallback');
         }
 
         // 500ms後にも再計測（DOM構築遅延対策）
@@ -3264,6 +3276,7 @@ const COMYView = ({ onClose, userId, userProfile, usageDays, historyData: propsH
         return () => {
             isMounted = false;
             if (observer) observer.disconnect();
+            if (resizeHandler) window.removeEventListener('resize', resizeHandler);
             clearTimeout(timer);
         };
     }, []);

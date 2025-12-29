@@ -3333,7 +3333,7 @@ exports.initializeNewUser = onCall({
     const initData = {
       experience: 0,
       level: 1,
-      freeCredits: 21, // 初回21回分付与
+      freeCredits: 14, // 初回14回分付与
       processedScoreDates: [],
       processedDirectiveDates: [],
       subscriptionTier: 'free',

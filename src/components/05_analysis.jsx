@@ -704,12 +704,12 @@ ${content}
                 paceComparison = '適切（目標通り）';
             } else if (paceDiff > 0) {
                 paceComparison = currentPurpose === 'バルクアップ'
-                    ? `目標より速い（+${paceDiff.toFixed(1)}kg/月）`
-                    : `目標より遅い（${paceDiff.toFixed(1)}kg/月の差）`;
+                    ? `目標より速い（+${(paceDiff || 0).toFixed(1)}kg/月）`
+                    : `目標より遅い（${(paceDiff || 0).toFixed(1)}kg/月の差）`;
             } else {
                 paceComparison = currentPurpose === 'バルクアップ'
-                    ? `目標より遅い（${paceDiff.toFixed(1)}kg/月の差）`
-                    : `目標より速い（${Math.abs(paceDiff).toFixed(1)}kg/月速い）`;
+                    ? `目標より遅い（${(paceDiff || 0).toFixed(1)}kg/月の差）`
+                    : `目標より速い（${Math.abs(paceDiff || 0).toFixed(1)}kg/月速い）`;
             }
         }
 
@@ -731,8 +731,8 @@ ${content}
 - 評価指針: ${styleFocus}
 
 **理想の体型目標**
-- 理想の体重: ${idealWeight.toFixed(1)}kg（現在: ${userProfile.weight}kg、差: ${(idealWeight - userProfile.weight).toFixed(1)}kg）
-- 理想のLBM: ${idealLBM.toFixed(1)}kg（現在: ${currentLBM.toFixed(1)}kg、差: ${lbmGap.toFixed(1)}kg）
+- 理想の体重: ${(idealWeight || 0).toFixed(1)}kg（現在: ${userProfile.weight || 0}kg、差: ${((idealWeight || 0) - (userProfile.weight || 0)).toFixed(1)}kg）
+- 理想のLBM: ${(idealLBM || 0).toFixed(1)}kg（現在: ${(currentLBM || 0).toFixed(1)}kg、差: ${(lbmGap || 0).toFixed(1)}kg）
 
 **注意**: LBM（除脂肪体重）は結果指標です。食事・運動・睡眠の反復で自然に変化するものであり、評価基準ではありません。
 
@@ -798,9 +798,9 @@ ${content}
 ## 1か月後の予測（本日のペースを継続した場合）
 
 **現在の体組成:**
-- 体重: ${userProfile.weight.toFixed(1)}kg
-- LBM（除脂肪体重）: ${currentLBM.toFixed(1)}kg
-- 体脂肪率: ${userProfile.bodyFatPercentage.toFixed(1)}%
+- 体重: ${(userProfile.weight || 0).toFixed(1)}kg
+- LBM（除脂肪体重）: ${(currentLBM || 0).toFixed(1)}kg
+- 体脂肪率: ${(userProfile.bodyFatPercentage || 0).toFixed(1)}%
 
 **カロリー収支の詳細:**
 - TDEE（消費カロリー）: ${Math.round(tdee)}kcal
@@ -810,9 +810,9 @@ ${content}
 - 目標に対する過不足: ${targetCalorieBalance >= 0 ? '+' : ''}${Math.round(targetCalorieBalance)}kcal/日
 
 **1か月後の予測:**
-- 体重: ${predictedWeight.toFixed(1)}kg（${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)}kg）
-- LBM: ${predictedLBM.toFixed(1)}kg（${lbmChange >= 0 ? '+' : ''}${lbmChange.toFixed(1)}kg）
-- 体脂肪率: ${predictedBodyFat.toFixed(1)}%（${(predictedBodyFat - userProfile.bodyFatPercentage) >= 0 ? '+' : ''}${(predictedBodyFat - userProfile.bodyFatPercentage).toFixed(1)}%）
+- 体重: ${(predictedWeight || 0).toFixed(1)}kg（${(weightChange || 0) >= 0 ? '+' : ''}${(weightChange || 0).toFixed(1)}kg）
+- LBM: ${(predictedLBM || 0).toFixed(1)}kg（${(lbmChange || 0) >= 0 ? '+' : ''}${(lbmChange || 0).toFixed(1)}kg）
+- 体脂肪率: ${(predictedBodyFat || 0).toFixed(1)}%（${(predictedBodyFat - (userProfile.bodyFatPercentage || 0)) >= 0 ? '+' : ''}${(predictedBodyFat - (userProfile.bodyFatPercentage || 0)).toFixed(1)}%）
 
 **予測の根拠:**
 - 実際の収支: ${actualCalorieBalance >= 0 ? '+' : ''}${Math.round(actualCalorieBalance)}kcal/日（TDEE基準）
@@ -820,8 +820,8 @@ ${content}
 - 30日間このペースを継続した場合
 
 ${targetPaceValue !== null ? `**目標ペースとの比較:**
-- 目標ペース: ${targetPaceValue > 0 ? '+' : ''}${targetPaceValue}${paceUnit === 'bf_percent' ? '体脂肪率%' : 'kg'}/月（${targetMonthlyChange > 0 ? '+' : ''}${targetMonthlyChange.toFixed(1)}kg/月相当）
-- 実績予測: ${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)}kg/月
+- 目標ペース: ${targetPaceValue > 0 ? '+' : ''}${targetPaceValue}${paceUnit === 'bf_percent' ? '体脂肪率%' : 'kg'}/月（${(targetMonthlyChange || 0) > 0 ? '+' : ''}${(targetMonthlyChange || 0).toFixed(1)}kg/月相当）
+- 実績予測: ${(weightChange || 0) >= 0 ? '+' : ''}${(weightChange || 0).toFixed(1)}kg/月
 - 評価: ${paceComparison}
 ` : ''}
 **重要**: 体重変化の予測は「実際の収支（TDEE基準）」で計算されます。目的が${currentPurpose}の場合、目標カロリーは${Math.round(targetPFC.calories)}kcalですが、実際の体脂肪増減はTDEE ${Math.round(tdee)}kcalとの差で決まります。
@@ -868,7 +868,7 @@ ${targetPaceValue !== null ? `**目標ペースとの比較:**
 ${targetPaceValue !== null ? `
 **目標ペースとの比較:**
 - 目標: ${targetPaceValue > 0 ? '+' : ''}${targetPaceValue}${paceUnit === 'bf_percent' ? '体脂肪率%' : 'kg'}/月
-- 実績予測: ${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)}kg/月
+- 実績予測: ${(weightChange || 0) >= 0 ? '+' : ''}${(weightChange || 0).toFixed(1)}kg/月
 - [目標ペースに対して実績予測が速い/遅い/適切かを1文で評価し、必要なら改善提案を追加]
 ` : ''}
 **評価:**

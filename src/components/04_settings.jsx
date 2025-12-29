@@ -637,6 +637,150 @@ const SettingsView = ({
                 </div>
             </div>
         )}
+
+        {/* 2FA設定モーダル */}
+        {show2FASetup && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area">
+                <div className="bg-white rounded-2xl p-6 max-w-md w-full modal-content-safe">
+                    <div className="text-center mb-4">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Icon name="Shield" size={32} className="text-blue-600" />
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">2段階認証を設定</h3>
+                        <p className="text-sm text-gray-600">
+                            SMS認証を設定してアカウントのセキュリティを強化します。
+                        </p>
+                    </div>
+
+                    {/* Google認証ユーザーへの警告 */}
+                    {firebase.auth().currentUser?.providerData?.some(p => p.providerId === 'google.com') && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-start gap-2">
+                                <Icon name="AlertTriangle" size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-amber-800">Googleアカウントでログイン中</p>
+                                    <p className="text-xs text-amber-700 mt-1">
+                                        Googleアカウントでログインしている場合、SMS 2段階認証は設定できません。
+                                        Googleアカウント側の2段階認証をご利用ください。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {!firebase.auth().currentUser?.providerData?.some(p => p.providerId === 'google.com') && (
+                        <>
+                            {!verificationId ? (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            電話番号（国際形式）
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            value={phoneNumber}
+                                            onChange={(e) => setPhoneNumber(e.target.value)}
+                                            placeholder="+819012345678"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            例: +819012345678（日本の場合は+81から始めて、最初の0を省略）
+                                        </p>
+                                    </div>
+
+                                    <div id="settings-recaptcha-container"></div>
+
+                                    <button
+                                        onClick={async () => {
+                                            if (!phoneNumber) {
+                                                toast.error('電話番号を入力してください');
+                                                return;
+                                            }
+
+                                            // reCAPTCHA初期化
+                                            if (!window.settingsRecaptchaVerifier) {
+                                                window.settingsRecaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+                                                    'settings-recaptcha-container',
+                                                    { size: 'normal' }
+                                                );
+                                            }
+
+                                            const result = await window.MFAService.enrollSMS2FA(phoneNumber);
+                                            if (result.success) {
+                                                setVerificationId(result.verificationId);
+                                                toast.success('認証コードを送信しました');
+                                            } else {
+                                                toast.error('エラー: ' + result.error);
+                                            }
+                                        }}
+                                        className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700"
+                                    >
+                                        認証コードを送信
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            認証コード（6桁）
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={verificationCode}
+                                            onChange={(e) => setVerificationCode(e.target.value)}
+                                            placeholder="123456"
+                                            maxLength={6}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl tracking-widest"
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={async () => {
+                                            if (!verificationCode || verificationCode.length !== 6) {
+                                                toast.error('6桁の認証コードを入力してください');
+                                                return;
+                                            }
+
+                                            const result = await window.MFAService.confirmSMS2FA(verificationId, verificationCode);
+                                            if (result.success) {
+                                                toast.success('2段階認証を設定しました');
+                                                setMfaEnrolled(true);
+                                                setShow2FASetup(false);
+                                                setPhoneNumber('');
+                                                setVerificationId(null);
+                                                setVerificationCode('');
+                                            } else {
+                                                toast.error('エラー: ' + result.error);
+                                            }
+                                        }}
+                                        className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700"
+                                    >
+                                        確認して設定完了
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    <button
+                        onClick={() => {
+                            setShow2FASetup(false);
+                            setPhoneNumber('');
+                            setVerificationId(null);
+                            setVerificationCode('');
+                            // reCAPTCHA をクリア
+                            if (window.settingsRecaptchaVerifier) {
+                                window.settingsRecaptchaVerifier.clear();
+                                window.settingsRecaptchaVerifier = null;
+                            }
+                        }}
+                        className="w-full mt-3 text-gray-600 py-2 hover:text-gray-800"
+                    >
+                        閉じる
+                    </button>
+                </div>
+            </div>
+        )}
         </>
     );
 };

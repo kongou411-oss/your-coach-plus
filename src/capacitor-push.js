@@ -33,15 +33,16 @@ export const initPushNotifications = async (userId, onTokenReceived, onForegroun
   }
 
   try {
-    // 権限の確認
-    let permStatus = await PushNotifications.checkPermissions();
+    // 権限の確認（Android 6-7では undefined が返る可能性があるため堅牢化）
+    let permStatus = await PushNotifications.checkPermissions() || {};
+    const receiveStatus = permStatus.receive ?? 'prompt';
 
-    if (permStatus.receive === 'prompt') {
-      permStatus = await PushNotifications.requestPermissions();
+    if (receiveStatus === 'prompt') {
+      permStatus = await PushNotifications.requestPermissions() || {};
     }
 
-    if (permStatus.receive !== 'granted') {
-      console.log('[Push] Permission not granted');
+    if ((permStatus.receive ?? 'denied') !== 'granted') {
+      console.log('[Push] Permission not granted:', permStatus.receive);
       return null;
     }
 
@@ -124,8 +125,8 @@ export const checkNotificationPermission = async () => {
   if (!isNativeApp()) return 'unsupported';
 
   try {
-    const permStatus = await PushNotifications.checkPermissions();
-    return permStatus.receive; // 'prompt' | 'granted' | 'denied'
+    const permStatus = await PushNotifications.checkPermissions() || {};
+    return permStatus.receive ?? 'prompt'; // 'prompt' | 'granted' | 'denied'
   } catch (error) {
     console.error('[Push] Error checking permission:', error);
     return 'error';

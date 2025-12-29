@@ -350,9 +350,28 @@ const BasicTab = ({
     // アイコン画像クロップ用state
     const [cropModalOpen, setCropModalOpen] = useState(false);
     const [imageSrc, setImageSrc] = useState(null);
-    const [crop, setCrop] = useState({ unit: '%', width: 80, aspect: 1 });
+    const [crop, setCrop] = useState({ unit: '%', x: 10, y: 10, width: 80, height: 80 });
     const [completedCrop, setCompletedCrop] = useState(null);
     const imgRef = useRef(null);
+
+    // 画像読み込み完了時に初期クロップを設定
+    const handleImageLoad = (e) => {
+        const { width, height } = e.currentTarget;
+        // 画像の中央に正方形のクロップ領域を設定
+        const cropSize = Math.min(width, height) * 0.8;
+        const x = (width - cropSize) / 2;
+        const y = (height - cropSize) / 2;
+
+        const initialCrop = {
+            unit: 'px',
+            x: x,
+            y: y,
+            width: cropSize,
+            height: cropSize
+        };
+        setCrop(initialCrop);
+        setCompletedCrop(initialCrop);
+    };
 
     // 画像選択時
     const handleImageSelect = (e) => {
@@ -367,7 +386,8 @@ const BasicTab = ({
         const reader = new FileReader();
         reader.onload = () => {
             setImageSrc(reader.result);
-            setCrop({ unit: '%', width: 80, aspect: 1 });
+            // 初期値はhandleImageLoadで設定される
+            setCrop({ unit: '%', x: 10, y: 10, width: 80, height: 80 });
             setCompletedCrop(null);
             setCropModalOpen(true);
         };
@@ -377,7 +397,7 @@ const BasicTab = ({
 
     // クロップ確定時
     const handleCropComplete = async () => {
-        if (!completedCrop || !imgRef.current) {
+        if (!completedCrop || !imgRef.current || !completedCrop.width || !completedCrop.height) {
             toast.error('範囲を選択してください');
             return;
         }
@@ -462,6 +482,7 @@ const BasicTab = ({
                                     ref={imgRef}
                                     src={imageSrc}
                                     alt="Crop"
+                                    onLoad={handleImageLoad}
                                     style={{ maxHeight: '60vh', width: '100%', objectFit: 'contain' }}
                                 />
                             </ReactCrop>

@@ -2128,6 +2128,9 @@ ${userProfile ? `
 const CreditService = {
     // 7日間無料トライアル期間チェック
     checkFreeTrialStatus: (userProfile) => {
+        if (!userProfile) {
+            return { isActive: false, daysRemaining: 0, isInTrial: false };
+        }
         if (userProfile.subscriptionTier === 'premium') {
             return { isActive: false, daysRemaining: 0, isInTrial: false };
         }
@@ -2154,19 +2157,18 @@ const CreditService = {
         };
     },
 
-    // 無料期間終了時の処理
+    // 無料期間終了時の処理（フラグのみ設定、クレジットは保持）
     expireFreeTrialIfNeeded: async (userId, userProfile) => {
         const trialStatus = CreditService.checkFreeTrialStatus(userProfile);
 
         if (!trialStatus.isActive && !userProfile.isFreeTrialExpired) {
-            // 無料期間終了：無料クレジットを0にする（有料クレジットは残す）
+            // 無料期間終了：フラグのみ設定（クレジットは有料登録後に使用可能）
             await DataService.saveUserProfile(userId, {
                 ...userProfile,
-                freeCredits: 0,
                 isFreeTrialExpired: true
             });
 
-            console.log(`[Credit] User ${userId} free trial expired. Free credits cleared.`);
+            console.log(`[Credit] User ${userId} free trial expired. Credits preserved for premium upgrade.`);
             return true; // 期限切れ処理実行
         }
 
@@ -2195,18 +2197,32 @@ const CreditService = {
         const updatedProfile = await DataService.getUserProfile(userId);
         const freeCredits = updatedProfile?.freeCredits || 0;
         const paidCredits = updatedProfile?.paidCredits || 0;
-        const totalCredits = freeCredits + paidCredits;
         const trialStatus = CreditService.checkFreeTrialStatus(updatedProfile);
 
+        // Premium判定
+        const isPremium = updatedProfile.subscription?.status === 'active'
+            || updatedProfile.b2b2cOrgId
+            || updatedProfile.subscription?.giftCodeActive === true;
+
+        // トライアル終了後の無料ユーザーはfreeCreditsを使用不可（有料登録で解放）
+        const trialExpired = !trialStatus.isActive;
+        const usableCredits = (trialExpired && !isPremium)
+            ? paidCredits  // 無料ユーザーはpaidCreditsのみ使用可能
+            : freeCredits + paidCredits;  // トライアル中 or Premiumは全クレジット使用可能
+
         return {
-            allowed: totalCredits > 0,
-            remainingCredits: totalCredits,
+            allowed: usableCredits > 0,
+            remainingCredits: usableCredits,
             freeCredits,
             paidCredits,
             tier: updatedProfile.subscriptionTier,
             freeTrialActive: trialStatus.isActive,
             freeTrialDaysRemaining: trialStatus.daysRemaining,
-            profile: updatedProfile // 更新後のプロファイルを返す
+            profile: updatedProfile,
+            isPremium,
+            trialExpired,
+            // UI表示用：保持されているfreeCredits（有料登録で解放される）
+            lockedFreeCredits: (trialExpired && !isPremium) ? freeCredits : 0
         };
     },
 
@@ -2410,32 +2426,48 @@ const ExperienceService = {
         }
     },
 
-    // クレジットを消費（無料→有料の順）
+    // クレジットを消費（無料→有料の順、ただしトライアル終了後の無料ユーザーはpaidCreditsのみ）
     consumeCredits: async (userId, amount) => {
         const profile = await DataService.getUserProfile(userId);
 
         let freeCredits = profile?.freeCredits || 0;
         let paidCredits = profile?.paidCredits || 0;
-        const totalCredits = freeCredits + paidCredits;
 
-        if (totalCredits < amount) {
+        // トライアル状態とPremium判定
+        const trialStatus = CreditService.checkFreeTrialStatus(profile);
+        const isPremium = profile.subscription?.status === 'active'
+            || profile.b2b2cOrgId
+            || profile.subscription?.giftCodeActive === true;
+        const trialExpired = !trialStatus.isActive;
+
+        // トライアル終了後の無料ユーザーはfreeCreditsを使用不可
+        const canUseFreeCredits = !trialExpired || isPremium;
+        const usableCredits = canUseFreeCredits ? (freeCredits + paidCredits) : paidCredits;
+
+        if (usableCredits < amount) {
             return {
                 success: false,
                 error: 'クレジットが不足しています',
                 freeCredits,
                 paidCredits,
-                totalCredits
+                totalCredits: freeCredits + paidCredits
             };
         }
 
-        // 無料クレジットから優先的に消費
+        // クレジット消費ロジック
         let remaining = amount;
-        if (freeCredits >= remaining) {
-            freeCredits -= remaining;
-            remaining = 0;
+        if (canUseFreeCredits) {
+            // トライアル中 or Premium: 無料クレジットから優先的に消費
+            if (freeCredits >= remaining) {
+                freeCredits -= remaining;
+                remaining = 0;
+            } else {
+                remaining -= freeCredits;
+                freeCredits = 0;
+                paidCredits -= remaining;
+            }
         } else {
-            remaining -= freeCredits;
-            freeCredits = 0;
+            // トライアル終了後の無料ユーザー: paidCreditsのみ消費
             paidCredits -= remaining;
         }
 

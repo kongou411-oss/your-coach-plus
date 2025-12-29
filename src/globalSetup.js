@@ -1,5 +1,37 @@
 // グローバルセットアップ: 既存コードとの互換性のため、必要なオブジェクトをwindowに公開
 
+// ========================================
+// ポリフィル: 古いAndroid WebView対応 (API 23-25 / Chrome 59未満)
+// ========================================
+
+// String.prototype.padStart - Chrome 59未満（Android 8.0未満）で未対応
+if (!String.prototype.padStart) {
+  String.prototype.padStart = function(targetLength, padString) {
+    targetLength = Math.floor(targetLength) || 0;
+    if (targetLength <= this.length) return String(this);
+    padString = String(padString !== undefined ? padString : ' ');
+    if (padString.length === 0) return String(this);
+    const padLen = targetLength - this.length;
+    const repeatCount = Math.ceil(padLen / padString.length);
+    return padString.repeat(repeatCount).slice(0, padLen) + String(this);
+  };
+  console.log('[Polyfill] String.prototype.padStart added');
+}
+
+// String.prototype.padEnd - Chrome 59未満（Android 8.0未満）で未対応
+if (!String.prototype.padEnd) {
+  String.prototype.padEnd = function(targetLength, padString) {
+    targetLength = Math.floor(targetLength) || 0;
+    if (targetLength <= this.length) return String(this);
+    padString = String(padString !== undefined ? padString : ' ');
+    if (padString.length === 0) return String(this);
+    const padLen = targetLength - this.length;
+    const repeatCount = Math.ceil(padLen / padString.length);
+    return String(this) + padString.repeat(repeatCount).slice(0, padLen);
+  };
+  console.log('[Polyfill] String.prototype.padEnd added');
+}
+
 // config.jsは main.jsx で既に window に公開済み
 
 // 注: foodDatabase.js, trainingDatabase.js, notificationSound.js, services.js は
