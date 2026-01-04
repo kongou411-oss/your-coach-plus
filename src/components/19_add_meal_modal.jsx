@@ -3458,108 +3458,108 @@ JSON形式のみ出力、説明文不要`;
                                         // リストに追加が選択されている場合のみaddedItemsに追加
                                         if (customSaveMethod === 'list') {
                                             // カスタムアイテムをaddedItemsに追加
-                                        // Firestoreに保存したデータを使用（既に100g基準に換算済み）
-                                        const isCountUnitItem = COUNT_UNITS.some(u => customData.servingUnit.includes(u));
-                                        const userInputSize = parseFloat(customData.servingSize) || (isCountUnitItem ? 1 : 100);
+                                            // Firestoreに保存したデータを使用（既に100g基準に換算済み）
+                                            const isCountUnitItem = COUNT_UNITS.some(u => customData.servingUnit.includes(u));
+                                            const userInputSize = parseFloat(customData.servingSize) || (isCountUnitItem ? 1 : 100);
 
-                                        // デフォルトのamount（既存アイテムと同じロジック）
-                                        let defaultAmount;
-                                        if (isCountUnitItem) {
-                                            defaultAmount = 1;  // 個数単位は1個がデフォルト
-                                        } else {
-                                            defaultAmount = userInputSize;  // 重量単位はユーザー入力値がデフォルト
-                                        }
+                                            // デフォルトのamount（既存アイテムと同じロジック）
+                                            let defaultAmount;
+                                            if (isCountUnitItem) {
+                                                defaultAmount = 1;  // 個数単位は1個がデフォルト
+                                            } else {
+                                                defaultAmount = userInputSize;  // 重量単位はユーザー入力値がデフォルト
+                                            }
 
-                                        // ビタミン・ミネラルの計算用ratio
-                                        const vitaminMineralRatio = isCountUnitItem ? defaultAmount : defaultAmount / 100;
+                                            // ビタミン・ミネラルの計算用ratio
+                                            const vitaminMineralRatio = isCountUnitItem ? defaultAmount : defaultAmount / 100;
 
-                                        // Firestoreに保存した100g基準の値を使用してビタミン・ミネラルをスケーリング
-                                        // 個数単位の場合は入力値をそのまま使用、重量単位の場合は100g基準に換算
-                                        // キー名は既存アイテムと統一（vitaminA, vitaminB1, ...形式）
-                                        const savedVitamins = {
-                                            vitaminA: parseFloat(((parseFloat(customData.vitaminA) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            vitaminB1: parseFloat(((parseFloat(customData.vitaminB1) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            vitaminB2: parseFloat(((parseFloat(customData.vitaminB2) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            vitaminB6: parseFloat(((parseFloat(customData.vitaminB6) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            vitaminB12: parseFloat(((parseFloat(customData.vitaminB12) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            vitaminC: parseFloat(((parseFloat(customData.vitaminC) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            vitaminD: parseFloat(((parseFloat(customData.vitaminD) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            vitaminE: parseFloat(((parseFloat(customData.vitaminE) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            vitaminK: parseFloat(((parseFloat(customData.vitaminK) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            niacin: parseFloat(((parseFloat(customData.niacin) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            pantothenicAcid: parseFloat(((parseFloat(customData.pantothenicAcid) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            biotin: parseFloat(((parseFloat(customData.biotin) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            folicAcid: parseFloat(((parseFloat(customData.folicAcid) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1))
-                                        };
+                                            // Firestoreに保存した100g基準の値を使用してビタミン・ミネラルをスケーリング
+                                            // 個数単位の場合は入力値をそのまま使用、重量単位の場合は100g基準に換算
+                                            // キー名は既存アイテムと統一（vitaminA, vitaminB1, ...形式）
+                                            const savedVitamins = {
+                                                vitaminA: parseFloat(((parseFloat(customData.vitaminA) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                vitaminB1: parseFloat(((parseFloat(customData.vitaminB1) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                                vitaminB2: parseFloat(((parseFloat(customData.vitaminB2) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                                vitaminB6: parseFloat(((parseFloat(customData.vitaminB6) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                                vitaminB12: parseFloat(((parseFloat(customData.vitaminB12) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                vitaminC: parseFloat(((parseFloat(customData.vitaminC) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                vitaminD: parseFloat(((parseFloat(customData.vitaminD) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                vitaminE: parseFloat(((parseFloat(customData.vitaminE) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                vitaminK: parseFloat(((parseFloat(customData.vitaminK) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                niacin: parseFloat(((parseFloat(customData.niacin) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                pantothenicAcid: parseFloat(((parseFloat(customData.pantothenicAcid) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                                biotin: parseFloat(((parseFloat(customData.biotin) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                folicAcid: parseFloat(((parseFloat(customData.folicAcid) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1))
+                                            };
 
-                                        const savedMinerals = {
-                                            sodium: parseFloat(((parseFloat(customData.sodium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            potassium: parseFloat(((parseFloat(customData.potassium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            calcium: parseFloat(((parseFloat(customData.calcium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            magnesium: parseFloat(((parseFloat(customData.magnesium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            phosphorus: parseFloat(((parseFloat(customData.phosphorus) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            iron: parseFloat(((parseFloat(customData.iron) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            zinc: parseFloat(((parseFloat(customData.zinc) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            copper: parseFloat(((parseFloat(customData.copper) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            manganese: parseFloat(((parseFloat(customData.manganese) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
-                                            iodine: parseFloat(((parseFloat(customData.iodine) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            selenium: parseFloat(((parseFloat(customData.selenium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            chromium: parseFloat(((parseFloat(customData.chromium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            molybdenum: parseFloat(((parseFloat(customData.molybdenum) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1))
-                                        };
+                                            const savedMinerals = {
+                                                sodium: parseFloat(((parseFloat(customData.sodium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                potassium: parseFloat(((parseFloat(customData.potassium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                calcium: parseFloat(((parseFloat(customData.calcium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                magnesium: parseFloat(((parseFloat(customData.magnesium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                phosphorus: parseFloat(((parseFloat(customData.phosphorus) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                iron: parseFloat(((parseFloat(customData.iron) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                zinc: parseFloat(((parseFloat(customData.zinc) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                copper: parseFloat(((parseFloat(customData.copper) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                                manganese: parseFloat(((parseFloat(customData.manganese) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(2)),
+                                                iodine: parseFloat(((parseFloat(customData.iodine) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                selenium: parseFloat(((parseFloat(customData.selenium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                chromium: parseFloat(((parseFloat(customData.chromium) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                molybdenum: parseFloat(((parseFloat(customData.molybdenum) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1))
+                                            };
 
-                                        // 実際のamountに応じてスケーリング
-                                        const scaledVitamins = {};
-                                        const scaledMinerals = {};
+                                            // 実際のamountに応じてスケーリング
+                                            const scaledVitamins = {};
+                                            const scaledMinerals = {};
 
-                                        Object.keys(savedVitamins).forEach(key => {
-                                            scaledVitamins[key] = parseFloat((savedVitamins[key] * vitaminMineralRatio).toFixed(2));
-                                        });
+                                            Object.keys(savedVitamins).forEach(key => {
+                                                scaledVitamins[key] = parseFloat((savedVitamins[key] * vitaminMineralRatio).toFixed(2));
+                                            });
 
-                                        Object.keys(savedMinerals).forEach(key => {
-                                            scaledMinerals[key] = parseFloat((savedMinerals[key] * vitaminMineralRatio).toFixed(2));
-                                        });
+                                            Object.keys(savedMinerals).forEach(key => {
+                                                scaledMinerals[key] = parseFloat((savedMinerals[key] * vitaminMineralRatio).toFixed(2));
+                                            });
 
-                                        const newItem = {
-                                            id: Date.now(),
-                                            name: customData.name,
-                                            amount: defaultAmount,
-                                            unit: customData.servingUnit,
-                                            // 栄養値は100g基準（既存アイテムと同じ）
-                                            calories: parseFloat(((parseFloat(customData.calories) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            protein: parseFloat(((parseFloat(customData.protein) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            fat: parseFloat(((parseFloat(customData.fat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
-                                            carbs: parseFloat(((parseFloat(customData.carbs) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                            const newItem = {
+                                                id: Date.now(),
+                                                name: customData.name,
+                                                amount: defaultAmount,
+                                                unit: customData.servingUnit,
+                                                // 栄養値は100g基準（既存アイテムと同じ）
+                                                calories: parseFloat(((parseFloat(customData.calories) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                protein: parseFloat(((parseFloat(customData.protein) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                fat: parseFloat(((parseFloat(customData.fat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
+                                                carbs: parseFloat(((parseFloat(customData.carbs) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize)).toFixed(1)),
 
-                                            // 品質指標（換算不要）
-                                            diaas: parseFloat(customData.diaas) || null,
-                                            gi: parseFloat(customData.gi) || null,
+                                                // 品質指標（換算不要）
+                                                diaas: parseFloat(customData.diaas) || null,
+                                                gi: parseFloat(customData.gi) || null,
 
-                                            // 脂肪酸（実量にスケーリング - ビタミン・ミネラルと同じ）
-                                            saturatedFat: parseFloat(((parseFloat(customData.saturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
-                                            monounsaturatedFat: parseFloat(((parseFloat(customData.monounsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
-                                            polyunsaturatedFat: parseFloat(((parseFloat(customData.polyunsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
-                                            mediumChainFat: parseFloat(((parseFloat(customData.mediumChainFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
+                                                // 脂肪酸（実量にスケーリング - ビタミン・ミネラルと同じ）
+                                                saturatedFat: parseFloat(((parseFloat(customData.saturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
+                                                monounsaturatedFat: parseFloat(((parseFloat(customData.monounsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
+                                                polyunsaturatedFat: parseFloat(((parseFloat(customData.polyunsaturatedFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
+                                                mediumChainFat: parseFloat(((parseFloat(customData.mediumChainFat) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(2)),
 
-                                            // 糖質・食物繊維（実量にスケーリング - ビタミン・ミネラルと同じ）
-                                            sugar: parseFloat(((parseFloat(customData.sugar) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
-                                            fiber: parseFloat(((parseFloat(customData.fiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
-                                            solubleFiber: parseFloat(((parseFloat(customData.solubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
-                                            insolubleFiber: parseFloat(((parseFloat(customData.insolubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
+                                                // 糖質・食物繊維（実量にスケーリング - ビタミン・ミネラルと同じ）
+                                                sugar: parseFloat(((parseFloat(customData.sugar) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
+                                                fiber: parseFloat(((parseFloat(customData.fiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
+                                                solubleFiber: parseFloat(((parseFloat(customData.solubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
+                                                insolubleFiber: parseFloat(((parseFloat(customData.insolubleFiber) || 0) * (isCountUnitItem ? 1 : 100 / userInputSize) * vitaminMineralRatio).toFixed(1)),
 
-                                            category: customData.category,
-                                            itemType: customData.itemType,
-                                            servingSize: isCountUnitItem ? userInputSize : 100,  // 個数単位は実重量、重量単位は100
-                                            servingUnit: customData.servingUnit,
-                                            vitamins: scaledVitamins,  // ← SCALED to actual amount
-                                            minerals: scaledMinerals,  // ← SCALED to actual amount
-                                            // その他栄養素は絶対量（換算不要）- ユーザー入力値をそのまま使用
-                                            otherNutrients: customData.otherNutrients || [],
-                                            isCustom: true
-                                        };
+                                                category: customData.category,
+                                                itemType: customData.itemType,
+                                                servingSize: isCountUnitItem ? userInputSize : 100,  // 個数単位は実重量、重量単位は100
+                                                servingUnit: customData.servingUnit,
+                                                vitamins: scaledVitamins,  // ← SCALED to actual amount
+                                                minerals: scaledMinerals,  // ← SCALED to actual amount
+                                                // その他栄養素は絶対量（換算不要）- ユーザー入力値をそのまま使用
+                                                otherNutrients: customData.otherNutrients || [],
+                                                isCustom: true
+                                            };
 
-                                        setAddedItems([...addedItems, newItem]);
-                                        setIsActionsExpanded(false); // アイテム追加後は格納
+                                            setAddedItems([...addedItems, newItem]);
+                                            setIsActionsExpanded(false); // アイテム追加後は格納
                                         }
 
                                         // フォームをリセット
