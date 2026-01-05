@@ -20,6 +20,7 @@
     "dotenv": "^16.6.1",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^5.0.0",
+    "googleapis": "^169.0.0",
     "nodemailer": "^7.0.10",
     "stripe": "^17.5.0"
   },

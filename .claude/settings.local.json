@@ -69,7 +69,8 @@
       "WebFetch(domain:www.asken.jp)",
       "Bash(git show:*)",
       "Bash(firebase firestore:rules:get:*)",
-      "Bash(npx firebase-tools:*)"
+      "Bash(npx firebase-tools:*)",
+      "Bash(npm run auto-release:*)"
     ],
     "deny": [],
     "ask": []

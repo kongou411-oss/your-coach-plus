@@ -5,6 +5,7 @@ const admin = require("firebase-admin");
 const { VertexAI } = require("@google-cloud/vertexai");
 const nodemailer = require("nodemailer");
 const { CloudTasksClient } = require("@google-cloud/tasks");
+const { google } = require("googleapis");
 
 // シークレットを定義
 const gmailUser = defineSecret("GMAIL_USER");
@@ -3386,3 +3387,163 @@ exports.initializeNewUser = onCall({
     throw new HttpsError("internal", "ユーザー初期化に失敗しました", error.message);
   }
 });
+
+// ===== updatePremiumStatusFromReceipt: Google Play / App Store 領収書検証 =====
+exports.updatePremiumStatusFromReceipt = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const userId = request.auth.uid;
+  const { receipt, platform } = request.data;
+
+  if (!receipt || !platform) {
+    throw new HttpsError("invalid-argument", "領収書情報とプラットフォーム情報が必要です");
+  }
+
+  try {
+    console.log(`[IAP] Verifying receipt for user ${userId} on ${platform}`);
+
+    // プラットフォーム別に領収書検証
+    let verificationResult;
+    if (platform === 'android') {
+      verificationResult = await verifyGooglePlayReceipt(receipt);
+    } else if (platform === 'ios') {
+      verificationResult = await verifyAppStoreReceipt(receipt);
+    } else {
+      throw new HttpsError("invalid-argument", "サポートされていないプラットフォームです");
+    }
+
+    if (!verificationResult.valid) {
+      throw new HttpsError("invalid-argument", "領収書の検証に失敗しました");
+    }
+
+    // Firestoreのユーザードキュメントを更新
+    const userRef = admin.firestore().collection("users").doc(userId);
+    const updateData = {};
+
+    // 購入タイプに応じて処理
+    if (verificationResult.type === 'subscription') {
+      // サブスクリプション: Premium会員ステータスを更新
+      const currentData = (await userRef.get()).data();
+      const currentFreeCredits = currentData?.freeCredits || 0;
+
+      updateData.subscriptionTier = 'premium';
+      updateData.subscriptionStatus = 'active';
+      updateData.subscriptionPlatform = platform;
+      updateData.subscriptionExpiryDate = verificationResult.expiryDate;
+      updateData.freeCredits = currentFreeCredits + 100; // 月次クレジット付与
+
+      console.log(`[IAP] Updated subscription for user ${userId}:`, updateData);
+    } else if (verificationResult.type === 'consumable') {
+      // 消費型アイテム: クレジット追加
+      const currentData = (await userRef.get()).data();
+      const currentPaidCredits = currentData?.paidCredits || 0;
+      updateData.paidCredits = currentPaidCredits + verificationResult.credits;
+
+      console.log(`[IAP] Added ${verificationResult.credits} credits to user ${userId}`);
+    }
+
+    await userRef.update(updateData);
+
+    return {
+      success: true,
+      verified: true,
+      type: verificationResult.type,
+      ...updateData
+    };
+  } catch (error) {
+    console.error(`[IAP] Failed to verify receipt for user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "領収書検証に失敗しました", error.message);
+  }
+});
+
+// ===== Google Play 領収書検証ヘルパー関数 =====
+async function verifyGooglePlayReceipt(receipt) {
+  try {
+    // Google Play Developer APIを使用して領収書検証
+    // ⚠️ サービスアカウントキーが必要（Google Cloud Console で設定）
+    const auth = new google.auth.GoogleAuth({
+      scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+    });
+
+    const androidPublisher = google.androidpublisher({
+      version: 'v3',
+      auth: auth,
+    });
+
+    const packageName = 'jp.yourcoach.plus'; // アプリのパッケージ名
+
+    // 購入トークンとプロダクトIDを取得
+    const { productId, purchaseToken } = receipt;
+
+    let result;
+    if (productId.includes('premium')) {
+      // サブスクリプション検証
+      result = await androidPublisher.purchases.subscriptions.get({
+        packageName: packageName,
+        subscriptionId: productId,
+        token: purchaseToken,
+      });
+
+      const expiryTimeMillis = parseInt(result.data.expiryTimeMillis);
+      const isValid = expiryTimeMillis > Date.now();
+
+      return {
+        valid: isValid,
+        type: 'subscription',
+        expiryDate: new Date(expiryTimeMillis),
+      };
+    } else {
+      // 消費型アイテム検証
+      result = await androidPublisher.purchases.products.get({
+        packageName: packageName,
+        productId: productId,
+        token: purchaseToken,
+      });
+
+      const purchaseState = result.data.purchaseState;
+      const isValid = purchaseState === 0; // 0 = purchased
+
+      // クレジット数を商品IDから判定
+      let credits = 0;
+      if (productId.includes('credits_50')) credits = 50;
+      else if (productId.includes('credits_150')) credits = 150;
+      else if (productId.includes('credits_300')) credits = 300;
+
+      return {
+        valid: isValid,
+        type: 'consumable',
+        credits: credits,
+      };
+    }
+  } catch (error) {
+    console.error('[IAP] Google Play verification error:', error);
+    throw error;
+  }
+}
+
+// ===== App Store 領収書検証ヘルパー関数 =====
+async function verifyAppStoreReceipt(receipt) {
+  try {
+    // App Store Server API を使用して領収書検証
+    // ⚠️ 実装が必要（今回はGoogle Play優先のため簡易実装）
+    console.warn('[IAP] App Store verification not fully implemented yet');
+
+    // 仮実装: 常に有効として返す（本番では必ず実装すること）
+    return {
+      valid: true,
+      type: 'subscription',
+      expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30日後
+    };
+  } catch (error) {
+    console.error('[IAP] App Store verification error:', error);
+    throw error;
+  }
+}

@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { SUBSCRIPTION_PLAN } from '../config';
+import { Capacitor } from '@capacitor/core';
+import { SUBSCRIPTION_PLAN, GOOGLE_PLAY_BILLING } from '../config';
 
 // ===== Subscription View Component =====
 const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium' }) => {
     const [loading, setLoading] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(initialTab); // 'premium' or 'credit_pack'
     const [selectedCreditPack, setSelectedCreditPack] = useState(null);
+    const [storeReady, setStoreReady] = useState(false);
+
+    // プラットフォーム判定
+    const isNative = Capacitor.isNativePlatform();
+    const platform = Capacitor.getPlatform(); // 'android', 'ios', 'web'
 
     // クレジットパックオプション（config.jsから取得）
     const creditPacks = SUBSCRIPTION_PLAN.aiCredits.purchaseOptions.map(option => ({
@@ -14,12 +20,124 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
         badge: option.credits === 150 ? '人気' : option.credits === 300 ? 'お得' : undefined
     }));
 
+    // Google Play Billing / App Store初期化
+    useEffect(() => {
+        if (!isNative || !window.CdvPurchase) {
+            setStoreReady(true); // Web版はStripeを使用
+            return;
+        }
+
+        const initializeStore = async () => {
+            try {
+                const { store, ProductType, Platform } = window.CdvPurchase;
+
+                // プラットフォーム判定
+                const storePlatform = platform === 'android' ? Platform.GOOGLE_PLAY : Platform.APPLE_APPSTORE;
+
+                // 商品登録
+                const products = [
+                    {
+                        id: GOOGLE_PLAY_BILLING.subscriptions.premium,
+                        type: ProductType.PAID_SUBSCRIPTION,
+                        platform: storePlatform,
+                    },
+                    {
+                        id: GOOGLE_PLAY_BILLING.products.credits_50,
+                        type: ProductType.CONSUMABLE,
+                        platform: storePlatform,
+                    },
+                    {
+                        id: GOOGLE_PLAY_BILLING.products.credits_150,
+                        type: ProductType.CONSUMABLE,
+                        platform: storePlatform,
+                    },
+                    {
+                        id: GOOGLE_PLAY_BILLING.products.credits_300,
+                        type: ProductType.CONSUMABLE,
+                        platform: storePlatform,
+                    }
+                ];
+
+                store.register(products);
+
+                // 購入承認時の処理
+                store.when().approved(async (transaction) => {
+                    console.log('[IAP] Transaction approved:', transaction);
+                    // サーバー側で領収書検証
+                    await transaction.verify();
+                });
+
+                // 検証完了時の処理
+                store.when().verified(async (receipt) => {
+                    console.log('[IAP] Receipt verified:', receipt);
+
+                    // Firebase Functions経由でPremium状態を更新
+                    try {
+                        const functions = window.firebase.app().functions('asia-northeast2');
+                        const updatePremiumStatus = functions.httpsCallable('updatePremiumStatusFromReceipt');
+                        await updatePremiumStatus({
+                            userId: userId,
+                            receipt: receipt,
+                            platform: platform
+                        });
+                        toast.success('購入が完了しました！');
+                    } catch (error) {
+                        console.error('[IAP] Error updating premium status:', error);
+                        toast.error('購入処理中にエラーが発生しました');
+                    }
+
+                    // 購入完了
+                    receipt.finish();
+                });
+
+                // エラーハンドリング
+                store.when().error((error) => {
+                    console.error('[IAP] Store error:', error);
+                    toast.error(`エラーが発生しました: ${error.message}`);
+                });
+
+                // ストア初期化
+                await store.initialize([storePlatform]);
+                setStoreReady(true);
+                console.log('[IAP] Store initialized');
+            } catch (error) {
+                console.error('[IAP] Initialization error:', error);
+                toast.error('ストアの初期化に失敗しました');
+                setStoreReady(true); // エラーでも続行
+            }
+        };
+
+        initializeStore();
+    }, [isNative, platform, userId]);
+
     const handleSubscribe = async () => {
-        if (loading) return;
+        if (loading || !storeReady) return;
         setLoading(true);
 
         try {
-            // Cloud Function経由でStripe Checkoutセッション作成
+            // ネイティブプラットフォームの場合はGoogle Play Billing / App Storeを使用
+            if (isNative && window.CdvPurchase) {
+                const product = window.CdvPurchase.store.get(GOOGLE_PLAY_BILLING.subscriptions.premium);
+
+                if (!product) {
+                    toast.error('商品情報を取得できませんでした');
+                    setLoading(false);
+                    return;
+                }
+
+                if (!product.canPurchase) {
+                    toast.error('この商品は購入できません');
+                    setLoading(false);
+                    return;
+                }
+
+                console.log('[IAP] Ordering product:', product);
+                window.CdvPurchase.store.order(product);
+                setLoading(false); // 購入フローはストアが管理するのでローディング解除
+                return;
+            }
+
+            // Web版の場合はStripeを使用（既存の処理）
             const functions = window.firebase.app().functions('asia-northeast2');
             const createCheckoutSession = functions.httpsCallable('createCheckoutSession');
 
@@ -42,11 +160,43 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
     };
 
     const handlePurchaseCredits = async () => {
-        if (loading || !selectedCreditPack) return;
+        if (loading || !selectedCreditPack || !storeReady) return;
         setLoading(true);
 
         try {
-            // Cloud Function経由でStripe Checkoutセッション作成（単発購入）
+            // ネイティブプラットフォームの場合はGoogle Play Billing / App Storeを使用
+            if (isNative && window.CdvPurchase) {
+                // クレジットパックに対応する商品IDを取得
+                let productId;
+                if (selectedCreditPack.credits === 50) {
+                    productId = GOOGLE_PLAY_BILLING.products.credits_50;
+                } else if (selectedCreditPack.credits === 150) {
+                    productId = GOOGLE_PLAY_BILLING.products.credits_150;
+                } else if (selectedCreditPack.credits === 300) {
+                    productId = GOOGLE_PLAY_BILLING.products.credits_300;
+                }
+
+                const product = window.CdvPurchase.store.get(productId);
+
+                if (!product) {
+                    toast.error('商品情報を取得できませんでした');
+                    setLoading(false);
+                    return;
+                }
+
+                if (!product.canPurchase) {
+                    toast.error('この商品は購入できません');
+                    setLoading(false);
+                    return;
+                }
+
+                console.log('[IAP] Ordering product:', product);
+                window.CdvPurchase.store.order(product);
+                setLoading(false); // 購入フローはストアが管理するのでローディング解除
+                return;
+            }
+
+            // Web版の場合はStripeを使用（既存の処理）
             const functions = window.firebase.app().functions('asia-northeast2');
             const createCheckoutSession = functions.httpsCallable('createCheckoutSession');
 
