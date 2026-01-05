@@ -70,7 +70,8 @@
       "Bash(git show:*)",
       "Bash(firebase firestore:rules:get:*)",
       "Bash(npx firebase-tools:*)",
-      "Bash(npm run auto-release:*)"
+      "Bash(npm run auto-release:*)",
+      "WebFetch(domain:playacademy.exceedlms.com)"
     ],
     "deny": [],
     "ask": []
