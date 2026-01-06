@@ -1,0 +1,7 @@
+{
+  "android": {
+    "icon": {
+      "sources": ["public/icons/icon-512.png"]
+    }
+  }
+}

@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/kongou411-oss/your-coach-plus#readme",
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@vitejs/plugin-react": "^5.1.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
