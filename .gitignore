@@ -33,9 +33,6 @@ components_backup_*
 temp/
 tmp/
 
-# Config with sensitive data
-config.js
-
 # Cloud Functions
 functions/node_modules/
 functions/.env

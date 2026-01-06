@@ -22,6 +22,8 @@ PODS:
     - Capacitor
   - CapgoCapacitorNativeBiometric (7.1.13):
     - Capacitor
+  - CordovaPlugins (7.4.4):
+    - CapacitorCordova
   - Firebase/Core (11.15.0):
     - Firebase/CoreOnly
     - FirebaseAnalytics (~> 11.15.0)
@@ -152,6 +154,7 @@ DEPENDENCIES:
   - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
   - "CapgoCapacitorNativeBiometric (from `../../node_modules/@capgo/capacitor-native-biometric`)"
+  - CordovaPlugins (from `../capacitor-cordova-ios-plugins`)
   - Firebase/Core
   - Firebase/Messaging
   - "SouthdevsCapacitorGoogleAuth (from `../../node_modules/@southdevs/capacitor-google-auth`)"
@@ -194,6 +197,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/status-bar"
   CapgoCapacitorNativeBiometric:
     :path: "../../node_modules/@capgo/capacitor-native-biometric"
+  CordovaPlugins:
+    :path: "../capacitor-cordova-ios-plugins"
   SouthdevsCapacitorGoogleAuth:
     :path: "../../node_modules/@southdevs/capacitor-google-auth"
 
@@ -208,6 +213,7 @@ SPEC CHECKSUMS:
   CapacitorSplashScreen: e388b8e0ed0e982a9d3a40417f478e7a018a8763
   CapacitorStatusBar: 0659ddc7b1713764a05831463d215b177a15d054
   CapgoCapacitorNativeBiometric: ede2c497c810fcad523b4e3d1895f989d33fe72b
+  CordovaPlugins: 46e6f7272fc84c91b63b894a9ad321e82c463564
   Firebase: d99ac19b909cd2c548339c2241ecd0d1599ab02e
   FirebaseAnalytics: 6433dfd311ba78084fc93bdfc145e8cb75740eae
   FirebaseCore: efb3893e5b94f32b86e331e3bd6dadf18b66568e
@@ -225,6 +231,6 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   SouthdevsCapacitorGoogleAuth: 6488c21faed47c2cf72404bfbfc0fe0e9af766bc
 
-PODFILE CHECKSUM: e874eb31ff611e25a127d2f5e799c5c31e02ae08
+PODFILE CHECKSUM: b32117e73f1767a998e807c87fee6dbac32b4075
 
 COCOAPODS: 1.16.2

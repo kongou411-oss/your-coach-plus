@@ -19,6 +19,7 @@ def capacitor_pods
   pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
   pod 'CapgoCapacitorNativeBiometric', :path => '../../node_modules/@capgo/capacitor-native-biometric'
   pod 'SouthdevsCapacitorGoogleAuth', :path => '../../node_modules/@southdevs/capacitor-google-auth'
+  pod 'CordovaPlugins', :path => '../capacitor-cordova-ios-plugins'
 end
 
 target 'App' do
