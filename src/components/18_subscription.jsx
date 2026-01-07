@@ -224,8 +224,8 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
             const result = await createCheckoutSession({
                 priceId: SUBSCRIPTION_PLAN.stripePriceId,
                 mode: 'subscription',
-                successUrl: `${window.location.origin}/`,
-                cancelUrl: `${window.location.origin}/`,
+                successUrl: `${window.location.origin}/index.html`,
+                cancelUrl: `${window.location.origin}/index.html`,
             });
 
             if (result.data.url) {
@@ -290,8 +290,8 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
             const result = await createCheckoutSession({
                 priceId: selectedCreditPack.stripePriceId,
                 mode: 'payment',
-                successUrl: `${window.location.origin}/`,
-                cancelUrl: `${window.location.origin}/`,
+                successUrl: `${window.location.origin}/index.html`,
+                cancelUrl: `${window.location.origin}/index.html`,
             });
 
             if (result.data.url) {
