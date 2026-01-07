@@ -290,8 +290,8 @@ const SUBSCRIPTION_PLAN = {
     price: 940,
     currency: 'JPY',
     interval: 'month',
-    stripeProductId: 'prod_TUEBO88DQChZDE', // Your Coach+ Premium
-    stripePriceId: 'price_1SXFiq0l4euKovIjthTrEqxV', // ¥940/月
+    stripeProductId: 'prod_TkTuZ88NGF7Lor', // Your Coach+ Premium
+    stripePriceId: 'price_1Smywg0IbeDUi2GQFM9cPPUj', // ¥940/月
     features: [
         '全機能利用可能',
         'AI分析 100回/月',
@@ -308,19 +308,19 @@ const SUBSCRIPTION_PLAN = {
                 credits: 50,
                 price: 400,
                 name: '50回パック',
-                stripePriceId: 'price_1SXFkC0l4euKovIjd4CcbefT' // ¥400
+                stripePriceId: 'price_1SmyyM0IbeDUi2GQC8eJUR5w' // ¥400
             },
             {
                 credits: 150,
                 price: 1000,
                 name: '150回パック',
-                stripePriceId: 'price_1SXFkZ0l4euKovIj3O11GGYM' // ¥1000
+                stripePriceId: 'price_1Smyyq0IbeDUi2GQ3fRM5RcM' // ¥1000
             },
             {
                 credits: 300,
                 price: 1800,
                 name: '300回パック',
-                stripePriceId: 'price_1SXFlH0l4euKovIjwvd2LuDp' // ¥1800
+                stripePriceId: 'price_1SmyzJ0IbeDUi2GQZ0Zz3EbD' // ¥1800
             }
         ]
     },
