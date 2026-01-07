@@ -1162,10 +1162,10 @@ async function handleCheckoutSessionCompleted(session) {
     const priceId = session.metadata.priceId;
     let credits = 0;
 
-    // Price IDからクレジット数を判定
-    if (priceId === 'price_1SXFkC0l4euKovIjd4CcbefT') credits = 50;
-    else if (priceId === 'price_1SXFkZ0l4euKovIj3O11GGYM') credits = 150;
-    else if (priceId === 'price_1SXFlH0l4euKovIjwvd2LuDp') credits = 300;
+    // Price IDからクレジット数を判定（本番モード）
+    if (priceId === 'price_1SmyyM0IbeDUi2GQC8eJUR5w') credits = 50;
+    else if (priceId === 'price_1Smyyq0IbeDUi2GQ3fRM5RcM') credits = 150;
+    else if (priceId === 'price_1SmyzJ0IbeDUi2GQZ0Zz3EbD') credits = 300;
 
     if (credits > 0) {
       const userRef = admin.firestore().collection('users').doc(userId);

@@ -96,7 +96,9 @@
       "Bash(timeout /t 3)",
       "Bash(./gradlew dependencies:*)",
       "WebFetch(domain:www.iaptic.com)",
-      "WebFetch(domain:purchase.cordova.fovea.cc)"
+      "WebFetch(domain:purchase.cordova.fovea.cc)",
+      "Bash(npm run lint)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
