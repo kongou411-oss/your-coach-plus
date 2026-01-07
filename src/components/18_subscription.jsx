@@ -91,38 +91,52 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                 addDebugLog('✅ 商品登録完了');
                 console.log('[IAP] Products registered successfully');
 
-                // 購入承認時の処理
-                store.when().approved(async (transaction) => {
-                    console.log('[IAP] Transaction approved:', transaction);
-                    // サーバー側で領収書検証
-                    await transaction.verify();
-                });
+                // 購入フローのイベントハンドラー（チェーン形式）
+                store.when()
+                    .approved(transaction => {
+                        addDebugLog('✅ 購入承認', { products: transaction.products.map(p => p.id) });
+                        console.log('[IAP] Transaction approved:', transaction);
+                        transaction.verify();
+                    })
+                    .verified(async (receipt) => {
+                        addDebugLog('✅ 検証完了', { products: receipt.products.map(p => p.id) });
+                        console.log('[IAP] Receipt verified:', receipt);
 
-                // 検証完了時の処理
-                store.when().verified(async (receipt) => {
-                    console.log('[IAP] Receipt verified:', receipt);
+                        // Firebase Functions経由でPremium状態を更新
+                        try {
+                            const functions = window.firebase.app().functions('asia-northeast2');
+                            const updatePremiumStatus = functions.httpsCallable('updatePremiumStatusFromReceipt');
+                            await updatePremiumStatus({
+                                userId: userId,
+                                receipt: receipt,
+                                platform: platform
+                            });
+                            addDebugLog('✅ Premium状態更新完了');
+                            toast.success('購入が完了しました！');
+                        } catch (error) {
+                            addDebugLog('❌ Premium状態更新エラー', { message: error.message });
+                            console.error('[IAP] Error updating premium status:', error);
+                            toast.error('購入処理中にエラーが発生しました');
+                        }
 
-                    // Firebase Functions経由でPremium状態を更新
-                    try {
-                        const functions = window.firebase.app().functions('asia-northeast2');
-                        const updatePremiumStatus = functions.httpsCallable('updatePremiumStatusFromReceipt');
-                        await updatePremiumStatus({
-                            userId: userId,
-                            receipt: receipt,
-                            platform: platform
+                        // 購入完了
+                        receipt.finish();
+                    })
+                    .unverified(receipt => {
+                        addDebugLog('❌ 検証失敗', {
+                            code: receipt.payload?.code,
+                            message: receipt.payload?.message
                         });
-                        toast.success('購入が完了しました！');
-                    } catch (error) {
-                        console.error('[IAP] Error updating premium status:', error);
-                        toast.error('購入処理中にエラーが発生しました');
-                    }
+                        console.error('[IAP] Receipt verification failed:', receipt);
+                        toast.error('購入の検証に失敗しました。サポートにお問い合わせください。');
+                    })
+                    .finished(transaction => {
+                        addDebugLog('✅ 取引完了', { products: transaction.products.map(p => p.id) });
+                        console.log('[IAP] Transaction finished:', transaction);
+                    });
 
-                    // 購入完了
-                    receipt.finish();
-                });
-
-                // エラーハンドリング
-                store.when().error((error) => {
+                // グローバルエラーハンドリング
+                store.error((error) => {
                     addDebugLog('❌ ストアエラー', { message: error.message, code: error.code });
                     console.error('[IAP] Store error:', error);
                     toast.error(`エラーが発生しました: ${error.message}`);

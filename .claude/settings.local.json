@@ -94,7 +94,9 @@
       "Bash(git pull:*)",
       "Bash(npx @capacitor/assets:*)",
       "Bash(timeout /t 3)",
-      "Bash(./gradlew dependencies:*)"
+      "Bash(./gradlew dependencies:*)",
+      "WebFetch(domain:www.iaptic.com)",
+      "WebFetch(domain:purchase.cordova.fovea.cc)"
     ],
     "deny": [],
     "ask": []

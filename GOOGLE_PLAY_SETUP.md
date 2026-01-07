@@ -36,7 +36,7 @@
 1. 左メニュー → 収益化 → 定期購入
 2. 「定期購入を作成」をクリック
 3. 以下を入力：
-   - **商品ID**: `premium_subscription`
+   - **商品ID**: `yourcoach_premium_monthly`
    - **名前**: `Your Coach+ Premium`
    - **説明**: `月額940円ですべての機能が使い放題`
    - **期間**: 1ヶ月
@@ -50,7 +50,7 @@
 2. 「アプリ内商品を作成」を3回繰り返し、以下を登録：
 
 **商品1: 50回パック**
-- **商品ID**: `credits_50`
+- **商品ID**: `yourcoach_credits_50`
 - **名前**: `50回パック`
 - **説明**: `AI分析50回分のクレジット`
 - **商品タイプ**: 消費型
@@ -58,7 +58,7 @@
 - **有効化**
 
 **商品2: 150回パック**
-- **商品ID**: `credits_150`
+- **商品ID**: `yourcoach_credits_150`
 - **名前**: `150回パック`
 - **説明**: `AI分析150回分のクレジット`
 - **商品タイプ**: 消費型
@@ -66,7 +66,7 @@
 - **有効化**
 
 **商品3: 300回パック**
-- **商品ID**: `credits_300`
+- **商品ID**: `yourcoach_credits_300`
 - **名前**: `300回パック`
 - **説明**: `AI分析300回分のクレジット`
 - **商品タイプ**: 消費型
@@ -138,9 +138,9 @@
 
 | 種類 | 商品ID | 名前 | 価格 |
 |------|--------|------|------|
-| 定期購入 | `premium_subscription` | Your Coach+ Premium | ¥940/月 |
-| 消費型 | `credits_50` | 50回パック | ¥490 |
-| 消費型 | `credits_150` | 150回パック | ¥1,200 |
-| 消費型 | `credits_300` | 300回パック | ¥2,200 |
+| 定期購入 | `yourcoach_premium_monthly` | Your Coach+ Premium | ¥940/月 |
+| 消費型 | `yourcoach_credits_50` | 50回パック | ¥490 |
+| 消費型 | `yourcoach_credits_150` | 150回パック | ¥1,200 |
+| 消費型 | `yourcoach_credits_300` | 300回パック | ¥2,200 |
 
-これらの商品IDは `src/config.js` の `GOOGLE_PLAY_BILLING` で定義されています。
+⚠️ **重要**: これらの商品IDは `src/config.js` の `GOOGLE_PLAY_BILLING` で定義されています。Google Play Consoleで登録する商品IDと必ず一致させてください。
