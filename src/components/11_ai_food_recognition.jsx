@@ -2240,10 +2240,58 @@ JSON形式のみ出力、説明文不要`;
                 ...food,
                 amount: newAmount,  // g単位のまま
                 unit: 'g',  // 単位を明示
+                // PFC（基本栄養素）
                 calories: Math.round(base.calories * ratio),
                 protein: parseFloat((base.protein * ratio).toFixed(1)),
                 fat: parseFloat((base.fat * ratio).toFixed(1)),
                 carbs: parseFloat((base.carbs * ratio).toFixed(1)),
+
+                // 品質指標（量に関係なく100gあたりの固定値）
+                diaas: base.diaas ?? food.diaas ?? null,
+                gi: base.gi ?? food.gi ?? null,
+
+                // 糖質・食物繊維
+                sugar: base.sugar != null ? parseFloat((base.sugar * ratio).toFixed(1)) : food.sugar,
+                fiber: base.fiber != null ? parseFloat((base.fiber * ratio).toFixed(1)) : food.fiber,
+                solubleFiber: base.solubleFiber != null ? parseFloat((base.solubleFiber * ratio).toFixed(1)) : food.solubleFiber,
+                insolubleFiber: base.insolubleFiber != null ? parseFloat((base.insolubleFiber * ratio).toFixed(1)) : food.insolubleFiber,
+
+                // 脂肪酸
+                saturatedFat: base.saturatedFat != null ? parseFloat((base.saturatedFat * ratio).toFixed(2)) : food.saturatedFat,
+                monounsaturatedFat: base.monounsaturatedFat != null ? parseFloat((base.monounsaturatedFat * ratio).toFixed(2)) : food.monounsaturatedFat,
+                polyunsaturatedFat: base.polyunsaturatedFat != null ? parseFloat((base.polyunsaturatedFat * ratio).toFixed(2)) : food.polyunsaturatedFat,
+                mediumChainFat: base.mediumChainFat != null ? parseFloat((base.mediumChainFat * ratio).toFixed(2)) : food.mediumChainFat,
+
+                // ビタミン
+                vitaminA: base.vitaminA != null ? parseFloat((base.vitaminA * ratio).toFixed(1)) : food.vitaminA,
+                vitaminB1: base.vitaminB1 != null ? parseFloat((base.vitaminB1 * ratio).toFixed(2)) : food.vitaminB1,
+                vitaminB2: base.vitaminB2 != null ? parseFloat((base.vitaminB2 * ratio).toFixed(2)) : food.vitaminB2,
+                vitaminB6: base.vitaminB6 != null ? parseFloat((base.vitaminB6 * ratio).toFixed(2)) : food.vitaminB6,
+                vitaminB12: base.vitaminB12 != null ? parseFloat((base.vitaminB12 * ratio).toFixed(1)) : food.vitaminB12,
+                vitaminC: base.vitaminC != null ? parseFloat((base.vitaminC * ratio).toFixed(1)) : food.vitaminC,
+                vitaminD: base.vitaminD != null ? parseFloat((base.vitaminD * ratio).toFixed(1)) : food.vitaminD,
+                vitaminE: base.vitaminE != null ? parseFloat((base.vitaminE * ratio).toFixed(1)) : food.vitaminE,
+                vitaminK: base.vitaminK != null ? parseFloat((base.vitaminK * ratio).toFixed(1)) : food.vitaminK,
+                niacin: base.niacin != null ? parseFloat((base.niacin * ratio).toFixed(1)) : food.niacin,
+                pantothenicAcid: base.pantothenicAcid != null ? parseFloat((base.pantothenicAcid * ratio).toFixed(2)) : food.pantothenicAcid,
+                biotin: base.biotin != null ? parseFloat((base.biotin * ratio).toFixed(1)) : food.biotin,
+                folicAcid: base.folicAcid != null ? parseFloat((base.folicAcid * ratio).toFixed(1)) : food.folicAcid,
+
+                // ミネラル
+                sodium: base.sodium != null ? parseFloat((base.sodium * ratio).toFixed(1)) : food.sodium,
+                potassium: base.potassium != null ? parseFloat((base.potassium * ratio).toFixed(1)) : food.potassium,
+                calcium: base.calcium != null ? parseFloat((base.calcium * ratio).toFixed(1)) : food.calcium,
+                magnesium: base.magnesium != null ? parseFloat((base.magnesium * ratio).toFixed(1)) : food.magnesium,
+                phosphorus: base.phosphorus != null ? parseFloat((base.phosphorus * ratio).toFixed(1)) : food.phosphorus,
+                iron: base.iron != null ? parseFloat((base.iron * ratio).toFixed(2)) : food.iron,
+                zinc: base.zinc != null ? parseFloat((base.zinc * ratio).toFixed(2)) : food.zinc,
+                copper: base.copper != null ? parseFloat((base.copper * ratio).toFixed(2)) : food.copper,
+                manganese: base.manganese != null ? parseFloat((base.manganese * ratio).toFixed(2)) : food.manganese,
+                iodine: base.iodine != null ? parseFloat((base.iodine * ratio).toFixed(1)) : food.iodine,
+                selenium: base.selenium != null ? parseFloat((base.selenium * ratio).toFixed(1)) : food.selenium,
+                chromium: base.chromium != null ? parseFloat((base.chromium * ratio).toFixed(1)) : food.chromium,
+                molybdenum: base.molybdenum != null ? parseFloat((base.molybdenum * ratio).toFixed(1)) : food.molybdenum,
+
                 _base: base  // 基準値を保持
             };
         }));
