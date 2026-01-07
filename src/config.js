@@ -275,12 +275,12 @@ const STRIPE_CONFIG = {
 // Google Play Billing設定（Android アプリ内課金用）
 const GOOGLE_PLAY_BILLING = {
     subscriptions: {
-        premium: 'premium_subscription', // Premium定期購入のプロダクトID
+        premium: 'yourcoach_premium_monthly', // Premium定期購入のプロダクトID
     },
     products: {
-        credits_50: 'credits_50', // 50回パックのプロダクトID
-        credits_150: 'credits_150', // 150回パックのプロダクトID
-        credits_300: 'credits_300', // 300回パックのプロダクトID
+        credits_50: 'yourcoach_credits_50', // 50回パックのプロダクトID
+        credits_150: 'yourcoach_credits_150', // 150回パックのプロダクトID
+        credits_300: 'yourcoach_credits_300', // 300回パックのプロダクトID
     }
 };
 

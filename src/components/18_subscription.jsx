@@ -22,17 +22,28 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
 
     // Google Play Billing / App Store初期化
     useEffect(() => {
-        if (!isNative || !window.CdvPurchase) {
+        if (!isNative) {
             setStoreReady(true); // Web版はStripeを使用
             return;
         }
 
         const initializeStore = async () => {
+            // プラグインがロードされるまで待機
+            if (!window.CdvPurchase) {
+                console.error('[IAP] CdvPurchase is not available. Plugin may not be installed or loaded.');
+                toast.error('決済プラグインが利用できません');
+                setStoreReady(true); // エラーでも続行
+                return;
+            }
+
             try {
+                console.log('[IAP] Starting store initialization...');
                 const { store, ProductType, Platform } = window.CdvPurchase;
+                console.log('[IAP] CdvPurchase loaded:', { store, ProductType, Platform });
 
                 // プラットフォーム判定
                 const storePlatform = platform === 'android' ? Platform.GOOGLE_PLAY : Platform.APPLE_APPSTORE;
+                console.log('[IAP] Platform:', platform, 'Store platform:', storePlatform);
 
                 // 商品登録
                 const products = [
@@ -58,7 +69,9 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                     }
                 ];
 
+                console.log('[IAP] Registering products:', products);
                 store.register(products);
+                console.log('[IAP] Products registered successfully');
 
                 // 購入承認時の処理
                 store.when().approved(async (transaction) => {
@@ -97,12 +110,23 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                 });
 
                 // ストア初期化
+                console.log('[IAP] Calling store.initialize with platform:', storePlatform);
                 await store.initialize([storePlatform]);
+                console.log('[IAP] Store initialized successfully');
+
+                // 商品情報を取得して確認
+                const registeredProducts = store.products;
+                console.log('[IAP] Registered products after init:', registeredProducts);
+
                 setStoreReady(true);
-                console.log('[IAP] Store initialized');
             } catch (error) {
                 console.error('[IAP] Initialization error:', error);
-                toast.error('ストアの初期化に失敗しました');
+                console.error('[IAP] Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+                toast.error(`ストアの初期化に失敗しました: ${error.message}`);
                 setStoreReady(true); // エラーでも続行
             }
         };
@@ -117,15 +141,23 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
         try {
             // ネイティブプラットフォームの場合はGoogle Play Billing / App Storeを使用
             if (isNative && window.CdvPurchase) {
-                const product = window.CdvPurchase.store.get(GOOGLE_PLAY_BILLING.subscriptions.premium);
+                const productId = GOOGLE_PLAY_BILLING.subscriptions.premium;
+                console.log('[IAP] Attempting to get product:', productId);
+                console.log('[IAP] All products:', window.CdvPurchase.store.products);
+
+                const product = window.CdvPurchase.store.get(productId);
 
                 if (!product) {
+                    console.error('[IAP] Product not found:', productId);
                     toast.error('商品情報を取得できませんでした');
                     setLoading(false);
                     return;
                 }
 
+                console.log('[IAP] Product found:', product);
+
                 if (!product.canPurchase) {
+                    console.error('[IAP] Product cannot be purchased:', product);
                     toast.error('この商品は購入できません');
                     setLoading(false);
                     return;
@@ -176,15 +208,22 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                     productId = GOOGLE_PLAY_BILLING.products.credits_300;
                 }
 
+                console.log('[IAP] Attempting to get credit pack:', productId);
+                console.log('[IAP] All products:', window.CdvPurchase.store.products);
+
                 const product = window.CdvPurchase.store.get(productId);
 
                 if (!product) {
+                    console.error('[IAP] Product not found:', productId);
                     toast.error('商品情報を取得できませんでした');
                     setLoading(false);
                     return;
                 }
 
+                console.log('[IAP] Product found:', product);
+
                 if (!product.canPurchase) {
+                    console.error('[IAP] Product cannot be purchased:', product);
                     toast.error('この商品は購入できません');
                     setLoading(false);
                     return;
