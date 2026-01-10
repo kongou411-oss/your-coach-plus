@@ -11,6 +11,7 @@ install! 'cocoapods', :disable_input_output_paths => true
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCommunityAppleSignIn', :path => '../../node_modules/@capacitor-community/apple-sign-in'
   pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
   pod 'CapacitorBrowser', :path => '../../node_modules/@capacitor/browser'
   pod 'CapacitorCamera', :path => '../../node_modules/@capacitor/camera'
@@ -27,6 +28,9 @@ target 'App' do
   # Add your Pods here
   pod 'Firebase/Core'
   pod 'Firebase/Messaging'
+
+  # Privacy Manifest対応: GoogleSignIn 7.1.0以上が必要
+  pod 'GoogleSignIn', '~> 7.1'
 end
 
 post_install do |installer|

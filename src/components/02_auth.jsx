@@ -2,6 +2,7 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { isNativeApp } from '../capacitor-push';
 import { GoogleAuth } from '@southdevs/capacitor-google-auth';
+import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 import { Capacitor } from '@capacitor/core';
 
 // ===== Authentication Components =====
@@ -304,6 +305,148 @@ const LoginScreen = () => {
         } catch (error) {
             console.error('❌ Google認証エラー:', error);
             if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+                toast.error(`認証エラー: ${error.message || error}`);
+            }
+        }
+    };
+
+    // Apple Sign In用: ランダムnonce生成
+    const generateNonce = (length = 32) => {
+        const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+        let result = '';
+        const randomValues = new Uint8Array(length);
+        crypto.getRandomValues(randomValues);
+        randomValues.forEach((v) => {
+            result += charset[v % charset.length];
+        });
+        return result;
+    };
+
+    // Apple Sign In用: SHA256ハッシュ生成
+    const sha256 = async (str) => {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(str);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
+    };
+
+    // Apple Sign In: ログイン（既存ユーザー）
+    const handleAppleLogin = async (event) => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        // iOSネイティブアプリのみ対応
+        if (!isNativeApp() || Capacitor.getPlatform() !== 'ios') {
+            toast('Apple Sign InはiOSアプリ版でのみ利用可能です');
+            return;
+        }
+
+        console.log('🍎 Apple Sign In ログインを試みます...');
+
+        try {
+            // ランダムnonce生成
+            const rawNonce = generateNonce();
+            const hashedNonce = await sha256(rawNonce);
+
+            console.log('🔐 Nonce生成:', { rawNonce, hashedNonce });
+
+            const result = await SignInWithApple.authorize({
+                clientId: 'com.yourcoach.plus',
+                redirectURI: 'https://your-coach-plus.firebaseapp.com/__/auth/handler',
+                scopes: 'email name',
+                state: '12345',
+                nonce: hashedNonce,
+            });
+
+            console.log('✅ Apple認証成功:', result);
+
+            // Firebase OAuthProviderを使用
+            const provider = new firebase.auth.OAuthProvider('apple.com');
+            const credential = provider.credential({
+                idToken: result.response.identityToken,
+                rawNonce: rawNonce,
+            });
+
+            const userCredential = await auth.signInWithCredential(credential);
+            const user = userCredential.user;
+
+            console.log('✅ Firebase認証成功:', { uid: user.uid, email: user.email });
+
+            // 既存ユーザーチェック
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (!userDoc.exists) {
+                // 未登録ユーザー
+                await auth.signOut();
+                toast('Appleアカウントが未登録です。まずアカウントを作成してください。');
+                setIsSignUp(true);
+            }
+            // 既存ユーザーの場合はonAuthStateChangedで処理される
+        } catch (error) {
+            console.error('❌ Apple認証エラー:', error);
+            if (error.error !== 'popup_closed_by_user') {
+                toast.error(`認証エラー: ${error.message || error}`);
+            }
+        }
+    };
+
+    // Apple Sign In: 新規登録（規約同意必須）
+    const handleAppleSignUp = async (event) => {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        // iOSネイティブアプリのみ対応
+        if (!isNativeApp() || Capacitor.getPlatform() !== 'ios') {
+            toast('Apple Sign InはiOSアプリ版でのみ利用可能です');
+            return;
+        }
+
+        // 規約同意チェック
+        if (!agreedToTerms) {
+            toast('利用規約とプライバシーポリシーに同意してください');
+            return;
+        }
+
+        console.log('🍎 Apple Sign In 新規登録を試みます...');
+
+        try {
+            // ランダムnonce生成
+            const rawNonce = generateNonce();
+            const hashedNonce = await sha256(rawNonce);
+
+            console.log('🔐 Nonce生成:', { rawNonce, hashedNonce });
+
+            const result = await SignInWithApple.authorize({
+                clientId: 'com.yourcoach.plus',
+                redirectURI: 'https://your-coach-plus.firebaseapp.com/__/auth/handler',
+                scopes: 'email name',
+                state: '12345',
+                nonce: hashedNonce,
+            });
+
+            console.log('✅ Apple認証成功:', result);
+
+            // Firebase OAuthProviderを使用
+            const provider = new firebase.auth.OAuthProvider('apple.com');
+            const credential = provider.credential({
+                idToken: result.response.identityToken,
+                rawNonce: rawNonce,
+            });
+
+            const userCredential = await auth.signInWithCredential(credential);
+            const user = userCredential.user;
+
+            console.log('✅ Firebase認証成功（新規登録）:', { uid: user.uid, email: user.email });
+
+            // 新規ユーザーの場合はonAuthStateChangedで処理される
+        } catch (error) {
+            console.error('❌ Apple認証エラー:', error);
+            if (error.error !== 'popup_closed_by_user') {
                 toast.error(`認証エラー: ${error.message || error}`);
             }
         }
@@ -627,6 +770,27 @@ const LoginScreen = () => {
                         <Icon name="Chrome" size={20} />
                         {isSignUp ? 'Googleで登録' : 'Googleでログイン'}
                     </button>
+
+                    {/* Apple Sign In (iOSのみ) */}
+                    {(() => {
+                        const isNative = isNativeApp();
+                        const platform = Capacitor.getPlatform();
+                        console.log('🍎 Apple Sign In ボタン判定:', { isNative, platform });
+
+                        // デバッグ用: 一時的にiOSネイティブでなくても表示
+                        const shouldShow = isNative || platform === 'ios';
+
+                        return shouldShow ? (
+                            <button
+                                type="button"
+                                onClick={isSignUp ? handleAppleSignUp : handleAppleLogin}
+                                className="w-full bg-black text-white font-bold py-3 rounded-lg hover:bg-gray-900 transition flex items-center justify-center gap-2 mt-3"
+                            >
+                                <Icon name="Apple" size={20} />
+                                {isSignUp ? 'Appleで登録' : 'Appleでログイン'}
+                            </button>
+                        ) : null;
+                    })()}
                 </div>
 
                 <div className="mt-6 text-center">
@@ -744,6 +908,25 @@ const LoginScreen = () => {
                         </div>
 
                         <div className="space-y-4">
+                            {/* Apple Sign In */}
+                            {isNativeApp() && Capacitor.getPlatform() === 'ios' && (
+                                <div className="border border-gray-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Icon name="Apple" size={20} className="text-gray-600" />
+                                        <h4 className="font-semibold">Apple Sign In</h4>
+                                    </div>
+                                    <div className="text-sm text-gray-600 space-y-2">
+                                        <p className="flex items-start gap-2">
+                                            <span className="text-green-500 mt-0.5">✓</span>
+                                            <span><strong>iOSアプリで利用可能</strong></span>
+                                        </p>
+                                        <p className="ml-5">
+                                            Face ID/Touch IDで簡単・安全にログインできます。メールアドレスを非公開にすることも可能です。
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Google認証 */}
                             <div className="border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center gap-2 mb-2">
@@ -752,14 +935,11 @@ const LoginScreen = () => {
                                 </div>
                                 <div className="text-sm text-gray-600 space-y-2">
                                     <p className="flex items-start gap-2">
-                                        <span className="text-yellow-500 mt-0.5">⚠️</span>
-                                        <span>現在<strong>テストモード</strong>中です</span>
+                                        <span className="text-green-500 mt-0.5">✓</span>
+                                        <span><strong>全プラットフォームで利用可能</strong></span>
                                     </p>
                                     <p className="ml-5">
-                                        テストユーザーとして登録されたGoogleアカウントのみログインできます。
-                                    </p>
-                                    <p className="ml-5 text-xs text-gray-600">
-                                        ※ 近日中に全ユーザーがログインできるよう設定予定
+                                        お持ちのGoogleアカウントで簡単にログインできます。
                                     </p>
                                 </div>
                             </div>
@@ -784,7 +964,7 @@ const LoginScreen = () => {
                             {/* 注意事項 */}
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-xs text-blue-800">
-                                    <strong>ℹ️ 注意:</strong> Googleで登録したアカウントはGoogleログインのみ、メールアドレスで登録したアカウントはメールアドレスログインのみ可能です。
+                                    <strong>ℹ️ 注意:</strong> 各認証方法で登録したアカウントは、同じ方法でのみログインできます。{isNativeApp() && Capacitor.getPlatform() === 'ios' ? 'Apple Sign Inで登録した場合はAppleログインのみ、' : ''}Googleで登録した場合はGoogleログインのみ、メールアドレスで登録した場合はメールアドレスログインのみ可能です。
                                 </p>
                             </div>
                         </div>
