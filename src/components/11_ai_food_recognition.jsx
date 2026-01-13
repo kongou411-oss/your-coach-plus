@@ -253,6 +253,10 @@ const AIFoodRecognition = ({ onFoodsRecognized, onClose, onOpenCustomCreator, us
             // 通常のFileオブジェクトの場合
             const reader = new FileReader();
             reader.onloadend = () => {
+                if (!reader.result) {
+                    reject(new Error('画像の読み込みに失敗しました'));
+                    return;
+                }
                 // data:image/jpeg;base64, の部分を除去
                 const base64String = reader.result.split(',')[1];
                 resolve(base64String);
