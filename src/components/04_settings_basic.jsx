@@ -912,27 +912,28 @@ const BasicTab = ({
                             }
                         })()}
 
-                        {/* 友達紹介 */}
-                        <div className="border-t border-amber-200 pt-4 mt-4">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Icon name="Gift" size={18} className="text-pink-600" />
-                                <h4 className="font-bold text-gray-800">友達紹介で特典ゲット</h4>
-                            </div>
-                            <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 mb-4">
-                                <div className="space-y-2 text-sm text-gray-600">
-                                    <div className="flex items-start gap-2">
-                                        <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                                        <span><strong>友達:</strong> 50回分の分析クレジット</span>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                                        <span><strong>あなた:</strong> 50回分の分析クレジット</span>
+                        {/* 友達紹介 - iOS版では全体を非表示（App Storeガイドライン3.1.1対応） */}
+                        {!isIOSNative() && (
+                            <div className="border-t border-amber-200 pt-4 mt-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Icon name="Gift" size={18} className="text-pink-600" />
+                                    <h4 className="font-bold text-gray-800">友達紹介で特典ゲット</h4>
+                                </div>
+                                <div className="bg-pink-50 p-4 rounded-lg border border-pink-200 mb-4">
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        <div className="flex items-start gap-2">
+                                            <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                            <span><strong>友達:</strong> 50回分の分析クレジット</span>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <Icon name="Check" size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                            <span><strong>あなた:</strong> 50回分の分析クレジット</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <ReferralCodeSection userProfile={userProfile} userId={userId} />
                             </div>
-                            {/* iOS版では紹介コード機能を非表示（App Storeガイドライン3.1.1対応） */}
-                            {!isIOSNative() && <ReferralCodeSection userProfile={userProfile} userId={userId} />}
-                        </div>
+                        )}
 
                         {/* コード入力 - iOS版では非表示（App Storeガイドライン3.1.1対応） */}
                         {!isIOSNative() && (
