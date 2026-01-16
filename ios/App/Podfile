@@ -25,12 +25,14 @@ end
 
 target 'App' do
   capacitor_pods
+
   # Add your Pods here
   pod 'Firebase/Core'
   pod 'Firebase/Messaging'
 
-  # Privacy Manifest対応: GoogleSignIn 7.1.0以上が必要
-  pod 'GoogleSignIn', '~> 7.1'
+  # Privacy Manifest対応: GoogleSignIn 9.0以上が必要（privacy manifest含む最新版）
+  # プラグインのpodspecも9.0を許可するよう変更済み
+  pod 'GoogleSignIn', '~> 9.0'
 end
 
 post_install do |installer|

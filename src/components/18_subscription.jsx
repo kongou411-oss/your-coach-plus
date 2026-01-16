@@ -1,7 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { SUBSCRIPTION_PLAN, GOOGLE_PLAY_BILLING } from '../config';
+
+// 外部URLを開く関数（ネイティブアプリ対応）
+const openExternalUrl = async (url) => {
+    try {
+        // 相対パスを絶対URLに変換
+        const fullUrl = url.startsWith('http') ? url : `https://your-coach-plus.web.app${url}`;
+
+        if (Capacitor.isNativePlatform()) {
+            // ネイティブアプリではCapacitor Browserを使用
+            await Browser.open({ url: fullUrl });
+        } else {
+            // Webでは新しいタブで開く
+            window.open(fullUrl, '_blank');
+        }
+    } catch (error) {
+        console.error('Failed to open URL:', error);
+        // フォールバック
+        window.open(url.startsWith('http') ? url : `https://your-coach-plus.web.app${url}`, '_blank');
+    }
+};
 
 // ===== Subscription View Component =====
 const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium' }) => {
@@ -431,6 +452,23 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                                     <li>解約後も当月末まで利用可能です</li>
                                 </ul>
                             </div>
+
+                            {/* Terms & Privacy (Apple Required) */}
+                            <div className="flex items-center justify-center gap-4 text-xs">
+                                <button
+                                    onClick={() => openExternalUrl('/terms.html')}
+                                    className="text-blue-600 hover:underline"
+                                >
+                                    利用規約
+                                </button>
+                                <span className="text-gray-400">|</span>
+                                <button
+                                    onClick={() => openExternalUrl('/privacy.html')}
+                                    className="text-blue-600 hover:underline"
+                                >
+                                    プライバシーポリシー
+                                </button>
+                            </div>
                         </>
                     ) : (
                         <>
@@ -515,6 +553,23 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                                         月額¥940のPremium会員なら、毎月100回分のクレジットに加えて、<br/>
                                         すべてのPremium機能が使い放題です。
                                     </p>
+                                </div>
+
+                                {/* Terms & Privacy (Apple Required) */}
+                                <div className="flex items-center justify-center gap-4 text-xs">
+                                    <button
+                                        onClick={() => openExternalUrl('/terms.html')}
+                                        className="text-blue-600 hover:underline"
+                                    >
+                                        利用規約
+                                    </button>
+                                    <span className="text-gray-400">|</span>
+                                    <button
+                                        onClick={() => openExternalUrl('/privacy.html')}
+                                        className="text-blue-600 hover:underline"
+                                    >
+                                        プライバシーポリシー
+                                    </button>
                                 </div>
                             </div>
                         </>

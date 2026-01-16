@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { isNativeApp } from '../capacitor-push';
+import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@southdevs/capacitor-google-auth';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+
+// iOS版でコード機能を非表示にするためのヘルパー（App Storeガイドライン3.1.1対応）
+const isIOSNative = () => isNativeApp() && Capacitor.getPlatform() === 'ios';
 
 // ===== コード入力セクション（企業コード・紹介コード・ギフトコード統合） =====
 const CodeInputSection = ({ userId, userProfile }) => {
@@ -926,17 +930,20 @@ const BasicTab = ({
                                     </div>
                                 </div>
                             </div>
-                            <ReferralCodeSection userProfile={userProfile} userId={userId} />
+                            {/* iOS版では紹介コード機能を非表示（App Storeガイドライン3.1.1対応） */}
+                            {!isIOSNative() && <ReferralCodeSection userProfile={userProfile} userId={userId} />}
                         </div>
 
-                        {/* コード入力 */}
-                        <div className="border-t border-amber-200 pt-4 mt-4">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Icon name="Key" size={18} className="text-purple-600" />
-                                <h4 className="font-bold text-gray-800">コード入力</h4>
+                        {/* コード入力 - iOS版では非表示（App Storeガイドライン3.1.1対応） */}
+                        {!isIOSNative() && (
+                            <div className="border-t border-amber-200 pt-4 mt-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Icon name="Key" size={18} className="text-purple-600" />
+                                    <h4 className="font-bold text-gray-800">コード入力</h4>
+                                </div>
+                                <CodeInputSection userId={userId} userProfile={userProfile} />
                             </div>
-                            <CodeInputSection userId={userId} userProfile={userProfile} />
-                        </div>
+                        )}
                     </div>
                 </div>
             </details>

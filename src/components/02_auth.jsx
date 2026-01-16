@@ -352,22 +352,29 @@ const LoginScreen = () => {
             const rawNonce = generateNonce();
             const hashedNonce = await sha256(rawNonce);
 
-            console.log('🔐 Nonce生成:', { rawNonce, hashedNonce });
+            console.log('🔐 Nonce生成完了');
 
+            // iOSネイティブではシンプルなオプションで十分
             const result = await SignInWithApple.authorize({
-                clientId: 'com.yourcoach.plus',
-                redirectURI: 'https://your-coach-plus.firebaseapp.com/__/auth/handler',
                 scopes: 'email name',
-                state: '12345',
                 nonce: hashedNonce,
             });
 
-            console.log('✅ Apple認証成功:', result);
+            console.log('✅ Apple認証成功:', JSON.stringify(result, null, 2));
+
+            // identityTokenの取得（プラグインバージョンによって構造が異なる場合がある）
+            const identityToken = result.response?.identityToken || result.identityToken;
+
+            if (!identityToken) {
+                console.error('❌ identityTokenが取得できませんでした:', result);
+                toast.error('認証トークンの取得に失敗しました');
+                return;
+            }
 
             // Firebase OAuthProviderを使用
             const provider = new firebase.auth.OAuthProvider('apple.com');
             const credential = provider.credential({
-                idToken: result.response.identityToken,
+                idToken: identityToken,
                 rawNonce: rawNonce,
             });
 
@@ -386,9 +393,15 @@ const LoginScreen = () => {
             }
             // 既存ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            console.error('❌ Apple認証エラー:', error);
-            if (error.error !== 'popup_closed_by_user') {
-                toast.error(`認証エラー: ${error.message || error}`);
+            console.error('❌ Apple認証エラー:', JSON.stringify(error, null, 2));
+            console.error('❌ エラー詳細:', error.message, error.code, error.error);
+
+            // ユーザーキャンセルの場合は無視
+            const isUserCancelled = error.error === 'popup_closed_by_user' ||
+                                    error.code === 'ERR_CANCELED' ||
+                                    error.message?.includes('cancel');
+            if (!isUserCancelled) {
+                toast.error(`認証エラー: ${error.message || error.code || error.error || '不明なエラー'}`);
             }
         }
     };
@@ -419,22 +432,29 @@ const LoginScreen = () => {
             const rawNonce = generateNonce();
             const hashedNonce = await sha256(rawNonce);
 
-            console.log('🔐 Nonce生成:', { rawNonce, hashedNonce });
+            console.log('🔐 Nonce生成完了');
 
+            // iOSネイティブではシンプルなオプションで十分
             const result = await SignInWithApple.authorize({
-                clientId: 'com.yourcoach.plus',
-                redirectURI: 'https://your-coach-plus.firebaseapp.com/__/auth/handler',
                 scopes: 'email name',
-                state: '12345',
                 nonce: hashedNonce,
             });
 
-            console.log('✅ Apple認証成功:', result);
+            console.log('✅ Apple認証成功:', JSON.stringify(result, null, 2));
+
+            // identityTokenの取得（プラグインバージョンによって構造が異なる場合がある）
+            const identityToken = result.response?.identityToken || result.identityToken;
+
+            if (!identityToken) {
+                console.error('❌ identityTokenが取得できませんでした:', result);
+                toast.error('認証トークンの取得に失敗しました');
+                return;
+            }
 
             // Firebase OAuthProviderを使用
             const provider = new firebase.auth.OAuthProvider('apple.com');
             const credential = provider.credential({
-                idToken: result.response.identityToken,
+                idToken: identityToken,
                 rawNonce: rawNonce,
             });
 
@@ -445,9 +465,15 @@ const LoginScreen = () => {
 
             // 新規ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
-            console.error('❌ Apple認証エラー:', error);
-            if (error.error !== 'popup_closed_by_user') {
-                toast.error(`認証エラー: ${error.message || error}`);
+            console.error('❌ Apple認証エラー:', JSON.stringify(error, null, 2));
+            console.error('❌ エラー詳細:', error.message, error.code, error.error);
+
+            // ユーザーキャンセルの場合は無視
+            const isUserCancelled = error.error === 'popup_closed_by_user' ||
+                                    error.code === 'ERR_CANCELED' ||
+                                    error.message?.includes('cancel');
+            if (!isUserCancelled) {
+                toast.error(`認証エラー: ${error.message || error.code || error.error || '不明なエラー'}`);
             }
         }
     };
@@ -2254,47 +2280,20 @@ const OnboardingScreen = ({ user, onComplete }) => {
                     </div>
                 )}
 
-                {/* ステップ4: B2B2C企業コード入力（任意） */}
+                {/* ステップ4: B2B2C企業コード入力（任意）- iOS版では非表示 */}
                 {step === 3 && (
                     <div className="space-y-6">
-                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl">
-                                    🎁
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-900">コードをお持ちの方へ</h3>
-                                    <p className="text-sm text-gray-600">企業・紹介・ギフトコードを入力できます</p>
-                                </div>
-                            </div>
-
-                            <p className="text-sm text-gray-700 mb-4">
-                                コードを入力すると、<strong className="text-orange-600">Premium機能</strong>が利用可能になります。
-                            </p>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        コード入力（任意）
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={b2b2cCode}
-                                        onChange={(e) => {
-                                            setB2b2cCode(e.target.value.toUpperCase());
-                                            setCodeError('');
-                                        }}
-                                        placeholder="コードを入力"
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center font-mono text-lg tracking-wider focus:outline-none focus:border-amber-500"
-                                        
-                                        disabled={isValidatingCode}
-                                    />
-                                    {codeError && (
-                                        <div className="mt-2 flex items-start gap-2 text-red-600">
-                                            <Icon name="AlertCircle" size={18} className="flex-shrink-0 mt-0.5" />
-                                            <p className="text-sm">{codeError}</p>
-                                        </div>
-                                    )}
+                        {/* iOS版ではコード入力を非表示（App Storeガイドライン3.1.1対応） */}
+                        {isNativeApp() && Capacitor.getPlatform() === 'ios' ? (
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-2xl">
+                                        🚀
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900">準備完了！</h3>
+                                        <p className="text-sm text-gray-600">Your Coach+を始めましょう</p>
+                                    </div>
                                 </div>
 
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -2310,15 +2309,76 @@ const OnboardingScreen = ({ user, onComplete }) => {
                                     </ul>
                                 </div>
 
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
                                     <p className="text-xs text-gray-600">
-                                        <strong>ℹ️ コードをお持ちでない方へ</strong><br/>
-                                        このステップはスキップできます。後から「設定」→「その他」→「コード入力」でいつでも入力できます。<br/>
                                         7日間の無料トライアル後、Premium機能をご利用いただけます。
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white text-2xl">
+                                        🎁
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900">コードをお持ちの方へ</h3>
+                                        <p className="text-sm text-gray-600">企業・紹介・ギフトコードを入力できます</p>
+                                    </div>
+                                </div>
+
+                                <p className="text-sm text-gray-700 mb-4">
+                                    コードを入力すると、<strong className="text-orange-600">Premium機能</strong>が利用可能になります。
+                                </p>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            コード入力（任意）
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={b2b2cCode}
+                                            onChange={(e) => {
+                                                setB2b2cCode(e.target.value.toUpperCase());
+                                                setCodeError('');
+                                            }}
+                                            placeholder="コードを入力"
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-center font-mono text-lg tracking-wider focus:outline-none focus:border-amber-500"
+
+                                            disabled={isValidatingCode}
+                                        />
+                                        {codeError && (
+                                            <div className="mt-2 flex items-start gap-2 text-red-600">
+                                                <Icon name="AlertCircle" size={18} className="flex-shrink-0 mt-0.5" />
+                                                <p className="text-sm">{codeError}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <p className="text-sm text-blue-800 font-semibold mb-2 flex items-center gap-2">
+                                            <Icon name="HelpCircle" size={16} />
+                                            Premium機能について
+                                        </p>
+                                        <ul className="text-sm text-blue-700 space-y-1 ml-5">
+                                            <li>• AI分析機能（月100回）</li>
+                                            <li>• 無制限の記録と履歴</li>
+                                            <li>• PG BASE教科書</li>
+                                            <li>• COMYコミュニティ</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                        <p className="text-xs text-gray-600">
+                                            <strong>ℹ️ コードをお持ちでない方へ</strong><br/>
+                                            このステップはスキップできます。後から「設定」→「その他」→「コード入力」でいつでも入力できます。<br/>
+                                            7日間の無料トライアル後、Premium機能をご利用いただけます。
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -2355,31 +2415,41 @@ const OnboardingScreen = ({ user, onComplete }) => {
                             次へ
                         </button>
                     ) : step === 3 ? (
-                        <>
+                        /* iOS版ではシンプルな「次へ」ボタンのみ表示（App Storeガイドライン3.1.1対応） */
+                        isNativeApp() && Capacitor.getPlatform() === 'ios' ? (
                             <button
-                                onClick={() => {
-                                    // コード入力をスキップして次へ
-                                    goToStep(4);
-                                }}
-                                className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                onClick={() => goToStep(4)}
+                                className="flex-1 bg-[#4A9EFF] hover:bg-[#3b8fef] text-white font-bold py-3 rounded-lg transition"
                             >
-                                スキップ
+                                次へ
                             </button>
-                            <button
-                                onClick={async () => {
-                                    // B2B2Cコードがある場合は検証してから次へ
-                                    if (b2b2cCode.trim()) {
-                                        const isValid = await validateB2B2CCode();
-                                        if (!isValid) return; // 検証失敗時は中断
-                                    }
-                                    goToStep(4);
-                                }}
-                                className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-500 hover:to-orange-600 transition disabled:opacity-50"
-                                disabled={isValidatingCode}
-                            >
-                                {isValidatingCode ? '確認中...' : (b2b2cCode.trim() ? 'コードを確認して次へ' : '次へ')}
-                            </button>
-                        </>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        // コード入力をスキップして次へ
+                                        goToStep(4);
+                                    }}
+                                    className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition"
+                                >
+                                    スキップ
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        // B2B2Cコードがある場合は検証してから次へ
+                                        if (b2b2cCode.trim()) {
+                                            const isValid = await validateB2B2CCode();
+                                            if (!isValid) return; // 検証失敗時は中断
+                                        }
+                                        goToStep(4);
+                                    }}
+                                    className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 rounded-lg hover:from-amber-500 hover:to-orange-600 transition disabled:opacity-50"
+                                    disabled={isValidatingCode}
+                                >
+                                    {isValidatingCode ? '確認中...' : (b2b2cCode.trim() ? 'コードを確認して次へ' : '次へ')}
+                                </button>
+                            </>
+                        )
                     ) : step === 4 ? (
                         <button
                             onClick={async () => {
