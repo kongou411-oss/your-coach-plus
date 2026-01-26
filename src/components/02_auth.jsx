@@ -2,7 +2,8 @@ import React from 'react';
 import toast from 'react-hot-toast';
 import { isNativeApp } from '../capacitor-push';
 import { GoogleAuth } from '@southdevs/capacitor-google-auth';
-import { SignInWithApple } from '@capacitor-community/apple-sign-in';
+// Apple Sign Inはネイティブアプリでのみ動的インポート（Web版でエラー回避）
+// import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 
@@ -373,6 +374,8 @@ const LoginScreen = () => {
             console.log('🔐 Nonce生成完了');
 
             // iOSネイティブではシンプルなオプションで十分
+            // 動的インポート（Web版でエラー回避）
+            const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
             const result = await SignInWithApple.authorize({
                 scopes: 'email name',
                 nonce: hashedNonce,
@@ -453,6 +456,8 @@ const LoginScreen = () => {
             console.log('🔐 Nonce生成完了');
 
             // iOSネイティブではシンプルなオプションで十分
+            // 動的インポート（Web版でエラー回避）
+            const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
             const result = await SignInWithApple.authorize({
                 scopes: 'email name',
                 nonce: hashedNonce,
