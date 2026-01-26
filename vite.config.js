@@ -37,6 +37,9 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      external: [
+        '@capacitor-community/apple-sign-in'
+      ],
       output: {
         entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
         chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
