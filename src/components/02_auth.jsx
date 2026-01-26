@@ -358,49 +358,54 @@ const LoginScreen = () => {
             event.stopPropagation();
         }
 
-        // iOSネイティブアプリのみ対応
-        if (!isNativeApp() || Capacitor.getPlatform() !== 'ios') {
-            toast('Apple Sign InはiOSアプリ版でのみ利用可能です');
-            return;
-        }
-
         console.log('🍎 Apple Sign In ログインを試みます...');
 
         try {
-            // ランダムnonce生成
-            const rawNonce = generateNonce();
-            const hashedNonce = await sha256(rawNonce);
+            let user;
 
-            console.log('🔐 Nonce生成完了');
+            // iOSネイティブアプリの場合はCapacitorプラグインを使用
+            if (isNativeApp() && Capacitor.getPlatform() === 'ios') {
+                // ランダムnonce生成
+                const rawNonce = generateNonce();
+                const hashedNonce = await sha256(rawNonce);
 
-            // iOSネイティブではシンプルなオプションで十分
-            // 動的インポート（Web版でエラー回避）
-            const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
-            const result = await SignInWithApple.authorize({
-                scopes: 'email name',
-                nonce: hashedNonce,
-            });
+                console.log('🔐 Nonce生成完了（iOS Native）');
 
-            console.log('✅ Apple認証成功:', JSON.stringify(result, null, 2));
+                // 動的インポート（Web版でエラー回避）
+                const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
+                const result = await SignInWithApple.authorize({
+                    scopes: 'email name',
+                    nonce: hashedNonce,
+                });
 
-            // identityTokenの取得（プラグインバージョンによって構造が異なる場合がある）
-            const identityToken = result.response?.identityToken || result.identityToken;
+                console.log('✅ Apple認証成功:', JSON.stringify(result, null, 2));
 
-            if (!identityToken) {
-                console.error('❌ identityTokenが取得できませんでした:', result);
-                toast.error('認証トークンの取得に失敗しました');
-                return;
+                const identityToken = result.response?.identityToken || result.identityToken;
+
+                if (!identityToken) {
+                    console.error('❌ identityTokenが取得できませんでした:', result);
+                    toast.error('認証トークンの取得に失敗しました');
+                    return;
+                }
+
+                const provider = new firebase.auth.OAuthProvider('apple.com');
+                const credential = provider.credential({
+                    idToken: identityToken,
+                    rawNonce: rawNonce,
+                });
+
+                const userCredential = await auth.signInWithCredential(credential);
+                user = userCredential.user;
+            } else {
+                // Web版: Firebase Auth signInWithPopupを使用
+                console.log('🌐 Web版 Apple Sign In');
+                const provider = new firebase.auth.OAuthProvider('apple.com');
+                provider.addScope('email');
+                provider.addScope('name');
+
+                const userCredential = await auth.signInWithPopup(provider);
+                user = userCredential.user;
             }
-
-            // Firebase OAuthProviderを使用
-            const provider = new firebase.auth.OAuthProvider('apple.com');
-            const credential = provider.credential({
-                idToken: identityToken,
-                rawNonce: rawNonce,
-            });
-
-            const userCredential = await auth.signInWithCredential(credential);
-            const user = userCredential.user;
 
             console.log('✅ Firebase認証成功:', { uid: user.uid, email: user.email });
 
@@ -420,6 +425,7 @@ const LoginScreen = () => {
             // ユーザーキャンセルの場合は無視
             const isUserCancelled = error.error === 'popup_closed_by_user' ||
                                     error.code === 'ERR_CANCELED' ||
+                                    error.code === 'auth/popup-closed-by-user' ||
                                     error.message?.includes('cancel');
             if (!isUserCancelled) {
                 toast.error(`認証エラー: ${error.message || error.code || error.error || '不明なエラー'}`);
@@ -434,12 +440,6 @@ const LoginScreen = () => {
             event.stopPropagation();
         }
 
-        // iOSネイティブアプリのみ対応
-        if (!isNativeApp() || Capacitor.getPlatform() !== 'ios') {
-            toast('Apple Sign InはiOSアプリ版でのみ利用可能です');
-            return;
-        }
-
         // 規約同意チェック
         if (!agreedToTerms) {
             toast('利用規約とプライバシーポリシーに同意してください');
@@ -449,40 +449,51 @@ const LoginScreen = () => {
         console.log('🍎 Apple Sign In 新規登録を試みます...');
 
         try {
-            // ランダムnonce生成
-            const rawNonce = generateNonce();
-            const hashedNonce = await sha256(rawNonce);
+            let user;
 
-            console.log('🔐 Nonce生成完了');
+            // iOSネイティブアプリの場合はCapacitorプラグインを使用
+            if (isNativeApp() && Capacitor.getPlatform() === 'ios') {
+                // ランダムnonce生成
+                const rawNonce = generateNonce();
+                const hashedNonce = await sha256(rawNonce);
 
-            // iOSネイティブではシンプルなオプションで十分
-            // 動的インポート（Web版でエラー回避）
-            const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
-            const result = await SignInWithApple.authorize({
-                scopes: 'email name',
-                nonce: hashedNonce,
-            });
+                console.log('🔐 Nonce生成完了（iOS Native）');
 
-            console.log('✅ Apple認証成功:', JSON.stringify(result, null, 2));
+                // 動的インポート（Web版でエラー回避）
+                const { SignInWithApple } = await import('@capacitor-community/apple-sign-in');
+                const result = await SignInWithApple.authorize({
+                    scopes: 'email name',
+                    nonce: hashedNonce,
+                });
 
-            // identityTokenの取得（プラグインバージョンによって構造が異なる場合がある）
-            const identityToken = result.response?.identityToken || result.identityToken;
+                console.log('✅ Apple認証成功:', JSON.stringify(result, null, 2));
 
-            if (!identityToken) {
-                console.error('❌ identityTokenが取得できませんでした:', result);
-                toast.error('認証トークンの取得に失敗しました');
-                return;
+                const identityToken = result.response?.identityToken || result.identityToken;
+
+                if (!identityToken) {
+                    console.error('❌ identityTokenが取得できませんでした:', result);
+                    toast.error('認証トークンの取得に失敗しました');
+                    return;
+                }
+
+                const provider = new firebase.auth.OAuthProvider('apple.com');
+                const credential = provider.credential({
+                    idToken: identityToken,
+                    rawNonce: rawNonce,
+                });
+
+                const userCredential = await auth.signInWithCredential(credential);
+                user = userCredential.user;
+            } else {
+                // Web版: Firebase Auth signInWithPopupを使用
+                console.log('🌐 Web版 Apple Sign In（新規登録）');
+                const provider = new firebase.auth.OAuthProvider('apple.com');
+                provider.addScope('email');
+                provider.addScope('name');
+
+                const userCredential = await auth.signInWithPopup(provider);
+                user = userCredential.user;
             }
-
-            // Firebase OAuthProviderを使用
-            const provider = new firebase.auth.OAuthProvider('apple.com');
-            const credential = provider.credential({
-                idToken: identityToken,
-                rawNonce: rawNonce,
-            });
-
-            const userCredential = await auth.signInWithCredential(credential);
-            const user = userCredential.user;
 
             console.log('✅ Firebase認証成功（新規登録）:', { uid: user.uid, email: user.email });
 
@@ -494,6 +505,7 @@ const LoginScreen = () => {
             // ユーザーキャンセルの場合は無視
             const isUserCancelled = error.error === 'popup_closed_by_user' ||
                                     error.code === 'ERR_CANCELED' ||
+                                    error.code === 'auth/popup-closed-by-user' ||
                                     error.message?.includes('cancel');
             if (!isUserCancelled) {
                 toast.error(`認証エラー: ${error.message || error.code || error.error || '不明なエラー'}`);
@@ -826,26 +838,15 @@ const LoginScreen = () => {
                         {isSignUp ? 'Googleで登録' : 'Googleでログイン'}
                     </button>
 
-                    {/* Apple Sign In (iOSのみ) */}
-                    {(() => {
-                        const isNative = isNativeApp();
-                        const platform = Capacitor.getPlatform();
-                        console.log('🍎 Apple Sign In ボタン判定:', { isNative, platform });
-
-                        // デバッグ用: 一時的にiOSネイティブでなくても表示
-                        const shouldShow = isNative || platform === 'ios';
-
-                        return shouldShow ? (
-                            <button
-                                type="button"
-                                onClick={isSignUp ? handleAppleSignUp : handleAppleLogin}
-                                className="w-full bg-black text-white font-bold py-3 rounded-lg hover:bg-gray-900 transition flex items-center justify-center gap-2 mt-3"
-                            >
-                                <Icon name="Apple" size={20} />
-                                {isSignUp ? 'Appleで登録' : 'Appleでログイン'}
-                            </button>
-                        ) : null;
-                    })()}
+                    {/* Apple Sign In (Web/iOS両対応) */}
+                    <button
+                        type="button"
+                        onClick={isSignUp ? handleAppleSignUp : handleAppleLogin}
+                        className="w-full bg-black text-white font-bold py-3 rounded-lg hover:bg-gray-900 transition flex items-center justify-center gap-2 mt-3"
+                    >
+                        <Icon name="Apple" size={20} />
+                        {isSignUp ? 'Appleで登録' : 'Appleでログイン'}
+                    </button>
                 </div>
 
                 <div className="mt-6 text-center">
@@ -1019,7 +1020,7 @@ const LoginScreen = () => {
                             {/* 注意事項 */}
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <p className="text-xs text-blue-800">
-                                    <strong>ℹ️ 注意:</strong> 各認証方法で登録したアカウントは、同じ方法でのみログインできます。{isNativeApp() && Capacitor.getPlatform() === 'ios' ? 'Apple Sign Inで登録した場合はAppleログインのみ、' : ''}Googleで登録した場合はGoogleログインのみ、メールアドレスで登録した場合はメールアドレスログインのみ可能です。
+                                    <strong>ℹ️ 注意:</strong> 各認証方法で登録したアカウントは、同じ方法でのみログインできます。Appleで登録した場合はAppleログインのみ、Googleで登録した場合はGoogleログインのみ、メールアドレスで登録した場合はメールアドレスログインのみ可能です。
                                 </p>
                             </div>
                         </div>
