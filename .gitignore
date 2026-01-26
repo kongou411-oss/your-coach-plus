@@ -37,3 +37,4 @@ tmp/
 functions/node_modules/
 functions/.env
 nul
+*.p8
