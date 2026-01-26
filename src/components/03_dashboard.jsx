@@ -479,6 +479,37 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                                     </div>
                                 </div>
                             </div>
+
+                            {/* 参考文献・引用元 */}
+                            <div className="mt-6 pt-4 border-t border-gray-200">
+                                <h4 className="font-bold text-gray-800 mb-3">📚 参考文献・引用元</h4>
+                                <div className="text-xs text-gray-600 space-y-2">
+                                    <p>本アプリの栄養評価基準は以下の科学的文献に基づいています：</p>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                        <li>
+                                            <a href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/eiyou/syokuji_kijyun.html" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                                厚生労働省「日本人の食事摂取基準（2020年版）」
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="https://www.fao.org/ag/humannutrition/36216-04a2f02ec02eafd4f457dd2c9851b4c45.pdf" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                                FAO「Dietary protein quality evaluation in human nutrition」(DIAAS)
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="https://www.hsph.harvard.edu/nutritionsource/carbohydrates/carbohydrates-and-blood-sugar/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                                Harvard T.H. Chan School of Public Health - Glycemic Index/Load
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                                WHO「Healthy diet」Guidelines
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    <p className="mt-3 text-gray-500">※本アプリは医療アドバイスを提供するものではありません。健康上の懸念がある場合は、医師または管理栄養士にご相談ください。</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

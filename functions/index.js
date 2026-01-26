@@ -3426,25 +3426,33 @@ exports.updatePremiumStatusFromReceipt = onCall({
     const updateData = {};
 
     // 購入タイプに応じて処理
-    if (verificationResult.type === 'subscription') {
-      // サブスクリプション: Premium会員ステータスを更新
-      const currentData = (await userRef.get()).data();
-      const currentFreeCredits = currentData?.freeCredits || 0;
+    const currentData = (await userRef.get()).data();
+    const currentPaidCredits = currentData?.paidCredits || 0;
 
+    if (verificationResult.type === 'subscription') {
+      // サブスクリプション: Premium会員ステータスを更新 + 100クレジット付与
+      // アプリが期待する構造: subscription.status, subscription.tier, etc.
+      updateData.subscription = {
+        status: 'active',
+        tier: 'premium',
+        platform: platform,
+        expiryDate: verificationResult.expiryDate,
+        startDate: new Date(),
+      };
+      // 後方互換性のためフラットなフィールドも設定
       updateData.subscriptionTier = 'premium';
       updateData.subscriptionStatus = 'active';
       updateData.subscriptionPlatform = platform;
       updateData.subscriptionExpiryDate = verificationResult.expiryDate;
-      updateData.freeCredits = currentFreeCredits + 100; // 月次クレジット付与
+      updateData.isPremium = true; // isPremiumフラグも明示的に設定
+      updateData.paidCredits = currentPaidCredits + 100; // Premium契約で100クレジット付与
 
       console.log(`[IAP] Updated subscription for user ${userId}:`, updateData);
     } else if (verificationResult.type === 'consumable') {
       // 消費型アイテム: クレジット追加
-      const currentData = (await userRef.get()).data();
-      const currentPaidCredits = currentData?.paidCredits || 0;
       updateData.paidCredits = currentPaidCredits + verificationResult.credits;
 
-      console.log(`[IAP] Added ${verificationResult.credits} credits to user ${userId}`);
+      console.log(`[IAP] Added ${verificationResult.credits} credits to user ${userId}, new total: ${currentPaidCredits + verificationResult.credits}`);
     }
 
     await userRef.update(updateData);
@@ -3532,15 +3540,32 @@ async function verifyGooglePlayReceipt(receipt) {
 // ===== App Store 領収書検証ヘルパー関数 =====
 async function verifyAppStoreReceipt(receipt) {
   try {
-    // App Store Server API を使用して領収書検証
-    // ⚠️ 実装が必要（今回はGoogle Play優先のため簡易実装）
-    console.warn('[IAP] App Store verification not fully implemented yet');
+    console.log('[IAP] Verifying App Store receipt:', receipt);
 
-    // 仮実装: 常に有効として返す（本番では必ず実装すること）
+    // クライアントから送信されたreceipt構造:
+    // { productId, transactionId, purchaseDate, type, credits }
+
+    // Sandbox環境では完全な検証をスキップし、クライアントからのデータを信頼
+    // ⚠️ 本番環境ではApp Store Server APIを使用した検証が必要
+    // https://developer.apple.com/documentation/appstoreserverapi
+
+    const productId = receipt.productId || '';
+    const type = receipt.type || 'subscription';
+    const credits = receipt.credits || 0;
+
+    // 有効期限を設定（サブスクリプションの場合は30日後）
+    const expiryDate = type === 'subscription'
+      ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      : null;
+
+    console.log(`[IAP] App Store receipt accepted: productId=${productId}, type=${type}, credits=${credits}`);
+
     return {
       valid: true,
-      type: 'subscription',
-      expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30日後
+      type: type,
+      credits: credits,
+      expiryDate: expiryDate,
+      productId: productId,
     };
   } catch (error) {
     console.error('[IAP] App Store verification error:', error);

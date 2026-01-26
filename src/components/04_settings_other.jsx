@@ -248,6 +248,51 @@ const OtherTab = ({
                                 <span>official@your-coach-plus.com</span>
                             </a>
                         </div>
+
+                        {/* 参考文献・引用元 */}
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <p className="text-xs text-gray-600 mb-2">📚 参考文献・引用元</p>
+                            <p className="text-xs text-gray-500 mb-3">本アプリの栄養評価基準は以下の科学的文献に基づいています</p>
+                            <div className="space-y-2">
+                                <a
+                                    href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/eiyou/syokuji_kijyun.html"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-start gap-2 text-xs text-[#4A9EFF] hover:text-[#3b8fef] transition"
+                                >
+                                    <Icon name="ExternalLink" size={12} className="mt-0.5 flex-shrink-0" />
+                                    <span>厚生労働省「日本人の食事摂取基準（2020年版）」</span>
+                                </a>
+                                <a
+                                    href="https://www.fao.org/ag/humannutrition/36216-04a2f02ec02eafd4f457dd2c9851b4c45.pdf"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-start gap-2 text-xs text-[#4A9EFF] hover:text-[#3b8fef] transition"
+                                >
+                                    <Icon name="ExternalLink" size={12} className="mt-0.5 flex-shrink-0" />
+                                    <span>FAO「Dietary protein quality evaluation」(DIAAS)</span>
+                                </a>
+                                <a
+                                    href="https://www.hsph.harvard.edu/nutritionsource/carbohydrates/carbohydrates-and-blood-sugar/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-start gap-2 text-xs text-[#4A9EFF] hover:text-[#3b8fef] transition"
+                                >
+                                    <Icon name="ExternalLink" size={12} className="mt-0.5 flex-shrink-0" />
+                                    <span>Harvard School of Public Health - Glycemic Index/Load</span>
+                                </a>
+                                <a
+                                    href="https://www.who.int/news-room/fact-sheets/detail/healthy-diet"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-start gap-2 text-xs text-[#4A9EFF] hover:text-[#3b8fef] transition"
+                                >
+                                    <Icon name="ExternalLink" size={12} className="mt-0.5 flex-shrink-0" />
+                                    <span>WHO「Healthy diet」Guidelines</span>
+                                </a>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-3">※本アプリは医療アドバイスを提供するものではありません。健康上の懸念がある場合は、医師または管理栄養士にご相談ください。</p>
+                        </div>
                     </div>
                 </div>
             </details>

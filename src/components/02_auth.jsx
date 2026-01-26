@@ -4,6 +4,24 @@ import { isNativeApp } from '../capacitor-push';
 import { GoogleAuth } from '@southdevs/capacitor-google-auth';
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+
+// 外部URLを開く関数（ネイティブアプリ対応）
+const openExternalUrl = async (url) => {
+    try {
+        const fullUrl = url.startsWith('http') ? url : `https://your-coach-plus.web.app${url}`;
+        console.log('[Auth] Opening URL:', fullUrl);
+
+        if (Capacitor.isNativePlatform()) {
+            await Browser.open({ url: fullUrl, presentationStyle: 'popover' });
+        } else {
+            window.open(fullUrl, '_blank');
+        }
+    } catch (error) {
+        console.error('[Auth] Failed to open URL:', error);
+        window.open(url.startsWith('http') ? url : `https://your-coach-plus.web.app${url}`, '_blank');
+    }
+};
 
 // ===== Authentication Components =====
 // ===== Authentication Components =====
@@ -729,25 +747,31 @@ const LoginScreen = () => {
                                     className="w-4 h-4 flex-shrink-0"
                                 />
                                 <label htmlFor="agreeToTerms" className="text-sm text-gray-600">
-                                    <a
-                                        href="/terms.html"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="font-medium hover:underline"
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openExternalUrl('/terms.html');
+                                        }}
+                                        className="font-medium underline px-1 py-0.5 min-h-[44px] active:opacity-70"
                                         style={{color: '#4A9EFF'}}
                                     >
                                         利用規約
-                                    </a>
+                                    </button>
                                     と
-                                    <a
-                                        href="/privacy.html"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="font-medium hover:underline"
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openExternalUrl('/privacy.html');
+                                        }}
+                                        className="font-medium underline px-1 py-0.5 min-h-[44px] active:opacity-70"
                                         style={{color: '#4A9EFF'}}
                                     >
                                         プライバシーポリシー
-                                    </a>
+                                    </button>
                                     に同意します
                                 </label>
                             </div>

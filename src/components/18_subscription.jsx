@@ -10,17 +10,27 @@ const openExternalUrl = async (url) => {
         // 相対パスを絶対URLに変換
         const fullUrl = url.startsWith('http') ? url : `https://your-coach-plus.web.app${url}`;
 
+        console.log('[Subscription] Opening URL:', fullUrl);
+
         if (Capacitor.isNativePlatform()) {
             // ネイティブアプリではCapacitor Browserを使用
-            await Browser.open({ url: fullUrl });
+            console.log('[Subscription] Using Capacitor Browser');
+            await Browser.open({
+                url: fullUrl,
+                presentationStyle: 'popover' // iPadでポップオーバー表示
+            });
         } else {
             // Webでは新しいタブで開く
             window.open(fullUrl, '_blank');
         }
     } catch (error) {
-        console.error('Failed to open URL:', error);
-        // フォールバック
-        window.open(url.startsWith('http') ? url : `https://your-coach-plus.web.app${url}`, '_blank');
+        console.error('[Subscription] Failed to open URL:', error);
+        // フォールバック: window.openを試行
+        try {
+            window.open(url.startsWith('http') ? url : `https://your-coach-plus.web.app${url}`, '_blank');
+        } catch (e) {
+            console.error('[Subscription] Fallback also failed:', e);
+        }
     }
 };
 
@@ -32,6 +42,9 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
     const [storeReady, setStoreReady] = useState(false);
     const [debugLogs, setDebugLogs] = useState([]); // デバッグログ表示用
     const [showDebugModal, setShowDebugModal] = useState(false); // デバッグモーダル表示フラグ
+    const [userInitiatedPurchase, setUserInitiatedPurchase] = useState(false); // ユーザーが購入を開始したかどうか
+    const userInitiatedPurchaseRef = React.useRef(false); // useEffect内でも参照できるようにref
+    const pendingProductIdRef = React.useRef(null); // 購入中の商品IDを保存
 
     // デバッグログを追加
     const addDebugLog = (message, data = null) => {
@@ -112,32 +125,133 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                 addDebugLog('✅ 商品登録完了');
                 console.log('[IAP] Products registered successfully');
 
+                // 処理済みトランザクションIDを追跡（重複処理防止）
+                const processedTransactionIds = new Set();
+
                 // 購入フローのイベントハンドラー（チェーン形式）
                 store.when()
                     .approved(transaction => {
-                        addDebugLog('✅ 購入承認', { products: transaction.products.map(p => p.id) });
+                        const productIds = transaction.products?.map(p => p.id) || [];
+                        const txId = transaction.transactionId || transaction.id;
+                        addDebugLog('✅ 購入承認', { products: productIds, txId });
                         console.log('[IAP] Transaction approved:', transaction);
+                        console.log('[IAP] Transaction details:', JSON.stringify({
+                            id: transaction.id,
+                            transactionId: transaction.transactionId,
+                            products: transaction.products,
+                            state: transaction.state
+                        }, null, 2));
                         transaction.verify();
                     })
                     .verified(async (receipt) => {
-                        addDebugLog('✅ 検証完了', { products: receipt.products.map(p => p.id) });
-                        console.log('[IAP] Receipt verified:', receipt);
+                        console.log('[IAP] ========== VERIFIED HANDLER START ==========');
+                        console.log('[IAP] userInitiatedPurchase:', userInitiatedPurchaseRef.current);
+                        addDebugLog('🔔 verified開始', { receiptId: receipt.id, userInitiated: userInitiatedPurchaseRef.current });
 
-                        // Firebase Functions経由でPremium状態を更新
+                        // ユーザーが購入を開始していない場合（ペンディングトランザクション）はスキップ
+                        if (!userInitiatedPurchaseRef.current) {
+                            console.log('[IAP] Skipping pending transaction - user did not initiate purchase');
+                            addDebugLog('⏭️ ペンディングTxスキップ', { receiptId: receipt.id });
+                            // トランザクションを完了させて次回処理されないようにする
+                            receipt.finish();
+                            return;
+                        }
+
                         try {
+                            // ★★★ 重要: ユーザーが選択した商品IDを使用 ★★★
+                            // レシートからの抽出は信頼できないため、購入開始時に保存した商品IDを使用
+                            let productId = pendingProductIdRef.current || '';
+                            let transactionId = '';
+
+                            console.log('[IAP] Using pendingProductId:', productId);
+                            addDebugLog('保存済み商品ID', { productId });
+
+                            // トランザクションIDはレシートから取得
+                            if (receipt.transactions && receipt.transactions.length > 0) {
+                                transactionId = receipt.transactions[0].transactionId || receipt.transactions[0].id || '';
+                            }
+                            if (!transactionId && receipt.nativeTransactions && receipt.nativeTransactions.length > 0) {
+                                transactionId = receipt.nativeTransactions[0].transactionIdentifier || '';
+                            }
+                            if (!transactionId) {
+                                transactionId = receipt.id || Date.now().toString();
+                            }
+
+                            addDebugLog('抽出結果', { productId, transactionId });
+                            console.log('[IAP] Extracted - productId:', productId, 'transactionId:', transactionId);
+
+                            // productIdが取得できない場合はスキップ
+                            if (!productId) {
+                                addDebugLog('⚠️ productId取得失敗 - スキップ', { receiptId: receipt.id });
+                                console.warn('[IAP] Could not extract productId, finishing receipt without processing');
+                                receipt.finish();
+                                return;
+                            }
+
+                            // 重複処理チェック
+                            if (processedTransactionIds.has(transactionId)) {
+                                addDebugLog('⚠️ 重複トランザクション - スキップ', { transactionId });
+                                console.log('[IAP] Already processed transaction, skipping:', transactionId);
+                                receipt.finish();
+                                return;
+                            }
+                            processedTransactionIds.add(transactionId);
+
+                            // Firebase Functions経由でPremium状態を更新
                             const functions = window.firebase.app().functions('asia-northeast2');
                             const updatePremiumStatus = functions.httpsCallable('updatePremiumStatusFromReceipt');
-                            await updatePremiumStatus({
+
+                            const isSubscription = productId === GOOGLE_PLAY_BILLING.subscriptions.premium;
+
+                            // クレジット数を判定
+                            let credits = 0;
+                            if (isSubscription) {
+                                credits = 100; // Premium契約で100クレジット
+                            } else if (productId === GOOGLE_PLAY_BILLING.products.credits_50) {
+                                credits = 50;
+                            } else if (productId === GOOGLE_PLAY_BILLING.products.credits_150) {
+                                credits = 150;
+                            } else if (productId === GOOGLE_PLAY_BILLING.products.credits_300) {
+                                credits = 300;
+                            }
+
+                            const receiptData = {
+                                productId: productId,
+                                transactionId: transactionId,
+                                purchaseDate: new Date().toISOString(),
+                                type: isSubscription ? 'subscription' : 'consumable',
+                                credits: credits,
+                            };
+
+                            addDebugLog('送信データ', receiptData);
+                            console.log('[IAP] Sending to server:', JSON.stringify(receiptData, null, 2));
+
+                            const result = await updatePremiumStatus({
                                 userId: userId,
-                                receipt: receipt,
+                                receipt: receiptData,
                                 platform: platform
                             });
-                            addDebugLog('✅ Premium状態更新完了');
+
+                            addDebugLog('✅ サーバー応答', result.data);
+                            console.log('[IAP] Server response:', result.data);
+
                             toast.success('購入が完了しました！');
+
+                            // フラグをリセット
+                            userInitiatedPurchaseRef.current = false;
+                            pendingProductIdRef.current = null;
+
+                            // 画面をリロードしてPremium状態を反映
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
                         } catch (error) {
-                            addDebugLog('❌ Premium状態更新エラー', { message: error.message });
-                            console.error('[IAP] Error updating premium status:', error);
-                            toast.error('購入処理中にエラーが発生しました');
+                            addDebugLog('❌ verified処理エラー', { message: error.message, code: error.code, details: error.details });
+                            console.error('[IAP] Error in verified handler:', error);
+                            toast.error(`購入処理中にエラーが発生しました: ${error.message}`);
+                            // エラー時もフラグをリセット
+                            userInitiatedPurchaseRef.current = false;
+                            pendingProductIdRef.current = null;
                         }
 
                         // 購入完了
@@ -152,7 +266,8 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                         toast.error('購入の検証に失敗しました。サポートにお問い合わせください。');
                     })
                     .finished(transaction => {
-                        addDebugLog('✅ 取引完了', { products: transaction.products.map(p => p.id) });
+                        const productIds = transaction.products?.map(p => p.id) || [];
+                        addDebugLog('✅ 取引完了', { products: productIds });
                         console.log('[IAP] Transaction finished:', transaction);
                     });
 
@@ -222,18 +337,61 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                     return;
                 }
 
-                addDebugLog('✅ 商品取得成功', { id: product.id, canPurchase: product.canPurchase });
+                addDebugLog('✅ 商品取得成功', {
+                    id: product.id,
+                    canPurchase: product.canPurchase,
+                    title: product.title,
+                    pricing: product.pricing,
+                    state: product.state
+                });
                 console.log('[IAP] Product found:', product);
 
                 if (!product.canPurchase) {
+                    addDebugLog('❌ 購入不可', { reason: '商品が購入できない状態です', state: product.state });
                     console.error('[IAP] Product cannot be purchased:', product);
-                    toast.error('この商品は購入できません');
+                    toast.error('この商品は現在購入できません。App Store Connectの設定を確認してください。');
                     setLoading(false);
                     return;
                 }
 
                 console.log('[IAP] Ordering product:', product);
-                window.CdvPurchase.store.order(product);
+                addDebugLog('購入開始', { productId: product.id });
+
+                // ユーザーが購入を開始したことをマーク + 商品IDを保存
+                userInitiatedPurchaseRef.current = true;
+                setUserInitiatedPurchase(true);
+                pendingProductIdRef.current = productId; // ★ Premium商品ID
+
+                try {
+                    // iOS用: デフォルトオファー "$" を明示的に指定（cordova-plugin-purchaseのバグ対策）
+                    // https://github.com/j3k0/cordova-plugin-purchase/issues/1600
+                    const offer = platform === 'ios' ? product.getOffer("$") : product;
+                    addDebugLog('オファー取得', { offer: offer ? 'found' : 'not found', platform });
+
+                    const order = await window.CdvPurchase.store.order(offer || product);
+                    addDebugLog('購入注文結果', order);
+                    console.log('[IAP] Order result:', order);
+
+                    if (order && order.isError) {
+                        addDebugLog('❌ 購入注文エラー', { code: order.code, message: order.message });
+                        toast.error(`購入エラー: ${order.message || '不明なエラー'}`);
+                        userInitiatedPurchaseRef.current = false;
+                        setUserInitiatedPurchase(false);
+                        pendingProductIdRef.current = null;
+                    }
+                } catch (orderError) {
+                    addDebugLog('❌ 購入注文例外', {
+                        name: orderError.name,
+                        message: orderError.message,
+                        code: orderError.code
+                    });
+                    console.error('[IAP] Order error:', orderError);
+                    toast.error(`購入処理中にエラーが発生しました: ${orderError.message}`);
+                    userInitiatedPurchaseRef.current = false;
+                    setUserInitiatedPurchase(false);
+                    pendingProductIdRef.current = null;
+                }
+
                 setLoading(false); // 購入フローはストアが管理するのでローディング解除
                 return;
             }
@@ -277,29 +435,75 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                     productId = GOOGLE_PLAY_BILLING.products.credits_300;
                 }
 
+                addDebugLog('クレジット購入試行', { productId, credits: selectedCreditPack.credits });
                 console.log('[IAP] Attempting to get credit pack:', productId);
                 console.log('[IAP] All products:', window.CdvPurchase.store.products);
 
                 const product = window.CdvPurchase.store.get(productId);
 
                 if (!product) {
+                    addDebugLog('❌ 商品が見つかりません', { productId });
                     console.error('[IAP] Product not found:', productId);
                     toast.error('商品情報を取得できませんでした');
                     setLoading(false);
                     return;
                 }
 
+                addDebugLog('✅ 商品取得成功', {
+                    id: product.id,
+                    canPurchase: product.canPurchase,
+                    title: product.title,
+                    pricing: product.pricing,
+                    state: product.state
+                });
                 console.log('[IAP] Product found:', product);
 
                 if (!product.canPurchase) {
+                    addDebugLog('❌ 購入不可', { reason: '商品が購入できない状態です', state: product.state });
                     console.error('[IAP] Product cannot be purchased:', product);
-                    toast.error('この商品は購入できません');
+                    toast.error('この商品は現在購入できません。App Store Connectの設定を確認してください。');
                     setLoading(false);
                     return;
                 }
 
                 console.log('[IAP] Ordering product:', product);
-                window.CdvPurchase.store.order(product);
+                addDebugLog('購入開始', { productId: product.id });
+
+                // ユーザーが購入を開始したことをマーク + 商品IDを保存
+                userInitiatedPurchaseRef.current = true;
+                setUserInitiatedPurchase(true);
+                pendingProductIdRef.current = productId; // ★ クレジット商品ID
+
+                try {
+                    // iOS用: デフォルトオファー "$" を明示的に指定（cordova-plugin-purchaseのバグ対策）
+                    // https://github.com/j3k0/cordova-plugin-purchase/issues/1600
+                    const offer = platform === 'ios' ? product.getOffer("$") : product;
+                    addDebugLog('オファー取得', { offer: offer ? 'found' : 'not found', platform });
+
+                    const order = await window.CdvPurchase.store.order(offer || product);
+                    addDebugLog('購入注文結果', order);
+                    console.log('[IAP] Order result:', order);
+
+                    if (order && order.isError) {
+                        addDebugLog('❌ 購入注文エラー', { code: order.code, message: order.message });
+                        toast.error(`購入エラー: ${order.message || '不明なエラー'}`);
+                        userInitiatedPurchaseRef.current = false;
+                        setUserInitiatedPurchase(false);
+                        pendingProductIdRef.current = null;
+                    }
+                } catch (orderError) {
+                    addDebugLog('❌ 購入注文例外', {
+                        name: orderError.name,
+                        message: orderError.message,
+                        code: orderError.code
+                    });
+                    console.error('[IAP] Order error:', orderError);
+                    toast.error(`購入処理中にエラーが発生しました: ${orderError.message}`);
+                    userInitiatedPurchaseRef.current = false;
+                    setUserInitiatedPurchase(false);
+                    pendingProductIdRef.current = null;
+                }
+
                 setLoading(false); // 購入フローはストアが管理するのでローディング解除
                 return;
             }
@@ -327,10 +531,10 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 modal-safe-area">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] shadow-2xl flex flex-col">
                 {/* ヘッダー */}
-                <div className="sticky top-0 bg-[#FFF59A] text-gray-800 p-6 z-10 relative overflow-hidden">
+                <div className="flex-shrink-0 bg-[#FFF59A] text-gray-800 p-6 rounded-t-2xl relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 animate-shine pointer-events-none"></div>
                     <div className="flex items-center justify-between relative z-10">
                         <div className="flex items-center gap-3">
@@ -348,7 +552,7 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                 </div>
 
                 {/* タブ切り替え */}
-                <div className="flex border-b sticky top-[88px] bg-white z-10">
+                <div className="flex-shrink-0 flex border-b bg-white">
                     <button
                         onClick={() => setSelectedPlan('premium')}
                         className={`flex-1 py-3 font-bold transition ${
@@ -371,8 +575,8 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                     </button>
                 </div>
 
-                {/* コンテンツ */}
-                <div className="p-6 space-y-6">
+                {/* コンテンツ（スクロール可能） */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ WebkitOverflowScrolling: 'touch' }}>
                     {selectedPlan === 'premium' ? (
                         <>
                             {/* Premium会員プラン */}
@@ -453,22 +657,6 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                                 </ul>
                             </div>
 
-                            {/* Terms & Privacy (Apple Required) */}
-                            <div className="flex items-center justify-center gap-4 text-xs">
-                                <button
-                                    onClick={() => openExternalUrl('/terms.html')}
-                                    className="text-blue-600 hover:underline"
-                                >
-                                    利用規約
-                                </button>
-                                <span className="text-gray-400">|</span>
-                                <button
-                                    onClick={() => openExternalUrl('/privacy.html')}
-                                    className="text-blue-600 hover:underline"
-                                >
-                                    プライバシーポリシー
-                                </button>
-                            </div>
                         </>
                     ) : (
                         <>
@@ -555,25 +743,40 @@ const SubscriptionView = ({ onClose, userId, userProfile, initialTab = 'premium'
                                     </p>
                                 </div>
 
-                                {/* Terms & Privacy (Apple Required) */}
-                                <div className="flex items-center justify-center gap-4 text-xs">
-                                    <button
-                                        onClick={() => openExternalUrl('/terms.html')}
-                                        className="text-blue-600 hover:underline"
-                                    >
-                                        利用規約
-                                    </button>
-                                    <span className="text-gray-400">|</span>
-                                    <button
-                                        onClick={() => openExternalUrl('/privacy.html')}
-                                        className="text-blue-600 hover:underline"
-                                    >
-                                        プライバシーポリシー
-                                    </button>
-                                </div>
                             </div>
                         </>
                     )}
+                </div>
+
+                {/* 固定フッター: Terms & Privacy (Apple Required) - 常に表示 */}
+                <div className="flex-shrink-0 border-t bg-gray-50 px-6 py-4 rounded-b-2xl">
+                    <div className="flex items-center justify-center gap-4 text-sm">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('[Subscription] Terms button clicked');
+                                openExternalUrl('/terms.html');
+                            }}
+                            className="text-blue-600 underline px-3 py-2 min-h-[44px] active:opacity-70 font-medium"
+                        >
+                            利用規約
+                        </button>
+                        <span className="text-gray-400">|</span>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('[Subscription] Privacy button clicked');
+                                openExternalUrl('/privacy.html');
+                            }}
+                            className="text-blue-600 underline px-3 py-2 min-h-[44px] active:opacity-70 font-medium"
+                        >
+                            プライバシーポリシー
+                        </button>
+                    </div>
                 </div>
 
                 {/* デバッグログモーダル（開発者用） */}

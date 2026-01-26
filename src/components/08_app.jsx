@@ -5,6 +5,8 @@ import { isNativeApp, initPushNotifications, createNotificationChannel, initBack
 import { BiometricAuthService } from '../biometric-auth.js';
 import useBABHeight from '../hooks/useBABHeight.js';
 import { useReviewPrompt, FeedbackPromptModal, FeedbackInputModal } from './24_review_prompt.jsx';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 // ===== Guide Modal Component =====
 const GuideModal = ({ show, title, message, iconName, iconColor, targetSectionId, onClose }) => {
@@ -216,6 +218,22 @@ const CookieConsentBanner = ({ show, onAccept }) => {
     const Icon = window.Icon;
     if (!show) return null;
 
+    const openPrivacyPolicy = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            const url = 'https://your-coach-plus.web.app/privacy.html';
+            if (Capacitor.isNativePlatform()) {
+                await Browser.open({ url, presentationStyle: 'popover' });
+            } else {
+                window.open(url, '_blank');
+            }
+        } catch (error) {
+            console.error('[CookieConsent] Failed to open URL:', error);
+            window.open('https://your-coach-plus.web.app/privacy.html', '_blank');
+        }
+    };
+
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white p-4 z-[10002] shadow-lg" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}>
             <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -225,9 +243,13 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                         <p className="text-sm">
                             当サービスでは、サービス向上のためCookieおよびLocalStorageを使用しています。
                             続行することで、
-                            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="text-[#4A9EFF] underline hover:text-[#3b8fef]">
+                            <button
+                                type="button"
+                                onClick={openPrivacyPolicy}
+                                className="text-[#4A9EFF] underline hover:text-[#3b8fef] min-h-[44px] px-1 active:opacity-70"
+                            >
                                 プライバシーポリシー
-                            </a>
+                            </button>
                             に同意したものとみなされます。
                         </p>
                     </div>

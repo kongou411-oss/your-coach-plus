@@ -750,53 +750,96 @@ const BasicTab = ({
                                         </div>
 
                                         <div className="space-y-2">
-                                            {willCancel ? (
-                                                <button
-                                                    className="w-full bg-[#FFF59A] text-gray-800 font-bold py-2 rounded-lg hover:opacity-90"
-                                                    onClick={() => showConfirm(
-                                                        'サブスクリプション再開の確認',
-                                                        'サブスクリプションを再開しますか？解約予定をキャンセルして、継続利用が可能になります。',
-                                                        async () => {
-                                                            try {
-                                                                const functions = window.firebase.app().functions('asia-northeast2');
-                                                                const resumeSubscription = functions.httpsCallable('resumeSubscription');
-                                                                await resumeSubscription();
-                                                                toast.success('サブスクリプションを再開しました');
-                                                                // ページリロードでデータを更新
-                                                                setTimeout(() => window.location.reload(), 1500);
-                                                            } catch (error) {
-                                                                console.error('[Subscription] Resume error:', error);
-                                                                toast.error('再開処理中にエラーが発生しました: ' + error.message);
-                                                            }
-                                                        }
-                                                    )}
-                                                >
-                                                    サブスクリプション再開
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
-                                                    onClick={() => showConfirm(
-                                                        'サブスクリプション解約の確認',
-                                                        'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
-                                                        async () => {
-                                                            try {
-                                                                const functions = window.firebase.app().functions('asia-northeast2');
-                                                                const cancelSubscription = functions.httpsCallable('cancelSubscription');
-                                                                await cancelSubscription();
-                                                                toast.success('サブスクリプションを解約しました');
-                                                                // ページリロードでデータを更新
-                                                                setTimeout(() => window.location.reload(), 1500);
-                                                            } catch (error) {
-                                                                console.error('[Subscription] Cancel error:', error);
-                                                                toast.error('解約処理中にエラーが発生しました: ' + error.message);
-                                                            }
-                                                        }
-                                                    )}
-                                                >
-                                                    サブスクリプション解約
-                                                </button>
-                                            )}
+                                            {(() => {
+                                                // App Store/Google Play契約かどうかを判定
+                                                const subscriptionPlatformRaw = userProfile?.subscription?.platform;
+                                                const subscriptionPlatform = subscriptionPlatformRaw?.toLowerCase(); // 大文字小文字を統一
+                                                const isNativePlatform = Capacitor.isNativePlatform();
+                                                const currentPlatform = Capacitor.getPlatform();
+                                                const isIOS = isNativePlatform && currentPlatform === 'ios';
+                                                const isAndroid = isNativePlatform && currentPlatform === 'android';
+
+                                                // App Store/Play Store契約と判定する条件
+                                                const isAppStoreSubscription = subscriptionPlatform === 'ios' || subscriptionPlatform === 'android' || isNativePlatform;
+
+                                                // プラットフォーム判定: subscription.platformを優先、なければ現在のプラットフォーム
+                                                const isIOSSubscription = subscriptionPlatform === 'ios' || (isIOS && subscriptionPlatform !== 'android');
+
+                                                if (isAppStoreSubscription) {
+                                                    // App Store/Google Play契約の場合は各ストア設定へ誘導
+                                                    return (
+                                                        <button
+                                                            className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
+                                                            onClick={() => {
+                                                                if (isIOSSubscription) {
+                                                                    // iOSの場合：App Store設定を開く
+                                                                    window.open('https://apps.apple.com/account/subscriptions', '_blank');
+                                                                    toast.success('App Storeのサブスクリプション管理画面を開きました');
+                                                                } else {
+                                                                    // Androidの場合：Google Play設定を開く
+                                                                    window.open('https://play.google.com/store/account/subscriptions', '_blank');
+                                                                    toast.success('Google Playのサブスクリプション管理画面を開きました');
+                                                                }
+                                                            }}
+                                                        >
+                                                            サブスクリプション管理（{isIOSSubscription ? 'App Store' : 'Google Play'}）
+                                                        </button>
+                                                    );
+                                                }
+
+                                                // Stripe契約の場合は従来のボタン
+                                                if (willCancel) {
+                                                    return (
+                                                        <button
+                                                            className="w-full bg-[#FFF59A] text-gray-800 font-bold py-2 rounded-lg hover:opacity-90"
+                                                            onClick={() => showConfirm(
+                                                                'サブスクリプション再開の確認',
+                                                                'サブスクリプションを再開しますか？解約予定をキャンセルして、継続利用が可能になります。',
+                                                                async () => {
+                                                                    try {
+                                                                        const functions = window.firebase.app().functions('asia-northeast2');
+                                                                        const resumeSubscription = functions.httpsCallable('resumeSubscription');
+                                                                        await resumeSubscription();
+                                                                        toast.success('サブスクリプションを再開しました');
+                                                                        // ページリロードでデータを更新
+                                                                        setTimeout(() => window.location.reload(), 1500);
+                                                                    } catch (error) {
+                                                                        console.error('[Subscription] Resume error:', error);
+                                                                        toast.error('再開処理中にエラーが発生しました: ' + error.message);
+                                                                    }
+                                                                }
+                                                            )}
+                                                        >
+                                                            サブスクリプション再開
+                                                        </button>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <button
+                                                            className="w-full bg-gray-200 text-gray-600 font-bold py-2 rounded-lg hover:bg-gray-300"
+                                                            onClick={() => showConfirm(
+                                                                'サブスクリプション解約の確認',
+                                                                'サブスクリプションを解約しますか？解約後も現在の課金期間終了まで利用できます。',
+                                                                async () => {
+                                                                    try {
+                                                                        const functions = window.firebase.app().functions('asia-northeast2');
+                                                                        const cancelSubscription = functions.httpsCallable('cancelSubscription');
+                                                                        await cancelSubscription();
+                                                                        toast.success('サブスクリプションを解約しました');
+                                                                        // ページリロードでデータを更新
+                                                                        setTimeout(() => window.location.reload(), 1500);
+                                                                    } catch (error) {
+                                                                        console.error('[Subscription] Cancel error:', error);
+                                                                        toast.error('解約処理中にエラーが発生しました: ' + error.message);
+                                                                    }
+                                                                }
+                                                            )}
+                                                        >
+                                                            サブスクリプション解約
+                                                        </button>
+                                                    );
+                                                }
+                                            })()}
 
                                             <button
                                                 className="w-full bg-[#FFF59A] text-gray-800 font-bold py-2 rounded-lg hover:opacity-90 flex items-center justify-center gap-2"
@@ -809,6 +852,24 @@ const BasicTab = ({
                                             <button
                                                 className="w-full bg-white text-gray-600 py-2 rounded-lg hover:bg-gray-50 border border-gray-200 flex items-center justify-center gap-2 text-sm"
                                                 onClick={async () => {
+                                                    // App Store/Google Play契約の場合はStripe同期を行わない
+                                                    // ネイティブアプリで実行中の場合も同様に扱う
+                                                    const subscriptionPlatformRaw = userProfile?.subscription?.platform;
+                                                    const subscriptionPlatform = subscriptionPlatformRaw?.toLowerCase();
+                                                    const isNativeApp = Capacitor.isNativePlatform();
+                                                    const isAppStoreSubscription = subscriptionPlatform === 'ios' || subscriptionPlatform === 'android' || isNativeApp;
+
+                                                    if (isAppStoreSubscription) {
+                                                        // App Store契約の場合はページリロードでFirestoreから最新データを取得
+                                                        toast.loading('更新中...', { id: 'sync' });
+                                                        setTimeout(() => {
+                                                            toast.success('契約情報を更新しました', { id: 'sync' });
+                                                            window.location.reload();
+                                                        }, 500);
+                                                        return;
+                                                    }
+
+                                                    // Stripe契約の場合は従来のsyncSubscriptionInfoを呼び出す
                                                     try {
                                                         const functions = window.firebase.app().functions('asia-northeast2');
                                                         const syncSubscriptionInfo = functions.httpsCallable('syncSubscriptionInfo');
