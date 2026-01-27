@@ -426,9 +426,26 @@ const LoginScreen = () => {
             const isUserCancelled = error.error === 'popup_closed_by_user' ||
                                     error.code === 'ERR_CANCELED' ||
                                     error.code === 'auth/popup-closed-by-user' ||
-                                    error.message?.includes('cancel');
+                                    error.message?.includes('cancel') ||
+                                    error.code === '1001'; // ASAuthorizationError.canceled
+
             if (!isUserCancelled) {
-                toast.error(`認証エラー: ${error.message || error.code || error.error || '不明なエラー'}`);
+                // Firebase特有のエラーコードに対応したメッセージ
+                let errorMessage = '認証エラーが発生しました';
+                if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = 'Apple Sign Inが現在利用できません。しばらく経ってからお試しください。';
+                } else if (error.code === 'auth/invalid-credential') {
+                    errorMessage = '認証情報が無効です。再度お試しください。';
+                } else if (error.code === 'auth/credential-already-in-use') {
+                    errorMessage = 'このAppleアカウントは既に別のアカウントに関連付けられています。';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = 'ネットワークエラーが発生しました。接続を確認してください。';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                } else if (error.error) {
+                    errorMessage = error.error;
+                }
+                toast.error(errorMessage);
             }
         }
     };
@@ -497,6 +514,17 @@ const LoginScreen = () => {
 
             console.log('✅ Firebase認証成功（新規登録）:', { uid: user.uid, email: user.email });
 
+            // Appleから取得した名前情報をセッションストレージに一時保存（オンボーディングで使用）
+            const givenName = result.response?.givenName || result.givenName || '';
+            const familyName = result.response?.familyName || result.familyName || '';
+            const appleEmail = result.response?.email || result.email || user.email;
+            if (givenName || familyName) {
+                sessionStorage.setItem('appleUserName', JSON.stringify({ givenName, familyName }));
+            }
+            if (appleEmail) {
+                sessionStorage.setItem('appleUserEmail', appleEmail);
+            }
+
             // 新規ユーザーの場合はonAuthStateChangedで処理される
         } catch (error) {
             console.error('❌ Apple認証エラー:', JSON.stringify(error, null, 2));
@@ -506,9 +534,26 @@ const LoginScreen = () => {
             const isUserCancelled = error.error === 'popup_closed_by_user' ||
                                     error.code === 'ERR_CANCELED' ||
                                     error.code === 'auth/popup-closed-by-user' ||
-                                    error.message?.includes('cancel');
+                                    error.message?.includes('cancel') ||
+                                    error.code === '1001'; // ASAuthorizationError.canceled
+
             if (!isUserCancelled) {
-                toast.error(`認証エラー: ${error.message || error.code || error.error || '不明なエラー'}`);
+                // Firebase特有のエラーコードに対応したメッセージ
+                let errorMessage = '認証エラーが発生しました';
+                if (error.code === 'auth/operation-not-allowed') {
+                    errorMessage = 'Apple Sign Inが現在利用できません。しばらく経ってからお試しください。';
+                } else if (error.code === 'auth/invalid-credential') {
+                    errorMessage = '認証情報が無効です。再度お試しください。';
+                } else if (error.code === 'auth/credential-already-in-use') {
+                    errorMessage = 'このAppleアカウントは既に別のアカウントに関連付けられています。';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = 'ネットワークエラーが発生しました。接続を確認してください。';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                } else if (error.error) {
+                    errorMessage = error.error;
+                }
+                toast.error(errorMessage);
             }
         }
     };
@@ -1092,6 +1137,29 @@ const OnboardingScreen = ({ user, onComplete }) => {
         if (refCode) {
             console.log('[Auth] Referral code from URL:', refCode);
             setB2b2cCode(refCode.toUpperCase());
+        }
+    }, []);
+
+    // Apple Sign Inから取得した名前情報を自動入力
+    React.useEffect(() => {
+        const appleUserNameJson = sessionStorage.getItem('appleUserName');
+        if (appleUserNameJson) {
+            try {
+                const { givenName, familyName } = JSON.parse(appleUserNameJson);
+                const fullName = [familyName, givenName].filter(Boolean).join(' ');
+                if (fullName) {
+                    setProfile(prev => ({
+                        ...prev,
+                        displayName: fullName,
+                        nickname: givenName || familyName || ''
+                    }));
+                    console.log('[Auth] Pre-filled name from Apple Sign In:', fullName);
+                }
+                // 使用後は削除
+                sessionStorage.removeItem('appleUserName');
+            } catch (e) {
+                console.error('[Auth] Failed to parse Apple user name:', e);
+            }
         }
     }, []);
 

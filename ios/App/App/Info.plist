@@ -22,10 +22,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.yourcoach.plus.yourcoachplus</string>
+			<string>com.yourcoach.plus</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.654534642431-e2ssoj5ifa8veu31bogtq4f8hju1vrq6</string>
+				<string>com.googleusercontent.apps.654534642431-fhv6j555ug7otbo752rgafpt37e3kk04</string>
 				<string>yourcoachplus</string>
 			</array>
 		</dict>

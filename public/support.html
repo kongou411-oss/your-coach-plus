@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サポート - Your Coach+</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f9fafb;
+            line-height: 1.6;
+            color: #374151;
+        }
+        .container { max-width: 56rem; margin: 0 auto; padding: 3rem 1rem; }
+        @media (max-width: 768px) { .container { padding: 2rem 1rem; } }
+        .card { background: white; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); padding: 2rem; }
+        h1 { font-size: 1.875rem; font-weight: bold; color: #111827; margin-bottom: 1.5rem; }
+        h2 { font-size: 1.5rem; font-weight: 600; color: #111827; margin-bottom: 1rem; margin-top: 2rem; }
+        h3 { font-size: 1.125rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+        p { margin-bottom: 1rem; }
+        .text-sm { font-size: 0.875rem; color: #6b7280; }
+        .mb-8 { margin-bottom: 2rem; }
+        section { margin-bottom: 2rem; }
+        ul { list-style-type: disc; margin-left: 2rem; margin-top: 0.5rem; }
+        ul li { margin-bottom: 0.5rem; }
+        strong { font-weight: 600; }
+        .border-top { border-top: 1px solid #e5e7eb; padding-top: 1.5rem; margin-top: 3rem; }
+        .contact-box {
+            background: linear-gradient(135deg, #4A9EFF 0%, #3b8fef 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+        }
+        .contact-box a { color: white; font-weight: 600; }
+        .faq-item {
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .faq-item p { margin-bottom: 0; }
+        a { color: #4A9EFF; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #6b7280;
+        }
+        .back-link:hover { color: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <a href="/home.html" class="back-link">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                ホームに戻る
+            </a>
+
+            <h1>サポート</h1>
+            <p class="text-sm mb-8">Your Coach+ カスタマーサポート</p>
+
+            <!-- お問い合わせ -->
+            <section>
+                <h2>お問い合わせ</h2>
+                <p>
+                    Your Coach+についてご質問、問題、ご意見がございましたら、お気軽にお問い合わせください。
+                </p>
+
+                <div class="contact-box">
+                    <p style="margin-bottom: 0.5rem;"><strong>メール:</strong></p>
+                    <p style="font-size: 1.25rem; margin-bottom: 0;">
+                        <a href="mailto:official@your-coach-plus.com">official@your-coach-plus.com</a>
+                    </p>
+                </div>
+
+                <p class="text-sm">
+                    <strong>返信目安:</strong> 通常、営業日で24〜48時間以内にご返信いたします。
+                </p>
+            </section>
+
+            <!-- よくある質問 -->
+            <section>
+                <h2>よくある質問</h2>
+
+                <div class="faq-item">
+                    <h3>アカウントの作成方法</h3>
+                    <p>
+                        メールアドレス、Googleアカウント、またはApple ID（iOSのみ）でアカウントを作成できます。「新規登録」をタップして、画面の指示に従ってください。
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>パスワードのリセット方法</h3>
+                    <p>
+                        ログイン画面で「パスワードを忘れた方」をタップし、メールアドレスを入力してください。パスワードリセットリンクが送信されます。
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>サブスクリプションの解約方法</h3>
+                    <p>
+                        <strong>iOS:</strong> 設定 → [お名前] → サブスクリプション → Your Coach+ → サブスクリプションをキャンセル<br>
+                        <strong>Android:</strong> Google Playストア → メニュー → 定期購入 → Your Coach+ → 解約
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>アカウントの削除方法</h3>
+                    <p>
+                        アプリ内の 設定 → アカウント → アカウント削除 から削除できます。すべてのデータが完全に削除されます。
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>データは安全ですか？</h3>
+                    <p>
+                        はい。業界標準の暗号化とFirebaseのセキュリティ機能でデータを保護しています。健康データは第三者と共有されることも、AIモデルの学習に使用されることもありません。詳細は<a href="/privacy.html">プライバシーポリシー</a>をご覧ください。
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>Apple Sign Inがうまくいかない</h3>
+                    <p>
+                        Apple Sign Inで問題が発生した場合は、以下をお試しください：
+                    </p>
+                    <ul>
+                        <li>アプリが最新バージョンであることを確認</li>
+                        <li>インターネット接続を確認</li>
+                        <li>アプリを再起動して再度お試しください</li>
+                        <li>問題が解決しない場合は official@your-coach-plus.com までお問い合わせください</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- その他のリソース -->
+            <section>
+                <h2>その他のリソース</h2>
+                <ul>
+                    <li><a href="/privacy.html">プライバシーポリシー</a></li>
+                    <li><a href="/terms.html">利用規約</a></li>
+                    <li><a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank">YouTubeチャンネル</a> - 使い方動画・アプリ解説</li>
+                </ul>
+            </section>
+
+            <!-- フッター -->
+            <div class="border-top">
+                <p class="text-sm">
+                    <strong>開発者:</strong> Your Coach+ チーム<br>
+                    <strong>メール:</strong> <a href="mailto:official@your-coach-plus.com">official@your-coach-plus.com</a>
+                </p>
+                <p class="text-sm" style="margin-top: 1rem;">
+                    &copy; 2026 Your Coach+. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
