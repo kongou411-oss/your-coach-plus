@@ -103,8 +103,23 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // サブコレクション: mealTemplates（食事テンプレート）
+      match /mealTemplates/{templateId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: workoutTemplates（運動テンプレート）
+      match /workoutTemplates/{templateId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // サブコレクション: routines
       match /routines/{routineId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: routinePatterns（ネイティブアプリ用）
+      match /routinePatterns/{patternId} {
         allow read, write: if isOwner(userId);
       }
 
@@ -131,6 +146,38 @@ service cloud.firestore {
       // サブコレクション: analyses（AI分析結果）
       match /analyses/{analysisId} {
         allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: conditions（コンディション記録）
+      match /conditions/{conditionId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: meals（食事記録）
+      match /meals/{mealId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: workouts（運動記録）
+      match /workouts/{workoutId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: dailyScores（デイリースコア）
+      match /dailyScores/{scoreId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: badges（バッジ）
+      match /badges/{badgeId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: experience（経験値・クレジット）
+      match /experience/{expId} {
+        allow read: if isOwner(userId);
+        // 書き込みはCloud Functionsのみ（クレジット操作のため）
+        allow write: if false;
       }
     }
 

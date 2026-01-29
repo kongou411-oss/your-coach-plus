@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 import toast from 'react-hot-toast';
+import { CountUpNumber, Confetti } from './01_common.jsx';
+import { playScoreAchievementAnimation } from '../utils/animations.js';
 
 // ===== Score Doughnut Chart Component =====
 const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate, setDailyRecord }) => {
@@ -8,6 +10,8 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
     const [recalculating, setRecalculating] = React.useState(false);
     const [showFoodDetails, setShowFoodDetails] = React.useState(false);
     const [show8AxisGuide, setShow8AxisGuide] = React.useState(false);
+    const [showConfetti, setShowConfetti] = React.useState(false);
+    const scoreElementRef = React.useRef(null);
 
     // useMemoでdailyRecordが変更されたときにスコアを再計算
     const scores = React.useMemo(() => {
@@ -154,13 +158,34 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
 
     const averageScore = Math.round((scores.food.score + scores.exercise.score + scores.condition.score) / 3);
 
+    // スコア100点達成時の演出
+    React.useEffect(() => {
+        const isPerfectScore = scores.food.score === 100 || scores.exercise.score === 100 || scores.condition.score === 100 || averageScore === 100;
+
+        if (isPerfectScore) {
+            setShowConfetti(true);
+            if (scoreElementRef.current) {
+                playScoreAchievementAnimation(scoreElementRef.current);
+            }
+
+            // 3秒後に紙吹雪を停止
+            const timer = setTimeout(() => {
+                setShowConfetti(false);
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [scores.food.score, scores.exercise.score, scores.condition.score, averageScore]);
+
     return (
         <div>
             <div className="relative max-w-[200px] mx-auto mb-4">
                 <canvas ref={canvasRef}></canvas>
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="text-2xl sm:text-3xl font-bold text-gray-800">{averageScore}</div>
+                    <div className="text-center" ref={scoreElementRef}>
+                        <div className="text-2xl sm:text-3xl font-bold text-gray-800">
+                            <CountUpNumber value={averageScore} duration={800} />
+                        </div>
                         <div className="text-xs text-gray-600">平均</div>
                     </div>
                 </div>
@@ -168,7 +193,9 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                 <div>
                     <div className="text-xs text-gray-600 mb-1">食事</div>
-                    <div className="text-2xl font-bold text-green-600">{scores.food.score}</div>
+                    <div className="text-2xl font-bold text-green-600">
+                        <CountUpNumber value={scores.food.score} duration={800} />
+                    </div>
                     <button
                         onClick={() => setShowFoodDetails(!showFoodDetails)}
                         className="text-xs text-blue-600 hover:text-blue-700 mt-1"
@@ -178,13 +205,20 @@ const ScoreDoughnutChart = ({ profile, dailyRecord, targetPFC, user, currentDate
                 </div>
                 <div>
                     <div className="text-xs text-gray-600 mb-1">運動</div>
-                    <div className="text-2xl font-bold text-orange-600">{scores.exercise.score}</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                        <CountUpNumber value={scores.exercise.score} duration={800} />
+                    </div>
                 </div>
                 <div>
                     <div className="text-xs text-gray-600 mb-1">コンディション</div>
-                    <div className="text-2xl font-bold text-red-600">{scores.condition.score}</div>
+                    <div className="text-2xl font-bold text-red-600">
+                        <CountUpNumber value={scores.condition.score} duration={800} />
+                    </div>
                 </div>
             </div>
+
+            {/* 紙吹雪エフェクト */}
+            <Confetti isActive={showConfetti} />
 
             {/* 8軸詳細スコア */}
             {showFoodDetails && scores.food && (
@@ -537,6 +571,418 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // 指示書管理
     const [todayDirective, setTodayDirective] = useState(null);
     const [showDirectiveEdit, setShowDirectiveEdit] = useState(false);
+
+    // クエスト編集モーダル
+    const [editingQuest, setEditingQuest] = useState(null); // { index, item, editedText }
+    const [questEditText, setQuestEditText] = useState('');
+
+    // 指示書アイテムを解析する関数
+    const parseDirectiveItems = (message) => {
+        if (!message) return [];
+        const lines = message.split('\n').filter(line => line.trim().startsWith('-') || line.trim().startsWith('【'));
+        return lines.map((line, index) => {
+            const cleanLine = line.replace(/^-\s*/, '').trim();
+            // タイプを判定
+            let type = 'other';
+            if (cleanLine.includes('【食事')) type = 'meal';
+            else if (cleanLine.includes('【運動')) type = 'workout';
+            else if (cleanLine.includes('【睡眠')) type = 'sleep';
+            else if (cleanLine.includes('【コンディション')) type = 'condition';
+            return {
+                id: index,
+                text: cleanLine,
+                type,
+                completed: false
+            };
+        });
+    };
+
+    // 食材名をfoodDatabaseで検索（部分一致・正規化対応）
+    const findFoodInDatabase = (name) => {
+        if (!window.foodDatabase) return null;
+        const normalizedName = name.replace(/（.*?）/g, '').replace(/\(.*?\)/g, '').trim();
+        for (const category of Object.keys(window.foodDatabase)) {
+            const foods = window.foodDatabase[category];
+            for (const foodName of Object.keys(foods)) {
+                // 完全一致
+                if (foodName === name || foodName === normalizedName) {
+                    return { name: foodName, ...foods[foodName] };
+                }
+                // 部分一致（食材名が含まれている）
+                const foodBaseName = foodName.replace(/（.*?）/g, '').replace(/\(.*?\)/g, '').trim();
+                if (foodBaseName === normalizedName || foodBaseName.includes(normalizedName) || normalizedName.includes(foodBaseName)) {
+                    return { name: foodName, ...foods[foodName] };
+                }
+            }
+        }
+        return null;
+    };
+
+    // クエスト内の食材を解析する関数
+    const parseMealItems = (text) => {
+        // 【食事N】を除去
+        const content = text.replace(/【食事\d*】\s*/, '').replace(/\[.*?\]\s*/, '').trim();
+        // カンマ区切りで分割
+        const items = content.split(/[,、]/);
+        return items.map(item => {
+            const trimmed = item.trim();
+            // 量を抽出（例: "鶏むね肉100g" → { name: "鶏むね肉", amount: 100, unit: "g" }）
+            const match = trimmed.match(/^(.+?)(\d+(?:\.\d+)?)\s*(g|kg|ml|個|本|杯|枚|錠)?$/);
+            if (match) {
+                return {
+                    name: match[1].trim(),
+                    amount: parseFloat(match[2]),
+                    unit: match[3] || 'g'
+                };
+            }
+            // 量なしの場合（デフォルト100g）
+            return { name: trimmed, amount: 100, unit: 'g' };
+        }).filter(item => item.name);
+    };
+
+    // クエスト内の運動を解析する関数
+    const parseWorkoutItems = (text) => {
+        // 【運動】を除去
+        const content = text.replace(/【運動】\s*/, '').trim();
+        // カンマ区切りで分割
+        const items = content.split(/[,、]/);
+        return items.map(item => {
+            const trimmed = item.trim();
+            // セット×回数を抽出（例: "スクワット 10回×5セット"）
+            const match = trimmed.match(/^(.+?)\s*(\d+)\s*回\s*[×x]\s*(\d+)\s*セット$/i);
+            if (match) {
+                return {
+                    name: match[1].trim(),
+                    reps: parseInt(match[2]),
+                    sets: parseInt(match[3])
+                };
+            }
+            // 簡易形式（"30分の散歩"など）
+            const timeMatch = trimmed.match(/^(\d+)\s*分.*?(.+)$/);
+            if (timeMatch) {
+                return {
+                    name: timeMatch[2].trim(),
+                    duration: parseInt(timeMatch[1])
+                };
+            }
+            return { name: trimmed };
+        }).filter(item => item.name);
+    };
+
+    // クエストアイテム完了時の自動記録
+    const handleQuestItemComplete = async (item, itemIndex) => {
+        if (!user || !todayDirective) return;
+
+        try {
+            // 完了状態を更新
+            const completedItems = todayDirective.completedItems || {};
+            const isNowCompleted = !completedItems[itemIndex];
+            completedItems[itemIndex] = isNowCompleted;
+
+            const updatedDirective = { ...todayDirective, completedItems };
+
+            // Firestoreに保存
+            await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('directives')
+                .doc(todayDirective.date)
+                .set(updatedDirective, { merge: true });
+
+            setTodayDirective(updatedDirective);
+
+            // 達成ログを保存（自動学習用）
+            await saveQuestLog(item, itemIndex, isNowCompleted);
+
+            // 完了時のみ自動記録（未完了に戻す場合は記録しない）
+            if (isNowCompleted) {
+                if (item.type === 'meal') {
+                    await recordMealFromQuest(item);
+                } else if (item.type === 'workout') {
+                    await recordWorkoutFromQuest(item);
+                } else if (item.type === 'sleep') {
+                    await recordSleepFromQuest(item);
+                }
+            }
+        } catch (error) {
+            console.error('[Dashboard] クエスト完了の保存エラー:', error);
+            toast.error('クエストの更新に失敗しました');
+        }
+    };
+
+    // クエスト達成ログを保存（自動学習用）
+    const saveQuestLog = async (item, itemIndex, completed) => {
+        if (!user) return;
+
+        try {
+            const today = currentDate || getTodayDate();
+            const logRef = firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('questLogs')
+                .doc(today);
+
+            const logDoc = await logRef.get();
+            const existingLogs = logDoc.exists ? logDoc.data().items || [] : [];
+
+            // 該当アイテムのログを更新または追加
+            const existingIndex = existingLogs.findIndex(log => log.itemIndex === itemIndex);
+            const logEntry = {
+                itemIndex,
+                questText: item.text,
+                questType: item.type,
+                completed,
+                completedAt: completed ? new Date().toISOString() : null,
+                // 食材情報を抽出（学習用）
+                foodItems: item.type === 'meal' ? parseMealItems(item.text).map(f => f.name) : [],
+                workoutItems: item.type === 'workout' ? parseWorkoutItems(item.text).map(w => w.name) : []
+            };
+
+            if (existingIndex >= 0) {
+                existingLogs[existingIndex] = logEntry;
+            } else {
+                existingLogs.push(logEntry);
+            }
+
+            await logRef.set({
+                date: today,
+                items: existingLogs,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (error) {
+            console.error('[Dashboard] クエストログの保存エラー:', error);
+        }
+    };
+
+    // クエスト編集を開始
+    const handleQuestEdit = (item, index, e) => {
+        e.stopPropagation(); // 親のonClickを防止
+        setEditingQuest({ index, item });
+        setQuestEditText(item.text);
+    };
+
+    // 編集済みクエストを保存して完了
+    const handleQuestEditSave = async () => {
+        if (!editingQuest || !user || !todayDirective) return;
+
+        const { index, item } = editingQuest;
+        const editedText = questEditText.trim();
+
+        // 編集済みアイテムを作成
+        const editedItem = {
+            ...item,
+            text: editedText,
+            originalText: item.text, // 元のテキストを保存（学習用）
+            wasEdited: true
+        };
+
+        try {
+            // 完了状態を更新
+            const completedItems = todayDirective.completedItems || {};
+            completedItems[index] = true;
+
+            // 編集済みテキストを保存
+            const editedTexts = todayDirective.editedTexts || {};
+            editedTexts[index] = editedText;
+
+            const updatedDirective = { ...todayDirective, completedItems, editedTexts };
+
+            // Firestoreに保存
+            await firebase.firestore()
+                .collection('users')
+                .doc(user.uid)
+                .collection('directives')
+                .doc(todayDirective.date)
+                .set(updatedDirective, { merge: true });
+
+            setTodayDirective(updatedDirective);
+
+            // 達成ログを保存（編集フラグ付き）
+            await saveQuestLog(editedItem, index, true);
+
+            // 自動記録（編集済みテキストで）
+            if (item.type === 'meal') {
+                await recordMealFromQuest(editedItem);
+            } else if (item.type === 'workout') {
+                await recordWorkoutFromQuest(editedItem);
+            } else if (item.type === 'sleep') {
+                await recordSleepFromQuest(editedItem);
+            }
+
+            toast.success('編集して記録しました');
+        } catch (error) {
+            console.error('[Dashboard] クエスト編集の保存エラー:', error);
+            toast.error('保存に失敗しました');
+        }
+
+        setEditingQuest(null);
+        setQuestEditText('');
+    };
+
+    // 全クエストを一括完了
+    const handleCompleteAllQuests = async () => {
+        if (!user || !todayDirective) return;
+
+        const items = parseDirectiveItems(todayDirective.message);
+        const completedItems = todayDirective.completedItems || {};
+
+        // 未完了のアイテムを取得
+        const uncompletedItems = items.filter((_, index) => !completedItems[index]);
+
+        if (uncompletedItems.length === 0) {
+            toast('全てのクエストは既に完了しています');
+            return;
+        }
+
+        // 確認
+        if (!window.confirm(`未完了の${uncompletedItems.length}件のクエストを全て完了にしますか？\n\n※各クエストの内容で自動記録されます`)) {
+            return;
+        }
+
+        try {
+            // 全アイテムを完了にする
+            for (let index = 0; index < items.length; index++) {
+                if (!completedItems[index]) {
+                    const item = items[index];
+                    await handleQuestItemComplete(item, index);
+                }
+            }
+
+            // 指示書全体も完了に
+            await handleCompleteDirective();
+
+            toast.success('全てのクエストを完了しました');
+        } catch (error) {
+            console.error('[Dashboard] 全クエスト完了エラー:', error);
+            toast.error('完了処理に失敗しました');
+        }
+    };
+
+    // 食事クエストから自動記録
+    const recordMealFromQuest = async (item) => {
+        const parsedItems = parseMealItems(item.text);
+        if (parsedItems.length === 0) return;
+
+        const mealItems = [];
+        let totalCalories = 0;
+
+        for (const parsed of parsedItems) {
+            const foodData = findFoodInDatabase(parsed.name);
+            if (foodData) {
+                // 量に応じて栄養素を換算（foodDatabaseは100gあたり）
+                const ratio = parsed.unit === 'g' ? parsed.amount / 100 :
+                             parsed.unit === 'kg' ? parsed.amount * 10 :
+                             parsed.unit === '個' || parsed.unit === '本' || parsed.unit === '杯' || parsed.unit === '枚' ? parsed.amount :
+                             parsed.amount / 100;
+
+                const mealItem = {
+                    name: parsed.name,
+                    amount: parsed.amount,
+                    unit: parsed.unit,
+                    calories: Math.round((foodData.calories || 0) * ratio),
+                    protein: Math.round((foodData.protein || 0) * ratio * 10) / 10,
+                    fat: Math.round((foodData.fat || 0) * ratio * 10) / 10,
+                    carbs: Math.round((foodData.carbs || 0) * ratio * 10) / 10,
+                    diaas: foodData.diaas || 0,
+                    aminoAcidScore: foodData.aminoAcidScore || 0,
+                    // ビタミン・ミネラル
+                    vitaminA: Math.round((foodData.vitaminA || 0) * ratio * 10) / 10,
+                    vitaminB1: Math.round((foodData.vitaminB1 || 0) * ratio * 100) / 100,
+                    vitaminB2: Math.round((foodData.vitaminB2 || 0) * ratio * 100) / 100,
+                    vitaminB6: Math.round((foodData.vitaminB6 || 0) * ratio * 100) / 100,
+                    vitaminB12: Math.round((foodData.vitaminB12 || 0) * ratio * 100) / 100,
+                    vitaminC: Math.round((foodData.vitaminC || 0) * ratio * 10) / 10,
+                    vitaminD: Math.round((foodData.vitaminD || 0) * ratio * 100) / 100,
+                    vitaminE: Math.round((foodData.vitaminE || 0) * ratio * 100) / 100,
+                    calcium: Math.round((foodData.calcium || 0) * ratio),
+                    iron: Math.round((foodData.iron || 0) * ratio * 10) / 10,
+                    zinc: Math.round((foodData.zinc || 0) * ratio * 10) / 10,
+                    magnesium: Math.round((foodData.magnesium || 0) * ratio),
+                    isFromQuest: true
+                };
+                mealItems.push(mealItem);
+                totalCalories += mealItem.calories;
+            } else {
+                // foodDatabaseに見つからない場合は名前だけ記録
+                mealItems.push({
+                    name: parsed.name,
+                    amount: parsed.amount,
+                    unit: parsed.unit,
+                    isFromQuest: true
+                });
+            }
+        }
+
+        if (mealItems.length > 0) {
+            // 食事タイプを判定（【食事N】のNから）
+            const mealTypeMatch = item.text.match(/【食事(\d+)】/);
+            const mealNumber = mealTypeMatch ? parseInt(mealTypeMatch[1]) : 1;
+            const mealTypes = ['朝食', '昼食', '間食', '夕食', '夜食'];
+            const mealType = mealTypes[Math.min(mealNumber - 1, mealTypes.length - 1)] || '食事';
+
+            const newMeal = {
+                id: `quest_meal_${Date.now()}`,
+                type: mealType,
+                items: mealItems,
+                calories: totalCalories,
+                timestamp: new Date().toISOString(),
+                isFromQuest: true
+            };
+
+            const updatedMeals = [...(dailyRecord.meals || []), newMeal];
+            const updatedRecord = { ...dailyRecord, meals: updatedMeals };
+            setDailyRecord(updatedRecord);
+            await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+            toast.success(`${mealType}を記録しました`);
+        }
+    };
+
+    // 運動クエストから自動記録
+    const recordWorkoutFromQuest = async (item) => {
+        const parsedItems = parseWorkoutItems(item.text);
+        if (parsedItems.length === 0) return;
+
+        const exercises = parsedItems.map(parsed => ({
+            name: parsed.name,
+            sets: parsed.sets || 1,
+            reps: parsed.reps || 0,
+            duration: parsed.duration || 0,
+            isFromQuest: true
+        }));
+
+        const newWorkout = {
+            id: `quest_workout_${Date.now()}`,
+            type: '筋トレ',
+            exercises,
+            timestamp: new Date().toISOString(),
+            isFromQuest: true
+        };
+
+        const updatedWorkouts = [...(dailyRecord.workouts || []), newWorkout];
+        const updatedRecord = { ...dailyRecord, workouts: updatedWorkouts };
+        setDailyRecord(updatedRecord);
+        await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+        toast.success('運動を記録しました');
+    };
+
+    // 睡眠クエストから自動記録
+    const recordSleepFromQuest = async (item) => {
+        // 睡眠時間を抽出（例: "8時間確保"）
+        const match = item.text.match(/(\d+(?:\.\d+)?)\s*時間/);
+        const hours = match ? parseFloat(match[1]) : 8;
+
+        const updatedConditions = {
+            ...(dailyRecord.conditions || {}),
+            sleepHours: hours,
+            sleepQuality: 3, // デフォルト（普通）
+            isFromQuest: true
+        };
+
+        const updatedRecord = { ...dailyRecord, conditions: updatedConditions };
+        setDailyRecord(updatedRecord);
+        await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
+        toast.success('睡眠を記録しました');
+    };
 
     // Premiumモーダル管理
     const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
@@ -2571,44 +3017,165 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 </div>
                 )}
 
-                {/* タブコンテンツ（指示書） */}
+                {/* タブコンテンツ（指示書/クエスト） */}
                 {activeTab === 'directive' && (
                     <div id="directive-section">
                         {todayDirective ? (
-                            <>
-                                <div className="flex items-center gap-3 mb-3">
-                                    <Icon name="Target" size={20} className="text-green-600" />
-                                    <span className="text-xs text-gray-600">今日の目標</span>
-                                </div>
-                                <div className="bg-white rounded-2xl border-2 border-green-600 p-4 mb-4 shadow-sm">
-                                    <div className="text-base font-bold text-gray-800 mb-2 whitespace-pre-line">
-                                        {todayDirective.message}
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-center gap-2">
-                                    <button
-                                        onClick={() => setShowDirectiveEdit(true)}
-                                        className="flex-1 bg-[#4A9EFF] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="Edit" size={18} />
-                                        編集
-                                    </button>
-                                    {!todayDirective.completed ? (
-                                        <button
-                                            onClick={handleCompleteDirective}
-                                            className="flex-1 bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
-                                        >
-                                            <Icon name="CheckCircle" size={18} />
-                                            完了
-                                        </button>
-                                    ) : (
-                                        <div className="flex-1 flex items-center justify-center gap-2 text-green-600 font-semibold py-3">
-                                            <Icon name="CheckCircle" size={18} />
-                                            完了済み
+                            (() => {
+                                const items = parseDirectiveItems(todayDirective.message);
+                                const completedItems = todayDirective.completedItems || {};
+                                const completedCount = Object.values(completedItems).filter(Boolean).length;
+                                const totalCount = items.length;
+
+                                return (
+                                    <>
+                                        {/* クエストヘッダー */}
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center">
+                                                <Icon name="Flag" size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-gray-800">今日のクエスト</h3>
+                                                <span className="text-sm text-gray-500">{completedCount} / {totalCount} 完了</span>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
-                            </>
+
+                                        {/* クエストアイテム一覧 */}
+                                        <div className="bg-gray-900 rounded-2xl border-2 border-blue-500 p-4 mb-4 shadow-lg">
+                                            <div className="space-y-2">
+                                                {items.map((item, index) => {
+                                                    const isCompleted = completedItems[index];
+                                                    const iconName = item.type === 'meal' ? 'Utensils' :
+                                                                    item.type === 'workout' ? 'Dumbbell' :
+                                                                    item.type === 'sleep' ? 'Moon' : 'Target';
+                                                    const iconColor = item.type === 'meal' ? 'text-orange-400' :
+                                                                     item.type === 'workout' ? 'text-red-400' :
+                                                                     item.type === 'sleep' ? 'text-purple-400' : 'text-blue-400';
+                                                    const actionText = item.type === 'sleep' ? 'タップで完了' : 'タップで自動記録';
+
+                                                    // 編集済みテキストがあれば表示
+                                                    const displayText = todayDirective.editedTexts?.[index] || item.text;
+                                                    const wasEdited = todayDirective.editedTexts?.[index] && todayDirective.editedTexts[index] !== item.text;
+
+                                                    return (
+                                                        <div
+                                                            key={index}
+                                                            className={`w-full p-3 rounded-xl flex items-start gap-3 transition-all ${
+                                                                isCompleted
+                                                                    ? 'bg-gray-800 border border-gray-700'
+                                                                    : 'bg-gray-800 border border-gray-600'
+                                                            }`}
+                                                        >
+                                                            {/* チェックアイコン（タップで完了） */}
+                                                            <button
+                                                                onClick={() => !isCompleted && handleQuestItemComplete(item, index)}
+                                                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                                                                    isCompleted
+                                                                        ? 'bg-green-500 border-green-500'
+                                                                        : 'border-orange-400 hover:border-orange-300 hover:bg-orange-400/20'
+                                                                }`}
+                                                            >
+                                                                {isCompleted && <Icon name="Check" size={14} className="text-white" />}
+                                                            </button>
+
+                                                            {/* アイコン */}
+                                                            <Icon name={iconName} size={18} className={`${iconColor} flex-shrink-0 mt-0.5`} />
+
+                                                            {/* テキスト */}
+                                                            <div className="flex-1 text-left">
+                                                                <p className={`text-sm ${isCompleted ? 'text-gray-500 line-through' : 'text-white'}`}>
+                                                                    {displayText}
+                                                                </p>
+                                                                {!isCompleted && (
+                                                                    <p className="text-xs text-orange-400 mt-1">{actionText}</p>
+                                                                )}
+                                                                {wasEdited && (
+                                                                    <p className="text-xs text-blue-400 mt-1">（編集済み）</p>
+                                                                )}
+                                                            </div>
+
+                                                            {/* 編集ボタン（未完了時のみ） */}
+                                                            {!isCompleted && (
+                                                                <button
+                                                                    onClick={(e) => handleQuestEdit(item, index, e)}
+                                                                    className="p-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 transition flex-shrink-0"
+                                                                    title="編集して記録"
+                                                                >
+                                                                    <Icon name="Edit2" size={14} className="text-gray-300" />
+                                                                </button>
+                                                            )}
+
+                                                            {/* 完了バッジ */}
+                                                            {isCompleted && (
+                                                                <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full flex-shrink-0">
+                                                                    完了
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* ボタン */}
+                                        <div className="flex items-center justify-center gap-2">
+                                            {completedCount < totalCount ? (
+                                                <button
+                                                    onClick={handleCompleteAllQuests}
+                                                    className="flex-1 bg-green-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
+                                                >
+                                                    <Icon name="CheckCircle2" size={18} />
+                                                    全て完了
+                                                </button>
+                                            ) : (
+                                                <div className="flex-1 flex items-center justify-center gap-2 text-green-500 font-semibold py-3 bg-green-500/10 rounded-lg">
+                                                    <Icon name="PartyPopper" size={18} />
+                                                    全クエスト達成！
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* クエスト編集モーダル */}
+                                        {editingQuest && (
+                                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                                <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+                                                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                                        <Icon name="Edit2" size={20} className="text-blue-500" />
+                                                        クエストを編集して記録
+                                                    </h3>
+                                                    <p className="text-sm text-gray-500 mb-3">
+                                                        量を調整して記録できます（例：130g → 100g）
+                                                    </p>
+                                                    <textarea
+                                                        value={questEditText}
+                                                        onChange={(e) => setQuestEditText(e.target.value)}
+                                                        rows={3}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none resize-none mb-4"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditingQuest(null);
+                                                                setQuestEditText('');
+                                                            }}
+                                                            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                                                        >
+                                                            キャンセル
+                                                        </button>
+                                                        <button
+                                                            onClick={handleQuestEditSave}
+                                                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center justify-center gap-2"
+                                                        >
+                                                            <Icon name="Check" size={16} />
+                                                            保存して完了
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()
                         ) : (
                             <div className="flex items-center justify-center gap-1 text-gray-400 py-4">
                                 <p className="text-sm">今日の指示書がありません</p>

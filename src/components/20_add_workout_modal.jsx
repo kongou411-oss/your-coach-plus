@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { STORAGE_KEYS } from '../config.js';
 import { normalizeForSearch } from '../kanjiReadingMap.js';
 import { Icon } from './01_common.jsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ===== 運動記録専用モーダル =====
 const AddItemView = ({ type, selectedDate, onClose, onAdd, onUpdate, userProfile, unlockedFeatures, user, currentRoutine, usageDays, dailyRecord, editingTemplate, editingWorkout, isTemplateMode = false }) => {

@@ -35,6 +35,13 @@ android {
             signingConfig signingConfigs.release
         }
     }
+
+    // Android 15 (API 35) 16KB page size alignment対応
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 repositories {

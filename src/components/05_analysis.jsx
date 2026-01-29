@@ -317,13 +317,23 @@ const AnalysisView = ({ onClose, userId, userProfile, usageDays, dailyRecord, ta
                 createdAt: new Date().toISOString()
             };
 
-            // Firestoreに保存
+            // Firestoreに保存（既存のcompletedフラグを保持するためmerge）
+            // ただし、message/type/createdAtは新しい値で上書き
+            const existingDoc = await firebase.firestore()
+                .collection('users')
+                .doc(userId)
+                .collection('directives')
+                .doc(today)
+                .get();
+
+            const existingCompleted = existingDoc.exists ? existingDoc.data().completed : false;
+
             await firebase.firestore()
                 .collection('users')
                 .doc(userId)
                 .collection('directives')
                 .doc(today)
-                .set(newDirective);
+                .set({ ...newDirective, completed: existingCompleted });
 
             setLastUpdate(Date.now()); // Appを再レンダリングさせる
             toast('指示書をダッシュボードに反映しました。');
@@ -405,12 +415,21 @@ ${content}
             const deadline = new Date(tomorrow);
             deadline.setHours(23, 59, 59, 999);
 
-            // 指示書をFirestoreに保存（上書き）
+            // 指示書をFirestoreに保存（既存のcompletedフラグを保持）
+            const existingDoc = await firebase.firestore()
+                .collection('users')
+                .doc(userId)
+                .collection('directives')
+                .doc(tomorrowStr)
+                .get();
+
+            const existingCompleted = existingDoc.exists ? existingDoc.data().completed : false;
+
             const newDirective = {
                 date: tomorrowStr,
                 message: message,
                 type: type,
-                completed: false,
+                completed: existingCompleted,
                 deadline: deadline.toISOString(),
                 createdAt: new Date().toISOString()
             };
@@ -527,6 +546,74 @@ ${content}
         const actualSleepHoursMap = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
         const actualSleepHours = actualSleepHoursMap[todayRecord.conditions?.sleepHours] || 0;
 
+        // 予算ティアの説明
+        const budgetTierMap = {
+            1: '節約（〜3万円/月）：鶏むね・卵・もやし中心',
+            2: '標準（3〜5万円/月）：たまに魚や牛赤身も可',
+            3: 'ゆとり（5万円〜/月）：時短食材や刺身も可'
+        };
+        const cookingToleranceMap = {
+            1: '調理不可（開封のみ）：コンビニ・即食系のみ',
+            2: '簡単調理（〜10分）：茹でる・焼く程度',
+            3: '本格調理（〜30分）：作り置きや手の込んだ料理も可'
+        };
+
+        // 過去7日間のクエスト達成率を取得（自動学習用）
+        let questAchievementData = null;
+        try {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const questLogsSnapshot = await firebase.firestore()
+                .collection('users')
+                .doc(userId)
+                .collection('questLogs')
+                .orderBy('date', 'desc')
+                .limit(7)
+                .get();
+
+            if (!questLogsSnapshot.empty) {
+                const logs = questLogsSnapshot.docs.map(doc => doc.data());
+                const allItems = logs.flatMap(log => log.items || []);
+                const completedCount = allItems.filter(item => item.completed).length;
+                const totalCount = allItems.length;
+                const achievementRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : null;
+
+                // 未達成が多い食材/運動を抽出
+                const failedFoods = allItems
+                    .filter(item => !item.completed && item.questType === 'meal')
+                    .flatMap(item => item.foodItems || []);
+                const failedWorkouts = allItems
+                    .filter(item => !item.completed && item.questType === 'workout')
+                    .flatMap(item => item.workoutItems || []);
+
+                // 頻出する未達成アイテムをカウント
+                const foodFailCounts = {};
+                failedFoods.forEach(food => {
+                    foodFailCounts[food] = (foodFailCounts[food] || 0) + 1;
+                });
+                const workoutFailCounts = {};
+                failedWorkouts.forEach(workout => {
+                    workoutFailCounts[workout] = (workoutFailCounts[workout] || 0) + 1;
+                });
+
+                // 2回以上未達成の食材/運動を警告リストに
+                const frequentlyFailedFoods = Object.entries(foodFailCounts)
+                    .filter(([_, count]) => count >= 2)
+                    .map(([food, count]) => `${food}(${count}回未達成)`);
+                const frequentlyFailedWorkouts = Object.entries(workoutFailCounts)
+                    .filter(([_, count]) => count >= 2)
+                    .map(([workout, count]) => `${workout}(${count}回未達成)`);
+
+                questAchievementData = {
+                    rate: achievementRate,
+                    frequentlyFailedFoods: frequentlyFailedFoods.length > 0 ? frequentlyFailedFoods : null,
+                    frequentlyFailedWorkouts: frequentlyFailedWorkouts.length > 0 ? frequentlyFailedWorkouts : null
+                };
+            }
+        } catch (error) {
+            console.error('[Analysis] Failed to load quest logs:', error);
+        }
+
         const promptData = {
             user_profile: {
                 height_cm: userProfile.height || 170,
@@ -534,7 +621,12 @@ ${content}
                 body_fat_percentage: userProfile.bodyFatPercentage || 15,
                 lean_body_mass_kg: userProfile.leanBodyMass || 60,
                 ideal_sleep_hours: idealSleepHours,
-                style: userProfile.style || "一般"
+                style: userProfile.style || "一般",
+                favorite_foods: userProfile.favoriteFoods || null,
+                ng_foods: userProfile.ngFoods || null,
+                budget_tier: budgetTierMap[userProfile.budgetTier] || budgetTierMap[2],
+                cooking_tolerance: cookingToleranceMap[userProfile.cookingTolerance] || cookingToleranceMap[2],
+                quest_achievement: questAchievementData
             },
             today: todayData
         };
@@ -1009,6 +1101,16 @@ ${currentPurpose === '増量' ? `
 - 必ず「---」の区切り線の後に「④ 明日の指示書」見出しを表示（③は1か月後予測のため）
 - ${currentPurpose}の目的達成に最も重要な改善点を1つ選択
 - 結論と根拠の両方を記載
+${userProfile.favoriteFoods ? `- **よく食べる食材（優先）**: ${userProfile.favoriteFoods} ← これらの食材を優先的に提案すること` : ''}
+${userProfile.ngFoods ? `- **NG食材（除外必須）**: ${userProfile.ngFoods} ← これらの食材は絶対に提案しないこと（アレルギー・嫌いな食材）` : ''}
+- **予算制約**: ${budgetTierMap[userProfile.budgetTier] || budgetTierMap[2]}
+  - 節約モードの場合：鶏むね肉・卵・納豆・豆腐・もやしを最優先。魚は缶詰か、サプリ（フィッシュオイル）で代用提案
+  - 鶏むね肉と卵は予算に関係なく最強食材なので全予算帯で積極的に提案
+- **調理時間制約**: ${cookingToleranceMap[userProfile.cookingTolerance] || cookingToleranceMap[2]}
+  - 調理不可の場合：サラダチキン、ゆで卵、プロテイン、コンビニ食品を提案
+${questAchievementData?.frequentlyFailedFoods ? `- **自動学習（要注意食材）**: ${questAchievementData.frequentlyFailedFoods.join(', ')} ← 過去に複数回未達成。提案頻度を下げるか、より簡単な代替案を提示` : ''}
+${questAchievementData?.frequentlyFailedWorkouts ? `- **自動学習（要注意運動）**: ${questAchievementData.frequentlyFailedWorkouts.join(', ')} ← 過去に複数回未達成。より簡単な代替案を提示` : ''}
+${questAchievementData?.rate !== null && questAchievementData?.rate < 50 ? `- **達成率警告**: 過去7日間の達成率が${questAchievementData.rate}%と低い。ハードルを下げた提案を心がける（量を減らす、簡単な食材に変更など）` : ''}
 - **結論は箇条書き形式（「-」で始まる）で記載**:
   - ✅ 良い例: 「鶏胸肉300gを摂取」「白米500gを摂取」「22時30分に就寝」
   - ❌ 悪い例: 「タンパク質を摂取するため鶏胸肉300gを食べる」「睡眠を確保するため22時に就寝する」
@@ -1092,12 +1194,21 @@ ${section2Prompt}
                         const deadline = new Date(tomorrow);
                         deadline.setHours(23, 59, 59, 999);
 
-                        // 指示書をFirestoreに保存
+                        // 指示書をFirestoreに保存（既存のcompletedフラグを保持）
+                        const existingDoc = await firebase.firestore()
+                            .collection('users')
+                            .doc(userId)
+                            .collection('directives')
+                            .doc(tomorrowStr)
+                            .get();
+
+                        const existingCompleted = existingDoc.exists ? existingDoc.data().completed : false;
+
                         const newDirective = {
                             date: tomorrowStr,
                             message: message,
                             type: type,
-                            completed: false,
+                            completed: existingCompleted,
                             deadline: deadline.toISOString(),
                             createdAt: new Date().toISOString()
                         };

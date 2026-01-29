@@ -1883,6 +1883,104 @@ const BasicTab = ({
                                         <p className="text-xs text-gray-600 mt-1">※成人の推奨睡眠時間は7-8時間です</p>
                                     </div>
 
+                                    {/* よく食べる食材 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1.5">
+                                            よく食べる食材
+                                            <span className="ml-2 text-xs text-gray-500 font-normal">（AI分析で優先提案）</span>
+                                        </label>
+                                        <textarea
+                                            value={profile.favoriteFoods || ''}
+                                            onChange={(e) => setProfile({...profile, favoriteFoods: e.target.value})}
+                                            placeholder="例：鶏むね肉、白米、ブロッコリー、卵、納豆"
+                                            rows={2}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none resize-none"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">カンマ区切りで入力。AI分析の指示書で優先的に提案されます。</p>
+                                    </div>
+
+                                    {/* NG食材 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1.5">
+                                            NG食材・アレルギー
+                                            <span className="ml-2 text-xs text-red-500 font-normal">（AI分析で除外）</span>
+                                        </label>
+                                        <textarea
+                                            value={profile.ngFoods || ''}
+                                            onChange={(e) => setProfile({...profile, ngFoods: e.target.value})}
+                                            placeholder="例：エビ、カニ、そば、ピーナッツ"
+                                            rows={2}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4A9EFF] focus:border-[#4A9EFF] focus:outline-none resize-none"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">カンマ区切りで入力。AI分析の指示書で除外されます。</p>
+                                    </div>
+
+                                    {/* 食費予算 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1.5">
+                                            食費予算（月額目安）
+                                            <span className="ml-2 text-xs text-gray-500 font-normal">（AI分析で考慮）</span>
+                                        </label>
+                                        <div className="flex w-full items-center justify-between gap-2 rounded-full bg-gray-100 p-1.5">
+                                            {[
+                                                { value: 1, label: '節約', desc: '〜3万円' },
+                                                { value: 2, label: '標準', desc: '3〜5万円' },
+                                                { value: 3, label: 'ゆとり', desc: '5万円〜' }
+                                            ].map(item => (
+                                                <button
+                                                    key={item.value}
+                                                    type="button"
+                                                    onClick={() => setProfile({...profile, budgetTier: item.value})}
+                                                    className={`flex-1 rounded-full py-2 px-1 text-center text-xs font-medium transition-colors duration-300 whitespace-nowrap ${
+                                                        item.value === (profile.budgetTier || 2)
+                                                            ? 'bg-[#4A9EFF] text-white'
+                                                            : 'text-gray-600 hover:text-gray-800'
+                                                    }`}
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {(profile.budgetTier || 2) === 1 && '鶏むね・卵・もやし中心。コスパ最優先でクエスト生成。'}
+                                            {(profile.budgetTier || 2) === 2 && '基本は鶏むね・卵。たまに魚や牛赤身も提案。'}
+                                            {(profile.budgetTier || 2) === 3 && '時短食材（サラダチキン等）や刺身も積極的に提案。'}
+                                        </p>
+                                    </div>
+
+                                    {/* 調理時間の許容度 */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1.5">
+                                            平日の調理時間
+                                            <span className="ml-2 text-xs text-gray-500 font-normal">（AI分析で考慮）</span>
+                                        </label>
+                                        <div className="flex w-full items-center justify-between gap-2 rounded-full bg-gray-100 p-1.5">
+                                            {[
+                                                { value: 1, label: '0分', desc: '開封のみ' },
+                                                { value: 2, label: '〜10分', desc: '簡単調理' },
+                                                { value: 3, label: '〜30分', desc: '本格調理' }
+                                            ].map(item => (
+                                                <button
+                                                    key={item.value}
+                                                    type="button"
+                                                    onClick={() => setProfile({...profile, cookingTolerance: item.value})}
+                                                    className={`flex-1 rounded-full py-2 px-1 text-center text-xs font-medium transition-colors duration-300 whitespace-nowrap ${
+                                                        item.value === (profile.cookingTolerance || 2)
+                                                            ? 'bg-[#4A9EFF] text-white'
+                                                            : 'text-gray-600 hover:text-gray-800'
+                                                    }`}
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {(profile.cookingTolerance || 2) === 1 && 'コンビニ・即食系を優先。サラダチキン、ゆで卵、プロテイン中心。'}
+                                            {(profile.cookingTolerance || 2) === 2 && '茹でる・焼く程度の簡単調理を提案。'}
+                                            {(profile.cookingTolerance || 2) === 3 && '本格的な自炊メニューも提案。作り置きレシピなど。'}
+                                        </p>
+                                    </div>
+
                                     <div>
                                         <label className="block text-sm font-medium mb-1.5">理想の体重 (kg)</label>
                                         <input

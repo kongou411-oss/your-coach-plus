@@ -20,6 +20,7 @@ exports.callGemini = onCall({
   region: "asia-northeast2", // 大阪リージョン（Cloud Functionのデプロイ先）
   cors: true,
   memory: "512MiB", // Vertex AI SDKは大きいためメモリを増やす
+  timeoutSeconds: 120, // タイムアウトを120秒に設定（gemini-2.5-proは時間がかかる）
   // APIキー不要（サービスアカウント権限で動作）
 }, async (request) => {
   // 1. 認証チェック
@@ -811,6 +812,57 @@ exports.adminAddCredits = onCall({
   } catch (error) {
     console.error("Admin Add Credits Error:", error);
     throw new Error("クレジットの追加に失敗しました");
+  }
+});
+
+// ===== デバッグ用: 自分自身にクレジット追加（後日削除予定） =====
+exports.debugAddCredits = onCall({
+  region: "asia-northeast1",
+  memory: "256MiB",
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+  const {amount} = request.data;
+
+  if (!amount || amount <= 0 || amount > 1000) {
+    throw new HttpsError("invalid-argument", "有効な金額を指定してください（1-1000）");
+  }
+
+  try {
+    const userRef = admin.firestore()
+        .collection("users")
+        .doc(userId);
+
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const userData = userDoc.data();
+    const currentFreeCredits = userData.freeCredits || 0;
+    const currentPaidCredits = userData.paidCredits || 0;
+
+    // freeCreditsに追加（テスト用）
+    await userRef.update({
+      freeCredits: currentFreeCredits + amount,
+    });
+
+    const newTotal = currentFreeCredits + amount + currentPaidCredits;
+
+    console.log(`[DEBUG] User ${userId} added ${amount} credits. New total: ${newTotal}`);
+
+    return {
+      success: true,
+      message: `${amount}クレジットを追加しました`,
+      newTotal: newTotal,
+    };
+  } catch (error) {
+    console.error("Debug Add Credits Error:", error);
+    throw new HttpsError("internal", `クレジットの追加に失敗しました: ${error.message}`);
   }
 });
 

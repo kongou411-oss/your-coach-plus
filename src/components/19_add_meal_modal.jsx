@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { normalizeForSearch } from '../kanjiReadingMap.js';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedButton } from './01_common.jsx';
 
 // 個数単位の定義（全箇所で統一使用）
 const COUNT_UNITS = ['本', '個', '杯', '枚', '錠', '包', '粒'];
@@ -1181,14 +1183,25 @@ JSON形式のみ出力、説明文不要`;
     const totalPFC = calculateTotalPFC();
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area" onClick={(e) => {
-            // モーダル外をタップした場合は閉じる
-            if (e.target === e.currentTarget) {
-                onClose();
-            }
-        }}>
-            <div
+        <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 z-[10001] flex items-center justify-center p-4 modal-safe-area backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => {
+                // モーダル外をタップした場合は閉じる
+                if (e.target === e.currentTarget) {
+                    onClose();
+                }
+            }}
+        >
+            <motion.div
                 className="bg-white rounded-2xl w-full max-w-md overflow-hidden flex flex-col modal-content-safe"
+                initial={{ y: 50, opacity: 0, scale: 0.95 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 50, opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* ヘッダー */}
@@ -1578,7 +1591,7 @@ JSON形式のみ出力、説明文不要`;
                         </div>
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* 検索モーダル */}
             {showSearchModal && (() => {
@@ -4009,7 +4022,7 @@ JSON形式のみ出力、説明文不要`;
 
             {/* 確認モーダル */}
             <ConfirmModalComponent />
-        </div>
+        </motion.div>
     );
 };
 

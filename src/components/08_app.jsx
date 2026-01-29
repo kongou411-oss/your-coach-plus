@@ -1251,7 +1251,8 @@ const CookieConsentBanner = ({ show, onAccept }) => {
                             const daysDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
                             const currentDayIndex = daysDiff % routineData.days.length;
                             const currentDayData = routineData.days[currentDayIndex];
-                            const currentDayNumber = currentDayIndex + 1;
+                            // days配列のdayフィールドを使用（正しいルーティンIDと一致させる）
+                            const currentDayNumber = currentDayData.day || (currentDayIndex + 1);
                             console.log('[Routine] currentDayNumber:', currentDayNumber, 'currentDayData:', currentDayData);
 
                             // routinesコレクションからテンプレート紐づけ情報を取得
