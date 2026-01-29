@@ -299,6 +299,58 @@ src/main.jsx               ← StatusBar設定
 
 ---
 
+## 🚨 KMP ネイティブアプリ（ycn_native）
+
+### ⚠️ 重要: 2つのプロジェクトが存在
+
+| プロジェクト | パス | 技術 | APK出力先 |
+|------------|------|------|----------|
+| **Capacitor (旧)** | `C:/Users/yourc/ycn_re/` | React + Capacitor | `android/app/build/outputs/apk/debug/app-debug.apk` |
+| **KMP (新・メイン)** | `C:/Users/yourc/ycn_re/ycn_native/` | Kotlin Multiplatform + Compose | `ycn_native/androidApp/build/outputs/apk/debug/androidApp-debug.apk` |
+
+**🚨 現在のメイン開発対象は KMP ネイティブアプリ（`ycn_native/`）**
+
+### KMPビルド手順（Windows）
+
+```bash
+# デバッグAPKビルド
+export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd C:/Users/yourc/ycn_re/ycn_native && ./gradlew :androidApp:assembleDebug
+
+# リリースAABビルド
+export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd C:/Users/yourc/ycn_re/ycn_native && ./gradlew :androidApp:bundleRelease
+```
+
+### KMPファイル構造
+
+```
+ycn_native/
+├── androidApp/src/main/java/.../
+│   ├── ui/screens/dashboard/   ← ダッシュボード画面
+│   │   ├── DashboardScreen.kt
+│   │   └── DashboardViewModel.kt
+│   ├── ui/screens/settings/    ← 設定画面
+│   │   ├── RoutineSettingsScreen.kt
+│   │   └── SettingsViewModel.kt
+│   ├── ui/components/          ← 共通コンポーネント
+│   │   └── DirectiveSection.kt ← クエスト表示
+│   └── data/repository/        ← Firestoreリポジトリ
+├── shared/src/commonMain/kotlin/.../
+│   ├── domain/model/           ← データモデル
+│   ├── domain/repository/      ← リポジトリインターフェース
+│   └── util/DateUtil.kt        ← 日付ユーティリティ
+└── build.gradle.kts
+```
+
+### 過去のバグ（再発防止）
+
+| 日付 | バグ | 原因 | 修正 |
+|------|------|------|------|
+| 2026/01/30 | クエスト完了が今日に記録される | `timestamp = System.currentTimeMillis()` で常に今日の時刻 | `DateUtil.dateStringToTimestamp(selectedDate)` で選択日のタイムスタンプを使用 |
+| 2026/01/29 | ルーティンがDay1固定 | `saveRoutine()`で`createdAt`が毎回リセット | `patternCreatedAt`変数で元の作成日時を保持 |
+| 2026/01/29 | ドロップダウン背景が白い | ExposedDropdownMenuがダークモード未対応 | `Modifier.background(MaterialTheme.colorScheme.surfaceContainer)` を追加 |
+
+---
+
 ## 参照ドキュメント
 
 詳細な技術仕様・トラブルシューティングは `README.md` を参照。
