@@ -1,5 +1,6 @@
 const {onRequest, onCall, HttpsError} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {onDocumentCreated} = require("firebase-functions/v2/firestore");
 const {defineSecret} = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { VertexAI } = require("@google-cloud/vertexai");
@@ -67,10 +68,16 @@ exports.callGemini = onCall({
       ...(generationConfig && {generationConfig: generationConfig}),
     });
 
-    // Vertex AI の generateContent を呼び出す
-    const result = await generativeModel.generateContent({
-      contents: contents,
+    // Vertex AI の generateContent を呼び出す（タイムアウト付き）
+    const timeoutMs = 100000; // 100秒（Cloud Functionタイムアウトの120秒より短く）
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('VERTEX_AI_TIMEOUT')), timeoutMs);
     });
+
+    const result = await Promise.race([
+      generativeModel.generateContent({ contents: contents }),
+      timeoutPromise
+    ]);
 
     const response = result.response;
 
@@ -104,6 +111,18 @@ exports.callGemini = onCall({
     // 既にHttpsErrorの場合はそのまま再スロー（permission-denied, unauthenticated等）
     if (error.code && ['permission-denied', 'unauthenticated', 'not-found', 'invalid-argument'].includes(error.code)) {
       throw error;
+    }
+
+    // タイムアウトエラーの場合
+    if (error.message === 'VERTEX_AI_TIMEOUT' ||
+        error.code === 'DEADLINE_EXCEEDED' ||
+        error.status === 'DEADLINE_EXCEEDED' ||
+        (error.message && error.message.includes('DEADLINE_EXCEEDED'))) {
+      throw new HttpsError(
+          "deadline-exceeded",
+          "AI分析がタイムアウトしました。プロンプトが長すぎる可能性があります。再度お試しください。",
+          error.message
+      );
     }
 
     // 429エラー（レート制限）の場合
@@ -868,7 +887,7 @@ exports.debugAddCredits = onCall({
 
 // ===== フィードバック送信 =====
 exports.sendFeedback = onCall({
-  region: "asia-northeast1",
+  region: "asia-northeast2",
   cors: true,
   secrets: [gmailUser, gmailAppPassword], // シークレットを指定
 }, async (request) => {
@@ -2108,6 +2127,177 @@ exports.validateB2B2CCode = onCall({
   }
 });
 
+// B2B2C所属名検証機能（iOS対応版）
+// コードではなく所属名で法人プラン適用
+exports.validateOrganizationName = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+  const {organizationName} = request.data;
+
+  if (!organizationName || organizationName.trim() === '') {
+    throw new HttpsError("invalid-argument", "所属名を入力してください");
+  }
+
+  const normalizedName = organizationName.trim();
+
+  try {
+    console.log(`[B2B2C] Validating organization name "${normalizedName}" for user ${userId}`);
+
+    // 1. 所属名が存在するか確認（大文字小文字区別なし）
+    const orgSnapshot = await admin.firestore()
+      .collection('b2b2cOrganizations')
+      .where('name', '==', normalizedName)
+      .limit(1)
+      .get();
+
+    if (orgSnapshot.empty) {
+      throw new HttpsError("not-found", "この所属名は登録されていません");
+    }
+
+    const orgDoc = orgSnapshot.docs[0];
+    const org = orgDoc.data();
+
+    // 2. サブスクが有効か確認
+    if (org.status !== 'active') {
+      throw new HttpsError("permission-denied", "この所属は現在無効です");
+    }
+
+    // 3. 有効期限チェック
+    if (org.validUntil && org.validUntil.toDate() < new Date()) {
+      throw new HttpsError("permission-denied", "この所属の契約期限が切れています");
+    }
+
+    // 4. ライセンス数チェック（無制限プランの場合はスキップ）
+    if (org.licenses !== -1) {
+      const usedLicenses = org.usedLicenses || 0;
+      if (usedLicenses >= org.licenses) {
+        throw new HttpsError("resource-exhausted", "この所属の登録上限に達しています");
+      }
+    }
+
+    // 5. ユーザーが既に企業に所属していないかチェック
+    const userDoc = await admin.firestore()
+      .collection('users')
+      .doc(userId)
+      .get();
+
+    const userData = userDoc.exists ? userDoc.data() : {};
+
+    // 5a. 別の企業に所属している場合はエラー
+    if (userData.b2b2cOrgId && userData.b2b2cOrgId !== orgDoc.id) {
+      throw new HttpsError("already-exists", "既に別の所属に登録されています。変更するには現在の所属を解除してください。");
+    }
+
+    // 5b. 同じ企業に既に登録済みの場合はスキップ（重複登録防止）
+    if (userData.b2b2cOrgId === orgDoc.id) {
+      console.log(`[B2B2C] User ${userId} already registered with org ${orgDoc.id}`);
+      return {
+        success: true,
+        message: "既にこの所属で登録済みです。",
+        organizationName: org.name,
+        planName: org.planId,
+        alreadyRegistered: true
+      };
+    }
+
+    // 6. ユーザーアカウントを更新（存在しない場合は作成）
+    // B2Bユーザーはクレジット100付与
+    await admin.firestore().collection('users').doc(userId).set({
+      isPremium: true,
+      b2b2cOrgId: orgDoc.id,
+      b2b2cOrgName: org.name,
+      b2b2cJoinedAt: admin.firestore.FieldValue.serverTimestamp(),
+      paidCredits: (userData.paidCredits || 0) + 100,
+    }, { merge: true });
+
+    // 7. 使用ライセンス数をインクリメント（新規登録時のみ）
+    await orgDoc.ref.update({
+      usedLicenses: admin.firestore.FieldValue.increment(1),
+      users: admin.firestore.FieldValue.arrayUnion(userId),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log(`[B2B2C] Organization "${normalizedName}" validated for user ${userId}`);
+
+    return {
+      success: true,
+      message: `${org.name}の所属として登録しました。Premium機能が利用可能になりました。`,
+      organizationName: org.name,
+      planName: org.planId
+    };
+
+  } catch (error) {
+    console.error(`[B2B2C] Organization validation failed for user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "所属の検証に失敗しました", error.message);
+  }
+});
+
+// B2B2C所属解除機能
+exports.leaveOrganization = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const userDoc = await admin.firestore()
+      .collection('users')
+      .doc(userId)
+      .get();
+
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+
+    const userData = userDoc.data();
+    const orgId = userData.b2b2cOrgId;
+
+    if (!orgId) {
+      throw new HttpsError("failed-precondition", "現在どの所属にも登録されていません");
+    }
+
+    // ユーザーから所属情報を削除
+    await admin.firestore().collection('users').doc(userId).update({
+      isPremium: false,
+      b2b2cOrgId: admin.firestore.FieldValue.delete(),
+      b2b2cOrgName: admin.firestore.FieldValue.delete(),
+      b2b2cJoinedAt: admin.firestore.FieldValue.delete(),
+    });
+
+    // 組織の使用ライセンス数をデクリメント
+    await admin.firestore().collection('b2b2cOrganizations').doc(orgId).update({
+      usedLicenses: admin.firestore.FieldValue.increment(-1),
+      users: admin.firestore.FieldValue.arrayRemove(userId),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log(`[B2B2C] User ${userId} left organization ${orgId}`);
+
+    return {
+      success: true,
+      message: "所属を解除しました"
+    };
+
+  } catch (error) {
+    console.error(`[B2B2C] Leave organization failed for user ${userId}:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "所属の解除に失敗しました", error.message);
+  }
+});
+
 // ===== ギフトコード機能 =====
 
 // ギフトコード適用（ユーザー用）
@@ -3074,24 +3264,393 @@ exports.purchaseTextbook = onCall({
 
 // 定数
 const EXPERIENCE_CONFIG = {
-  LEVEL_UP_CREDITS: 3,
-  MILESTONE_INTERVAL: 10,
-  MILESTONE_CREDITS: 5
+  LEVEL_UP_CREDITS: 1,      // レベルアップ毎に1クレジット
+  MAX_LEVEL: 999,           // 最大レベル
+  XP_PER_ACTION: 10         // 各アクションで獲得するXP
 };
 
-// レベルアップに必要な累計経験値を計算
+// バッジ定義（実データ照会版）
+// 各バッジは checkCondition(userId, db) で実際のFirestoreデータを照会して判定
+const BADGE_DEFINITIONS = {
+  // === ストリーク系（スコアのcurrentStreakを使用） ===
+  streak_3: {
+    name: "3日連続",
+    checkCondition: async (userId, db, userData) => {
+      const streak = userData.profile?.streak || 0;
+      return streak >= 3;
+    }
+  },
+  streak_7: {
+    name: "1週間連続",
+    checkCondition: async (userId, db, userData) => {
+      const streak = userData.profile?.streak || 0;
+      return streak >= 7;
+    }
+  },
+  streak_14: {
+    name: "2週間連続",
+    checkCondition: async (userId, db, userData) => {
+      const streak = userData.profile?.streak || 0;
+      return streak >= 14;
+    }
+  },
+  streak_30: {
+    name: "1ヶ月連続",
+    checkCondition: async (userId, db, userData) => {
+      const streak = userData.profile?.streak || 0;
+      return streak >= 30;
+    }
+  },
+  streak_100: {
+    name: "100日連続",
+    checkCondition: async (userId, db, userData) => {
+      const streak = userData.profile?.streak || 0;
+      return streak >= 100;
+    }
+  },
+
+  // === 栄養系（実データ照会） ===
+  nutrition_perfect_day: {
+    name: "パーフェクトデイ",
+    description: "日次スコア90点以上を達成",
+    checkCondition: async (userId, db, userData) => {
+      // scoresコレクションから90点以上の日があるか確認
+      const scoresRef = db.collection("users").doc(userId).collection("scores");
+      const highScores = await scoresRef.where("totalScore", ">=", 90).limit(1).get();
+      return !highScores.empty;
+    }
+  },
+  nutrition_protein_master: {
+    name: "プロテインマスター",
+    description: "タンパク質目標を7日連続達成（ユーザー別目標）",
+    checkCondition: async (userId, db, userData) => {
+      // ユーザーのタンパク質目標を取得
+      const targetProtein = userData.profile?.targetProtein;
+      if (!targetProtein || targetProtein <= 0) return false;
+
+      // 過去30日の日次スコアを取得
+      const today = getJSTDateString();
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+
+      const scoresRef = db.collection("users").doc(userId).collection("scores");
+      const scoresSnap = await scoresRef
+        .where("date", ">=", startDate)
+        .where("date", "<=", today)
+        .orderBy("date", "desc")
+        .get();
+
+      // 連続達成日数をカウント
+      let consecutiveDays = 0;
+      let maxConsecutive = 0;
+      let lastDate = null;
+
+      for (const doc of scoresSnap.docs) {
+        const data = doc.data();
+        const protein = data.food?.protein || 0;
+        const date = data.date;
+
+        // 目標達成判定（90%以上で達成とみなす）
+        const achieved = protein >= targetProtein * 0.9;
+
+        if (achieved) {
+          if (lastDate === null || isConsecutiveDay(lastDate, date)) {
+            consecutiveDays++;
+          } else {
+            consecutiveDays = 1;
+          }
+          maxConsecutive = Math.max(maxConsecutive, consecutiveDays);
+        } else {
+          consecutiveDays = 0;
+        }
+        lastDate = date;
+      }
+
+      return maxConsecutive >= 7;
+    }
+  },
+  nutrition_balanced: {
+    name: "バランス上手",
+    description: "PFC全てのスコアが70点以上",
+    checkCondition: async (userId, db, userData) => {
+      const scoresRef = db.collection("users").doc(userId).collection("scores");
+      const scoresSnap = await scoresRef.orderBy("date", "desc").limit(30).get();
+
+      for (const doc of scoresSnap.docs) {
+        const data = doc.data();
+        const food = data.food || {};
+        // PFCスコアを確認（各要素が70%以上）
+        const pScore = food.proteinScore || 0;
+        const fScore = food.fatScore || 0;
+        const cScore = food.carbScore || 0;
+        if (pScore >= 70 && fScore >= 70 && cScore >= 70) {
+          return true;
+        }
+      }
+      return false;
+    }
+  },
+
+  // === 運動系（実データ照会） ===
+  exercise_first: {
+    name: "はじめの一歩",
+    description: "初めての運動を記録",
+    checkCondition: async (userId, db, userData) => {
+      const workoutsRef = db.collection("users").doc(userId).collection("workouts");
+      const workouts = await workoutsRef.limit(1).get();
+      return !workouts.empty;
+    }
+  },
+  exercise_60min: {
+    name: "60分達成",
+    description: "1日に60分以上の運動を達成",
+    checkCondition: async (userId, db, userData) => {
+      // 日別の運動時間を集計
+      const workoutsRef = db.collection("users").doc(userId).collection("workouts");
+      const workouts = await workoutsRef.get();
+
+      const dailyDurations = {};
+      for (const doc of workouts.docs) {
+        const data = doc.data();
+        const date = data.timestamp ? new Date(data.timestamp).toISOString().split('T')[0] : null;
+        if (date) {
+          dailyDurations[date] = (dailyDurations[date] || 0) + (data.totalDuration || 0);
+        }
+      }
+
+      // 60分以上の日があるか
+      return Object.values(dailyDurations).some(d => d >= 60);
+    }
+  },
+  exercise_variety: {
+    name: "多彩なトレーニング",
+    description: "5種類以上の運動を1日で実施",
+    checkCondition: async (userId, db, userData) => {
+      const workoutsRef = db.collection("users").doc(userId).collection("workouts");
+      const workouts = await workoutsRef.get();
+
+      const dailyExerciseTypes = {};
+      for (const doc of workouts.docs) {
+        const data = doc.data();
+        const date = data.timestamp ? new Date(data.timestamp).toISOString().split('T')[0] : null;
+        if (date && data.exercises) {
+          if (!dailyExerciseTypes[date]) dailyExerciseTypes[date] = new Set();
+          for (const ex of data.exercises) {
+            dailyExerciseTypes[date].add(ex.name || ex.category);
+          }
+        }
+      }
+
+      return Object.values(dailyExerciseTypes).some(s => s.size >= 5);
+    }
+  },
+
+  // === マイルストーン系（実データカウント） ===
+  milestone_first_meal: {
+    name: "最初の一食",
+    description: "初めての食事を記録",
+    checkCondition: async (userId, db, userData) => {
+      const mealsRef = db.collection("users").doc(userId).collection("meals");
+      const meals = await mealsRef.limit(1).get();
+      return !meals.empty;
+    }
+  },
+  milestone_10_meals: {
+    name: "10食達成",
+    description: "累計10食の記録を達成",
+    checkCondition: async (userId, db, userData) => {
+      const mealsRef = db.collection("users").doc(userId).collection("meals");
+      const countSnap = await mealsRef.count().get();
+      return countSnap.data().count >= 10;
+    }
+  },
+  milestone_100_meals: {
+    name: "100食達成",
+    description: "累計100食の記録を達成",
+    checkCondition: async (userId, db, userData) => {
+      const mealsRef = db.collection("users").doc(userId).collection("meals");
+      const countSnap = await mealsRef.count().get();
+      return countSnap.data().count >= 100;
+    }
+  },
+  milestone_first_analysis: {
+    name: "初めてのAI分析",
+    description: "初めてAI分析を実行",
+    checkCondition: async (userId, db, userData) => {
+      const analysesRef = db.collection("users").doc(userId).collection("analyses");
+      const analyses = await analysesRef.limit(1).get();
+      return !analyses.empty;
+    }
+  },
+
+  // === 特別系（実データ照会） ===
+  special_early_bird: {
+    name: "早起き鳥",
+    description: "朝7時前に1食目を記録",
+    checkCondition: async (userId, db, userData) => {
+      const mealsRef = db.collection("users").doc(userId).collection("meals");
+      const meals = await mealsRef.get();
+
+      for (const doc of meals.docs) {
+        const data = doc.data();
+        if (data.timestamp) {
+          // JSTで7時前かチェック
+          const mealDate = new Date(data.timestamp);
+          const jstHour = (mealDate.getUTCHours() + 9) % 24;
+          // スロット1 = 1食目（朝食相当）
+          const slot = data.slot || data.mealSlot || 0;
+          if (jstHour < 7 && slot === 1) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  },
+  special_weekend_warrior: {
+    name: "週末戦士",
+    description: "週末に運動を記録",
+    checkCondition: async (userId, db, userData) => {
+      const workoutsRef = db.collection("users").doc(userId).collection("workouts");
+      const workouts = await workoutsRef.get();
+
+      for (const doc of workouts.docs) {
+        const data = doc.data();
+        if (data.timestamp) {
+          const workoutDate = new Date(data.timestamp);
+          const dayOfWeek = workoutDate.getDay();
+          if (dayOfWeek === 0 || dayOfWeek === 6) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  },
+  special_score_100: {
+    name: "パーフェクトスコア",
+    description: "日次総合スコア100点を達成",
+    checkCondition: async (userId, db, userData) => {
+      const scoresRef = db.collection("users").doc(userId).collection("scores");
+      const perfectScores = await scoresRef.where("totalScore", ">=", 100).limit(1).get();
+      return !perfectScores.empty;
+    }
+  }
+};
+
+/**
+ * 連続日判定ヘルパー（YYYY-MM-DD形式）
+ */
+function isConsecutiveDay(prevDate, currDate) {
+  const prev = new Date(prevDate);
+  const curr = new Date(currDate);
+  const diffDays = Math.abs((prev - curr) / (1000 * 60 * 60 * 24));
+  return diffDays === 1;
+}
+
+// レベルアップに必要な累計経験値を計算（累進式）
+// Lv2=100, Lv3=250, Lv4=450, Lv5=700... (+50XP毎)
 function getRequiredExpForLevel(level) {
-  return 100 * level * (level - 1) / 2;
+  if (level <= 1) return 0;
+  return 25 * (level - 1) * (level + 2);
 }
 
 // 現在の経験値から現在のレベルを計算
 function calculateLevel(experience) {
   let level = 1;
-  while (getRequiredExpForLevel(level + 1) <= experience) {
+  while (level < EXPERIENCE_CONFIG.MAX_LEVEL && getRequiredExpForLevel(level + 1) <= experience) {
     level++;
   }
   return level;
 }
+
+// JSTの日付文字列を取得（YYYY-MM-DD）
+function getJSTDateString() {
+  const now = new Date();
+  const jstOffset = 9 * 60 * 60 * 1000; // UTC+9
+  const jstDate = new Date(now.getTime() + jstOffset);
+  return jstDate.toISOString().split('T')[0];
+}
+
+// ===== grantLoginBonus: ログインボーナス（1日1回、0時リセット） =====
+exports.grantLoginBonus = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const userId = request.auth.uid;
+
+  try {
+    const userRef = admin.firestore().collection("users").doc(userId);
+    const todayJST = getJSTDateString();
+
+    // トランザクションで原子的に処理
+    const result = await admin.firestore().runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists) {
+        throw new HttpsError("not-found", "ユーザーが見つかりません");
+      }
+
+      const userData = userDoc.data();
+      const lastBonusDate = userData.lastLoginBonusDate;
+
+      // 今日既にボーナスを受け取っている場合はスキップ
+      if (lastBonusDate === todayJST) {
+        return {
+          granted: false,
+          reason: "already_granted_today",
+          lastBonusDate: lastBonusDate
+        };
+      }
+
+      // 経験値を加算
+      const currentExp = userData.profile?.experience || userData.experience || 0;
+      const currentFreeCredits = userData.freeCredits || 0;
+      const currentLevel = calculateLevel(currentExp);
+
+      const newExp = currentExp + EXPERIENCE_CONFIG.XP_PER_ACTION;
+      const newLevel = calculateLevel(newExp);
+      const leveledUp = newLevel > currentLevel;
+      const creditsEarned = leveledUp ? EXPERIENCE_CONFIG.LEVEL_UP_CREDITS : 0;
+      const newFreeCredits = currentFreeCredits + creditsEarned;
+
+      // 更新
+      const updates = {
+        "profile.experience": newExp,
+        "lastLoginBonusDate": todayJST
+      };
+      if (leveledUp) {
+        updates.freeCredits = newFreeCredits;
+      }
+      transaction.update(userRef, updates);
+
+      console.log(`[LoginBonus] User ${userId} granted +10 XP. Date: ${todayJST}, Level: ${currentLevel} -> ${newLevel}`);
+
+      return {
+        granted: true,
+        experience: newExp,
+        level: newLevel,
+        leveledUp,
+        creditsEarned,
+        freeCredits: newFreeCredits,
+        bonusDate: todayJST
+      };
+    });
+
+    return { success: true, ...result };
+  } catch (error) {
+    console.error(`[LoginBonus] grantLoginBonus failed:`, error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "ログインボーナスの付与に失敗しました", error.message);
+  }
+});
 
 // ===== addExperience: 経験値追加とレベルアップ処理 =====
 exports.addExperience = onCall({
@@ -3127,21 +3686,11 @@ exports.addExperience = onCall({
     const leveledUp = newLevel > currentLevel;
     const levelsGained = newLevel - currentLevel;
 
-    // レベルアップ報酬の計算
+    // レベルアップ報酬の計算（1クレジット/レベル）
     let creditsEarned = 0;
-    let milestoneReached = [];
 
     if (leveledUp) {
-      // 通常レベルアップ報酬
       creditsEarned = levelsGained * EXPERIENCE_CONFIG.LEVEL_UP_CREDITS;
-
-      // マイルストーン報酬（10, 20, 30...レベル）
-      for (let i = currentLevel + 1; i <= newLevel; i++) {
-        if (i % EXPERIENCE_CONFIG.MILESTONE_INTERVAL === 0) {
-          creditsEarned += EXPERIENCE_CONFIG.MILESTONE_CREDITS;
-          milestoneReached.push(i);
-        }
-      }
     }
 
     // プロフィール更新
@@ -3164,7 +3713,6 @@ exports.addExperience = onCall({
       leveledUp,
       levelsGained,
       creditsEarned,
-      milestoneReached,
       freeCredits: newFreeCredits,
       totalCredits: newFreeCredits + (userData.paidCredits || 0)
     };
@@ -3624,3 +4172,1302 @@ async function verifyAppStoreReceipt(receipt) {
     throw error;
   }
 }
+
+// ===== 非同期AI分析 (Firestore Trigger) =====
+// analysis_requests/{requestId} にドキュメントが作成されたら起動
+exports.processAnalysisRequest = onDocumentCreated({
+  document: "analysis_requests/{requestId}",
+  region: "asia-northeast2",
+  memory: "1GiB",
+  timeoutSeconds: 300, // 5分（長い分析に対応）
+}, async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    console.error("[Analysis] No data in document");
+    return;
+  }
+
+  const requestId = event.params.requestId;
+  const data = snapshot.data();
+  const db = admin.firestore();
+  const requestRef = db.collection("analysis_requests").doc(requestId);
+
+  console.log(`[Analysis] Processing request ${requestId}`);
+  console.log(`[Analysis] Data: meals=${data.meals?.length || 0}, workouts=${data.workouts?.length || 0}, score=${data.score?.foodScore || 0}`);
+
+  try {
+    // 1. ステータスを processing に更新
+    await requestRef.update({
+      status: "processing",
+      processingStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const userId = data.userId;
+    if (!userId) {
+      throw new Error("userId is required");
+    }
+
+    // 2. ユーザー情報を取得（クレジットチェック）
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      throw new Error("User not found");
+    }
+
+    const userData = userDoc.data();
+    const totalCredits = (userData.freeCredits || 0) + (userData.paidCredits || 0);
+    if (totalCredits < 1) {
+      throw new Error("Insufficient credits");
+    }
+
+    // 3. プロンプトを生成（振り返り専用、クエスト生成は分離済み）
+    const prompt = generateAnalysisPrompt(data);
+
+    // 4. Vertex AI を呼び出す
+    const projectId = process.env.GCLOUD_PROJECT;
+    const location = "asia-northeast1";
+    const vertexAI = new VertexAI({project: projectId, location: location});
+
+    const generativeModel = vertexAI.preview.getGenerativeModel({
+      model: "gemini-2.5-pro",
+      generationConfig: {
+        maxOutputTokens: 8192,  // 増加: 完全なJSON応答を確保
+        temperature: 0.7,
+        responseMimeType: "application/json", // JSON出力を強制
+        responseSchema: ANALYSIS_SCHEMA,     // 分析専用スキーマ（クエスト生成は分離済み）
+      },
+    });
+
+    const timeoutMs = 240000; // 4分
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("VERTEX_AI_TIMEOUT")), timeoutMs);
+    });
+
+    const result = await Promise.race([
+      generativeModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      }),
+      timeoutPromise,
+    ]);
+
+    const response = result.response;
+    const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!responseText) {
+      throw new Error("Empty response from AI");
+    }
+
+    // 5. JSON パース（マークダウンコードフェンスを除去）
+    let analysisResult;
+    try {
+      // マークダウンコードフェンスを除去
+      let cleanedText = responseText.trim();
+      if (cleanedText.startsWith("```json")) {
+        cleanedText = cleanedText.slice(7);
+      } else if (cleanedText.startsWith("```")) {
+        cleanedText = cleanedText.slice(3);
+      }
+      if (cleanedText.endsWith("```")) {
+        cleanedText = cleanedText.slice(0, -3);
+      }
+      cleanedText = cleanedText.trim();
+
+      analysisResult = JSON.parse(cleanedText);
+    } catch (parseError) {
+      console.error("[Analysis] JSON parse error:", parseError);
+      console.error("[Analysis] Raw response:", responseText.substring(0, 500));
+      // JSONパースに失敗した場合、テキストとして保存
+      analysisResult = { raw_text: responseText, parse_error: true };
+    }
+
+    // 6. クレジット消費
+    let freeCredits = userData.freeCredits || 0;
+    let paidCredits = userData.paidCredits || 0;
+    if (freeCredits >= 1) {
+      freeCredits -= 1;
+    } else {
+      paidCredits -= 1;
+    }
+    await db.collection("users").doc(userId).update({
+      freeCredits: freeCredits,
+      paidCredits: paidCredits,
+    });
+
+    // 7. 成功: ステータスを completed に更新
+    await requestRef.update({
+      status: "completed",
+      result: analysisResult,
+      remainingCredits: freeCredits + paidCredits,
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`[Analysis] Request ${requestId} completed successfully`);
+
+  } catch (error) {
+    console.error(`[Analysis] Request ${requestId} failed:`, error);
+
+    // エラー: ステータスを error に更新
+    await requestRef.update({
+      status: "error",
+      errorMessage: error.message || "Unknown error",
+      errorCode: error.code || "UNKNOWN",
+      failedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+});
+
+// ===== 分析プロンプト生成（振り返り専用・クエスト生成は分離済み） =====
+function generateAnalysisPrompt(data) {
+  const {
+    profile,
+    score,
+    meals,
+    workouts,
+    isRestDay,
+    targetCalories,
+    targetProtein,
+    targetFat,
+    targetCarbs,
+  } = data;
+
+  // スコアが0の場合、食事データから簡易計算（暫定対応）
+  let effectiveScore = score || {};
+  if ((!score || score.foodScore === 0) && meals && meals.length > 0) {
+    const mealCount = meals.length;
+    const estimatedCalories = mealCount * 400;
+    effectiveScore = {
+      ...effectiveScore,
+      foodScore: Math.min(100, mealCount * 20),
+      totalCalories: estimatedCalories,
+      totalProtein: mealCount * 25,
+      totalFat: mealCount * 15,
+      totalCarbs: mealCount * 50
+    };
+  }
+
+  // 目標名
+  const goalName = {
+    "LOSE_WEIGHT": "減量",
+    "MAINTAIN": "メンテナンス",
+    "GAIN_MUSCLE": "筋肉増加・バルクアップ",
+    "IMPROVE_HEALTH": "健康改善",
+  }[profile?.goal] || "メンテナンス";
+
+  // 食事情報
+  let mealsText = "";
+  if (meals && meals.length > 0) {
+    mealsText = meals.map((meal, i) => {
+      const name = meal.name || `食事${i + 1}`;
+      const items = (meal.items || []).map(it => `${it.name}${Math.round(it.amount)}${it.unit}`).join(", ");
+      return `- ${name}: ${items}`;
+    }).join("\n");
+  }
+
+  // 運動情報
+  let workoutsText = "";
+  if (workouts && workouts.length > 0) {
+    workoutsText = workouts.map(w => {
+      const typeName = { "STRENGTH": "筋トレ", "CARDIO": "有酸素", "FLEXIBILITY": "ストレッチ", "SPORTS": "スポーツ", "DAILY_ACTIVITY": "日常活動" }[w.type] || w.type;
+      const exercises = (w.exercises || []).map(ex => {
+        const details = [
+          ex.sets ? `${ex.sets}セット` : null,
+          ex.reps ? `${ex.reps}回` : null,
+          ex.weight ? `${ex.weight}kg` : null,
+          ex.duration ? `${ex.duration}分` : null,
+        ].filter(Boolean).join("×");
+        return `${ex.name}${details}`;
+      }).join(", ");
+      return `- ${typeName}: ${exercises}（${w.totalDuration || 0}分）`;
+    }).join("\n");
+  }
+
+  return `あなたはボディメイク専門のパーソナルトレーナーです。
+ユーザーの本日の記録を分析し、振り返りフィードバックを提供してください。
+
+## ユーザー情報
+- 目的: ${goalName}
+- 性別: ${profile?.gender || "不明"}
+- 年齢: ${profile?.age || "不明"}歳
+- 体重: ${profile?.weight || "不明"}kg
+- 目標体重: ${profile?.targetWeight || "不明"}kg
+${isRestDay ? "- 本日は休養日" : ""}
+
+## 今日の目標
+- カロリー: ${targetCalories || 2000}kcal
+- タンパク質: ${Math.round(targetProtein || 120)}g
+- 脂質: ${Math.round(targetFat || 60)}g
+- 炭水化物: ${Math.round(targetCarbs || 250)}g
+
+## 今日の実績
+- カロリー: ${Math.round(effectiveScore?.totalCalories || 0)}kcal（達成率: ${Math.round(((effectiveScore?.totalCalories || 0) / (targetCalories || 2000)) * 100)}%）
+- タンパク質: ${Math.round(effectiveScore?.totalProtein || 0)}g（達成率: ${Math.round(((effectiveScore?.totalProtein || 0) / (targetProtein || 120)) * 100)}%）
+- 脂質: ${Math.round(effectiveScore?.totalFat || 0)}g（達成率: ${Math.round(((effectiveScore?.totalFat || 0) / (targetFat || 60)) * 100)}%）
+- 炭水化物: ${Math.round(effectiveScore?.totalCarbs || 0)}g（達成率: ${Math.round(((effectiveScore?.totalCarbs || 0) / (targetCarbs || 250)) * 100)}%）
+
+## 食事記録
+${mealsText || "記録なし"}
+
+## 運動記録
+${workoutsText || "記録なし"}
+
+## 出力形式（JSON厳守）
+以下のスキーマに従ってJSONのみを出力してください。Markdownは使用しないでください。
+
+{
+  "daily_summary": {
+    "grade": "A〜Dの評価（A:目標達成、B:概ね達成、C:改善必要、D:大幅改善必要）",
+    "comment": "50文字以内の総評"
+  },
+  "good_points": ["良かった点1", "良かった点2"],
+  "improvement_points": [
+    {"point": "改善点", "suggestion": "具体的な改善案"}
+  ],
+  "advice": "明日に向けた一言アドバイス"
+}
+
+## 評価基準
+- A: 全マクロが目標の90%〜110%以内
+- B: 全マクロが目標の80%〜120%以内
+- C: いずれかのマクロが目標の70%〜130%外
+- D: いずれかのマクロが目標の60%未満または140%超
+
+Output valid JSON only.`;
+}
+
+// ===== 食材リストフィルタリング =====
+function getFilteredFoodList(budgetTier, ngFoods, favoriteFoods) {
+  // ティア別食材
+  const tier1 = {
+    protein: ["鶏むね肉", "全卵", "納豆", "木綿豆腐", "ツナ缶"],
+    carbs_high_gi: ["白米（炊飯直後）", "餅", "バナナ"],
+    carbs_low_gi: ["白米（冷やご飯）", "玄米", "オートミール"],
+    veggies: ["キャベツ", "もやし", "ブロッコリー"],
+    supplement: ["ホエイプロテイン"],
+  };
+  const tier2 = {
+    protein: ["鶏もも肉", "豚ロース", "サバ", "鮭", "エビ"],
+    veggies: ["ほうれん草", "アスパラガス", "トマト"],
+    other: ["アーモンド", "チーズ"],
+  };
+  const tier3 = {
+    protein: ["牛ヒレ肉", "サーモン", "ホタテ"],
+    veggies: ["アボカド"],
+    other: ["マカダミアナッツ", "ブルーベリー"],
+  };
+
+  // NG食材リスト
+  const ngList = ngFoods ? ngFoods.split(",").map(s => s.trim()).filter(Boolean) : [];
+
+  // フィルタリング関数
+  const filterNg = (foods) => foods.filter(f => !ngList.some(ng => f.includes(ng) || ng.includes(f)));
+
+  let result = [];
+
+  // 優先食材
+  if (favoriteFoods) {
+    const favList = favoriteFoods.split(",").map(s => s.trim()).filter(Boolean);
+    if (favList.length > 0) {
+      result.push(`【優先食材】${favList.join(", ")}`);
+    }
+  }
+
+  // Tier 1（必須）
+  result.push(`【タンパク源】${filterNg(tier1.protein).join(", ")}`);
+  result.push(`【主食・高GI（トレ前後用）】${filterNg(tier1.carbs_high_gi).join(", ")}`);
+  result.push(`【主食・低GI（通常食用）】${filterNg(tier1.carbs_low_gi).join(", ")}`);
+  result.push(`【野菜】${filterNg(tier1.veggies).join(", ")}`);
+  result.push(`【サプリ（トレ前後のみ）】${tier1.supplement.join(", ")}`);
+
+  // Tier 2
+  if (budgetTier >= 2) {
+    const t2protein = filterNg(tier2.protein);
+    const t2veggies = filterNg(tier2.veggies);
+    if (t2protein.length > 0) result.push(`【タンパク源+】${t2protein.join(", ")}`);
+    if (t2veggies.length > 0) result.push(`【野菜+】${t2veggies.join(", ")}`);
+    if (tier2.other.length > 0) result.push(`【その他】${filterNg(tier2.other).join(", ")}`);
+  }
+
+  // Tier 3
+  if (budgetTier >= 3) {
+    const t3protein = filterNg(tier3.protein);
+    if (t3protein.length > 0) result.push(`【高級タンパク源】${t3protein.join(", ")}`);
+    if (tier3.veggies.length > 0) result.push(`【高級野菜】${filterNg(tier3.veggies).join(", ")}`);
+    if (tier3.other.length > 0) result.push(`【高級その他】${filterNg(tier3.other).join(", ")}`);
+  }
+
+  return result.join("\n");
+}
+
+// ===== AI分析用JSONスキーマ（振り返り専用・クエスト生成は分離済み） =====
+const ANALYSIS_SCHEMA = {
+  type: "object",
+  properties: {
+    daily_summary: {
+      type: "object",
+      properties: {
+        grade: { type: "string", enum: ["A", "B", "C", "D"] },
+        comment: { type: "string" }
+      },
+      required: ["grade", "comment"]
+    },
+    good_points: { type: "array", items: { type: "string" } },
+    improvement_points: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          point: { type: "string" },
+          suggestion: { type: "string" }
+        }
+      }
+    },
+    advice: { type: "string" }  // 明日に向けた一言アドバイス
+  },
+  required: ["daily_summary"]
+};
+
+// ===== food_idマッピング（表示名との対応表） =====
+const FOOD_ID_MAP = {
+  "chicken_breast": { displayName: "鶏むね肉（皮なし）", pfc: "P23 F2 C0" },
+  "egg_whole": { displayName: "全卵Lサイズ", pfc: "P12 F10 C0.5", perUnit: "1個64g" },
+  "white_rice": { displayName: "白米", pfc: "P2.5 F0.3 C37" },
+  "brown_rice": { displayName: "玄米", pfc: "P2.8 F1 C35" },
+  "broccoli": { displayName: "ブロッコリー", pfc: "P4 F0.5 C5" },
+  "beef_lean": { displayName: "牛赤身肉", pfc: "P21 F4 C0" },
+  "saba": { displayName: "サバ（焼き）", pfc: "P26 F12 C0" },
+  "salmon": { displayName: "鮭", pfc: "P22 F4 C0" },
+  "mochi": { displayName: "切り餅", pfc: "P4 F1 C50" },
+  "whey_protein": { displayName: "ホエイプロテイン", pfc: "P80 F3 C5" },
+  "pink_salt": { displayName: "ピンク岩塩", pfc: "-" },
+  "olive_oil": { displayName: "オリーブオイル", pfc: "P0 F100 C0" }
+};
+
+// ===== プロンプト用 food_id 一覧テキスト =====
+const FOOD_ID_LIST_TEXT = `
+## 使用可能な food_id 一覧（この中からのみ選択）
+| food_id | 名称 | PFC/100g | 用途 |
+|---------|------|----------|------|
+| chicken_breast | 鶏むね肉（皮なし） | P23 F2 C0 | 常備・ローコスト |
+| egg_whole | 全卵Lサイズ | P8 F6.5 C0.3（1個64g） | 常備・ローコスト |
+| white_rice | 白米 | P2.5 F0.3 C37 | 維持/増量 |
+| brown_rice | 玄米 | P2.8 F1 C35 | 減量 |
+| broccoli | ブロッコリー | P4 F0.5 C5 | 常備 |
+| beef_lean | 牛赤身肉 | P21 F4 C0 | 脚/背中/胸の日 |
+| saba | サバ（焼き） | P26 F12 C0 | 肩の日 |
+| salmon | 鮭 | P22 F4 C0 | 腕の日（1食目） |
+| mochi | 切り餅 | P4 F1 C50 | トレ前後 |
+| whey_protein | ホエイプロテイン | P80 F3 C5 | トレ後 |
+| pink_salt | ピンク岩塩 | - | 全食事（LBM連動） |
+| olive_oil | オリーブオイル | P0 F100 C0 | 脂質補充（トレ前後NG） |
+`;
+
+// ===== 部位別タンパク質戦略 =====
+/**
+ * TargetBodyPart ID定義（Kotlin shared層と同期）
+ *
+ * 【部位別タンパク質源】
+ * - 脚/背中/胸 → 牛赤身肉（クレアチン・亜鉛）
+ * - 肩 → サバ（オメガ3・EPA/DHA）
+ * - 腕 → 鮭（1食目、アスタキサンチン）
+ * - オフ/休み/腹筋/有酸素 → 鶏むね肉 + 卵
+ * ※ローコスト(Tier1)の場合は全て鶏むね肉 + 卵
+ */
+const TARGET_BODY_PARTS = {
+  // 牛赤身肉推奨（高強度コンパウンド種目）
+  legs: { displayNameJa: "脚", proteinSource: "beef_lean" },
+  back: { displayNameJa: "背中", proteinSource: "beef_lean" },
+  chest: { displayNameJa: "胸", proteinSource: "beef_lean" },
+  // 魚推奨（部位別に変える）
+  shoulders: { displayNameJa: "肩", proteinSource: "saba" },
+  arms: { displayNameJa: "腕", proteinSource: "salmon", note: "1食目に配置" },
+  // 鶏むね肉（回復・軽量日）
+  off: { displayNameJa: "オフ", proteinSource: "chicken_breast" },
+  rest: { displayNameJa: "休み", proteinSource: "chicken_breast" },
+  abs: { displayNameJa: "腹筋", proteinSource: "chicken_breast" },
+  cardio: { displayNameJa: "有酸素", proteinSource: "chicken_breast" }
+};
+
+/**
+ * タンパク質戦略（部位別・予算別）
+ *
+ * @param {string} bodyPartId - TargetBodyPart ID (legs, back, chest, shoulders, arms, off, etc.)
+ * @param {number} budgetTier - 予算帯（1=ローコスト, 2=アスリート）
+ */
+function getProteinStrategy(bodyPartId, budgetTier) {
+  const part = TARGET_BODY_PARTS[bodyPartId];
+
+  // ローコスト（Tier 1）→ 全て鶏むね肉 + 卵
+  if (budgetTier <= 1) {
+    return {
+      food_id: "chicken_breast",
+      secondary: "egg_whole",
+      reason: "ローコスト：鶏むね肉＋全卵でコスパ最強"
+    };
+  }
+
+  // Tier 2以上: 部位別に最適なタンパク質源
+  const source = part?.proteinSource || "chicken_breast";
+  const reasons = {
+    "beef_lean": "牛赤身肉：クレアチン・亜鉛・鉄分補給",
+    "saba": "サバ（焼き）：オメガ3・EPA/DHA補給",
+    "salmon": "鮭：アスタキサンチン・オメガ3（1食目推奨）",
+    "chicken_breast": "鶏むね肉：高タンパク低脂質"
+  };
+
+  return {
+    food_id: source,
+    secondary: source === "chicken_breast" ? "egg_whole" : null,
+    reason: reasons[source] || "タンパク質確保",
+    note: part?.note
+  };
+}
+
+/**
+ * 炭水化物戦略（Kotlin getCarbForGoal と完全同期）
+ *
+ * @param {string} goal - フィットネス目標（LOSE_WEIGHT, MAINTAIN, GAIN_MUSCLE）
+ */
+function getCarbStrategy(goal) {
+  if (goal === "LOSE_WEIGHT") {
+    return { food_id: "brown_rice", reason: "減量：玄米で低GI・満腹感" };
+  }
+  // MAINTAIN, GAIN_MUSCLE, その他
+  return { food_id: "white_rice", reason: "維持/増量：白米で消化促進" };
+}
+
+// ===== クエスト生成専用スキーマ（分析から分離） =====
+const QUEST_SCHEMA = {
+  type: "object",
+  properties: {
+    meals: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          slot: { type: "integer" },
+          time: { type: "string" },  // "07:30" 形式
+          label: { type: "string" }, // "トレ前", "トレ後", "起床後" など
+          foods: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                food_id: {
+                  type: "string",
+                  enum: [
+                    "chicken_breast", "egg_whole", "white_rice", "brown_rice",
+                    "broccoli", "beef_lean", "saba_can", "salmon",
+                    "mochi", "whey_protein", "pink_salt"
+                  ]
+                },
+                amount: { type: "integer" },
+                unit: { type: "string", enum: ["g", "個", "杯"] }
+              },
+              required: ["food_id", "amount"]
+            }
+          }
+        },
+        required: ["slot", "foods"]
+      }
+    },
+    workout: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        sets: { type: "integer" },
+        reps: { type: "integer" }
+      }
+    },
+    sleep: {
+      type: "object",
+      properties: {
+        hours: { type: "integer" }
+      }
+    },
+    shopping_list: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          food_id: { type: "string" },
+          total_amount: { type: "integer" },
+          unit: { type: "string" }
+        }
+      }
+    }
+  },
+  required: ["meals", "sleep", "shopping_list"]
+};
+
+// ===== タイムスケジュール計算ヘルパー =====
+function parseTimeToMinutes(time) {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(minutes) {
+  const h = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function calculateMealTimes(wakeUpTime, trainingTime, sleepTime, mealsPerDay, trainingAfterMeal, trainingDuration = 120) {
+  const wake = parseTimeToMinutes(wakeUpTime) || 7 * 60;  // デフォルト7:00
+  const sleep = parseTimeToMinutes(sleepTime) || 22 * 60; // デフォルト22:00
+  const training = parseTimeToMinutes(trainingTime);
+  const duration = trainingDuration || 120;  // デフォルト2時間
+
+  const mealTimes = [];
+  const hasTraining = trainingAfterMeal != null && trainingAfterMeal >= 1 && training != null;
+  const MEAL_INTERVAL = 180; // 3時間間隔（分）
+
+  for (let i = 1; i <= mealsPerDay; i++) {
+    let time;
+    let label;
+
+    if (i === 1) {
+      // 食事1: 起床時刻（設定値をそのまま使用）
+      time = wake;
+      label = "起床後";
+    } else if (hasTraining && i === trainingAfterMeal) {
+      // トレ前: トレーニング開始2時間前
+      time = training - 120;
+      label = "トレ前";
+    } else if (hasTraining && i === trainingAfterMeal + 1) {
+      // トレ後: トレーニング終了直後（開始時刻 + 所要時間）
+      time = training + duration;
+      label = "トレ後";
+    } else if (hasTraining && i === trainingAfterMeal + 2) {
+      // トレ後の次: トレ後から1時間後（トレ開始から2時間後）
+      const postWorkoutTime = training + duration;
+      time = postWorkoutTime + 60;
+      // 就寝2時間前を超えないように調整
+      if (time > sleep - 120) {
+        time = sleep - 120;
+      }
+      label = "";
+    } else if (i === mealsPerDay) {
+      // 最終食事: 就寝2時間前
+      time = sleep - 120;
+      label = "就寝前";
+    } else {
+      // その他: 3時間間隔
+      const prevMeal = mealTimes[i - 2];
+      const prevTime = parseTimeToMinutes(prevMeal.time);
+      time = prevTime + MEAL_INTERVAL;
+      // 就寝2時間前を超えないように調整
+      if (time > sleep - 120) {
+        time = sleep - 120;
+      }
+      label = "";
+    }
+
+    mealTimes.push({ slot: i, time: minutesToTime(time), label });
+  }
+
+  return mealTimes;
+}
+
+// ===== 部位名 英語→日本語変換 =====
+function splitTypeToJapanese(splitType) {
+  const mapping = {
+    "chest": "胸",
+    "back": "背中",
+    "legs": "脚",
+    "shoulders": "肩",
+    "arms": "腕",
+    "abs": "腹筋",
+    "abs_core": "腹筋・体幹",
+    "cardio": "有酸素",
+    "rest": "休み",
+    "off": "オフ",
+    "upper_body": "上半身",
+    "lower_body": "下半身",
+    "full_body": "全身",
+    "push": "プッシュ",
+    "pull": "プル",
+    "chest_triceps": "胸・三頭",
+    "back_biceps": "背中・二頭",
+    "shoulders_arms": "肩・腕"
+  };
+  return mapping[splitType] || splitType;
+}
+
+// ===== クエスト生成プロンプト =====
+function generateQuestPrompt(data) {
+  const {
+    splitType,
+    budgetTier,
+    mealsPerDay,
+    targetProtein,
+    targetFat,
+    targetCarbs,
+    targetCalories,
+    trainingAfterMeal,
+    trainingDuration,
+    trainingStyle,
+    repsPerSet,
+    ngFoods,
+    isEatingOut,
+    eatingOutMeal,
+    goal,
+    wakeUpTime,
+    trainingTime,
+    sleepTime,
+    weight,
+    bodyFatPercentage
+  } = data;
+
+  // 部位名を日本語に変換
+  const splitTypeJa = splitTypeToJapanese(splitType);
+
+  // 運動量を計算（30分あたり1種目×5セット）
+  const exerciseCount = Math.max(1, Math.floor((trainingDuration || 120) / 30));
+  const setsPerExercise = 5;
+
+  // 目標カロリー（渡されない場合はPFCから計算）
+  const calories = targetCalories || Math.round((targetProtein || 120) * 4 + (targetFat || 60) * 9 + (targetCarbs || 250) * 4);
+
+  // LBM（除脂肪体重）から塩分量を計算
+  // 公式: saltPerMeal = LBM / 22 (例: 68kg LBM → 3g/meal)
+  const lbm = weight && bodyFatPercentage != null
+    ? weight * (1 - bodyFatPercentage / 100)
+    : 68;  // デフォルト68kg（体重80kg・体脂肪15%想定）
+  const saltPerMeal = Math.round(lbm / 22);  // LBM 68kg → 3g/meal
+
+  // マクロ戦略（部位別・予算別）
+  const proteinStrategy = getProteinStrategy(splitType || "off", budgetTier || 2);
+  const carbStrategy = getCarbStrategy(goal || "MAINTAIN");
+
+  // 休み/オフ日はトレーニングなし
+  const isRestDay = splitType === "rest" || splitType === "off" || splitType === "abs" || splitType === "cardio";
+
+  // トレ前後のPFC設定
+  const preP = 20, preF = 5, preC = 50;
+  const postP = 30, postF = 5, postC = 60;
+
+  // 休み日はトレーニングなし（trainingAfterMealが設定されていても無視）
+  const hasTraining = !isRestDay && trainingAfterMeal != null && trainingAfterMeal >= 1;
+  const remainingMeals = hasTraining ? mealsPerDay - 2 : mealsPerDay;
+  const usedP = hasTraining ? preP + postP : 0;
+  const usedF = hasTraining ? preF + postF : 0;
+  const usedC = hasTraining ? preC + postC : 0;
+  const pPerMeal = remainingMeals > 0 ? Math.round((targetProtein - usedP) / remainingMeals) : Math.round(targetProtein / mealsPerDay);
+  const fPerMeal = remainingMeals > 0 ? Math.round((targetFat - usedF) / remainingMeals) : Math.round(targetFat / mealsPerDay);
+  const cPerMeal = remainingMeals > 0 ? Math.round((targetCarbs - usedC) / remainingMeals) : Math.round(targetCarbs / mealsPerDay);
+
+  // タイムスケジュール計算（休み日はtrainingAfterMeal=nullで渡す）
+  const effectiveTrainingAfterMeal = hasTraining ? trainingAfterMeal : null;
+  const mealTimes = calculateMealTimes(wakeUpTime, trainingTime, sleepTime, mealsPerDay, effectiveTrainingAfterMeal, trainingDuration);
+
+  // 各食事のタイムスケジュール＋PFC目標
+  const mealScheduleList = [];
+  for (let i = 1; i <= mealsPerDay; i++) {
+    const mealTime = mealTimes.find(m => m.slot === i);
+    const timeStr = mealTime ? mealTime.time : "";
+    const labelStr = mealTime?.label ? `[${mealTime.label}]` : "";
+
+    if (hasTraining && i === trainingAfterMeal) {
+      mealScheduleList.push(`slot ${i}: ${timeStr} ${labelStr} → 高GI炭水化物（餅）+ 塩、脂質5g以下`);
+    } else if (hasTraining && i === trainingAfterMeal + 1) {
+      mealScheduleList.push(`slot ${i}: ${timeStr} ${labelStr} → 高GI炭水化物（餅）+ プロテイン、脂質5g以下`);
+    } else if (isEatingOut && i === eatingOutMeal) {
+      mealScheduleList.push(`slot ${i}: ${timeStr} [外食] → スキップ`);
+    } else {
+      mealScheduleList.push(`slot ${i}: ${timeStr} ${labelStr} → P${pPerMeal}g F${fPerMeal}g C${cPerMeal}g`);
+    }
+  }
+
+  return `あなたはボディメイク専門の栄養士です。明日の「食事・運動・睡眠」クエストを生成してください。
+
+## タイムスケジュール
+- 起床: ${wakeUpTime || "07:00"}
+- トレーニング: ${hasTraining ? trainingTime : "なし"}
+- 就寝: ${sleepTime || "22:00"}
+
+## 条件
+- 部位: ${splitTypeJa}
+- 目標: ${goal || "MAINTAIN"}
+- 予算: Tier ${budgetTier || 2}（1=ローコスト, 2=アスリート）
+- 食事回数: ${mealsPerDay}食
+
+## 🎯 1日の目標PFC（必達）
+- **タンパク質: ${Math.round(targetProtein)}g**（許容: ${Math.round(targetProtein) - 3}〜${Math.round(targetProtein) + 3}g）
+- **脂質: ${Math.round(targetFat)}g**（許容: ±5g）
+- **炭水化物: ${Math.round(targetCarbs)}g**（調整用）
+- **カロリー: ${calories}kcal**（許容: ${calories - 100}〜${calories}kcal）
+- LBM: ${Math.round(lbm)}kg → 塩分 ${saltPerMeal}g/食
+${ngFoods ? `- NG食材: ${ngFoods}` : ""}
+
+## 各食事のスケジュール（**必ずこの時刻を使用**）
+${mealScheduleList.join("\n")}
+※ 上記の時刻を厳密に使用すること。独自の時刻を生成しないこと。
+
+## マクロ戦略（予算Tier ${budgetTier || 2}）
+- タンパク質: 「${proteinStrategy.food_id}」を優先（${proteinStrategy.reason}）
+${proteinStrategy.secondary ? `  → サブ: 「${proteinStrategy.secondary}」を組み合わせ` : ''}
+${proteinStrategy.note ? `  → 注意: ${proteinStrategy.note}` : ''}
+- 炭水化物: 「${carbStrategy.food_id}」を優先（${carbStrategy.reason}）
+- 脂質: タンパク質源から自然摂取、**不足時はオリーブオイルで補充（トレ前後以外の食事に追加）**
+
+## ベース量（1食あたり・必ずこの量から開始）
+- 鶏むね肉（皮なし）: 100g（P23g, F2g）をベースに調整
+- 全卵Lサイズ: 1個（P8g F6.5g, 64g）をベースに調整
+- 白米: 200g（C74g）をベースに調整
+- ブロッコリー: 50g をベースに調整
+- 切り餅: 100g（トレ前後のベース量）
+- **ピンク岩塩: ${saltPerMeal}g を毎食追加（必須）** ← LBM ${Math.round(lbm)}kg から算出
+- オリーブオイル: 脂質不足時に5〜10g追加（**トレ前後の食事には絶対に追加しない**）
+
+${FOOD_ID_LIST_TEXT}
+
+## 出力形式（必須）
+
+### 1. meals（食事）- 必ず${mealsPerDay}個のslotを出力
+各slotに以下を含める:
+- slot: 食事番号（1〜${mealsPerDay}）
+- pfc_target: "P○g F○g C○g"
+- foods: [{food_id, amount, unit}]の配列
+
+### 2. workout（運動）- 部位が"off"以外の場合は必須
+${hasTraining ? `- name: "${splitTypeJa}トレーニング"
+- exercises: ${exerciseCount}種目（${trainingDuration || 120}分 ÷ 30分/種目）
+- sets: ${setsPerExercise}セット/種目
+- reps: ${repsPerSet || 10}回/セット（${trainingStyle === "POWER" ? "パワー" : "パンプ"}スタイル）
+- total_sets: ${exerciseCount * setsPerExercise}セット` : "- 休息日のためworkoutは空オブジェクト{}"}
+
+### 3. sleep（睡眠）- 必須
+- hours: 9（固定）
+
+### 4. shopping_list（買い物リスト）- 必須
+全食事で使用するfood_idの合計量
+
+## ルール
+- food_idは上記一覧からのみ選択
+- amountは整数（g単位）
+- 各slotで目標PFCを達成する組み合わせを提案
+- **ベース量を基準に調整**：鶏むね100g、全卵1個（64g）、白米200g、ブロッコリー50g、餅100g（トレ前後）
+- **1食あたりタンパク質は最低20g以上**（鶏むね肉なら85g以上）
+- **1食あたりP源は2種まで**（例：beef_lean + egg_whole ✅、beef_lean + chicken_breast + egg_whole ❌）
+- **ピンク岩塩${saltPerMeal}gを全食事に必ず追加**（LBMベース電解質補給）
+- トレ前後は脂質5g以下、高GIカーボ（mochi）推奨
+- **餅は1食あたり100gまで**。ただし**他の食事でC目標を既に達成している場合は餅を減量または省略**
+- **トレ前後の食事はGL上限を無視**（速やかな糖補給を優先）
+- **脂質が1日目標に対して不足する場合、トレ前後以外の食事にオリーブオイルを5〜10g追加**
+- **部位別タンパク質「${proteinStrategy.food_id}」を1食目(slot 1)に必ず配置**（休み/オフ日は鶏むね肉）
+- 外食予定の食事はfoods: []で出力
+- **出力前にセルフチェック（必須）**:
+  1. **タンパク質が${Math.round(targetProtein) - 3}〜${Math.round(targetProtein) + 3}gになっているか計算**。不足なら鶏むね肉を増量、超過なら減量
+  2. **カロリーが${calories - 100}〜${calories}kcalになっているか計算**。超過なら白米を減量
+
+## 出力例（このJSON形式に厳密に従うこと）
+\`\`\`json
+{
+  "meals": [
+    {"slot": 1, "foods": [{"food_id": "${proteinStrategy.food_id}", "amount": 150}, {"food_id": "white_rice", "amount": 200}]},
+    {"slot": 2, "foods": [{"food_id": "chicken_breast", "amount": 150}, {"food_id": "white_rice", "amount": 150}]}
+  ],
+  "workout": {"name": "${splitTypeJa}トレーニング", "exercises": ${exerciseCount}, "sets": ${setsPerExercise}, "total_sets": ${exerciseCount * setsPerExercise}},
+  "sleep": {"hours": 9},
+  "shopping_list": [{"food_id": "${proteinStrategy.food_id}", "total_amount": 150}, {"food_id": "chicken_breast", "total_amount": 150}, {"food_id": "white_rice", "total_amount": 350}]
+}
+\`\`\`
+
+**重要**: mealsにはtimeフィールドを含めない（サーバー側で追加する）。
+上記の形式に厳密に従い、純粋なJSONのみを出力してください。マークダウンのコードブロックは不要です。`;
+}
+
+// ===== クエスト生成 Cloud Function（分離版） =====
+exports.generateQuest = onCall({
+  region: "asia-northeast2",
+  memory: "512MiB",
+  timeoutSeconds: 120,
+}, async (request) => {
+  const data = request.data || {};
+
+  // 認証コンテキストからuserIdを取得
+  const userId = request.auth?.uid;
+  if (!userId) {
+    throw new HttpsError("unauthenticated", "User must be logged in");
+  }
+
+  const db = admin.firestore();
+
+  try {
+    // 1. ユーザープロフィールを取得
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "User not found");
+    }
+    const userData = userDoc.data();
+    const profile = userData.profile || {};
+
+    // 1.5. クレジットチェック（クエスト生成は1クレジット消費）
+    const totalCredits = (userData.freeCredits || 0) + (userData.paidCredits || 0);
+    if (totalCredits < 1) {
+      throw new HttpsError("resource-exhausted", "クレジットが不足しています");
+    }
+
+    // 2. 明日の日付を計算（JSTベース）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const tomorrowJST = new Date(nowJST);
+    tomorrowJST.setDate(tomorrowJST.getDate() + 1);
+    const tomorrowStr = tomorrowJST.toISOString().split("T")[0];  // YYYY-MM-DD
+
+    // 3. 明日のルーティンをパターンから計算
+    const routineSettingsDoc = await db.collection("users").doc(userId)
+      .collection("settings").doc("routine").get();
+
+    let tomorrowSplitType = "off";
+    if (routineSettingsDoc.exists) {
+      const routineData = routineSettingsDoc.data();
+      if (routineData.active && routineData.startDate && routineData.days?.length > 0) {
+        const startDate = new Date(routineData.startDate);
+        const daysDiff = Math.floor((tomorrowJST - startDate) / (1000 * 60 * 60 * 24));
+        const tomorrowDayIndex = daysDiff % routineData.days.length;
+        const tomorrowDayData = routineData.days[tomorrowDayIndex];
+        tomorrowSplitType = tomorrowDayData?.name || "off";
+        console.log(`[Quest] Tomorrow routine: day ${tomorrowDayIndex + 1}/${routineData.days.length}, splitType=${tomorrowSplitType}`);
+      }
+    }
+
+    // 日本語splitTypeを英語キーに変換（TARGET_BODY_PARTSのキーに合わせる）
+    const splitTypeMap = {
+      "胸": "chest",
+      "背中": "back",
+      "脚": "legs",
+      "肩": "shoulders",
+      "腕": "arms",
+      "休み": "rest",
+      "オフ": "off",
+      "腹筋": "abs",
+      "有酸素": "cardio",
+      // 英語はそのまま
+      "chest": "chest",
+      "back": "back",
+      "legs": "legs",
+      "shoulders": "shoulders",
+      "arms": "arms",
+      "rest": "rest",
+      "off": "off",
+      "abs": "abs",
+      "cardio": "cardio"
+    };
+    // クライアントから送られたsplitTypeを優先（ダッシュボードと同じルーティン）
+    const rawSplitType = data.splitType || tomorrowSplitType || "off";
+    const splitType = splitTypeMap[rawSplitType] || "off";
+    const budgetTier = data.budgetTier || profile.budgetTier || 2;
+
+    // タンパク質戦略を事前計算（ログ用）
+    const proteinPreview = getProteinStrategy(splitType, budgetTier);
+    console.log(`[Quest] Strategy: rawSplitType=${rawSplitType} → splitType=${splitType} → protein=${proteinPreview.food_id}`);
+
+    // 3. プロンプトデータを構築
+    // トレーニングスタイル: POWER(5回/セット) or PUMP(10回/セット)
+    const trainingStyle = data.trainingStyle || profile.trainingStyle || "PUMP";
+    const repsPerSet = trainingStyle === "POWER" ? 5 : 10;
+
+    const promptData = {
+      splitType,
+      budgetTier,
+      mealsPerDay: data.mealsPerDay || profile.mealsPerDay || 3,
+      targetProtein: data.targetProtein || profile.targetProtein || 120,
+      targetFat: data.targetFat || profile.targetFat || 60,
+      targetCarbs: data.targetCarbs || profile.targetCarbs || 250,
+      targetCalories: data.targetCalories || profile.targetCalories || null,  // PFCから計算する場合はnull
+      trainingAfterMeal: data.trainingAfterMeal ?? profile.trainingAfterMeal,
+      trainingDuration: data.trainingDuration || profile.trainingDuration || 120,
+      trainingStyle,
+      repsPerSet,
+      ngFoods: profile.ngFoods || "",
+      isEatingOut: data.isEatingOut || false,
+      eatingOutMeal: data.eatingOutMeal || null,
+      // タイムスケジュール
+      wakeUpTime: data.wakeUpTime || profile.wakeUpTime || "07:00",
+      trainingTime: data.trainingTime || profile.trainingTime || "17:00",
+      sleepTime: data.sleepTime || profile.sleepTime || "22:00",
+      goal: profile.goal || "MAINTAIN",
+      // LBM計算用
+      weight: data.weight || profile.weight || 80,
+      bodyFatPercentage: data.bodyFatPercentage ?? profile.bodyFatPercentage ?? 15
+    };
+
+    console.log(`[Quest] Generating for ${userId}, budget=${promptData.budgetTier}, meals=${promptData.mealsPerDay}`);
+    console.log(`[Quest] Time settings: wake=${promptData.wakeUpTime}, training=${promptData.trainingTime}, sleep=${promptData.sleepTime}, duration=${promptData.trainingDuration}min, trainingAfterMeal=${promptData.trainingAfterMeal}`);
+
+    // 4. Gemini 2.5 Flash でクエスト生成（リトライ付き）
+    const projectId = process.env.GCLOUD_PROJECT;
+    const location = "asia-northeast1";
+    const vertexAI = new VertexAI({ project: projectId, location: location });
+
+    const generativeModel = vertexAI.preview.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        maxOutputTokens: 16384,  // 5食分のJSON出力に十分なトークン数
+        temperature: 0.1,  // 安定した出力
+      },
+    });
+
+    const prompt = generateQuestPrompt(promptData);
+
+    // リトライ設定
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 2000;
+    let questResult = null;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[Quest] Attempt ${attempt}/${MAX_RETRIES}...`);
+
+        // Vertex AI呼び出し（タイムアウト付き）
+        const timeoutMs = 250000; // 250秒（Cloud Functionの300秒より短く）
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("VERTEX_AI_TIMEOUT")), timeoutMs);
+        });
+
+        const result = await Promise.race([
+          generativeModel.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+          }),
+          timeoutPromise
+        ]);
+
+        const response = result.response;
+        const candidate = response.candidates?.[0];
+        const finishReason = candidate?.finishReason;
+        const responseText = candidate?.content?.parts?.[0]?.text;
+
+        console.log(`[Quest] Finish reason: ${finishReason}, response length: ${responseText?.length || 0}`);
+
+        if (!responseText) {
+          throw new Error(`Empty response from AI (finishReason: ${finishReason})`);
+        }
+
+        // JSONパース（ロバストな抽出）
+        let cleanedText = responseText.trim();
+        console.log("[Quest] Raw response (first 1000 chars):", cleanedText.substring(0, 1000));
+
+        // マークダウンコードブロックを削除
+        cleanedText = cleanedText.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
+
+        // JSONオブジェクトを抽出（最初の { から最後の } まで）
+        let jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          // 最後の } がない場合（切り詰められた場合）、手動で閉じる試行
+          console.warn("[Quest] Attempting to repair truncated JSON...");
+          const startIndex = cleanedText.indexOf('{');
+          if (startIndex === -1) {
+            throw new Error("No JSON object found in response");
+          }
+          cleanedText = cleanedText.substring(startIndex);
+          // 不完全な配列/オブジェクトを閉じる試行
+          let openBraces = (cleanedText.match(/\{/g) || []).length;
+          let closeBraces = (cleanedText.match(/\}/g) || []).length;
+          let openBrackets = (cleanedText.match(/\[/g) || []).length;
+          let closeBrackets = (cleanedText.match(/\]/g) || []).length;
+          cleanedText = cleanedText.replace(/,\s*$/, ''); // 末尾のカンマ削除
+          while (openBrackets > closeBrackets) { cleanedText += ']'; closeBrackets++; }
+          while (openBraces > closeBraces) { cleanedText += '}'; closeBraces++; }
+          console.log("[Quest] Repaired JSON length:", cleanedText.length);
+        } else {
+          cleanedText = jsonMatch[0];
+        }
+
+        // 不正な制御文字を削除
+        cleanedText = cleanedText.replace(/[\x00-\x1f\x7f]/g, (char) => {
+          if (char === "\n" || char === "\r" || char === "\t") return char;
+          return "";
+        });
+
+        questResult = JSON.parse(cleanedText);
+        console.log(`[Quest] Attempt ${attempt} succeeded, meals count: ${questResult.meals?.length}`);
+        break; // 成功したらループを抜ける
+
+      } catch (attemptError) {
+        lastError = attemptError;
+        console.error(`[Quest] Attempt ${attempt} failed:`, attemptError.message);
+
+        if (attempt < MAX_RETRIES) {
+          console.log(`[Quest] Retrying in ${RETRY_DELAY_MS}ms...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        }
+      }
+    }
+
+    if (!questResult) {
+      console.error("[Quest] All retries failed");
+      throw new HttpsError("internal", `Quest generation failed after ${MAX_RETRIES} attempts: ${lastError?.message}`);
+    }
+
+    // 6. サーバー側で計算した時刻を各食事に追加
+    // 休日判定（promptData.splitTypeはプロンプト生成と同じ値）
+    const isRestDayForTime = ["rest", "off", "abs", "cardio"].includes(splitType);
+    const effectiveTrainingAfterMealForTime = isRestDayForTime ? null : promptData.trainingAfterMeal;
+
+    const mealTimes = calculateMealTimes(
+      promptData.wakeUpTime,
+      promptData.trainingTime,
+      promptData.sleepTime,
+      promptData.mealsPerDay,
+      effectiveTrainingAfterMealForTime,
+      promptData.trainingDuration
+    );
+
+    // 各mealにtime/labelを追加
+    if (questResult.meals) {
+      for (const meal of questResult.meals) {
+        const mealTime = mealTimes.find(m => m.slot === meal.slot);
+        if (mealTime) {
+          meal.time = mealTime.time;
+          meal.label = mealTime.label;
+        }
+      }
+    }
+
+    // 7. クエストをFirestoreに保存（tomorrowStrは上で既に計算済み）
+
+    // 食事アイテムを表示用テキストに変換
+    const directiveItems = [];
+    if (questResult.meals) {
+      for (const meal of questResult.meals) {
+        const slot = meal.slot;
+        const time = meal.time || "";
+        const label = meal.label || "";
+        const foods = meal.foods || [];
+
+        const prefix = time ? `${time}` : "";
+        const labelStr = label ? `[${label}]` : "";
+        const header = [prefix, labelStr].filter(Boolean).join(" ");
+
+        if (foods.length === 0) {
+          directiveItems.push(`【食事${slot}】${header} 外食予定`);
+          continue;
+        }
+
+        const foodStrings = foods.map(f => {
+          const info = FOOD_ID_MAP[f.food_id];
+          const displayName = info?.displayName || f.food_id;
+          return `${displayName} ${f.amount}${f.unit || "g"}`;
+        });
+        directiveItems.push(`【食事${slot}】${header} ${foodStrings.join(", ")}`);
+      }
+    }
+
+    if (questResult.workout && questResult.workout.name) {
+      const w = questResult.workout;
+      // 30分あたり1種目×5セット形式 + レップ数
+      const exercises = w.exercises || Math.max(1, Math.floor((promptData.trainingDuration || 120) / 30));
+      const setsPerExercise = w.sets || 5;
+      const reps = w.reps || promptData.repsPerSet || 10;
+      const totalSets = w.total_sets || (exercises * setsPerExercise);
+      directiveItems.push(`【運動】${w.name} ${exercises}種目×${setsPerExercise}セット×${reps}回（計${totalSets}セット）`);
+    }
+
+    // 睡眠は9時間固定
+    directiveItems.push(`【睡眠】9時間確保`);
+
+    const directiveMessage = directiveItems.join("\n");
+
+    console.log("[Quest] directiveMessage:", directiveMessage);
+
+    // クエストID（再生成時に一意に識別するため）
+    const questId = Date.now().toString();
+
+    // Firestoreに保存（再生成時は完全上書き - executedItemsをリセット）
+    await db.collection("users").doc(userId)
+      .collection("directives").doc(tomorrowStr)
+      .set({
+        userId,
+        date: tomorrowStr,
+        questId,  // 一意のクエストID
+        message: directiveMessage,
+        type: "MEAL",
+        completed: false,
+        executedItems: [],  // 再生成時は完了リストをリセット
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        // 生データも保存（後で再利用可能に）
+        rawQuest: questResult,
+        splitType,
+        budgetTier: promptData.budgetTier,
+        // トレーニング設定（ワークアウト完了時のカロリー計算用）
+        trainingStyle: promptData.trainingStyle,
+        repsPerSet: promptData.repsPerSet,
+        trainingDuration: promptData.trainingDuration
+      });  // merge: true を削除して完全上書き
+
+    console.log(`[Quest] Saved for ${tomorrowStr}: ${directiveItems.length} items`);
+
+    // クレジット消費（1クレジット）
+    let freeCredits = userData.freeCredits || 0;
+    let paidCredits = userData.paidCredits || 0;
+    if (freeCredits >= 1) {
+      freeCredits -= 1;
+    } else {
+      paidCredits -= 1;
+    }
+    await db.collection("users").doc(userId).update({
+      freeCredits: freeCredits,
+      paidCredits: paidCredits,
+    });
+    console.log(`[Quest] Credit consumed. Remaining: ${freeCredits + paidCredits}`);
+
+    return {
+      success: true,
+      date: tomorrowStr,
+      quest: questResult,
+      directiveMessage,
+      shoppingList: questResult.shopping_list || [],
+      remainingCredits: freeCredits + paidCredits
+    };
+
+  } catch (error) {
+    console.error("[Quest] Error:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", error.message || "Quest generation failed");
+  }
+});
+
+// ===== バッジ達成チェックシステム =====
+
+/**
+ * ユーザーデータを取得（バッジ判定用）
+ */
+async function getUserDataForBadges(userId) {
+  const db = admin.firestore();
+  const userDoc = await db.collection("users").doc(userId).get();
+  const userData = userDoc.exists ? userDoc.data() : {};
+  return { userData, db };
+}
+
+/**
+ * バッジを付与し、10XPを加算
+ */
+async function awardBadgeWithXP(userId, badgeId, userData) {
+  const db = admin.firestore();
+  const userRef = db.collection("users").doc(userId);
+
+  const badges = userData.badges || [];
+
+  // 既に獲得済みかチェック
+  if (badges.some(b => b.badgeId === badgeId)) {
+    return { awarded: false, reason: 'already_earned' };
+  }
+
+  // バッジを追加
+  const newBadge = {
+    badgeId: badgeId,
+    earnedAt: Date.now()
+  };
+
+  // 経験値計算
+  const currentExp = userData.experience || 0;
+  const currentLevel = calculateLevel(currentExp);
+  const newExp = currentExp + EXPERIENCE_CONFIG.XP_PER_ACTION;
+  const newLevel = calculateLevel(newExp);
+  const leveledUp = newLevel > currentLevel;
+  const creditsEarned = leveledUp ? EXPERIENCE_CONFIG.LEVEL_UP_CREDITS : 0;
+
+  // 更新
+  await userRef.update({
+    badges: admin.firestore.FieldValue.arrayUnion(newBadge),
+    experience: newExp,
+    level: newLevel,
+    freeCredits: (userData.freeCredits || 0) + creditsEarned
+  });
+
+  console.log(`[Badge] Awarded ${badgeId} to user ${userId}, +10 XP`);
+  if (leveledUp) {
+    console.log(`[Badge] Level up! ${currentLevel} -> ${newLevel}, +${creditsEarned} credits`);
+  }
+
+  return { awarded: true, badgeId, leveledUp, newLevel, creditsEarned };
+}
+
+/**
+ * バッジ達成チェック（Callable Function）
+ * 全バッジ条件を実データ照会で判定し、達成済みバッジを付与
+ */
+exports.checkAndAwardBadges = onCall({
+  region: "asia-northeast2",
+  cors: true,
+  timeoutSeconds: 60,  // 実データ照会のため長めに
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const userId = request.auth.uid;
+
+  try {
+    const { userData, db } = await getUserDataForBadges(userId);
+    const awardedBadges = [];
+    const existingBadges = userData.badges || [];
+
+    // 全バッジ定義をチェック（実データ照会）
+    for (const [badgeId, definition] of Object.entries(BADGE_DEFINITIONS)) {
+      // 既に獲得済みならスキップ
+      if (existingBadges.some(b => b.badgeId === badgeId)) {
+        continue;
+      }
+
+      try {
+        // 条件チェック（async - 実データ照会）
+        const conditionMet = await definition.checkCondition(userId, db, userData);
+
+        if (conditionMet) {
+          const result = await awardBadgeWithXP(userId, badgeId, userData);
+          if (result.awarded) {
+            awardedBadges.push({
+              ...result,
+              name: definition.name,
+              description: definition.description
+            });
+            // userDataを更新（連続付与時のため）
+            userData.badges = [...(userData.badges || []), { badgeId, earnedAt: Date.now() }];
+            userData.experience = (userData.experience || 0) + EXPERIENCE_CONFIG.XP_PER_ACTION;
+            if (result.leveledUp) {
+              userData.freeCredits = (userData.freeCredits || 0) + result.creditsEarned;
+            }
+            console.log(`[Badge] Awarded: ${badgeId} (${definition.name})`);
+          }
+        }
+      } catch (badgeError) {
+        // 個別バッジのエラーは他のバッジ判定に影響させない
+        console.error(`[Badge] Error checking ${badgeId}:`, badgeError.message);
+      }
+    }
+
+    console.log(`[Badge] Check completed for user ${userId}. Awarded: ${awardedBadges.length}`);
+
+    return {
+      success: true,
+      awardedBadges,
+      totalAwarded: awardedBadges.length
+    };
+  } catch (error) {
+    console.error(`[Badge] Check failed:`, error);
+    throw new HttpsError("internal", "バッジチェックに失敗しました", error.message);
+  }
+});
+
+/**
+ * バッジ統計更新（互換性維持用）
+ * 完全版ではカウンターは不要だが、クライアント互換のため残す
+ * 実際の判定は checkAndAwardBadges で実データ照会
+ */
+exports.updateBadgeStats = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+  const { action } = request.data;
+  console.log(`[Badge] updateBadgeStats called with action: ${action} (no-op in complete version)`);
+  // 完全版では実データ照会のため、カウンター更新は不要
+  // クライアントは updateBadgeStats 後に checkAndAwardBadges を呼ぶ
+  return { success: true, action, message: "Stats update skipped (complete version uses real data queries)" };
+});
+

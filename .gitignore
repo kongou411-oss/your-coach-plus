@@ -32,6 +32,12 @@ components_backup_*
 # Temporary files
 temp/
 tmp/
+tmpclaude-*
+
+# Gradle
+.gradle/
+.kotlin/
+local.properties
 
 # Cloud Functions
 functions/node_modules/

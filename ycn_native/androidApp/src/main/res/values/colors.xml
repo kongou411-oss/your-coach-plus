@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors (Duolingo-style green) -->
+    <color name="primary">#58CC02</color>
+    <color name="primary_dark">#4CAF00</color>
+    <color name="primary_light">#7CE830</color>
+
+    <!-- Secondary Colors -->
+    <color name="secondary">#1CB0F6</color>
+    <color name="secondary_dark">#1899D6</color>
+
+    <!-- Accent Colors -->
+    <color name="accent_orange">#FF9600</color>
+    <color name="accent_purple">#CE82FF</color>
+    <color name="accent_red">#FF4B4B</color>
+    <color name="accent_yellow">#FFC800</color>
+
+    <!-- Neutral Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#3C3C3C</color>
+    <color name="gray_light">#E5E5E5</color>
+    <color name="gray_medium">#AFAFAF</color>
+    <color name="gray_dark">#777777</color>
+
+    <!-- Background Colors -->
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#F7F7F7</color>
+    <color name="card">#FFFFFF</color>
+
+    <!-- Notification -->
+    <color name="notification_color">#58CC02</color>
+</resources>

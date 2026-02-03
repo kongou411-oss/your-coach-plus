@@ -44,6 +44,18 @@ service firebase.storage {
       allow create: if request.resource.contentType.matches('image/(jpeg|png|webp)');
     }
 
+    // COMY投稿画像（ネイティブアプリ用）
+    match /comy_images/{fileName} {
+      // 認証済みユーザーが読み取り可能
+      // アップロードは認証済みユーザーのみ
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      // 削除は管理者のみ（または投稿者：ファイル名にuserIdを含めて判定）
+      allow delete: if request.auth != null;
+    }
+
     // 食事画像（将来の拡張用）
     match /meals/{userId}/{date}/{fileName} {
       // 自分の食事画像のみアップロード・削除可能

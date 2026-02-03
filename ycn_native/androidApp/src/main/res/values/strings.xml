@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Your Coach+</string>
+
+    <!-- Auth -->
+    <string name="login">ログイン</string>
+    <string name="signup">新規登録</string>
+    <string name="logout">ログアウト</string>
+    <string name="email">メールアドレス</string>
+    <string name="password">パスワード</string>
+    <string name="forgot_password">パスワードをお忘れですか？</string>
+    <string name="google_signin">Googleでログイン</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">ホーム</string>
+    <string name="nav_history">履歴</string>
+    <string name="nav_pgbase">PGBASE</string>
+    <string name="nav_comy">COMY</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- Dashboard -->
+    <string name="today_score">今日のスコア</string>
+    <string name="add_meal">食事を記録</string>
+    <string name="add_workout">運動を記録</string>
+
+    <!-- Meal -->
+    <string name="meal_breakfast">朝食</string>
+    <string name="meal_lunch">昼食</string>
+    <string name="meal_dinner">夕食</string>
+    <string name="meal_snack">間食</string>
+    <string name="ai_recognize">AI食品認識</string>
+
+    <!-- Workout -->
+    <string name="workout_strength">筋トレ</string>
+    <string name="workout_cardio">有酸素運動</string>
+    <string name="workout_flexibility">ストレッチ</string>
+    <string name="workout_sports">スポーツ</string>
+
+    <!-- Analysis -->
+    <string name="ai_analysis">AI分析</string>
+    <string name="micro_learning">マイクロラーニング</string>
+
+    <!-- Settings -->
+    <string name="settings_profile">プロフィール</string>
+    <string name="settings_notification">通知</string>
+    <string name="settings_premium">プレミアム</string>
+    <string name="settings_about">アプリについて</string>
+
+    <!-- Common -->
+    <string name="save">保存</string>
+    <string name="cancel">キャンセル</string>
+    <string name="delete">削除</string>
+    <string name="edit">編集</string>
+    <string name="loading">読み込み中...</string>
+    <string name="error">エラーが発生しました</string>
+    <string name="retry">再試行</string>
+
+    <!-- Gamification -->
+    <string name="streak">ストリーク</string>
+    <string name="xp">XP</string>
+    <string name="level">レベル</string>
+    <string name="badge">バッジ</string>
+</resources>

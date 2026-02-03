@@ -389,63 +389,110 @@
                             <h2 class="text-2xl font-bold text-gray-900 mb-2">個人向けプラン</h2>
                             <p class="text-gray-600 text-sm">7日間の無料トライアル後、月額940円</p>
                         </div>
-                        <div class="max-w-2xl mx-auto">
-                            <div class="border-2 border-[#4A9EFF] rounded-2xl p-5 relative">
+                        <div class="max-w-md mx-auto">
+                            <div class="border-2 border-[#FFF59A] rounded-2xl p-5 relative bg-[#FFF59A]/10">
                                 <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                                    <span class="bg-[#4A9EFF] text-white text-xs font-bold px-4 py-1 rounded-full">Premium</span>
+                                    <span class="bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-gray-800 text-xs font-bold px-4 py-1 rounded-full shadow">Premium</span>
                                 </div>
-                                <div class="text-center mb-4 mt-2">
-                                    <span class="text-3xl font-bold text-[#4A9EFF]">¥940</span>
+
+                                <!-- タイトル・サブタイトル -->
+                                <div class="text-center mt-2 mb-4">
+                                    <h3 class="text-xl font-bold text-gray-900">Premium会員</h3>
+                                    <p class="text-sm text-gray-600 mt-1">ただの筋トレじゃない。これは、あなたを主人公にする物語だ。</p>
+                                </div>
+
+                                <!-- 価格 -->
+                                <div class="text-center mb-5">
+                                    <span class="text-4xl font-bold text-[#D4A017]">¥940</span>
                                     <span class="text-gray-600">/月</span>
-                                    <p class="text-xs text-gray-500 mt-1">AI分析 100回/月 付与</p>
+                                    <p class="text-xs text-gray-500 mt-1">1日あたり約31円</p>
                                 </div>
 
-                                <!-- 機能一覧 -->
-                                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                    <!-- 記録機能 -->
-                                    <div class="col-span-2 text-[#4A9EFF] font-bold mt-2 mb-1 border-b border-gray-200 pb-1">📝 記録機能</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> 食事記録（40項目以上の栄養素）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> AI画像認識（写真から自動入力）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> 運動記録（100種類以上）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> RM（最大挙上重量）追跡</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> コンディション記録</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> カスタム食材・種目追加</div>
+                                <!-- プレミアム特典 -->
+                                <div class="space-y-3">
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">🧭</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">クエスト機能</p>
+                                            <p class="text-xs text-gray-500">ボディメイクをナビ化で迷わない</p>
+                                        </div>
+                                    </div>
 
-                                    <!-- 分析・AI機能 -->
-                                    <div class="col-span-2 text-emerald-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">🤖 分析・AI機能</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 毎日のAI総合分析</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 30日トレンド分析</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 対話型Q&A（深掘り質問）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> AI指示書（明日のアクション）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 8軸詳細スコア（DIAAS・GL等）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 1ヶ月後の体組成予測</div>
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">📷</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">写真解析</p>
+                                            <p class="text-xs text-gray-500">写真から栄養素を自動計算</p>
+                                        </div>
+                                    </div>
 
-                                    <!-- 履歴・グラフ -->
-                                    <div class="col-span-2 text-purple-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">📊 履歴・グラフ</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 履歴グラフ（全データ可視化）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 移動平均・予測線表示</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 目標ライン設定</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 期間比較（7日〜1年）</div>
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">📊</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">毎月100回の分析クレジット</p>
+                                            <p class="text-xs text-gray-500">AI栄養分析・アドバイス</p>
+                                        </div>
+                                    </div>
 
-                                    <!-- 効率化機能 -->
-                                    <div class="col-span-2 text-orange-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">⚡ 効率化機能</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> テンプレート（食事・運動）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> ルーティン（週間スケジュール）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> ショートカット（1タップ入力）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> 通知リマインダー（5種類）</div>
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">∞</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">無制限の記録と履歴</p>
+                                            <p class="text-xs text-gray-500">食事・運動を無制限に記録</p>
+                                        </div>
+                                    </div>
 
-                                    <!-- 学習・コミュニティ -->
-                                    <div class="col-span-2 text-pink-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">📚 学習・コミュニティ</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> PGBASE（教科書10種類以上）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> AI学習レコメンド</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> COMY（進捗共有・投稿）</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> いいね・コメント・フォロー</div>
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">📚</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">PG BASE 教科書</p>
+                                            <p class="text-xs text-gray-500">専門知識が学べる</p>
+                                        </div>
+                                    </div>
 
-                                    <!-- その他 -->
-                                    <div class="col-span-2 text-gray-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">🎮 その他</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-gray-600">✓</span> レベルアップでクレジット付与</div>
-                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-gray-600">✓</span> 友達紹介でクレジット付与</div>
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">👥</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">COMY</p>
+                                            <p class="text-xs text-gray-500">仲間と刺激し合う</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">📑</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">無制限のテンプレート保存</p>
+                                            <p class="text-xs text-gray-500">お気に入りの食事を保存</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-8 h-8 bg-[#FFF59A] rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="text-sm">🎧</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">優先サポート</p>
+                                            <p class="text-xs text-gray-500">お問い合わせ優先対応</p>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <!-- 注意書き -->
+                                <p class="text-xs text-gray-500 text-center mt-4">いつでもキャンセル可能です</p>
                             </div>
                         </div>
                     </div>

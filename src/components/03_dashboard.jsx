@@ -622,8 +622,10 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     const parseMealItems = (text) => {
         // 【食事N】を除去
         const content = text.replace(/【食事\d*】\s*/, '').replace(/\[.*?\]\s*/, '').trim();
-        // カンマ区切りで分割
-        const items = content.split(/[,、]/);
+        console.log('[parseMealItems] Input:', text, '→ Content:', content);
+        // カンマ区切りで分割（読点・中黒も対応）
+        const items = content.split(/[,、・]/);
+        console.log('[parseMealItems] Split items:', items);
         return items.map(item => {
             const trimmed = item.trim();
             // 量を抽出（例: "鶏むね肉100g" → { name: "鶏むね肉", amount: 100, unit: "g" }）
@@ -861,6 +863,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
     // 食事クエストから自動記録
     const recordMealFromQuest = async (item) => {
         const parsedItems = parseMealItems(item.text);
+        console.log('[Quest] Parsed meal items:', parsedItems, 'from text:', item.text);
         if (parsedItems.length === 0) return;
 
         const mealItems = [];
@@ -868,6 +871,7 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
 
         for (const parsed of parsedItems) {
             const foodData = findFoodInDatabase(parsed.name);
+            console.log('[Quest] Food lookup:', parsed.name, '→', foodData ? 'found' : 'not found');
             if (foodData) {
                 // 量に応じて栄養素を換算（foodDatabaseは100gあたり）
                 const ratio = parsed.unit === 'g' ? parsed.amount / 100 :
@@ -926,20 +930,28 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
                 items: mealItems,
                 calories: totalCalories,
                 timestamp: new Date().toISOString(),
+                date: currentDate, // 選択中の日付を明示的に設定
                 isFromQuest: true
             };
 
-            const updatedMeals = [...(dailyRecord.meals || []), newMeal];
-            const updatedRecord = { ...dailyRecord, meals: updatedMeals };
+            console.log('[Quest] Creating meal with', mealItems.length, 'items for date:', currentDate);
+
+            // 対象日付のレコードを取得（dailyRecordが古い可能性があるため）
+            const targetRecord = await DataService.getDailyRecord(user.uid, currentDate);
+            const baseRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+            const updatedMeals = [...(baseRecord.meals || []), newMeal];
+            const updatedRecord = { ...baseRecord, meals: updatedMeals };
             setDailyRecord(updatedRecord);
             await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
-            toast.success(`${mealType}を記録しました`);
+            toast.success(`${mealType}を記録しました（${mealItems.length}品目）`);
         }
     };
 
     // 運動クエストから自動記録
     const recordWorkoutFromQuest = async (item) => {
         const parsedItems = parseWorkoutItems(item.text);
+        console.log('[Quest] Parsed workout items:', parsedItems, 'from text:', item.text);
         if (parsedItems.length === 0) return;
 
         const exercises = parsedItems.map(parsed => ({
@@ -955,14 +967,21 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
             type: '筋トレ',
             exercises,
             timestamp: new Date().toISOString(),
+            date: currentDate, // 選択中の日付を明示的に設定
             isFromQuest: true
         };
 
-        const updatedWorkouts = [...(dailyRecord.workouts || []), newWorkout];
-        const updatedRecord = { ...dailyRecord, workouts: updatedWorkouts };
+        console.log('[Quest] Creating workout with', exercises.length, 'exercises for date:', currentDate);
+
+        // 対象日付のレコードを取得（dailyRecordが古い可能性があるため）
+        const targetRecord = await DataService.getDailyRecord(user.uid, currentDate);
+        const baseRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
+        const updatedWorkouts = [...(baseRecord.workouts || []), newWorkout];
+        const updatedRecord = { ...baseRecord, workouts: updatedWorkouts };
         setDailyRecord(updatedRecord);
         await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
-        toast.success('運動を記録しました');
+        toast.success(`運動を記録しました（${exercises.length}種目）`);
     };
 
     // 睡眠クエストから自動記録
@@ -971,14 +990,20 @@ const DashboardView = ({ dailyRecord, targetPFC, unlockedFeatures, setUnlockedFe
         const match = item.text.match(/(\d+(?:\.\d+)?)\s*時間/);
         const hours = match ? parseFloat(match[1]) : 8;
 
+        console.log('[Quest] Recording sleep:', hours, 'hours for date:', currentDate);
+
+        // 対象日付のレコードを取得（dailyRecordが古い可能性があるため）
+        const targetRecord = await DataService.getDailyRecord(user.uid, currentDate);
+        const baseRecord = targetRecord || { meals: [], workouts: [], supplements: [], conditions: null };
+
         const updatedConditions = {
-            ...(dailyRecord.conditions || {}),
+            ...(baseRecord.conditions || {}),
             sleepHours: hours,
             sleepQuality: 3, // デフォルト（普通）
             isFromQuest: true
         };
 
-        const updatedRecord = { ...dailyRecord, conditions: updatedConditions };
+        const updatedRecord = { ...baseRecord, conditions: updatedConditions };
         setDailyRecord(updatedRecord);
         await DataService.saveDailyRecord(user.uid, currentDate, updatedRecord);
         toast.success('睡眠を記録しました');

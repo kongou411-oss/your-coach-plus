@@ -295,6 +295,9 @@
             <button id="tab-comy" onclick="switchTab('comy')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 💬 COMY投稿
             </button>
+            <button id="tab-pgbase" onclick="switchTab('pgbase')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                📚 PGBASE記事
+            </button>
             <button id="tab-analytics" onclick="switchTab('analytics')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 📊 使用状況分析
             </button>
@@ -534,33 +537,40 @@
                     <div class="value" id="total-posts">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>承認待ち</h3>
-                    <div class="value text-yellow-600" id="pending-posts">-</div>
+                    <h3>質問</h3>
+                    <div class="value text-purple-600" id="question-posts">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>承認済み</h3>
-                    <div class="value text-green-600" id="approved-posts">-</div>
+                    <h3>コツ・ノウハウ</h3>
+                    <div class="value text-yellow-600" id="tips-posts">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>却下済み</h3>
-                    <div class="value text-red-600" id="rejected-posts">-</div>
+                    <h3>経過報告</h3>
+                    <div class="value text-blue-600" id="progress-posts">-</div>
                 </div>
             </div>
 
-            <!-- フィルター -->
+            <!-- 検索・フィルター -->
             <div class="section mb-6">
                 <div class="section-content">
-                    <div class="flex flex-wrap gap-3 items-center">
+                    <div class="flex flex-wrap gap-3 items-center mb-4">
+                        <div class="flex-1 min-w-[200px]">
+                            <input type="text" id="comy-search" placeholder="検索（タイトル、内容、投稿者名）"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                onkeyup="filterComyPosts()">
+                        </div>
                         <label class="flex items-center gap-2">
-                            <span class="text-sm font-medium">表示:</span>
-                            <select id="comy-filter" onchange="loadCommunityPosts()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <span class="text-sm font-medium">カテゴリ:</span>
+                            <select id="comy-filter" onchange="filterComyPosts()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                                 <option value="all">すべて</option>
-                                <option value="pending">承認待ちのみ</option>
-                                <option value="approved">承認済みのみ</option>
-                                <option value="rejected">却下済みのみ</option>
+                                <option value="question">❓ 質問</option>
+                                <option value="tips">💡 コツ・ノウハウ</option>
+                                <option value="progress">📈 経過報告</option>
+                                <option value="recipe">🍳 レシピ</option>
+                                <option value="motivation">🔥 モチベーション</option>
                             </select>
                         </label>
-                        <button onclick="loadCommunityPosts()" class="btn-secondary">🔄 更新</button>
+                        <button onclick="loadComyPosts()" class="btn-secondary">🔄 更新</button>
                     </div>
                 </div>
             </div>
@@ -568,7 +578,7 @@
             <!-- 投稿一覧 -->
             <div class="section">
                 <div class="section-header">
-                    <h2>💬 COMY投稿一覧</h2>
+                    <h2>💬 COMY投稿一覧（ネイティブアプリ）</h2>
                     <span id="comy-count" class="text-sm text-gray-500"></span>
                 </div>
                 <div class="section-content">
@@ -581,6 +591,109 @@
                 </div>
             </div>
         </div><!-- COMYセクション終了 -->
+
+        <!-- PGBASEセクション -->
+        <div id="pgbase-section" style="display:none;">
+            <!-- 統計 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>総記事数</h3>
+                    <div class="value" id="total-articles">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>栄養</h3>
+                    <div class="value text-green-600" id="nutrition-articles">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>トレーニング</h3>
+                    <div class="value text-orange-600" id="training-articles">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>回復・休養</h3>
+                    <div class="value text-blue-600" id="recovery-articles">-</div>
+                </div>
+            </div>
+
+            <!-- 新規記事作成 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>➕ 新規記事作成</h2>
+                </div>
+                <div class="section-content">
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">タイトル</label>
+                            <input type="text" id="pgbase-title"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="記事のタイトル">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">カテゴリ</label>
+                            <select id="pgbase-category"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="nutrition">🥗 栄養の基本</option>
+                                <option value="protein">🍖 タンパク質</option>
+                                <option value="carbs">🍚 炭水化物</option>
+                                <option value="fat">🥑 脂質</option>
+                                <option value="vitamins">💊 ビタミン・ミネラル</option>
+                                <option value="training">💪 トレーニング</option>
+                                <option value="recovery">😴 回復・休養</option>
+                                <option value="mindset">🧠 メンタル</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">概要</label>
+                        <input type="text" id="pgbase-summary"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="記事の概要（一覧に表示）">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">本文（Markdown対応）</label>
+                        <textarea id="pgbase-content" rows="8"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="記事の本文をMarkdown形式で入力..."></textarea>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">読了時間（分）</label>
+                            <input type="number" id="pgbase-reading-time" value="5" min="1"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">表示順序</label>
+                            <input type="number" id="pgbase-order" value="0" min="0"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <div class="flex items-end">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="pgbase-premium" class="w-5 h-5">
+                                <span class="text-sm font-medium text-gray-700">プレミアム記事</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button onclick="createPgBaseArticle()" id="create-article-btn" class="btn-primary">
+                        ✨ 記事を作成
+                    </button>
+                </div>
+            </div>
+
+            <!-- 記事一覧 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>📚 記事一覧</h2>
+                    <button onclick="loadPgBaseArticles()" class="btn-secondary">🔄 更新</button>
+                </div>
+                <div class="section-content">
+                    <div id="pgbase-loading" class="loading">記事を読み込んでいます...</div>
+                    <div id="pgbase-list" class="space-y-4" style="display:none;"></div>
+                    <div id="pgbase-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">📚</div>
+                        <p>まだ記事がありません</p>
+                    </div>
+                </div>
+            </div>
+        </div><!-- PGBASEセクション終了 -->
 
         <!-- 使用状況分析セクション -->
         <div id="analytics-section" style="display:none;">
@@ -746,7 +859,7 @@
 
         // タブ切り替え
         function switchTab(tab) {
-            const sections = ['giftcode', 'b2b2c', 'users', 'referrals', 'comy', 'analytics'];
+            const sections = ['giftcode', 'b2b2c', 'users', 'referrals', 'comy', 'pgbase', 'analytics'];
             const activeClass = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
             const inactiveClass = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
 
@@ -760,7 +873,8 @@
             // データ読み込み
             if (tab === 'users') loadUsers();
             if (tab === 'referrals') loadReferrals();
-            if (tab === 'comy') loadCommunityPosts();
+            if (tab === 'comy') loadComyPosts();
+            if (tab === 'pgbase') loadPgBaseArticles();
             if (tab === 'analytics') loadAnalytics();
         }
 
@@ -1415,91 +1529,128 @@
             `).join('');
         }
 
-        // ===== COMY投稿管理機能 =====
-        let allCommunityPosts = [];
+        // ===== COMY投稿管理機能（ネイティブアプリ用 comy_posts） =====
+        let allComyPosts = [];
+        let filteredComyPosts = [];
 
-        async function loadCommunityPosts() {
+        async function loadComyPosts() {
             const loading = document.getElementById('comy-loading');
             const list = document.getElementById('comy-list');
             const empty = document.getElementById('comy-empty');
-            const filter = document.getElementById('comy-filter').value;
 
             loading.style.display = 'block';
             list.style.display = 'none';
             empty.style.display = 'none';
 
             try {
-                const getAdminCommunityPosts = functions.httpsCallable('getAdminCommunityPosts');
-                const result = await getAdminCommunityPosts({ adminPassword, filter });
+                // comy_posts コレクションから直接取得
+                const snapshot = await db.collection('comy_posts')
+                    .orderBy('createdAt', 'desc')
+                    .limit(200)
+                    .get();
 
-                if (!result.data.success) {
-                    throw new Error('データ取得に失敗しました');
-                }
+                allComyPosts = [];
+                let questionCount = 0;
+                let tipsCount = 0;
+                let progressCount = 0;
 
-                allCommunityPosts = result.data.posts;
-                const stats = result.data.stats;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const post = { id: doc.id, ...data };
+                    allComyPosts.push(post);
+
+                    // カテゴリ別カウント
+                    const category = (data.category || '').toLowerCase();
+                    if (category === 'question') questionCount++;
+                    else if (category === 'tips') tipsCount++;
+                    else if (category === 'progress') progressCount++;
+                });
 
                 // 統計更新
-                document.getElementById('total-posts').textContent = stats.total;
-                document.getElementById('pending-posts').textContent = stats.pending;
-                document.getElementById('approved-posts').textContent = stats.approved;
-                document.getElementById('rejected-posts').textContent = stats.rejected;
+                document.getElementById('total-posts').textContent = allComyPosts.length;
+                document.getElementById('question-posts').textContent = questionCount;
+                document.getElementById('tips-posts').textContent = tipsCount;
+                document.getElementById('progress-posts').textContent = progressCount;
 
                 loading.style.display = 'none';
 
-                if (allCommunityPosts.length === 0) {
-                    empty.style.display = 'block';
-                    return;
-                }
-
-                list.style.display = 'block';
-                document.getElementById('comy-count').textContent = `${allCommunityPosts.length}件`;
-                renderCommunityPosts(allCommunityPosts);
+                // フィルター適用
+                filterComyPosts();
 
             } catch (error) {
-                console.error('Load community posts error:', error);
+                console.error('Load comy posts error:', error);
                 loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
             }
         }
 
-        function renderCommunityPosts(posts) {
+        function filterComyPosts() {
+            const searchText = (document.getElementById('comy-search')?.value || '').toLowerCase();
+            const categoryFilter = document.getElementById('comy-filter').value;
+            const list = document.getElementById('comy-list');
+            const empty = document.getElementById('comy-empty');
+
+            filteredComyPosts = allComyPosts.filter(post => {
+                // カテゴリフィルター
+                if (categoryFilter !== 'all') {
+                    const postCategory = (post.category || '').toLowerCase();
+                    if (postCategory !== categoryFilter) return false;
+                }
+
+                // テキスト検索
+                if (searchText) {
+                    const title = (post.title || '').toLowerCase();
+                    const content = (post.content || '').toLowerCase();
+                    const authorName = (post.authorName || '').toLowerCase();
+                    if (!title.includes(searchText) && !content.includes(searchText) && !authorName.includes(searchText)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            if (filteredComyPosts.length === 0) {
+                list.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            list.style.display = 'block';
+            empty.style.display = 'none';
+            document.getElementById('comy-count').textContent = `${filteredComyPosts.length}件`;
+            renderComyPosts(filteredComyPosts);
+        }
+
+        function renderComyPosts(posts) {
             const container = document.getElementById('comy-list');
             container.innerHTML = posts.map(post => {
-                const statusBadge = getStatusBadge(post.approvalStatus);
-                const categoryBadge = post.category === 'body'
-                    ? '<span class="px-2 py-1 text-xs rounded-full bg-sky-100 text-sky-700">💪 ボディメイク</span>'
-                    : '<span class="px-2 py-1 text-xs rounded-full bg-teal-100 text-teal-700">🧠 メンタル</span>';
-
-                const goalCategoryBadge = post.goalCategory
-                    ? `<span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700">${post.goalCategory}</span>`
-                    : '';
-
-                const timestamp = post.timestamp ? new Date(post.timestamp).toLocaleString('ja-JP') : '不明';
+                const categoryBadge = getComyCategoryBadge(post.category);
+                const timestamp = post.createdAt ? new Date(post.createdAt).toLocaleString('ja-JP') : '不明';
+                const authorInitial = (post.authorName || 'U')[0].toUpperCase();
 
                 return `
-                    <div class="border-2 rounded-xl p-4 transition-all ${getStatusBorderColor(post.approvalStatus)}">
+                    <div class="border-2 rounded-xl p-4 transition-all border-gray-200 bg-white hover:border-purple-300">
                         <!-- ヘッダー -->
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
-                                    ${(post.author || 'U')[0]}
-                                </div>
+                                ${post.authorPhotoUrl
+                                    ? `<img src="${post.authorPhotoUrl}" alt="Avatar" class="w-10 h-10 rounded-full object-cover">`
+                                    : `<div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">${authorInitial}</div>`
+                                }
                                 <div>
-                                    <div class="font-bold text-gray-800">${post.userInfo?.displayName || post.author || '不明'}</div>
-                                    <div class="text-xs text-gray-500">${post.userInfo?.email || ''}</div>
+                                    <div class="font-bold text-gray-800">${post.authorName || '匿名'}</div>
+                                    <div class="text-xs text-gray-500">ID: ${post.userId || '不明'}</div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 ${categoryBadge}
-                                ${goalCategoryBadge}
-                                ${statusBadge}
                             </div>
                         </div>
 
-                        <!-- プロジェクトタイトル -->
-                        ${post.projectTitle ? `
-                        <div class="text-sm font-semibold text-gray-800 mb-2">
-                            📋 ${post.projectTitle}
+                        <!-- タイトル -->
+                        ${post.title ? `
+                        <div class="text-lg font-semibold text-gray-800 mb-2">
+                            ${post.title}
                         </div>
                         ` : ''}
 
@@ -1508,186 +1659,268 @@
                             📅 ${timestamp}
                         </div>
 
-                        <!-- 画像 -->
-                        ${post.photo ? `
-                            <div class="mb-3">
-                                <p class="text-xs text-gray-600 mb-1 font-semibold">📸 ${post.progressType === 'before' ? 'ビフォー写真' : '進捗写真'}</p>
-                                <img src="${post.photo}" alt="Photo" class="w-full max-w-xs h-48 object-cover rounded-lg border-2 ${post.progressType === 'before' ? 'border-gray-300' : 'border-sky-300'}">
-                                ${post.photoSourceInfo ? `
-                                    <div class="mt-1 flex items-center gap-2 text-xs">
-                                        <span class="text-gray-600">${post.photoSourceInfo.source === 'camera' ? '📷 カメラ' : '🖼️ ギャラリー'}</span>
-                                        ${post.photoSourceInfo.isEdited
-                                            ? `<span class="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded font-medium">加工${post.photoSourceInfo.editedApp ? ': ' + post.photoSourceInfo.editedApp : ''}</span>`
-                                            : `<span class="px-1.5 py-0.5 bg-green-100 text-green-700 rounded font-medium">ノーマル</span>`
-                                        }
-                                        ${post.photoSourceInfo.deviceModel ? `<span class="text-gray-500">${post.photoSourceInfo.deviceMake || ''} ${post.photoSourceInfo.deviceModel}</span>` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        ` : post.beforePhoto ? `
-                            <div class="mb-3">
-                                <p class="text-xs text-gray-600 mb-1 font-semibold">📸 ビフォー写真</p>
-                                <img src="${post.beforePhoto}" alt="Before" class="w-full max-w-xs h-48 object-cover rounded-lg border-2 border-gray-200">
-                            </div>
-                        ` : post.afterPhoto ? `
-                            <div class="mb-3">
-                                <p class="text-xs text-gray-600 mb-1 font-semibold">📸 進捗写真</p>
-                                <img src="${post.afterPhoto}" alt="Progress" class="w-full max-w-xs h-48 object-cover rounded-lg border-2 border-sky-300">
-                            </div>
-                        ` : ''}
-
                         <!-- 投稿内容 -->
                         <div class="bg-gray-50 p-3 rounded-lg mb-3">
                             <p class="text-sm text-gray-800 whitespace-pre-wrap">${post.content || '(内容なし)'}</p>
                         </div>
 
-                        <!-- データ連携情報 -->
-                        ${post.attachedData && (post.attachedData.bodyData || post.attachedData.historyData) ? `
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                                <p class="text-xs font-semibold text-blue-700 mb-2">📊 連携データ</p>
-                                <div class="space-y-2 text-xs text-gray-600">
-                                    <!-- 体組成 -->
-                                    <div class="flex flex-wrap gap-2">
-                                        ${post.attachedData.daysSinceStart !== undefined ? `<span>経過: ${post.attachedData.daysSinceStart}日</span>` : ''}
-                                        ${post.attachedData.bodyData?.weight ? `<span>体重: ${post.attachedData.bodyData.weight}kg</span>` : ''}
-                                        ${post.attachedData.bodyData?.lbm ? `<span>LBM: ${post.attachedData.bodyData.lbm}kg</span>` : ''}
-                                        ${post.attachedData.bodyData?.bodyFat ? `<span>体脂肪率: ${post.attachedData.bodyData.bodyFat}%</span>` : ''}
-                                    </div>
-                                    <!-- 食事 -->
-                                    ${post.attachedData.historyData?.calories || post.attachedData.historyData?.protein ? `
-                                        <div class="flex flex-wrap gap-2">
-                                            <span class="text-gray-500">食事:</span>
-                                            ${post.attachedData.historyData?.calories ? `<span class="text-blue-600">${post.attachedData.historyData.calories}kcal</span>` : ''}
-                                            ${post.attachedData.historyData?.protein ? `<span class="text-red-500">P${post.attachedData.historyData.protein}g</span>` : ''}
-                                            ${post.attachedData.historyData?.fat ? `<span class="text-yellow-500">F${post.attachedData.historyData.fat}g</span>` : ''}
-                                            ${post.attachedData.historyData?.carbs ? `<span class="text-green-500">C${post.attachedData.historyData.carbs}g</span>` : ''}
-                                        </div>
-                                    ` : ''}
-                                    <!-- 運動 -->
-                                    ${post.attachedData.historyData?.exerciseCount || post.attachedData.historyData?.totalSets || post.attachedData.historyData?.workoutTime ? `
-                                        <div class="flex flex-wrap gap-2">
-                                            <span class="text-gray-500">運動:</span>
-                                            ${post.attachedData.historyData?.exerciseCount ? `<span class="text-orange-600">${post.attachedData.historyData.exerciseCount}種目</span>` : ''}
-                                            ${post.attachedData.historyData?.totalSets ? `<span class="text-orange-600">${post.attachedData.historyData.totalSets}セット</span>` : ''}
-                                            ${post.attachedData.historyData?.totalVolume ? `<span class="text-orange-600">${post.attachedData.historyData.totalVolume.toLocaleString()}kg</span>` : ''}
-                                            ${post.attachedData.historyData?.workoutTime ? `<span class="text-orange-600">${post.attachedData.historyData.workoutTime}分</span>` : ''}
-                                        </div>
-                                    ` : ''}
-                                    <!-- コンディション -->
-                                    ${post.attachedData.historyData?.sleepHours || post.attachedData.historyData?.sleepQuality || post.attachedData.historyData?.digestion || post.attachedData.historyData?.focus || post.attachedData.historyData?.stress ? `
-                                        <div class="flex flex-wrap gap-2">
-                                            <span class="text-gray-500">コンディ:</span>
-                                            ${post.attachedData.historyData?.sleepHours ? `<span class="text-red-500">睡眠${post.attachedData.historyData.sleepHours}h</span>` : ''}
-                                            ${post.attachedData.historyData?.sleepQuality ? `<span class="text-red-500">質${post.attachedData.historyData.sleepQuality}</span>` : ''}
-                                            ${post.attachedData.historyData?.digestion ? `<span class="text-red-500">腸${post.attachedData.historyData.digestion}</span>` : ''}
-                                            ${post.attachedData.historyData?.focus ? `<span class="text-red-500">集中${post.attachedData.historyData.focus}</span>` : ''}
-                                            ${post.attachedData.historyData?.stress ? `<span class="text-red-500">ストレス${post.attachedData.historyData.stress}</span>` : ''}
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
+                        <!-- 画像 -->
+                        ${post.imageUrl ? `
+                        <div class="mb-3">
+                            <img src="${post.imageUrl}" alt="投稿画像" class="w-full max-h-64 object-cover rounded-lg border border-gray-200">
+                        </div>
                         ` : ''}
 
-                        <!-- 却下理由 -->
-                        ${post.approvalStatus === 'rejected' && post.rejectionReason ? `
-                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
-                                <p class="text-xs font-semibold text-red-700 mb-1">❌ 却下理由</p>
-                                <p class="text-sm text-red-800">${post.rejectionReason}</p>
-                            </div>
-                        ` : ''}
+                        <!-- 統計 -->
+                        <div class="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                            <span>❤️ いいね: ${post.likeCount || 0}</span>
+                            <span>💬 コメント: ${post.commentCount || 0}</span>
+                        </div>
 
                         <!-- アクションボタン -->
                         <div class="flex gap-2 flex-wrap">
-                            ${post.approvalStatus === 'pending' ? `
-                                <button onclick="approvePost('${post.id}', '${post.projectId}')"
-                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-green-100 text-green-700 hover:bg-green-200 transition flex items-center gap-1">
-                                    ✅ 承認
-                                </button>
-                                <button onclick="showRejectDialog('${post.id}', '${post.projectId}')"
-                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition flex items-center gap-1">
-                                    ⛔ 却下
-                                </button>
-                            ` : ''}
-                            ${post.approvalStatus === 'rejected' ? `
-                                <button onclick="approvePost('${post.id}', '${post.projectId}')"
-                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-green-100 text-green-700 hover:bg-green-200 transition flex items-center gap-1">
-                                    ✅ 承認に変更
-                                </button>
-                            ` : ''}
-                            ${post.approvalStatus === 'approved' ? `
-                                <button onclick="showRejectDialog('${post.id}', '${post.projectId}')"
-                                    class="px-4 py-2 text-sm rounded-lg font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition flex items-center gap-1">
-                                    ⛔ 却下に変更
-                                </button>
-                            ` : ''}
+                            <button onclick="deleteComyPost('${post.id}')"
+                                class="px-4 py-2 text-sm rounded-lg font-medium bg-red-100 text-red-700 hover:bg-red-200 transition flex items-center gap-1">
+                                🗑️ 削除
+                            </button>
+                            <button onclick="showComyPostDetail('${post.id}')"
+                                class="px-4 py-2 text-sm rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center gap-1">
+                                📄 詳細
+                            </button>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function getStatusBadge(status) {
-            switch (status) {
-                case 'pending':
-                    return '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 font-medium">⏳ 承認待ち</span>';
-                case 'approved':
-                    return '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">✅ 承認済み</span>';
-                case 'rejected':
-                    return '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 font-medium">❌ 却下済み</span>';
-                default:
-                    return '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 font-medium">❓ 不明</span>';
-            }
+        function getComyCategoryBadge(category) {
+            const categories = {
+                'question': { emoji: '❓', name: '質問', color: 'purple' },
+                'tips': { emoji: '💡', name: 'コツ・ノウハウ', color: 'yellow' },
+                'progress': { emoji: '📈', name: '経過報告', color: 'blue' },
+                'recipe': { emoji: '🍳', name: 'レシピ', color: 'green' },
+                'motivation': { emoji: '🔥', name: 'モチベーション', color: 'orange' }
+            };
+            const cat = categories[(category || '').toLowerCase()] || { emoji: '📝', name: category || '不明', color: 'gray' };
+            return `<span class="px-2 py-1 text-xs rounded-full bg-${cat.color}-100 text-${cat.color}-700">${cat.emoji} ${cat.name}</span>`;
         }
 
-        function getStatusBorderColor(status) {
-            switch (status) {
-                case 'pending':
-                    return 'border-yellow-300 bg-yellow-50';
-                case 'approved':
-                    return 'border-green-300 bg-green-50';
-                case 'rejected':
-                    return 'border-red-300 bg-red-50';
-                default:
-                    return 'border-gray-200 bg-gray-50';
-            }
-        }
-
-        async function approvePost(postId, projectId) {
-            if (!confirm('この投稿を承認しますか？\n承認するとCOMYフィードに公開されます。')) return;
+        async function deleteComyPost(postId) {
+            if (!confirm('⚠️ この投稿を削除しますか？\n\nこの操作は取り消せません。')) return;
 
             try {
-                const adminApprovePost = functions.httpsCallable('adminApprovePost');
-                const result = await adminApprovePost({ postId, projectId, adminPassword });
-
-                if (result.data.success) {
-                    alert('✅ 投稿を承認しました');
-                    await loadCommunityPosts();
+                // まずコメントを削除
+                const commentsSnapshot = await db.collection('comy_posts').doc(postId).collection('comments').get();
+                if (!commentsSnapshot.empty) {
+                    const batch = db.batch();
+                    commentsSnapshot.forEach(commentDoc => {
+                        batch.delete(commentDoc.ref);
+                    });
+                    await batch.commit();
                 }
+
+                // 投稿を削除
+                await db.collection('comy_posts').doc(postId).delete();
+
+                alert('✅ 投稿を削除しました');
+                await loadComyPosts();
             } catch (error) {
-                console.error('Approve post error:', error);
-                alert('❌ 承認に失敗しました: ' + (error.message || error));
+                console.error('Delete comy post error:', error);
+                alert('❌ 削除に失敗しました: ' + (error.message || error));
             }
         }
 
-        function showRejectDialog(postId, projectId) {
-            const reason = prompt('却下理由を入力してください（投稿者には通知されません）:');
-            if (reason === null) return; // キャンセル
+        function showComyPostDetail(postId) {
+            const post = allComyPosts.find(p => p.id === postId);
+            if (!post) return;
 
-            rejectPost(postId, projectId, reason);
+            const details = [
+                `【投稿詳細】`,
+                `ID: ${post.id}`,
+                `投稿者: ${post.authorName || '匿名'}`,
+                `投稿者ID: ${post.userId || '不明'}`,
+                `---`,
+                `タイトル: ${post.title || '(なし)'}`,
+                `カテゴリ: ${post.category || '不明'}`,
+                `---`,
+                `内容:`,
+                post.content || '(なし)',
+                `---`,
+                `いいね数: ${post.likeCount || 0}`,
+                `コメント数: ${post.commentCount || 0}`,
+                `投稿日時: ${post.createdAt ? new Date(post.createdAt).toLocaleString('ja-JP') : '不明'}`,
+            ];
+
+            alert(details.join('\n'));
         }
 
-        async function rejectPost(postId, projectId, reason) {
-            try {
-                const adminRejectPost = functions.httpsCallable('adminRejectPost');
-                const result = await adminRejectPost({ postId, projectId, reason, adminPassword });
+        // ===== 旧COMY投稿管理機能（communityProjects用・後方互換） =====
+        let allCommunityPosts = [];
 
-                if (result.data.success) {
-                    alert('⛔ 投稿を却下しました');
-                    await loadCommunityPosts();
+        async function loadCommunityPosts() {
+            // 旧バージョン互換用 - 現在は loadComyPosts() を使用
+            console.log('[Admin] loadCommunityPosts is deprecated, use loadComyPosts instead');
+        }
+
+        // ===== PGBASE記事管理機能 =====
+        let allPgBaseArticles = [];
+
+        async function loadPgBaseArticles() {
+            const loading = document.getElementById('pgbase-loading');
+            const list = document.getElementById('pgbase-list');
+            const empty = document.getElementById('pgbase-empty');
+
+            loading.style.display = 'block';
+            list.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                const snapshot = await db.collection('pgbase_articles')
+                    .orderBy('order', 'asc')
+                    .get();
+
+                allPgBaseArticles = [];
+                let nutritionCount = 0;
+                let trainingCount = 0;
+                let recoveryCount = 0;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const article = { id: doc.id, ...data };
+                    allPgBaseArticles.push(article);
+
+                    const cat = (data.category || '').toLowerCase();
+                    if (['nutrition', 'protein', 'carbs', 'fat', 'vitamins'].includes(cat)) nutritionCount++;
+                    else if (cat === 'training') trainingCount++;
+                    else if (cat === 'recovery') recoveryCount++;
+                });
+
+                // 統計更新
+                document.getElementById('total-articles').textContent = allPgBaseArticles.length;
+                document.getElementById('nutrition-articles').textContent = nutritionCount;
+                document.getElementById('training-articles').textContent = trainingCount;
+                document.getElementById('recovery-articles').textContent = recoveryCount;
+
+                loading.style.display = 'none';
+
+                if (allPgBaseArticles.length === 0) {
+                    empty.style.display = 'block';
+                    return;
                 }
+
+                list.style.display = 'block';
+                renderPgBaseArticles(allPgBaseArticles);
+
             } catch (error) {
-                console.error('Reject post error:', error);
-                alert('❌ 却下に失敗しました: ' + (error.message || error));
+                console.error('Load pgbase articles error:', error);
+                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
+            }
+        }
+
+        function renderPgBaseArticles(articles) {
+            const container = document.getElementById('pgbase-list');
+            const categoryEmojis = {
+                'nutrition': '🥗', 'protein': '🍖', 'carbs': '🍚', 'fat': '🥑',
+                'vitamins': '💊', 'training': '💪', 'recovery': '😴', 'mindset': '🧠'
+            };
+
+            container.innerHTML = articles.map(article => {
+                const emoji = categoryEmojis[article.category] || '📄';
+                const createdAt = article.createdAt ? new Date(article.createdAt).toLocaleDateString('ja-JP') : '不明';
+
+                return `
+                    <div class="border-2 rounded-xl p-4 transition-all border-gray-200 bg-white hover:border-purple-300">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">${emoji}</span>
+                                <div>
+                                    <div class="font-bold text-gray-800">${article.title || '(タイトルなし)'}</div>
+                                    <div class="text-xs text-gray-500">${article.category || '不明'} | 順序: ${article.order || 0} | ${article.readingTime || 5}分</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${article.isPremium ? '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">⭐ プレミアム</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">${article.summary || '(概要なし)'}</div>
+                        <div class="text-xs text-gray-400 mb-3">作成: ${createdAt}</div>
+                        <div class="flex gap-2">
+                            <button onclick="deletePgBaseArticle('${article.id}')"
+                                class="px-3 py-1.5 text-sm rounded-lg font-medium bg-red-100 text-red-700 hover:bg-red-200 transition">
+                                🗑️ 削除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function createPgBaseArticle() {
+            const title = document.getElementById('pgbase-title').value.trim();
+            const category = document.getElementById('pgbase-category').value;
+            const summary = document.getElementById('pgbase-summary').value.trim();
+            const content = document.getElementById('pgbase-content').value.trim();
+            const readingTime = parseInt(document.getElementById('pgbase-reading-time').value) || 5;
+            const order = parseInt(document.getElementById('pgbase-order').value) || 0;
+            const isPremium = document.getElementById('pgbase-premium').checked;
+            const btn = document.getElementById('create-article-btn');
+
+            if (!title) {
+                alert('タイトルを入力してください');
+                return;
+            }
+            if (!content) {
+                alert('本文を入力してください');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 作成中...';
+
+            try {
+                const now = Date.now();
+                await db.collection('pgbase_articles').add({
+                    title,
+                    category,
+                    summary,
+                    content,
+                    readingTime,
+                    order,
+                    isPremium,
+                    createdAt: now,
+                    updatedAt: now
+                });
+
+                alert('✅ 記事を作成しました');
+
+                // フォームをクリア
+                document.getElementById('pgbase-title').value = '';
+                document.getElementById('pgbase-summary').value = '';
+                document.getElementById('pgbase-content').value = '';
+                document.getElementById('pgbase-reading-time').value = '5';
+                document.getElementById('pgbase-order').value = '0';
+                document.getElementById('pgbase-premium').checked = false;
+
+                await loadPgBaseArticles();
+            } catch (error) {
+                console.error('Create pgbase article error:', error);
+                alert('❌ 作成に失敗しました: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✨ 記事を作成';
+            }
+        }
+
+        async function deletePgBaseArticle(articleId) {
+            if (!confirm('⚠️ この記事を削除しますか？\n\nこの操作は取り消せません。')) return;
+
+            try {
+                await db.collection('pgbase_articles').doc(articleId).delete();
+                alert('✅ 記事を削除しました');
+                await loadPgBaseArticles();
+            } catch (error) {
+                console.error('Delete pgbase article error:', error);
+                alert('❌ 削除に失敗しました: ' + error.message);
             }
         }
 
