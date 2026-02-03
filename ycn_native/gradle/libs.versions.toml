@@ -6,6 +6,15 @@ coroutines = "1.8.1"
 serialization = "1.7.3"
 datetime = "0.6.1"
 
+# Firebase KMP (GitLive)
+firebaseGitlive = "2.1.0"
+
+# KMP Navigation
+voyager = "1.1.0-beta02"
+
+# KMP ViewModel
+kmpViewModel = "1.0.0-ALPHA-19"
+
 # Compose Multiplatform
 composeMultiplatform = "1.7.0"
 
@@ -88,7 +97,7 @@ lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-
 lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleCompose" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.13.1" }
 
-# Firebase
+# Firebase (Android native)
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-auth-ktx = { group = "com.google.firebase", name = "firebase-auth-ktx" }
 firebase-firestore-ktx = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
@@ -97,6 +106,19 @@ firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messa
 firebase-crashlytics-ktx = { group = "com.google.firebase", name = "firebase-crashlytics-ktx" }
 firebase-analytics-ktx = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 firebase-functions-ktx = { group = "com.google.firebase", name = "firebase-functions-ktx" }
+
+# Firebase KMP (GitLive) - for shared module
+firebase-gitlive-auth = { group = "dev.gitlive", name = "firebase-auth", version.ref = "firebaseGitlive" }
+firebase-gitlive-firestore = { group = "dev.gitlive", name = "firebase-firestore", version.ref = "firebaseGitlive" }
+firebase-gitlive-storage = { group = "dev.gitlive", name = "firebase-storage", version.ref = "firebaseGitlive" }
+firebase-gitlive-functions = { group = "dev.gitlive", name = "firebase-functions", version.ref = "firebaseGitlive" }
+firebase-gitlive-common = { group = "dev.gitlive", name = "firebase-common", version.ref = "firebaseGitlive" }
+
+# KMP Navigation (Voyager)
+voyager-navigator = { group = "cafe.adriel.voyager", name = "voyager-navigator", version.ref = "voyager" }
+voyager-screenmodel = { group = "cafe.adriel.voyager", name = "voyager-screenmodel", version.ref = "voyager" }
+voyager-transitions = { group = "cafe.adriel.voyager", name = "voyager-transitions", version.ref = "voyager" }
+voyager-koin = { group = "cafe.adriel.voyager", name = "voyager-koin", version.ref = "voyager" }
 
 # Ktor
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
@@ -110,6 +132,7 @@ ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version
 koin-core = { group = "io.insert-koin", name = "koin-core", version.ref = "koin" }
 koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
 koin-compose = { group = "io.insert-koin", name = "koin-androidx-compose", version.ref = "koinCompose" }
+koin-compose-mp = { group = "io.insert-koin", name = "koin-compose", version = "1.1.5" }
 
 # Image Loading
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
@@ -180,6 +203,21 @@ ktor-common = [
     "ktor-client-content-negotiation",
     "ktor-serialization-kotlinx-json",
     "ktor-client-logging"
+]
+
+firebase-gitlive = [
+    "firebase-gitlive-auth",
+    "firebase-gitlive-firestore",
+    "firebase-gitlive-storage",
+    "firebase-gitlive-functions",
+    "firebase-gitlive-common"
+]
+
+voyager = [
+    "voyager-navigator",
+    "voyager-screenmodel",
+    "voyager-transitions",
+    "voyager-koin"
 ]
 
 camera = [

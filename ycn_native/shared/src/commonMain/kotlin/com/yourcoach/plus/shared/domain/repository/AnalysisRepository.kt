@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.domain.repository
 
+import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 
 /**
@@ -53,8 +54,8 @@ data class AnalysisReport(
     val periodStart: String, // YYYY-MM-DD
     val periodEnd: String,   // YYYY-MM-DD
     val reportType: ReportType = ReportType.DAILY,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
+    val updatedAt: Long = Clock.System.now().toEpochMilliseconds()
 )
 
 /**
@@ -63,7 +64,7 @@ data class AnalysisReport(
 data class ConversationEntry(
     val type: String, // "user" or "ai"
     val content: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = Clock.System.now().toEpochMilliseconds()
 )
 
 /**

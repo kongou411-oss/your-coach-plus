@@ -68,6 +68,15 @@ class FirestoreCustomFoodRepository : CustomFoodRepository {
         }
     }
 
+    override suspend fun updateCustomFood(userId: String, foodId: String, updates: Map<String, Any>): Result<Unit> {
+        return try {
+            customFoodsCollection(userId).document(foodId).update(updates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("カスタム食品の更新に失敗しました", e))
+        }
+    }
+
     override suspend fun incrementUsage(userId: String, foodId: String): Result<Unit> {
         return try {
             val docRef = customFoodsCollection(userId).document(foodId)

@@ -110,7 +110,7 @@ data class MealSlot(
             val normalizedMinutes = ((minutes % 1440) + 1440) % 1440 // 0-1439に正規化
             val h = normalizedMinutes / 60
             val m = normalizedMinutes % 60
-            return "%02d:%02d".format(h, m)
+            return "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}"
         }
     }
 }

@@ -27,6 +27,11 @@ interface CustomFoodRepository {
     suspend fun deleteCustomFood(userId: String, foodId: String): Result<Unit>
 
     /**
+     * カスタム食品を更新
+     */
+    suspend fun updateCustomFood(userId: String, foodId: String, updates: Map<String, Any>): Result<Unit>
+
+    /**
      * 使用回数をインクリメント
      */
     suspend fun incrementUsage(userId: String, foodId: String): Result<Unit>

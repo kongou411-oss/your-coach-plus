@@ -1,6 +1,7 @@
 package com.yourcoach.plus.shared.domain.service
 
 import com.yourcoach.plus.shared.domain.model.UserProfile
+import kotlinx.datetime.Clock
 
 /**
  * Gemini API サービスインターフェース
@@ -61,7 +62,7 @@ interface GeminiService {
 data class ConversationMessage(
     val role: String, // "user" or "model"
     val content: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = Clock.System.now().toEpochMilliseconds()
 )
 
 /**

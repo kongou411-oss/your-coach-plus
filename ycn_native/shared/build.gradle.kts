@@ -51,10 +51,17 @@ kotlin {
 
             // DI
             implementation(libs.koin.core)
+            implementation(libs.koin.compose.mp)
 
             // Local Storage
             implementation(libs.multiplatform.settings)
             implementation(libs.multiplatform.settings.coroutines)
+
+            // Firebase KMP (GitLive)
+            implementation(libs.bundles.firebase.gitlive)
+
+            // Navigation (Voyager)
+            implementation(libs.bundles.voyager)
 
             // ViewModel (Compose Multiplatform)
             implementation(compose.components.uiToolingPreview)
@@ -71,6 +78,11 @@ kotlin {
 
             // Coroutines Android
             implementation(libs.kotlinx.coroutines.android)
+
+            // Credential Manager (Google Sign-In)
+            implementation(libs.credentials)
+            implementation(libs.credentials.play.services.auth)
+            implementation(libs.googleid)
         }
 
         iosMain.dependencies {

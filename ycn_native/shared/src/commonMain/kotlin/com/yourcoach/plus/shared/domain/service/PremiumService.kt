@@ -1,6 +1,7 @@
 package com.yourcoach.plus.shared.domain.service
 
 import com.yourcoach.plus.shared.domain.model.UserProfile
+import kotlinx.datetime.Clock
 
 /**
  * Premium機能の判定とアクセス制御を行うサービス
@@ -141,7 +142,7 @@ object PremiumService {
     /**
      * 現在時刻をミリ秒で取得
      */
-    private fun currentTimeMillis(): Long = System.currentTimeMillis()
+    private fun currentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()
 }
 
 /**
