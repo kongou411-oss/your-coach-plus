@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Your Coach+ - LBMを中心とした科学的な体づくり</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="description" content="Your Coach+は、LBM（除脂肪体重）を中心とした科学的なフィットネス・健康管理アプリです。AI分析で最適な栄養とトレーニングをサポートします。">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+        }
+        .fullpage-container {
+            height: 100vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .section-content {
+            max-width: 56rem;
+            width: 100%;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-black">
+
+    <div class="fullpage-container">
+        <div class="fullpage-wrapper" id="fullpage-wrapper">
+
+            <!-- Section 0: Hero -->
+            <section class="section bg-black">
+                <div class="section-content text-center">
+                    <h1 class="text-5xl md:text-7xl font-bold text-white mb-4">Your Coach<span class="text-[#4A9EFF]">+</span></h1>
+                    <p class="text-2xl md:text-4xl font-bold text-white mb-4">常識が示した限界。<br>そこが、俺たちのスタートラインだ。</p>
+                    <p class="text-base md:text-lg text-gray-300 mb-2">みんなは「無理だ」と言うかもしれない。</p>
+                    <p class="text-base md:text-lg text-gray-300 mb-2">だが、コンディションが完璧なら？ 迷いがなければ？</p>
+                    <p class="text-sm md:text-base text-[#4A9EFF] font-bold mb-8">科学と本能の融合が、あなたを限界の先へ。</p>
+
+                    <!-- Web版 CTA -->
+                    <a href="/index.html" class="inline-flex items-center gap-3 bg-[#4A9EFF] text-white font-bold py-4 px-8 rounded-xl hover:bg-[#3b8fef] transition text-lg shadow-lg mb-6">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Web版を使う
+                    </a>
+
+                    <!-- Store Links -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+                        <!-- Google Play Badge -->
+                        <a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
+                            <img src="https://play.google.com/intl/ja/badges/static/images/badges/ja_badge_web_generic.png" alt="Google Play で手に入れよう" class="h-16">
+                        </a>
+                        <!-- App Store Badge -->
+                        <a href="https://apps.apple.com/jp/app/your-coach/id6757575338" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
+                            <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83" alt="App Storeからダウンロード" class="h-16">
+                        </a>
+                    </div>
+
+                    <!-- YouTube CTA -->
+                    <a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-red-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-red-700 transition text-base shadow-lg">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        アプリ紹介動画を見る
+                    </a>
+                    <p class="text-gray-400 text-sm mt-3">使い方・設計思想を動画で解説</p>
+                </div>
+            </section>
+
+            <!-- Section 1: 共感（つかみ）-->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-gray-900/50 rounded-2xl p-8 border border-gray-800">
+                        <!-- ヘッドライン -->
+                        <h2 class="text-2xl md:text-3xl font-bold text-white mb-4 text-center">「努力量」は足りている。</h2>
+                        <p class="text-xl md:text-2xl text-[#4A9EFF] font-bold text-center mb-8">あとは「本質」と「均衡」だけ。</p>
+
+                        <!-- 問題提起 -->
+                        <div class="mb-8">
+                            <p class="text-gray-300 text-lg text-center mb-2">SNSの「映え」情報。論文の「パッチワーク」。</p>
+                            <p class="text-gray-300 text-lg text-center mb-2">情報を集めるほど、あなたの身体は迷子になる。</p>
+                            <p class="text-white font-bold text-lg text-center">他人の正解は、あなたへのノイズでしかない。</p>
+                        </div>
+
+                        <!-- ストーリー＆権威付け -->
+                        <div class="bg-gradient-to-br from-emerald-500/10 to-transparent rounded-xl p-6 border border-emerald-500/30 mb-8">
+                            <h3 class="text-lg font-bold text-white mb-4 text-center">「国体入賞者の私でさえ、間違えました」</h3>
+                            <p class="text-gray-300 text-center mb-2">減量には成功したはずだった。でも、パワーは落ちた。</p>
+                            <p class="text-gray-300 text-center mb-4">体重計の数字だけを追いかけ、大切な<span class="text-red-400 font-bold">「筋肉」</span>を捨てていたのです。</p>
+                            <p class="text-[#4A9EFF] font-bold text-center">私は、あの時の私を救うために、このアプリを作りました。</p>
+                        </div>
+
+                        <!-- クロージング -->
+                        <p class="text-gray-400 text-center mb-2">あなたに必要なのは、これ以上の情報ではありません。</p>
+                        <p class="text-center text-white font-bold text-xl">「本質」を取り戻し、「均衡」を整えるための<span class="text-[#4A9EFF]">「ナビ」</span>です。↓</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: 解決策（救世主） -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                        <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-center">
+                            <div class="flex-1">
+                                <div class="inline-block bg-[#4A9EFF]/10 text-[#4A9EFF] font-bold px-4 py-2 rounded-full text-sm mb-4">Feature1</div>
+                                <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">クエスト - 迷いを断つ専用のナビ</h3>
+                                <p class="text-gray-600 mb-4">
+                                    もう、迷うのは終わりにしましょう。<br>
+                                    アプリを開けば、今日やるべき食事、トレーニング、睡眠が<strong>「クエスト」</strong>として表示されます。
+                                </p>
+                                <div class="bg-[#4A9EFF]/10 rounded-xl p-4 mb-4">
+                                    <p class="text-[#4A9EFF] font-bold text-lg">迷う時間を、鍛える時間へ。</p>
+                                    <p class="text-gray-600 text-sm">理論はアプリが知っていればいい。あなたはただ、表示された「クエスト」をクリアするだけ。思考不要のナビゲーション。</p>
+                                </div>
+                                <ul class="space-y-2 text-gray-700">
+                                    <li class="flex items-center gap-2"><span class="text-[#4A9EFF]">✓</span> 国体入賞×ジム責任者のロジックを完全再現</li>
+                                    <li class="flex items-center gap-2"><span class="text-[#4A9EFF]">✓</span> 食事・運動・コンディションを総合的にナビゲート</li>
+                                    <li class="flex items-center gap-2"><span class="text-[#4A9EFF]">✓</span> AIが「次に何をすべきか」を毎日指示</li>
+                                </ul>
+                            </div>
+                            <div class="flex-1 flex justify-center">
+                                <img src="/guide-images/FEATURE1_new.png" alt="クエスト画面" class="w-auto h-[400px] md:h-[550px] object-contain rounded-3xl shadow-lg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: 教科書機能（PGBASE） -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                        <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-center">
+                            <div class="flex-1">
+                                <div class="inline-block bg-purple-500/10 text-purple-600 font-bold px-4 py-2 rounded-full text-sm mb-4">Feature2</div>
+                                <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">PGBASE - 本質を与える「教科書」</h3>
+                                <p class="text-gray-600 mb-4">
+                                    ナビに従うだけでなく、「<strong>なぜそのメニューが必要か</strong>」をアプリ内で学習。<br>
+                                    正しい理論（リテラシー）を身につけることで、論理を超越できる可能性を。
+                                </p>
+                                <ul class="space-y-2 text-gray-700">
+                                    <li class="flex items-center gap-2"><span class="text-purple-600">✓</span> タンパク質、脂質、炭水化物の科学的な教科書</li>
+                                    <li class="flex items-center gap-2"><span class="text-purple-600">✓</span> メンタルコントロールの実践的メソッド</li>
+                                    <li class="flex items-center gap-2"><span class="text-purple-600">✓</span> 学んだ内容をその場で実践・記録</li>
+                                </ul>
+                                <div class="mt-4 p-4 bg-purple-50 rounded-xl">
+                                    <p class="text-purple-700 text-sm"><strong>💡 理論を極め、本能で超えろ。</strong></p>
+                                </div>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center justify-center">
+                                <img src="/guide-images/FEATURE2_new.png" alt="PGBASE教科書画面" class="w-auto h-[400px] md:h-[550px] object-contain rounded-3xl shadow-lg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: 感情的ベネフィット（未来） -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+                        <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-center">
+                            <div class="flex-1">
+                                <div class="inline-block bg-emerald-500/10 text-emerald-600 font-bold px-4 py-2 rounded-full text-sm mb-4">Feature3</div>
+                                <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">COMY - ともに熱くなる共同体</h3>
+                                <p class="text-gray-600 mb-6">
+                                    あなたは一人ではない。<br>
+                                    <strong>互いに熱し、熱される究極のコミュニティ。</strong>
+                                </p>
+                                <ul class="space-y-2 text-gray-700">
+                                    <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> カテゴリ別投稿 - 質問、経過報告、レシピなど多彩に使い分け</li>
+                                    <li class="flex items-center gap-2"><span class="text-emerald-600">✓</span> 生けるコミュニティ - 競技全国レベルの開発者が使い、進化し続ける</li>
+                                </ul>
+                            </div>
+                            <div class="flex-1 flex justify-center">
+                                <img src="/guide-images/FEATURE3_new.png" alt="COMYコミュニティ" class="w-auto h-[400px] md:h-[550px] object-contain rounded-3xl shadow-lg">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Comparison（敵との対比） -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <!-- タイトル -->
+                    <div class="text-center mb-12">
+                        <div class="inline-block mb-4 px-4 py-1 rounded-full border border-white/10 bg-white/5">
+                            <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Comparison</span>
+                        </div>
+                        <h2 class="text-3xl md:text-5xl font-black text-white mb-4">「記録」か。「導き」か。</h2>
+                        <p class="text-gray-500 text-base md:text-lg">あなたのデータは、あなたを救ってくれていますか？</p>
+                    </div>
+
+                    <!-- 2列比較 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-stretch">
+
+                        <!-- LEFT: 記録帳 (OLD) -->
+                        <div class="flex flex-col">
+                            <div class="text-center mb-4 opacity-50">
+                                <span class="text-xs tracking-widest font-bold uppercase text-gray-500">Current Standard</span>
+                            </div>
+                            <div class="flex-1 bg-gray-900/50 border border-gray-800 rounded-lg p-6 md:p-8 opacity-70">
+                                <!-- ヘッダー -->
+                                <div class="mb-8 border-b border-white/5 pb-6">
+                                    <div class="w-14 h-14 bg-white/5 rounded flex items-center justify-center text-2xl mb-4 grayscale opacity-60">🗺️</div>
+                                    <h3 class="text-xl font-bold text-gray-400 mb-1">地図しか渡さない</h3>
+                                    <p class="text-xs text-gray-600">一般的な管理アプリ・記録ツール</p>
+                                </div>
+                                <!-- リスト -->
+                                <div class="space-y-6">
+                                    <div class="flex gap-4 items-start opacity-70">
+                                        <span class="text-red-500 text-lg mt-0.5">×</span>
+                                        <div>
+                                            <h4 class="text-base font-bold text-gray-400 mb-1">データを見せるだけ</h4>
+                                            <p class="text-xs text-gray-600">事実は伝えるが、解決策は提示しない。</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-4 items-start opacity-70">
+                                        <span class="text-red-500 text-lg mt-0.5">×</span>
+                                        <div>
+                                            <h4 class="text-base font-bold text-gray-400 mb-1">指導放棄</h4>
+                                            <p class="text-xs text-gray-600">記録することが目的化し、行動変容まで責任を持たない。</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-4 items-start opacity-70">
+                                        <span class="text-red-500 text-lg mt-0.5">×</span>
+                                        <div>
+                                            <h4 class="text-base font-bold text-gray-400 mb-1">迷いっぱなし</h4>
+                                            <p class="text-xs text-gray-600">何をどう改善すればいいのか、自分で考えなければならない。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT: ナビゲーター (NEW) -->
+                        <div class="flex flex-col md:-translate-y-4">
+                            <div class="text-center mb-4">
+                                <span class="text-xs tracking-widest font-bold uppercase text-[#4A9EFF]" style="text-shadow: 0 0 10px rgba(74,158,255,0.8);">New Standard</span>
+                            </div>
+                            <div class="flex-1 bg-black rounded-2xl border-2 border-[#4A9EFF] p-6 md:p-8 relative overflow-hidden" style="box-shadow: 0 0 40px -5px rgba(74,158,255,0.25), inset 0 0 20px -10px rgba(74,158,255,0.3);">
+                                <!-- 光エフェクト -->
+                                <div class="absolute -top-32 -right-32 w-64 h-64 bg-blue-600/20 rounded-full blur-[80px] pointer-events-none"></div>
+                                <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-blue-900/10 to-transparent pointer-events-none"></div>
+
+                                <div class="relative z-10">
+                                    <!-- ヘッダー -->
+                                    <div class="mb-10">
+                                        <div class="w-16 h-16 bg-[#4A9EFF] rounded-xl flex items-center justify-center text-3xl mb-6 shadow-lg shadow-blue-500/30">🧭</div>
+                                        <h3 class="text-2xl md:text-3xl font-black text-white mb-2">目的地まで<span class="text-[#4A9EFF]">ナビゲート</span></h3>
+                                        <p class="text-sm text-blue-200 font-medium">Your Coach+</p>
+                                    </div>
+                                    <!-- リスト -->
+                                    <div class="space-y-8">
+                                        <div class="relative pl-5 border-l-2 border-[#4A9EFF]/30">
+                                            <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-black border-2 border-[#4A9EFF]" style="box-shadow: 0 0 10px rgba(74,158,255,0.5);"></div>
+                                            <div class="mb-1 text-xs font-bold tracking-widest text-[#4A9EFF] uppercase">Action</div>
+                                            <h4 class="text-lg font-bold text-white mb-1">次の行動を指示</h4>
+                                            <p class="text-sm text-gray-400">「今日はこれをやれ」と明確に。考える時間をゼロにする。</p>
+                                        </div>
+                                        <div class="relative pl-5 border-l-2 border-[#4A9EFF]/30">
+                                            <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-black border-2 border-[#4A9EFF]" style="box-shadow: 0 0 10px rgba(74,158,255,0.5);"></div>
+                                            <div class="mb-1 text-xs font-bold tracking-widest text-[#4A9EFF] uppercase">Responsibility</div>
+                                            <h4 class="text-lg font-bold text-white mb-1">私だけのコーチ</h4>
+                                            <p class="text-sm text-gray-400">データに基づく個別最適化。結果が出るまで並走する。</p>
+                                        </div>
+                                        <div class="relative pl-5 border-l-2 border-[#4A9EFF]/30">
+                                            <div class="absolute -left-[7px] top-0 w-3 h-3 rounded-full bg-black border-2 border-[#4A9EFF]" style="box-shadow: 0 0 10px rgba(74,158,255,0.5);"></div>
+                                            <div class="mb-1 text-xs font-bold tracking-widest text-[#4A9EFF] uppercase">Result</div>
+                                            <h4 class="text-lg font-bold text-white mb-1">迷いゼロ</h4>
+                                            <p class="text-sm text-gray-400">クエストをクリアするだけで、最短距離でゴールへ。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- フッターメッセージ -->
+                    <div class="mt-12 text-center border-t border-white/5 pt-8">
+                        <p class="text-lg text-white font-bold mb-2">GoogleやApple、あすけんが愛するのは、「あなた」ではなく<span class="text-red-500">「平均」</span>だ。</p>
+                        <p class="text-gray-500 text-sm max-w-xl mx-auto">彼らのアプリは、世界中の何億人もの「平均値」を満たすように作られています。<br>だから、あなたのデータは取っても、あなただけの正解は教えてくれません。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 7: Developer（権威性 + 共感） -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8">
+                        <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3 text-center">アプリ屋には、この『重量』は分からない。<br>脳筋には、この『論理』は生み出せない。</h2>
+                        <p class="text-gray-600 text-sm md:text-base text-center mb-6 leading-relaxed">国体入賞元アスリート×24hジム元現場責任者がゼロイチ開発。<br class="hidden md:inline">4年越しに現役復帰した今も自らの肉体で実証し続ける。<br><strong class="text-[#4A9EFF]">机上の空論を削ぎ落とした、純粋な『本物』がここにある。</strong></p>
+                        <div class="flex flex-col md:flex-row items-center gap-8">
+                            <div class="flex-shrink-0">
+                                <img src="/guide-images/developer_new.jpg" alt="開発者" class="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover shadow-lg">
+                            </div>
+                            <div class="flex-1 text-center md:text-left">
+                                <h3 class="text-xl font-bold text-gray-900 mb-3">Your Coach+ 開発者　櫻井喜樹</h3>
+                                <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-2">
+                                    <span class="bg-[#4A9EFF]/10 text-[#4A9EFF] font-bold px-3 py-1 rounded-full text-sm">ウエイトリフティング元国体入賞者</span>
+                                    <span class="bg-emerald-500/10 text-emerald-600 font-bold px-3 py-1 rounded-full text-sm">5か月-20kgダイエット成功</span>
+                                    <span class="bg-orange-500/10 text-orange-600 font-bold px-3 py-1 rounded-full text-sm">24hジム元現場責任者</span>
+                                    <span class="bg-purple-500/10 text-purple-600 font-bold px-3 py-1 rounded-full text-sm">大阪WL協会役員・大会個人協賛</span>
+                                    <span class="bg-gray-500/10 text-gray-600 font-bold px-3 py-1 rounded-full text-sm">172cm 76kg</span>
+                                </div>
+                                <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">ベンチプレス 140kg</span>
+                                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">デッドリフト 230kg</span>
+                                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">スクワット 240kg</span>
+                                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">スナッチ 125kg</span>
+                                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">ジャーク 160kg</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 7: YouTube -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-gray-900/50 rounded-2xl p-8 border border-gray-800">
+                        <div class="text-center mb-6">
+                            <div class="inline-flex items-center gap-2 bg-red-600 text-white font-bold px-4 py-2 rounded-full text-sm mb-3">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                YouTube公式チャンネル
+                            </div>
+                            <h2 class="text-2xl font-bold text-white mb-2">YourCoach+ 公式</h2>
+                            <p class="text-gray-400 text-sm">アプリの使い方・設計思想・実践方法を動画で解説</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                                <div class="text-2xl mb-2">📱</div>
+                                <h4 class="font-bold text-white text-sm">アプリ解説</h4>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                                <div class="text-2xl mb-2">💪</div>
+                                <h4 class="font-bold text-white text-sm">実践方法</h4>
+                            </div>
+                            <div class="bg-gray-800/50 rounded-xl p-4 text-center">
+                                <div class="text-2xl mb-2">🎯</div>
+                                <h4 class="font-bold text-white text-sm">設計思想</h4>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-red-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-red-700 transition shadow-lg">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                チャンネルを見る
+                            </a>
+                            <p class="text-gray-500 text-sm mt-2">@YourCoachPlusOFFICIAL</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 8: Individual Pricing -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-white rounded-2xl shadow-2xl p-6">
+                        <div class="text-center mb-4">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">個人向けプラン</h2>
+                            <p class="text-gray-600 text-sm">7日間の無料トライアル後、月額940円</p>
+                        </div>
+                        <div class="max-w-2xl mx-auto">
+                            <div class="border-2 border-[#4A9EFF] rounded-2xl p-5 relative">
+                                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                    <span class="bg-[#4A9EFF] text-white text-xs font-bold px-4 py-1 rounded-full">Premium</span>
+                                </div>
+                                <div class="text-center mb-4 mt-2">
+                                    <span class="text-3xl font-bold text-[#4A9EFF]">¥940</span>
+                                    <span class="text-gray-600">/月</span>
+                                    <p class="text-xs text-gray-500 mt-1">AI分析 100回/月 付与</p>
+                                </div>
+
+                                <!-- 機能一覧 -->
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                    <!-- 記録機能 -->
+                                    <div class="col-span-2 text-[#4A9EFF] font-bold mt-2 mb-1 border-b border-gray-200 pb-1">📝 記録機能</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> 食事記録（40項目以上の栄養素）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> AI画像認識（写真から自動入力）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> 運動記録（100種類以上）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> RM（最大挙上重量）追跡</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> コンディション記録</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-[#4A9EFF]">✓</span> カスタム食材・種目追加</div>
+
+                                    <!-- 分析・AI機能 -->
+                                    <div class="col-span-2 text-emerald-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">🤖 分析・AI機能</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 毎日のAI総合分析</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 30日トレンド分析</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 対話型Q&A（深掘り質問）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> AI指示書（明日のアクション）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 8軸詳細スコア（DIAAS・GL等）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-emerald-600">✓</span> 1ヶ月後の体組成予測</div>
+
+                                    <!-- 履歴・グラフ -->
+                                    <div class="col-span-2 text-purple-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">📊 履歴・グラフ</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 履歴グラフ（全データ可視化）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 移動平均・予測線表示</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 目標ライン設定</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-purple-600">✓</span> 期間比較（7日〜1年）</div>
+
+                                    <!-- 効率化機能 -->
+                                    <div class="col-span-2 text-orange-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">⚡ 効率化機能</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> テンプレート（食事・運動）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> ルーティン（週間スケジュール）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> ショートカット（1タップ入力）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-orange-600">✓</span> 通知リマインダー（5種類）</div>
+
+                                    <!-- 学習・コミュニティ -->
+                                    <div class="col-span-2 text-pink-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">📚 学習・コミュニティ</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> PGBASE（教科書10種類以上）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> AI学習レコメンド</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> COMY（進捗共有・投稿）</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-pink-600">✓</span> いいね・コメント・フォロー</div>
+
+                                    <!-- その他 -->
+                                    <div class="col-span-2 text-gray-600 font-bold mt-2 mb-1 border-b border-gray-200 pb-1">🎮 その他</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-gray-600">✓</span> レベルアップでクレジット付与</div>
+                                    <div class="flex items-center gap-1 text-gray-700"><span class="text-gray-600">✓</span> 友達紹介でクレジット付与</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 9: Business Pricing -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <div class="bg-gradient-to-r from-gray-900 to-black rounded-2xl shadow-2xl shadow-[#4A9EFF]/20 p-6 text-white border border-gray-800">
+                        <div class="text-center mb-6">
+                            <div class="text-3xl mb-2">🏢</div>
+                            <h2 class="text-2xl font-bold mb-1">法人・ジム向けプラン</h2>
+                            <p class="text-gray-300 text-sm mb-4">会員様に高品質なフィットネスサポートを提供しませんか？</p>
+
+                            <!-- 強み -->
+                            <div class="bg-white/5 rounded-xl p-4 border border-white/10 text-left max-w-lg mx-auto">
+                                <p class="text-[#4A9EFF] font-bold text-sm mb-3 text-center">なぜ私たちを選ぶのか？</p>
+                                <div class="space-y-2 text-sm">
+                                    <p class="flex items-start gap-2"><span class="text-[#4A9EFF]">✓</span><span>元24hジム現場責任者が設計 → <strong class="text-white">現場の課題を熟知</strong></span></p>
+                                    <p class="flex items-start gap-2"><span class="text-[#4A9EFF]">✓</span><span>大阪WL協会役員が開発 → <strong class="text-white">業界標準の信頼性</strong></span></p>
+                                    <p class="flex items-start gap-2"><span class="text-[#4A9EFF]">✓</span><span>現役復帰した開発者が毎日使用 → <strong class="text-white">机上の空論ゼロ</strong></span></p>
+                                </div>
+                                <p class="text-gray-400 text-xs mt-3 text-center">開発者が直接対応。要望や改善は即反映します。</p>
+                            </div>
+                        </div>
+
+                        <!-- プラン一覧 -->
+                        <div class="grid md:grid-cols-3 gap-3 mb-4">
+                            <!-- Standard プラン -->
+                            <div class="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl hover:shadow-[#4A9EFF]/20 transition">
+                                <p class="text-gray-500 text-xs mb-1">個人トレーナー・小規模向け</p>
+                                <h3 class="text-lg font-bold mb-1 text-gray-900">Standard</h3>
+                                <div class="text-2xl font-bold mb-1 text-[#4A9EFF]">¥108,000<span class="text-sm font-normal text-gray-600">/年</span></div>
+                                <p class="text-gray-600 text-xs mb-2">最大10名までご利用可能</p>
+                                <ul class="space-y-1 text-xs text-gray-700">
+                                    <li><span class="text-[#4A9EFF]">✓</span> 1人あたり¥900/月</li>
+                                </ul>
+                            </div>
+
+                            <!-- Pro プラン -->
+                            <div class="bg-white rounded-xl p-4 shadow-lg hover:shadow-xl hover:shadow-[#4A9EFF]/20 transition">
+                                <p class="text-gray-500 text-xs mb-1">スタジオ・中小企業向け</p>
+                                <h3 class="text-lg font-bold mb-1 text-gray-900">Pro</h3>
+                                <div class="text-2xl font-bold mb-1 text-[#4A9EFF]">¥297,000<span class="text-sm font-normal text-gray-600">/年</span></div>
+                                <p class="text-gray-600 text-xs mb-2">最大30名までご利用可能</p>
+                                <ul class="space-y-1 text-xs text-gray-700">
+                                    <li><span class="text-[#4A9EFF]">✓</span> 1人あたり¥825/月 <span class="text-green-600">8% OFF</span></li>
+                                    <li><span class="text-[#4A9EFF]">✓</span> 少額減価償却特例内</li>
+                                </ul>
+                            </div>
+
+                            <!-- Elite プラン（強調） -->
+                            <div class="bg-white rounded-xl p-4 border-2 border-[#4A9EFF] transform scale-105 shadow-xl hover:shadow-2xl hover:shadow-[#4A9EFF]/30 transition relative">
+                                <div class="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                                    <span class="bg-[#4A9EFF] text-white text-xs font-bold px-2 py-0.5 rounded-full">人気 No.1</span>
+                                </div>
+                                <p class="text-gray-500 text-xs mb-1 mt-1">大規模ジム・高コスパ</p>
+                                <h3 class="text-lg font-bold mb-1 text-gray-900">Elite</h3>
+                                <div class="text-2xl font-bold mb-1 text-[#4A9EFF]">¥594,000<span class="text-sm font-normal text-gray-600">/年</span></div>
+                                <p class="text-gray-600 text-xs mb-2">最大100名までご利用可能</p>
+                                <div class="bg-red-50 rounded p-1 text-center mb-1">
+                                    <span class="text-red-600 font-bold text-sm">¥495/月</span>
+                                    <span class="bg-red-600 text-white text-xs px-1 rounded ml-1">45% OFF</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTA -->
+                        <div class="text-center">
+                            <a href="/b2b2c.html" class="inline-block bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#3b8fef] transition shadow-lg">
+                                法人プランの詳細・お申し込み →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 10: Release Notes -->
+            <section class="section bg-black">
+                <div class="section-content">
+                    <h2 class="text-3xl font-bold text-white mb-6 text-center">リリースノート</h2>
+                    <div class="bg-gray-900/50 rounded-2xl p-6 border border-gray-800">
+                        <!-- v1.1.0 -->
+                        <div class="mb-8 pb-8 border-b border-gray-700 last:border-0 last:mb-0 last:pb-0">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="bg-[#4A9EFF] text-white text-xs font-bold px-3 py-1 rounded-full">正式版</span>
+                                <span class="text-gray-400 text-sm">2026年1月4日</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-3">v1.1.0 - Google Play正式リリース</h3>
+                            <ul class="space-y-2">
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-[#4A9EFF] mt-1">✓</span>
+                                    <span>Google Play Storeで正式配信開始</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-[#4A9EFF] mt-1">✓</span>
+                                    <span>LBMベースの科学的な体組成管理機能</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-[#4A9EFF] mt-1">✓</span>
+                                    <span>食事・運動・コンディション記録</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-[#4A9EFF] mt-1">✓</span>
+                                    <span>AI分析（Google Gemini API）</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-[#4A9EFF] mt-1">✓</span>
+                                    <span>テンプレート・ルーティン機能</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- v1.0.x -->
+                        <div class="mb-8 pb-8 border-b border-gray-700 last:border-0 last:mb-0 last:pb-0">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="bg-gray-600 text-white text-xs font-bold px-3 py-1 rounded-full">β版</span>
+                                <span class="text-gray-400 text-sm">2025年12月</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-3">v1.0.x - ベータ版テスト</h3>
+                            <ul class="space-y-2">
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-gray-500 mt-1">✓</span>
+                                    <span>クローズドベータテスト実施</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-gray-500 mt-1">✓</span>
+                                    <span>コード品質改善・最適化</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-gray-500 mt-1">✓</span>
+                                    <span>安定性向上</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Web版 β -->
+                        <div>
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">Web β版</span>
+                                <span class="text-gray-400 text-sm">2025年11月 - 継続中</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-3">v4.7.0 - Web版ベータ開発</h3>
+                            <ul class="space-y-2">
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-purple-400 mt-1">✓</span>
+                                    <span>有料教科書システム & YourCoach+ガイド実装</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-purple-400 mt-1">✓</span>
+                                    <span>B2B2C企業プラン完全実装 & UI統一</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-purple-400 mt-1">✓</span>
+                                    <span>Stripe決済統合完全実装</span>
+                                </li>
+                                <li class="flex items-start gap-2 text-gray-300 text-sm">
+                                    <span class="text-purple-400 mt-1">✓</span>
+                                    <span>通知システム・履歴グラフ・AI分析最適化</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 11: Footer -->
+            <section class="section bg-black">
+                <div class="section-content text-center">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold text-white mb-4">Your Coach<span class="text-[#4A9EFF]">+</span></h2>
+                        <p class="text-gray-400">迷う時間を、鍛える時間へ。</p>
+                        <p class="text-[#4A9EFF] text-sm mt-2">あなたの努力が、正しく報われる世界を。</p>
+                    </div>
+
+                    <!-- Web版 CTA -->
+                    <a href="/index.html" class="inline-flex items-center gap-3 bg-[#4A9EFF] text-white font-bold py-3 px-6 rounded-xl hover:bg-[#3b8fef] transition shadow-lg mb-4">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Web版を使う
+                    </a>
+
+                    <!-- Store Links -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+                        <!-- Google Play Badge -->
+                        <a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
+                            <img src="https://play.google.com/intl/ja/badges/static/images/badges/ja_badge_web_generic.png" alt="Google Play で手に入れよう" class="h-14">
+                        </a>
+                        <!-- App Store Badge -->
+                        <a href="https://apps.apple.com/jp/app/your-coach/id6757575338" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
+                            <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83" alt="App Storeからダウンロード" class="h-14">
+                        </a>
+                    </div>
+
+                    <!-- YouTube -->
+                    <div class="flex justify-center gap-4 mb-6">
+                        <a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            YouTube
+                        </a>
+                    </div>
+
+                    <!-- Links -->
+                    <div class="space-x-4 text-white text-xs mb-4">
+                        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="hover:underline">プライバシーポリシー</a>
+                        <span>|</span>
+                        <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="hover:underline">利用規約</a>
+                        <span>|</span>
+                        <a href="/tokushoho.html" target="_blank" rel="noopener noreferrer" class="hover:underline">特定商取引法</a>
+                    </div>
+                    <p class="text-gray-400 text-xs mb-2">お問い合わせ: official@your-coach-plus.com</p>
+                    <p class="text-gray-500 text-xs">© 2025 Your Coach+. All rights reserved.</p>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</body>
+</html>

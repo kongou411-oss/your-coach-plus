@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メンタルの教科書 - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.8;
+            background-color: #f9fafb;
+            padding-bottom: 120px; /* BAB + メニューバー対応 */
+        }
+
+        .conclusion-box {
+            background: #ffffff; border-left: 4px solid #14b8a6;
+            color: #374151;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            
+        }
+
+        .section-header {
+            border-left: 4px solid #14b8a6;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+            color: #0f766e;
+        }
+
+        .premium-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .evidence-badge {
+            display: inline-block;
+            background: #14b8a6;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            
+        }
+
+        .key-point {
+            background: #ffffff;
+            border-left: 4px solid #10b981;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .action-list {
+            background: #ffffff;
+            border-left: 4px solid #22c55e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .action-list h4 {
+            color: #15803d;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .warning-box {
+            background: #ffffff;
+            border-left: 4px solid #f87171;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .warning-box h4 {
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .comparison-box {
+            background: #ffffff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .comparison-box h4 {
+            color: #1e40af;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .qa-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .qa-question {
+            padding: 1rem;
+            color: #0f766e;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f0fdfa;
+            transition: all 0.3s;
+        }
+
+        .qa-question:hover {
+            background-color: #ccfbf1;
+        }
+
+        .qa-answer {
+            padding: 1rem;
+            color: #374151;
+            display: none;
+            background-color: white;
+        }
+
+        .qa-answer.active {
+            display: block;
+        }
+
+        .related-link {
+            display: inline-block;
+            color: #0891b2;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 2px solid #14b8a6;
+            border-radius: 8px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .related-link:hover {
+            background: #14b8a6;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+            
+        }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #14b8a6;
+            color: white;
+            padding: 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+        }
+
+        .scroll-top-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(20, 184, 166, 0.5);
+        }
+
+        .meta-info {
+            background: #ffffff;
+            border-left: 4px solid #22c55e;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="evidence-badge">📖 民間資料</span>
+                <span class="premium-badge">⭐ プレミアム</span>
+                    <span class="text-sm text-gray-600">レベル: 民間資料・実践知</span>
+                </div>
+                <a href="#" onclick="window.parent.postMessage('return-to-pgbase-store', '*'); return false;" class="text-sm px-4 py-2 rounded-lg transition" style="color: #0891b2; border: 2px solid #0891b2; text-decoration: none; font-weight: 500;">← ストアに戻る</a>
+            </div>
+            <h1 class="text-4xl font-bold mb-4" style="color: #0f766e;">
+                メンタルの教科書
+            </h1>
+            <p class="text-lg text-gray-600">
+                モチベーション非依存の自動行動システム構築法
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500 flex-wrap">
+                <span>📚 カテゴリ: メンタルトレーニング</span>
+                <span>⏱️ 読了時間: 12分</span>
+                <span>📅 最終更新: 2025年10月</span>
+            </div>
+        </header>
+
+        <!-- 結論（冒頭） -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📋</span>
+                <span>この記事の結論</span>
+            </h2>
+            <div class="text-lg leading-relaxed">
+                <ol class="list-decimal list-inside space-y-2 ml-2">
+                    <li>「思考の時間」と「行動の時間」を完全に分離する</li>
+                    <li>行動の前夜か朝一番に、その日やるべきことを明確にした具体的な「指示書」を作成する</li>
+                    <li>作成した指示書を100%実行することを24〜42日間継続し、「自分はできる」というマインドを構築する</li>
+                    <li>専門家の意見やデータをインプットしつつ、思考の末に得た「閃き」と自分の身体の感覚を最終的に信じる</li>
+                </ol>
+            </div>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <p class="font-semibold mb-2">🎯 こんな人におすすめ</p>
+                <p>・モチベーションの波に左右されずに継続したい人<br>
+                ・トップアスリートの思考法を学びたい人<br>
+                ・自分に自信を持ちたい人<br>
+                ・確実に結果を出せるメンタルを構築したい人</p>
+            </div>
+        </section>
+
+        <!-- 目次 -->
+        <nav class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li><a href="#section1" class="hover:text-cyan-600">AIコーチによる要約</a></li>
+                <li><a href="#section2" class="hover:text-cyan-600">科学的根拠 / なぜ「マインド」が重要なのか？</a></li>
+                <li><a href="#section3" class="hover:text-cyan-600">メリット（期待できる効果）</a></li>
+                <li><a href="#section4" class="hover:text-cyan-600">リスクと考慮事項</a></li>
+                <li><a href="#section5" class="hover:text-cyan-600">具体的な実践プラン</a></li>
+                <li><a href="#section6" class="hover:text-cyan-600">Q&A / よくある質問</a></li>
+            </ol>
+        </nav>
+
+        <!-- セクション1: AIコーチによる要約 -->
+        <section id="section1" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                1. 🤖 AIコーチによる要約
+            </h2>
+            <p class="text-gray-700 mt-4">
+                このマニュアルは、ボディメイクにおける理論を後押しする、メンタル（精神）の哲学と技術について記載するものです。モチベーションは一時的な感情であり、約3日〜1週間で通常に戻ります。
+            </p>
+            <p class="text-gray-700 mt-4">
+                しかし、世界のトップで戦い続けるアスリートたちは、モチベーションの波に左右されずに行動し、結果を出し続けます。その秘密は、脳の行動回路そのものをプログラムする「マインド」の構築にあります。
+            </p>
+            <div class="key-point mt-6">
+                <p class="font-semibold mb-2" style="color: #065f46;">💡 キーポイント</p>
+                <p class="text-gray-700">
+                    成功の鍵 = モチベーション管理 × 自動行動回路 × 思考と行動の分離
+                </p>
+            </div>
+        </section>
+
+        <!-- セクション2: 科学的根拠 -->
+        <section id="section2" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                2. 🧬 科学的根拠 / なぜ「マインド」が重要なのか？
+            </h2>
+
+            <p class="text-gray-700 mt-4">
+                ボディメイクは、才能や素質以上に、諦めずに努力を継続できるかが結果を分けます。しかし、人間のモチベーションは無限には続きません。そこで重要になるのが、モチベーションが低い状態でも、自分を正しい方向へ自動的に動かしてくれる「マインド（＝脳の自動行動回路）」を構築することです。
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.1 思考と行動は同時にできない</h3>
+            <p class="text-gray-700">
+                人間の脳は、「何をすべきか考える（思考）」と「実際に身体を動かす（行動）」を同時に行うことができません。行動しながら考えると、「これで合っているのか？」という疑念や迷いが生まれ、パフォーマンスが低下し、やがて止まってしまいます。
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.2 乗り越えるべき壁は自分の中にいる</h3>
+            <p class="text-gray-700">
+                本当の敵は、他人や環境ではありません。自分自身のことを「どうせ無理だ」と見限ってしまう心や、行動中に生まれる迷いです。強力なマインドは、これらの内なる敵を無力化します。
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.3 24-42日間の科学的根拠</h3>
+            <p class="text-gray-700">
+                習慣形成の科学的研究によると、新しい行動パターンが自動化されるまでに平均66日かかるとされています。24-42日は、その過程で「自分はできる」という自信が芽生え、脳の神経回路が強化される重要な期間です。この期間を乗り越えると、行動が自動化され、意識的な努力なしに継続できるようになります。
+            </p>
+        </section>
+
+        <!-- セクション3: メリット -->
+        <section id="section3" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                3. ✅ メリット（期待できる効果）
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.1 継続力の向上</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>モチベーション非依存</strong>: やる気がなくても自動的に行動できるようになる</li>
+                <li><strong>迷いの排除</strong>: 行動中に「これで合ってるのか？」という疑念がなくなる</li>
+                <li><strong>長期継続</strong>: 24-42日の習慣形成で長期的な変化を実現</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.2 パフォーマンス効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>集中力向上</strong>: 思考と行動の分離によりトレーニング効率が上がる</li>
+                <li><strong>決断力強化</strong>: 明確な指示書により迷いなく行動できる</li>
+                <li><strong>自信構築</strong>: 小さな成功体験の積み重ねで強固な自信を獲得</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.3 長期的効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>自己効力感</strong>: 「自分はできる」という確信の構築</li>
+                <li><strong>問題解決能力</strong>: 情報収集と閃きによる独自の解決策創出</li>
+                <li><strong>ストレス耐性</strong>: 困難な状況でも冷静に対処できるマインド</li>
+            </ul>
+        </section>
+
+        <!-- セクション4: リスクと考慮事項 -->
+        <section id="section4" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                4. ⚠️ リスクと考慮事項
+            </h2>
+
+            <div class="warning-box">
+                <h4>注意すべき点</h4>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>過度な完璧主義</strong>: 100%実行にこだわりすぎて柔軟性を失う</li>
+                    <li><strong>バランスの欠如</strong>: 行動に偏り過ぎて大局的な思考を忘れる</li>
+                    <li><strong>外部情報の軽視</strong>: 自分の感覚を過信しすぎる危険性</li>
+                </ul>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.1 個人差の考慮</h3>
+            <p class="text-gray-700">
+                マインド構築の効果には個人差があります：
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>性格的要因</strong>: 完璧主義者ほど初期段階で挫折しやすい</li>
+                <li><strong>過去の経験</strong>: 成功体験の多い人ほど短期間で効果が現れる</li>
+                <li><strong>環境要因</strong>: サポート体制の有無で継続しやすさが変わる</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.2 避けるべき落とし穴</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li>最初から難しすぎる目標を設定すること</li>
+                <li>指示書を曖昧な内容のままにしておくこと</li>
+                <li>他人の成功法をそのまま真似ること</li>
+            </ul>
+        </section>
+
+        <!-- セクション5: 具体的な実践プラン -->
+        <section id="section5" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                5. 🎯 具体的な実践プラン
+            </h2>
+
+            <div class="action-list">
+                <h4>ステップ1：「思考」と「行動」を分離する</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li>1日の中で「考える時間」と「行動する時間」を明確に分ける</li>
+                    <li>トレーニング中はトレーニングにのみ集中し、食事中は食事に集中する</li>
+                    <li>計画の修正や次の戦略を考えるのは、それ専用の時間（例：寝る前の15分間）を設けて行う</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.1 行動のための「指示書」を作る</h3>
+            <p class="text-gray-700">
+                「行動の時間」に迷いが生じないよう、前日の夜か当日の朝一番に、その日やるべきことを具体的に書き出した「指示書」を作成します。
+            </p>
+
+            <div class="comparison-box mt-4">
+                <h4>指示書の良い例・悪い例</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <p class="font-semibold text-red-600 mb-2">❌ 悪い例</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700">
+                            <li>「ジムに行く」</li>
+                            <li>「筋トレする」</li>
+                            <li>「食事を改善する」</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-green-600 mb-2">✅ 良い例</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700">
+                            <li>「18:00にジムでベンチプレス70kg×8回×3セット」</li>
+                            <li>「スクワット80kg×10回×3セット」</li>
+                            <li>「デッドリフト100kg×5回×3セット」</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-list mt-6">
+                <h4>ステップ2：「マインド」の作り方（自信をプログラミングする）</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li>紙とペンを用意し、その日の内に100％達成可能なことを1つだけ書く（例：「腕立て伏せを1回やる」「プロテインを1杯飲む」など）</li>
+                    <li>それを達成し、完了したことを記録する</li>
+                    <li>これを24〜42日間継続する</li>
+                    <li>達成できたら、徐々に難易度を上げていく</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.2 「閃き」の作り方（自分だけの正解を導き出す）</h3>
+            <p class="text-gray-700">
+                専門家の意見は重要ですが、最終的な答えは自分の中にしかありません。その答え（閃き）は、以下のプロセスで生まれます。
+            </p>
+
+            <ol class="list-decimal list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>課題の言語化</strong>: 「今の自分に足りないものは何か？」を明確に言葉にする</li>
+                <li><strong>情報の大量インプット</strong>: 課題解決の材料となる情報を、有料のセミナーや書籍など質の高い情報源から大量にインプットする</li>
+                <li><strong>意図的な思考停止</strong>: インプットが貯まると、脳は情報で散乱した状態になる。ここで意図的に思考を止め、瞑想、運動、睡眠、サウナなどでリラックスする時間を作る</li>
+                <li><strong>閃きの受信</strong>: この時間に、脳が情報と情報を結合させ、ある瞬間に「閃き」として答えを提示してくれる</li>
+            </ol>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">5.3 24-42日プロトコルの実践例</h3>
+            <div class="comparison-box">
+                <h4>段階的な目標設定例</h4>
+                <div class="space-y-3 mt-4 text-gray-700">
+                    <div>
+                        <p class="font-semibold text-cyan-700">Week 1-2（超基本レベル）</p>
+                        <ul class="list-disc list-inside ml-4 space-y-1 mt-1">
+                            <li>毎日プロテインを1杯飲む</li>
+                            <li>腕立て伏せを1回やる</li>
+                            <li>水を500ml飲む</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-cyan-700">Week 3-4（基礎レベル）</p>
+                        <ul class="list-disc list-inside ml-4 space-y-1 mt-1">
+                            <li>毎日プロテインを2杯飲む</li>
+                            <li>腕立て伏せを10回やる</li>
+                            <li>ジムに週3回行く</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-cyan-700">Week 5-6（中級レベル）</p>
+                        <ul class="list-disc list-inside ml-4 space-y-1 mt-1">
+                            <li>トレーニング後30分以内にプロテイン摂取</li>
+                            <li>BIG3を含むトレーニングメニューを完遂</li>
+                            <li>1日のタンパク質摂取量を記録</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- セクション6: Q&A -->
+        <section id="section6" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                6. ❓ Q&A / よくある質問
+            </h2>
+            <div class="space-y-4 mt-6">
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q1: モチベーションが全くない日はどうすればいいですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: それこそがマインド構築の真価を発揮する場面です。指示書に書かれた最小限のことだけでも実行してください。「プロテインを1杯飲む」「腕立て伏せを1回だけやる」など、どんなに小さくても実行することで、自動行動回路が強化されます。</p>
+                        <p class="mt-2">重要なのは「完璧な実行」ではなく「実行したという事実」です。1回でも実行すれば、それは100%の達成です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q2: 指示書通りに実行できなかった日があります。失敗でしょうか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 失敗ではありません。翌日から再開すれば大丈夫です。ただし、指示書の内容が現実的でない可能性があります。達成可能なレベルまで難易度を下げて、確実に実行できる内容に調整してください。</p>
+                        <p class="mt-2">例えば「ジムで1時間トレーニング」が難しければ、「ジムに行って15分だけトレーニング」に変更します。小さな成功を積み重ねることが、大きな成功への確実な道です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q3: 24-42日間の根拠は何ですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 習慣形成の科学的研究によると、新しい行動パターンが自動化されるまでに平均66日かかるとされています（Lally et al., 2010, European Journal of Social Psychology）。</p>
+                        <p class="mt-2">24-42日は、その過程で「自分はできる」という自信が芽生え、脳の神経回路が強化される重要な期間です。この期間を超えると、行動が自動化され始め、意識的な努力が不要になってきます。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q4: 思考と行動の分離が難しいです。コツはありますか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 「今は行動タイム」と心の中で宣言することから始めてください。疑問や迷いが浮かんだら「これは思考タイムで考える」と自分に言い聞かせ、行動に集中し直します。</p>
+                        <p class="mt-2">具体的なテクニック：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li>スマホの通知をオフにして、指示書だけを見る</li>
+                            <li>トレーニング中は音楽に集中する</li>
+                            <li>「考えたいこと」をメモして、思考タイムまで保留する</li>
+                        </ul>
+                        <p class="mt-2">慣れれば自然にできるようになります。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結論とまとめ -->
+        <section class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                7. 結論とまとめ
+            </h2>
+            <div class="conclusion-box">
+                <h3 class="text-2xl font-bold mb-4">📌 本モジュールのまとめ</h3>
+                <ul class="space-y-3 text-lg">
+                    <li>✅ 「思考」と「行動」を完全分離してパフォーマンス向上</li>
+                    <li>✅ 指示書システムで再現可能な成功パターンを構築</li>
+                    <li>✅ マインドプログラミングで潜在意識を書き換え</li>
+                    <li>✅ 24-42日の継続で自動行動回路を確立</li>
+                    <li>✅ 成功体験のストック化で自信とモチベーション維持</li>
+                </ul>
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-xl font-semibold mb-3">🎯 今日から始められること</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>今日の夜、明日やることを具体的に1つだけ指示書に書く</li>
+                        <li>「考える時間」を1日15分間設定する（寝る前がおすすめ）</li>
+                        <li>小さな成功体験を記録するためのノートを用意する</li>
+                        <li>瞑想・運動・睡眠などのリラックス時間を意図的に確保する</li>
+                        <li>Your Coach+でマインド構築の進捗を記録</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- 関連モジュール -->
+        <section class="mb-12 rounded-lg p-6" style="background: #ffffff; border-left: 4px solid #3b82f6;">
+            <h2 class="text-2xl font-bold mb-4" style="color: #1e40af;">🔗 関連モジュール</h2>
+            <div class="flex flex-wrap gap-2">
+                <a href="Nutrition/macro/protein_textbook_new.html" class="related-link">プロテイン科学と実践</a>
+                <a href="Nutrition/macro/carb_textbook_new.html" class="related-link">炭水化物の教科書</a>
+                <a href="Nutrition/macro/fat_textbook_new.html" class="related-link">脂質科学とオメガバランス</a>
+                <a href="Nutrition/micro/vitamin_mineral_textbook_new.html" class="related-link">ビタミン・ミネラル最適化</a>
+            </div>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> PG BASE編集チーム</p>
+                    <p><strong>作成日:</strong> 2025年10月</p>
+                    <p><strong>更新日:</strong> 2025年10月</p>
+                    <p><strong>バージョン:</strong> 2.0</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> メンタルトレーニング</p>
+                    <p><strong>レベル:</strong> 基礎レベル</p>
+                    <p><strong>読了時間:</strong> 約12分</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t" style="border-color: #22c55e;">
+                <p class="font-bold text-gray-900 mb-2">🔍 編纂プロセス</p>
+                <p class="text-sm text-gray-700">
+                    本モジュールは、スポーツ心理学、行動科学、神経科学の研究に基づき、トップアスリートの実践例と組み合わせて作成されています。
+                    定期的に内容を見直し、最新の研究成果を反映するよう更新しています。
+                </p>
+            </div>
+        </section>
+
+        <!-- 免責事項 -->
+        <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
+            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p>
+                本モジュールの情報は教育・情報提供目的で作成されており、医療・心理療法の代替ではありません。
+                深刻なメンタルヘルスの問題がある場合は、必ず専門家（臨床心理士、精神科医等）にご相談ください。
+                本情報は信頼できる情報源に基づいていますが、完全性・正確性を保証するものではありません。
+                本情報の利用により生じたいかなる損害についても、Your Coach+および編纂者は責任を負いかねます。
+            </p>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="scroll-top-btn"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+    <script>
+        function toggleQA(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('span');
+
+            answer.classList.toggle('active');
+            icon.textContent = answer.classList.contains('active') ? '-' : '+';
+        }
+    </script>
+</body>
+</html>

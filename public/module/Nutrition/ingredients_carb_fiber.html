@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炭水化物・食物繊維の食材教科書 - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.8;
+            background-color: #f9fafb;
+            padding-bottom: 120px;
+        }
+
+        .section-header {
+            border-left: 4px solid #22c55e;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+            color: #16a34a;
+        }
+
+        .food-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+
+        .food-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .food-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .food-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nutrient-value {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        .nutrient-highlight {
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .category-box {
+            background: linear-gradient(135deg, #ecfdf5 0%, #fef9c3 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #166534;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tip-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        .subsection-header {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #374151;
+            margin: 1.5rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .intro-box {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .conclusion-box {
+            background: #ffffff;
+            border-left: 4px solid #14b8a6;
+            color: #374151;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .gi-scale {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .gi-low {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .gi-medium {
+            background: #fef9c3;
+            color: #854d0e;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .gi-high {
+            background: #fecaca;
+            color: #991b1b;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            flex: 1;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-2xl mx-auto px-4 py-8">
+        <!-- ヘッダー -->
+        <div class="intro-box">
+            <h1 class="text-2xl font-bold text-green-700 mb-2">🌾 炭水化物・食物繊維の食材教科書</h1>
+            <p class="text-gray-600">栄養素別おすすめ食材TOP3</p>
+        </div>
+
+        <!-- GI値の説明 -->
+        <div class="bg-white rounded-lg p-4 mb-6 border border-gray-200">
+            <h3 class="font-bold text-gray-800 mb-2">📊 GI値とは？</h3>
+            <p class="text-sm text-gray-600 mb-3">
+                血糖値の上昇スピードを示す指標。55以下が低GI、56-69が中GI、70以上が高GI。
+                低GIほど血糖値がゆるやかに上昇し、腹持ちが良く、体脂肪になりにくい。
+            </p>
+            <div class="gi-scale">
+                <div class="gi-low">
+                    <div class="font-bold">低GI</div>
+                    <div class="text-xs">55以下</div>
+                </div>
+                <div class="gi-medium">
+                    <div class="font-bold">中GI</div>
+                    <div class="text-xs">56-69</div>
+                </div>
+                <div class="gi-high">
+                    <div class="font-bold">高GI</div>
+                    <div class="text-xs">70以上</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 低GI炭水化物 -->
+        <h2 class="section-header text-2xl font-bold">低GI炭水化物食材</h2>
+
+        <p class="text-gray-700 mb-4">
+            血糖値を安定させ、持続的なエネルギー供給が可能。
+            ダイエット中や糖尿病予防に最適な主食・穀類です。
+        </p>
+
+        <div class="category-box">
+            <div class="category-title">🏆 低GI炭水化物 トップ3</div>
+
+            <div class="food-card">
+                <div class="food-name">🍚 玄米</div>
+                <span class="food-badge bg-green-100 text-green-800">GI値 55</span>
+                <span class="food-badge bg-amber-100 text-amber-800">食物繊維豊富</span>
+                <div class="nutrient-value">
+                    150g（1膳）あたり: 炭水化物 <span class="nutrient-highlight">53.4g</span>、食物繊維 2.1g
+                </div>
+                <p class="text-sm text-gray-600 mt-2">
+                    白米（GI 88）と比べて血糖上昇が緩やか。ビタミンB群、マグネシウム、食物繊維も豊富。
+                    発芽玄米はさらにGABAが増加。よく噛んで食べることで消化も改善。
+                </p>
+            </div>
+
+            <div class="food-card">
+                <div class="food-name">🍝 全粒粉パスタ</div>
+                <span class="food-badge bg-green-100 text-green-800">GI値 40</span>
+                <span class="food-badge bg-blue-100 text-blue-800">高タンパク</span>
+                <div class="nutrient-value">
+                    乾燥100gあたり: 炭水化物 <span class="nutrient-highlight">65g</span>、食物繊維 10g
+                </div>
+                <p class="text-sm text-gray-600 mt-2">
+                    通常パスタ（GI 55）より低GI。小麦の外皮を含むため食物繊維・ミネラルが豊富。
+                    アルデンテ（硬め）で茹でるとさらにGI値低下。オリーブオイルと相性抜群。
+                </p>
+            </div>
+
+            <div class="food-card">
+                <div class="food-name">🥣 オートミール</div>
+                <span class="food-badge bg-green-100 text-green-800">GI値 55</span>
+                <span class="food-badge bg-purple-100 text-purple-800">βグルカン</span>
+                <div class="nutrient-value">
+                    30g（1食分）あたり: 炭水化物 <span class="nutrient-highlight">20.6g</span>、食物繊維 2.8g
+                </div>
+                <p class="text-sm text-gray-600 mt-2">
+                    水溶性食物繊維βグルカンが豊富で、コレステロール低下作用あり。
+                    朝食に最適。プロテインや果物と組み合わせて栄養バランスアップ。
+                </p>
+            </div>
+        </div>
+
+        <div class="tip-box">
+            💡 <strong>低GI食材を選ぶコツ:</strong><br>
+            ・白より茶色（白米→玄米、食パン→全粒粉パン）<br>
+            ・精製度が低いものを選ぶ<br>
+            ・冷やすとレジスタントスターチが増えてGI低下（冷やご飯、ポテトサラダ）
+        </div>
+
+        <!-- GI値と運動タイミング -->
+        <h2 class="section-header text-2xl font-bold" style="border-color: #eab308; color: #ca8a04;">GI値と運動タイミングの関係</h2>
+
+        <div class="bg-white rounded-lg p-4 mb-6 border-2 border-amber-300">
+            <h3 class="font-bold text-amber-700 mb-2">🔬 運動と血糖値の科学</h3>
+            <p class="text-sm text-gray-700 mb-3">
+                <strong>高GI食品は「いつ食べるか」で効果が真逆になります。</strong>
+            </p>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="bg-red-50 p-3 rounded-lg border border-red-200">
+                    <div class="font-bold text-red-700">❌ 運動前に高GI</div>
+                    <p class="text-red-600 text-xs mt-1">
+                        インスリン急上昇 → 運動開始時に低血糖（リバウンド低血糖症）<br>
+                        → パフォーマンス低下、めまい、疲労感
+                    </p>
+                </div>
+                <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                    <div class="font-bold text-green-700">✅ 運動直後に高GI</div>
+                    <p class="text-green-600 text-xs mt-1">
+                        筋肉がインスリン非依存で糖を取り込む<br>
+                        → グリコーゲン補充の「ゴールデンタイム」で最速回復
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 運動直後の高GI食材 -->
+        <div class="subsection-header">⚡ 運動直後におすすめの高GI食材</div>
+        <p class="text-gray-700 text-sm mb-3">
+            運動終了後30〜60分は「グリコーゲン補充のゴールデンタイム」。
+            この間は筋肉がインスリンに依存せず糖を取り込むため、<strong>高GI食品が最適解</strong>です。
+        </p>
+
+        <div class="food-card" style="border-left: 4px solid #ef4444;">
+            <div class="food-name">🍚 白米・おにぎり</div>
+            <span class="food-badge bg-red-100 text-red-800">GI値 88</span>
+            <span class="food-badge bg-blue-100 text-blue-800">グリコーゲン補充◎</span>
+            <div class="nutrient-value">
+                150g（1膳）あたり: 糖質 <span class="nutrient-highlight">55.7g</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                <strong>運動直後の最強リカバリー食。</strong>高GIにより最速でグリコーゲン補充。
+                タンパク質（鮭、梅干し）と組み合わせると筋合成もアップ。コンビニおにぎりが手軽で最適。
+            </p>
+        </div>
+
+        <div class="food-card" style="border-left: 4px solid #ef4444;">
+            <div class="food-name">🍞 食パン・フランスパン</div>
+            <span class="food-badge bg-red-100 text-red-800">GI値 95</span>
+            <span class="food-badge bg-orange-100 text-orange-800">即効エネルギー</span>
+            <div class="nutrient-value">
+                6枚切り1枚（60g）あたり: 糖質 <span class="nutrient-highlight">26.6g</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                白米より高GIで吸収が早い。運動直後にジャム付きで食べるのは理にかなった選択。
+                プロテインシェイクと一緒に摂ると糖質＋タンパク質の理想的なリカバリーに。
+            </p>
+        </div>
+
+        <div class="food-card" style="border-left: 4px solid #ef4444;">
+            <div class="food-name">🥤 マルトデキストリン・粉飴</div>
+            <span class="food-badge bg-red-100 text-red-800">GI値 100+</span>
+            <span class="food-badge bg-purple-100 text-purple-800">最速吸収</span>
+            <div class="nutrient-value">
+                30gあたり: 糖質 <span class="nutrient-highlight">30g</span>（ほぼ100%炭水化物）
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                <strong>アスリート御用達の最速グリコーゲン補充。</strong>プロテインに混ぜて飲むだけ。
+                甘みが少なく飲みやすい。トレーニング後のゴールデンタイムを逃さない。
+            </p>
+        </div>
+
+        <div class="tip-box" style="background: #fef2f2; border-color: #ef4444;">
+            💡 <strong>運動直後の高GIが有効な理由:</strong><br>
+            ・運動で筋肉のGLUT4（糖輸送体）が細胞表面に移動<br>
+            ・インスリンなしで糖を取り込める特別な状態（約30-60分）<br>
+            ・この間に高GI食品を摂ると、血糖スパイクなしでグリコーゲン補充<br>
+            ・<strong>中GI食品（バナナ、さつまいも等）では吸収が遅く、ゴールデンタイムを活かしきれない</strong>
+        </div>
+
+        <!-- 運動前・日常の低〜中GI食材 -->
+        <div class="subsection-header">🍽️ 運動前・日常食におすすめの低〜中GI食材</div>
+        <p class="text-gray-700 text-sm mb-3">
+            運動前（1-2時間前）や日常の食事では、血糖値の急上昇を避ける低〜中GI食品が最適です。
+        </p>
+
+        <div class="food-card">
+            <div class="food-name">🍌 バナナ</div>
+            <span class="food-badge bg-yellow-100 text-yellow-800">GI値 51（中GI）</span>
+            <span class="food-badge bg-orange-100 text-orange-800">カリウム豊富</span>
+            <div class="nutrient-value">
+                1本（100g）あたり: 糖質 <span class="nutrient-highlight">21.4g</span>、カリウム 360mg
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                <strong>運動1-2時間前の軽食に最適。</strong>中GIで緩やかにエネルギー供給。
+                カリウムが筋肉の痙攣を予防。熟すほどGI値は上昇（完熟は高GI寄り）。
+            </p>
+        </div>
+
+        <div class="food-card">
+            <div class="food-name">🍠 さつまいも</div>
+            <span class="food-badge bg-green-100 text-green-800">GI値 55（低GI）</span>
+            <span class="food-badge bg-purple-100 text-purple-800">ビタミンC</span>
+            <div class="nutrient-value">
+                中1本（200g）あたり: 糖質 <span class="nutrient-highlight">58g</span>、食物繊維 4.6g
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                <strong>持続的なエネルギー源として優秀。</strong>低GIながら甘くて満足感◎
+                焼き芋はGI値が上昇するので、蒸し・茹でがおすすめ。日常の主食代替に最適。
+            </p>
+        </div>
+
+        <div class="food-card">
+            <div class="food-name">🍯 はちみつ</div>
+            <span class="food-badge bg-yellow-100 text-yellow-800">GI値 58（中GI）</span>
+            <span class="food-badge bg-green-100 text-green-800">天然甘味料</span>
+            <div class="nutrient-value">
+                大さじ1（21g）あたり: 糖質 <span class="nutrient-highlight">17g</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                果糖とブドウ糖のバランスで吸収が緩やか。抗菌作用・抗酸化作用あり。
+                砂糖（GI 110）の代替に最適。コーヒーやヨーグルトに少量添加。
+            </p>
+        </div>
+
+        <div class="warning-box">
+            ⚠️ <strong>運動前の高GI摂取は危険:</strong><br>
+            運動開始30-60分前に高GI食品を摂ると「リバウンド低血糖」が起こりやすい。<br>
+            ・急激なインスリン分泌 → 運動開始時に血糖急降下<br>
+            ・症状: めまい、脱力感、集中力低下、パフォーマンス悪化<br>
+            <strong>運動前は低〜中GI食品を1-2時間前に摂取しましょう。</strong>
+        </div>
+
+        <!-- 食物繊維セクション -->
+        <h2 class="section-header text-2xl font-bold" style="border-color: #14b8a6; color: #0d9488;">食物繊維食材</h2>
+
+        <p class="text-gray-700 mb-4">
+            食物繊維は「水溶性」と「不溶性」の2種類があります。
+            理想バランスは水溶性:不溶性 = 1:2。1日目標は20g以上。
+        </p>
+
+        <!-- 水溶性食物繊維 -->
+        <div class="subsection-header">💧 水溶性食物繊維（1日7g以上目標）</div>
+        <p class="text-gray-700 text-sm mb-3">
+            水に溶けてゲル状になり、糖の吸収を緩やかにします。
+            コレステロール低下、腸内細菌のエサにもなります。
+        </p>
+
+        <div class="food-card">
+            <div class="food-name">🥣 オートミール</div>
+            <span class="food-badge bg-teal-100 text-teal-800">水溶性繊維</span>
+            <span class="food-badge bg-blue-100 text-blue-800">βグルカン</span>
+            <div class="nutrient-value">
+                30gあたり: 水溶性食物繊維 <span class="nutrient-highlight">1.0g</span>、不溶性 1.8g
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                βグルカン（水溶性食物繊維の一種）が豊富。血糖値・コレステロール低下に効果的。
+                朝食に水や牛乳で調理。フルーツやナッツをトッピングして栄養価アップ。
+            </p>
+        </div>
+
+        <div class="food-card">
+            <div class="food-name">🍊 みかん・柑橘類</div>
+            <span class="food-badge bg-teal-100 text-teal-800">ペクチン</span>
+            <span class="food-badge bg-orange-100 text-orange-800">ビタミンC</span>
+            <div class="nutrient-value">
+                1個（100g）あたり: 水溶性食物繊維 <span class="nutrient-highlight">0.5g</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                白い筋（アルベド）にペクチンが豊富。筋を取らずに食べるのがおすすめ。
+                ビタミンC、クエン酸も摂取可能。1日2-3個で十分。
+            </p>
+        </div>
+
+        <div class="food-card">
+            <div class="food-name">🌊 わかめ・海藻類</div>
+            <span class="food-badge bg-teal-100 text-teal-800">アルギン酸</span>
+            <span class="food-badge bg-purple-100 text-purple-800">ミネラル</span>
+            <div class="nutrient-value">
+                乾燥10gあたり: 水溶性食物繊維 <span class="nutrient-highlight">3.6g</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                アルギン酸（水溶性食物繊維）が豊富で、余分な塩分・脂質を排出。
+                味噌汁、サラダ、酢の物に。ヨウ素も豊富なので甲状腺機能サポート。
+            </p>
+        </div>
+
+        <!-- 不溶性食物繊維 -->
+        <div class="subsection-header">🌿 不溶性食物繊維（1日13g以上目標）</div>
+        <p class="text-gray-700 text-sm mb-3">
+            水に溶けず、腸内で膨らんで便のかさを増やします。
+            便秘解消、腸の蠕動運動促進に効果的。
+        </p>
+
+        <div class="food-card">
+            <div class="food-name">🥦 ブロッコリー</div>
+            <span class="food-badge bg-green-100 text-green-800">不溶性繊維</span>
+            <span class="food-badge bg-yellow-100 text-yellow-800">ビタミンC・K</span>
+            <div class="nutrient-value">
+                100gあたり: 不溶性食物繊維 <span class="nutrient-highlight">3.7g</span>、水溶性 0.7g
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                野菜の王様。ビタミンC、K、葉酸、スルフォラファン（抗がん作用）も豊富。
+                茹ですぎると栄養が流出するので、蒸し・レンジ調理がベスト。茎も食べられる。
+            </p>
+        </div>
+
+        <div class="food-card">
+            <div class="food-name">🍄 きのこ類（しめじ・エリンギ）</div>
+            <span class="food-badge bg-green-100 text-green-800">不溶性繊維</span>
+            <span class="food-badge bg-amber-100 text-amber-800">低カロリー</span>
+            <div class="nutrient-value">
+                100gあたり: 不溶性食物繊維 <span class="nutrient-highlight">3.0-3.5g</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                超低カロリー（約20kcal/100g）で食物繊維たっぷり。満腹感◎
+                ビタミンD（日光に当てると増加）、βグルカンも含有。どんな料理にも合う万能食材。
+            </p>
+        </div>
+
+        <div class="food-card">
+            <div class="food-name">🫘 大豆・納豆</div>
+            <span class="food-badge bg-green-100 text-green-800">不溶性繊維</span>
+            <span class="food-badge bg-red-100 text-red-800">高タンパク</span>
+            <div class="nutrient-value">
+                納豆1パック（50g）あたり: 不溶性食物繊維 <span class="nutrient-highlight">2.3g</span>、タンパク質 8.3g
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                植物性タンパク質と食物繊維を同時に摂取可能。納豆菌で腸内環境も改善。
+                ビタミンK2（骨の健康）、イソフラボン（女性ホルモン様作用）も豊富。
+            </p>
+        </div>
+
+        <div class="tip-box">
+            💡 <strong>食物繊維を効率よく摂るコツ:</strong><br>
+            ・朝食にオートミール＋フルーツで水溶性繊維<br>
+            ・毎食野菜・きのこを1品追加で不溶性繊維<br>
+            ・味噌汁にわかめを入れて水溶性繊維アップ<br>
+            ・間食にナッツ、ドライフルーツを選ぶ
+        </div>
+
+        <!-- まとめ -->
+        <div class="conclusion-box">
+            <h3 class="text-lg font-bold text-teal-700 mb-3">📝 この教科書のまとめ</h3>
+            <ul class="text-sm text-gray-700 space-y-2">
+                <li>✅ <strong>低GI炭水化物</strong>: 玄米・全粒粉・オートミールで血糖値安定</li>
+                <li>✅ <strong>運動直後は高GI</strong>: 白米・食パン・マルトデキストリンで最速グリコーゲン補充</li>
+                <li>✅ <strong>運動前・日常は低〜中GI</strong>: バナナ・さつまいも・はちみつで安定エネルギー</li>
+                <li>✅ <strong>水溶性食物繊維</strong>: オートミール・海藻・果物で1日7g</li>
+                <li>✅ <strong>不溶性食物繊維</strong>: ブロッコリー・きのこ・大豆で1日13g</li>
+                <li>✅ <strong>合計目標</strong>: 食物繊維1日20g以上（水溶性:不溶性 = 1:2）</li>
+            </ul>
+        </div>
+
+        <div class="text-center text-gray-500 text-sm mt-8 pb-8">
+            © YourCoach+ PGBASE
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基礎サプリメントの教科書 - PGBASE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.8;
+            background-color: #f9fafb;
+            padding-bottom: 120px; /* BAB + メニューバー対応 */
+        }
+
+        .conclusion-box {
+            background: #ffffff; border-left: 4px solid #14b8a6;
+            color: #374151;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            
+        }
+
+        .section-header {
+            border-left: 4px solid #14b8a6;
+            padding-left: 1rem;
+            margin: 2rem 0 1rem 0;
+            color: #0f766e;
+        }
+
+        .premium-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .evidence-badge {
+            display: inline-block;
+            background: #14b8a6;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            
+        }
+
+        .key-point {
+            background: #ffffff;
+            border-left: 4px solid #10b981;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .action-list {
+            background: #ffffff;
+            border-left: 4px solid #22c55e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .action-list h4 {
+            color: #15803d;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .warning-box {
+            background: #ffffff;
+            border-left: 4px solid #f87171;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .warning-box h4 {
+            color: #dc2626;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .comparison-box {
+            background: #ffffff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .comparison-box h4 {
+            color: #1e40af;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .qa-item {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .qa-question {
+            padding: 1rem;
+            color: #0f766e;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f0fdfa;
+            transition: all 0.3s;
+        }
+
+        .qa-question:hover {
+            background-color: #ccfbf1;
+        }
+
+        .qa-answer {
+            padding: 1rem;
+            color: #374151;
+            display: none;
+            background-color: white;
+        }
+
+        .qa-answer.active {
+            display: block;
+        }
+
+        .related-link {
+            display: inline-block;
+            color: #0891b2;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 2px solid #14b8a6;
+            border-radius: 8px;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .related-link:hover {
+            background: #14b8a6;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+            
+        }
+
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #14b8a6;
+            color: white;
+            padding: 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1.25rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+        }
+
+        .scroll-top-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(20, 184, 166, 0.5);
+        }
+
+        .meta-info {
+            background: #ffffff;
+            border-left: 4px solid #22c55e;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem 0;
+            font-size: 0.875rem;
+        }
+
+        .supplement-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .supplement-table th {
+            background: #14b8a6;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: left;
+            
+            font-size: 0.875rem;
+        }
+
+        .supplement-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            color: #374151;
+            background-color: #ffffff;
+            font-size: 0.875rem;
+        }
+
+        .supplement-table tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-lg min-h-screen">
+
+        <!-- ヘッダー -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="evidence-badge">📖 民間資料</span>
+                <span class="premium-badge">⭐ プレミアム</span>
+                    <span class="text-sm text-gray-600">レベル: 民間資料・実践知レベル</span>
+                </div>
+                <a href="#" onclick="window.parent.postMessage('return-to-pgbase-store', '*'); return false;" class="text-sm px-4 py-2 rounded-lg transition" style="color: #0891b2; border: 2px solid #0891b2; text-decoration: none; font-weight: 500;">← ストアに戻る</a>
+            </div>
+            <h1 class="text-4xl font-bold mb-4" style="color: #0f766e;">
+                基礎サプリメントの教科書
+            </h1>
+            <p class="text-lg text-gray-600">
+                クレアチン・アミノ酸・基礎サプリメントの科学的根拠と実践
+            </p>
+            <div class="flex gap-4 mt-4 text-sm text-gray-500 flex-wrap">
+                <span>📚 カテゴリ: スポーツ栄養学</span>
+                <span>⏱️ 読了時間: 30分</span>
+                <span>📅 最終更新: 2025年10月</span>
+            </div>
+        </header>
+
+        <!-- 結論（冒頭） -->
+        <section class="conclusion-box">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>📋</span>
+                <span>この記事の結論</span>
+            </h2>
+            <div class="text-lg leading-relaxed">
+                <ol class="list-decimal list-inside space-y-2 ml-2">
+                    <li>クレアチンは最も効果的なサプリメント（1日3-5g継続摂取）</li>
+                    <li>EAAは筋タンパク質合成に必須、BCAA単体より優位性あり</li>
+                    <li>ベータアラニン・HMBは特定条件で有効性が証明されている</li>
+                    <li>サプリメントの優先順位: プロテイン > クレアチン > EAA > その他</li>
+                    <li>科学的根拠に基づく選択で、無駄な出費を削減できる</li>
+                </ol>
+            </div>
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <p class="font-semibold mb-2">🎯 こんな人におすすめ</p>
+                <p>・サプリメントの正しい知識を学びたい初心者<br>
+                ・筋力・筋肥大効果を最大化したいトレーニー<br>
+                ・科学的根拠に基づいた選択をしたい人<br>
+                ・コストパフォーマンスの高いサプリメント戦略を立てたい人</p>
+            </div>
+        </section>
+
+        <!-- 目次 -->
+        <nav class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">📋 目次</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li><a href="#section1" class="hover:text-cyan-600">AIコーチによる要約</a></li>
+                <li><a href="#section2" class="hover:text-cyan-600">クレアチン完全ガイド</a></li>
+                <li><a href="#section3" class="hover:text-cyan-600">アミノ酸科学と実践</a></li>
+                <li><a href="#section4" class="hover:text-cyan-600">応用サプリメント戦略</a></li>
+                <li><a href="#section5" class="hover:text-cyan-600">サプリメント優先順位マトリックス</a></li>
+                <li><a href="#section6" class="hover:text-cyan-600">Q&A / よくある質問</a></li>
+            </ol>
+        </nav>
+
+        <!-- セクション1: AIコーチによる要約 -->
+        <section id="section1" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                1. 🤖 AIコーチによる要約
+            </h2>
+            <p class="text-gray-700 mt-4">
+                スポーツサプリメント市場は年々拡大していますが、科学的根拠が確立されているものは限られています。本モジュールでは、数百の研究で効果が実証されたサプリメントに焦点を当て、あなたの目標達成に必要な正しい知識を提供します。
+            </p>
+            <p class="text-gray-700 mt-4">
+                最も重要なのは、サプリメントはあくまで「補助」であり、適切なトレーニングと栄養摂取が前提です。しかし、科学的に正しいサプリメント戦略は、あなたのパフォーマンスを5-15%向上させ、回復を促進し、目標達成を加速させます。
+            </p>
+            <div class="key-point mt-6">
+                <p class="font-semibold mb-2" style="color: #065f46;">💡 キーポイント</p>
+                <p class="text-gray-700">
+                    成功の鍵 = 基礎栄養 × 科学的サプリメント × 継続性
+                </p>
+            </div>
+        </section>
+
+        <!-- セクション2: クレアチン完全ガイド -->
+        <section id="section2" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                2. ⚡ クレアチン完全ガイド
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.1 クレアチンとは</h3>
+            <p class="text-gray-700">
+                クレアチンは、最も研究されたスポーツサプリメントの一つであり、短時間高強度運動におけるパフォーマンス向上効果が科学的に実証されています。筋肉中でクレアチンリン酸として貯蔵され、ATP（エネルギー）の再合成を促進します。
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.2 科学的根拠</h3>
+            <p class="text-gray-700">
+                筋肉のエネルギー供給システム：
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>ATP-PCr系（0-10秒）</strong>: 瞬発的な高強度運動</li>
+                <li><strong>解糖系（10秒-2分）</strong>: 中程度持続の高強度運動</li>
+                <li><strong>有酸素系（2分以上）</strong>: 長時間の持続運動</li>
+            </ul>
+            <p class="text-gray-700 mt-4">
+                クレアチンは主にATP-PCr系で機能し、以下の反応を促進します：<br>
+                <strong>クレアチンリン酸 + ADP → ATP + クレアチン</strong>
+            </p>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.3 期待できる効果</h3>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700">
+                <li><strong>最大筋力向上</strong>: 5-15%の増加</li>
+                <li><strong>爆発的パワー向上</strong>: 垂直跳び・スプリント能力改善</li>
+                <li><strong>反復能力向上</strong>: 同一重量での反復回数10-20%増加</li>
+                <li><strong>筋肥大促進</strong>: 細胞体積効果と筋タンパク質合成促進</li>
+                <li><strong>認知機能向上</strong>: 脳内ATP濃度上昇による集中力向上</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">2.4 推奨摂取方法</h3>
+            <div class="action-list">
+                <h4>継続摂取プロトコル（推奨）</h4>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>摂取量</strong>: 3-5g/日（一定量継続）</li>
+                    <li><strong>効果発現</strong>: 3-4週間後に最大効果</li>
+                    <li><strong>タイミング</strong>: トレーニング後+糖質30-50gと併用</li>
+                    <li><strong>製品選択</strong>: クレアチンモノハイドレート・純度99%以上</li>
+                </ul>
+            </div>
+
+            <table class="supplement-table">
+                <thead>
+                    <tr>
+                        <th>体重</th>
+                        <th>推奨摂取量</th>
+                        <th>糖質併用量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>60kg以下</td>
+                        <td>3g/日</td>
+                        <td>30g</td>
+                    </tr>
+                    <tr>
+                        <td>60-80kg</td>
+                        <td>4-5g/日</td>
+                        <td>40g</td>
+                    </tr>
+                    <tr>
+                        <td>80kg以上</td>
+                        <td>5-6g/日</td>
+                        <td>50g</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h4>注意事項</h4>
+                <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>体重増加（1-3kg）は水分貯留によるもので脂肪ではない</li>
+                    <li>健康な人では腎機能への悪影響は報告されていない</li>
+                    <li>既存の腎疾患がある場合は医師に相談</li>
+                    <li>20-30%のノンレスポンダー（効果を感じにくい人）が存在</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- セクション3: アミノ酸科学と実践 -->
+        <section id="section3" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                3. 🧬 アミノ酸科学と実践
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.1 必須アミノ酸（EAA）vs BCAA</h3>
+            <p class="text-gray-700">
+                筋タンパク質合成には9種類の必須アミノ酸（EAA）すべてが必要です。BCAAはその一部（ロイシン、イソロイシン、バリン）のみを含みます。
+            </p>
+
+            <div class="comparison-box">
+                <h4>EAA vs BCAA 比較</h4>
+                <table class="supplement-table mt-4">
+                    <thead>
+                        <tr>
+                            <th>項目</th>
+                            <th>EAA</th>
+                            <th>BCAA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>含有アミノ酸</td>
+                            <td>9種類すべて</td>
+                            <td>3種類のみ</td>
+                        </tr>
+                        <tr>
+                            <td>筋タンパク質合成</td>
+                            <td>完全刺激</td>
+                            <td>不完全刺激</td>
+                        </tr>
+                        <tr>
+                            <td>推奨摂取量</td>
+                            <td>10-15g</td>
+                            <td>5-10g</td>
+                        </tr>
+                        <tr>
+                            <td>コスト</td>
+                            <td>やや高</td>
+                            <td>中</td>
+                        </tr>
+                        <tr>
+                            <td>科学的根拠</td>
+                            <td>強い</td>
+                            <td>限定的</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.2 ロイシンの特殊な役割</h3>
+            <p class="text-gray-700">
+                ロイシンはmTORシグナル伝達経路を活性化し、筋タンパク質合成の「スイッチ」として機能します。EAAの中で最も重要なアミノ酸の一つです。
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>筋タンパク質合成の引き金</strong>: mTOR経路の活性化</li>
+                <li><strong>筋分解抑制</strong>: ユビキチン・プロテアソーム系の抑制</li>
+                <li><strong>インスリン分泌促進</strong>: 膵臓β細胞の刺激</li>
+                <li><strong>推奨摂取量</strong>: 単体2-3g、またはEAA中に40-45%含有</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.3 推奨摂取タイミング</h3>
+            <div class="action-list">
+                <h4>最適摂取タイミング</h4>
+                <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                    <li><strong>トレーニング中</strong>: 筋分解抑制と持続的なアミノ酸供給</li>
+                    <li><strong>トレーニング後</strong>: 筋タンパク質合成の最大化</li>
+                    <li><strong>起床時</strong>: 夜間の筋分解を迅速に停止</li>
+                    <li><strong>就寝前</strong>: 夜間の筋分解を最小化</li>
+                </ol>
+            </div>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">3.4 グルタミン・アルギニン・その他</h3>
+            <p class="text-gray-700">
+                条件付き必須アミノ酸として、特定の状況で有用性があります：
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>グルタミン</strong>: 免疫機能サポート、高強度トレーニング時に有効</li>
+                <li><strong>アルギニン</strong>: 血流改善、NO産生促進</li>
+                <li><strong>タウリン</strong>: 細胞体積効果、抗酸化作用</li>
+                <li><strong>シトルリン</strong>: アルギニンより効率的なNO産生</li>
+            </ul>
+        </section>
+
+        <!-- セクション4: 応用サプリメント戦略 -->
+        <section id="section4" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                4. 💪 応用サプリメント戦略
+            </h2>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.1 ベータアラニン</h3>
+            <p class="text-gray-700">
+                筋肉中のカルノシン濃度を増加させ、運動中の乳酸蓄積による疲労を遅延させます。
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>効果</strong>: 高強度運動（1-4分間）のパフォーマンス向上</li>
+                <li><strong>推奨摂取量</strong>: 4-6g/日（分割摂取）</li>
+                <li><strong>効果発現</strong>: 2-4週間の継続摂取が必要</li>
+                <li><strong>副作用</strong>: 皮膚のピリピリ感（パレステジア、無害）</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.2 HMB（β-ヒドロキシ-β-メチル酪酸）</h3>
+            <p class="text-gray-700">
+                ロイシンの代謝物で、筋分解抑制効果が強い。トレーニング初心者や減量期に特に有効。
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>効果</strong>: 筋分解抑制、筋損傷からの回復促進</li>
+                <li><strong>推奨摂取量</strong>: 3g/日（1g×3回）</li>
+                <li><strong>推奨対象</strong>: トレーニング初心者、減量期、高齢者</li>
+                <li><strong>形態</strong>: HMB-Ca（カルシウム塩）が一般的</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.3 カフェイン</h3>
+            <p class="text-gray-700">
+                エルゴジェニック効果が最も確立されたサプリメントの一つ。中枢神経系を刺激し、疲労感を軽減します。
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>効果</strong>: 持久力向上、筋力向上、集中力向上</li>
+                <li><strong>推奨摂取量</strong>: 3-6mg/kg体重（トレーニング30-60分前）</li>
+                <li><strong>注意点</strong>: 耐性形成、睡眠への影響、心拍数上昇</li>
+                <li><strong>カフェイン源</strong>: コーヒー、緑茶、サプリメント</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mt-6 mb-3" style="color: #14b8a6;">4.4 シトルリンマレート</h3>
+            <p class="text-gray-700">
+                NO（一酸化窒素）産生を促進し、血流改善とパンプ感向上をもたらします。
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4 text-gray-700 mt-4">
+                <li><strong>効果</strong>: 筋持久力向上、疲労回復促進</li>
+                <li><strong>推奨摂取量</strong>: 6-8g（トレーニング30-60分前）</li>
+                <li><strong>メリット</strong>: アルギニンより胃腸への負担が少ない</li>
+            </ul>
+        </section>
+
+        <!-- セクション5: サプリメント優先順位マトリックス -->
+        <section id="section5" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                5. 📊 サプリメント優先順位マトリックス
+            </h2>
+
+            <div class="action-list">
+                <h4>優先度別サプリメント戦略</h4>
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <p class="font-semibold text-green-700 mb-2">🥇 最優先（Tier 1）</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                            <li><strong>プロテインパウダー</strong>: 1日のタンパク質目標達成の補助</li>
+                            <li><strong>クレアチンモノハイドレート</strong>: 3-5g/日継続</li>
+                            <li><strong>カフェイン</strong>: トレーニング前（必要に応じて）</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-blue-700 mb-2">🥈 高優先度（Tier 2）</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                            <li><strong>EAA</strong>: トレーニング中・後（10-15g）</li>
+                            <li><strong>ベータアラニン</strong>: 4-6g/日（高強度トレーニー向け）</li>
+                            <li><strong>シトルリンマレート</strong>: 6-8g（トレーニング前）</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-purple-700 mb-2">🥉 条件付き推奨（Tier 3）</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                            <li><strong>HMB</strong>: 初心者・減量期・高齢者向け</li>
+                            <li><strong>グルタミン</strong>: 高強度トレーニング・免疫低下時</li>
+                            <li><strong>オメガ3脂肪酸</strong>: 抗炎症・心血管健康</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700 mb-2">💭 必要性低（Tier 4）</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700 ml-4">
+                            <li><strong>BCAA単体</strong>: EAAで代替可能</li>
+                            <li><strong>テストステロンブースター</strong>: 科学的根拠不十分</li>
+                            <li><strong>脂肪燃焼系サプリ</strong>: 効果は限定的</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <table class="supplement-table mt-6">
+                <thead>
+                    <tr>
+                        <th>目標</th>
+                        <th>推奨サプリメント</th>
+                        <th>優先順位</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>筋力向上</td>
+                        <td>クレアチン、カフェイン、ベータアラニン</td>
+                        <td>Tier 1-2</td>
+                    </tr>
+                    <tr>
+                        <td>筋肥大</td>
+                        <td>プロテイン、EAA、クレアチン</td>
+                        <td>Tier 1-2</td>
+                    </tr>
+                    <tr>
+                        <td>持久力向上</td>
+                        <td>ベータアラニン、カフェイン、シトルリン</td>
+                        <td>Tier 1-2</td>
+                    </tr>
+                    <tr>
+                        <td>減量</td>
+                        <td>プロテイン、HMB、カフェイン、EAA</td>
+                        <td>Tier 1-2</td>
+                    </tr>
+                    <tr>
+                        <td>回復促進</td>
+                        <td>プロテイン、EAA、グルタミン、オメガ3</td>
+                        <td>Tier 1-3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- セクション6: Q&A -->
+        <section id="section6" class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                6. ❓ Q&A / よくある質問
+            </h2>
+            <div class="space-y-4 mt-6">
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q1: サプリメントはいつから始めるべきですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: まず基礎栄養（食事）を整えることが最優先です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>ステップ1</strong>: 1日のタンパク質目標（LBM×2-2.5g）を食事で達成</li>
+                            <li><strong>ステップ2</strong>: PFCバランスの最適化</li>
+                            <li><strong>ステップ3</strong>: プロテインパウダーで補助（必要に応じて）</li>
+                            <li><strong>ステップ4</strong>: クレアチン・EAAなどの追加を検討</li>
+                        </ul>
+                        <p class="mt-2">基礎栄養が整っていないうちにサプリメントを増やしても、効果は限定的です。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q2: 予算が限られています。何を優先すべきですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: コストパフォーマンスを考慮した優先順位：</p>
+                        <ol class="list-decimal list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>プロテインパウダー</strong>: 1kg 2,000-3,000円（約30日分）</li>
+                            <li><strong>クレアチンモノハイドレート</strong>: 500g 1,500-2,000円（約3ヶ月分）</li>
+                            <li><strong>カフェイン</strong>: コーヒーや緑茶で代用可能（低コスト）</li>
+                        </ol>
+                        <p class="mt-2">この3つだけで、科学的に証明された効果の80-90%を得られます。予算に余裕ができたらEAA、ベータアラニンを追加検討してください。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q3: プレワークアウトサプリメントは必要ですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 必須ではありませんが、便利です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>メリット</strong>: 複数成分を一度に摂取、計量不要、携帯性</li>
+                            <li><strong>デメリット</strong>: コスト高、不要な成分を含む場合あり、過剰なカフェイン</li>
+                            <li><strong>推奨</strong>: 主要成分（カフェイン150-200mg、シトルリン6g、ベータアラニン3g）を確認</li>
+                        </ul>
+                        <p class="mt-2">初心者は個別サプリメントで始め、成分と効果を理解してから、利便性重視でプレワークアウト製品を選ぶことを推奨します。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q4: サプリメントは本当に効果がありますか？プラシーボではないですか？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 科学的に効果が証明されているサプリメントは実在します：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>クレアチン</strong>: 数百の二重盲検試験で効果実証</li>
+                            <li><strong>カフェイン</strong>: メタアナリシスで有意な効果確認</li>
+                            <li><strong>プロテイン</strong>: 筋タンパク質合成の生化学的機序が明確</li>
+                        </ul>
+                        <p class="mt-2">ただし、効果の大きさは5-15%程度です。「劇的な変化」を謳う製品は疑うべきです。サプリメントは基礎栄養とトレーニングの「上乗せ効果」として捉えてください。</p>
+                    </div>
+                </div>
+
+                <div class="qa-item">
+                    <div class="qa-question" onclick="toggleQA(this)">
+                        Q5: 自然食品だけでは不十分ですか？サプリメントは不自然では？
+                        <span>+</span>
+                    </div>
+                    <div class="qa-answer">
+                        <p>A: 理想は食事からすべて摂取することですが、現実的には困難です：</p>
+                        <ul class="list-disc list-inside space-y-1 ml-4 mt-2">
+                            <li><strong>クレアチン例</strong>: 5gのクレアチン = 生肉約1kg（現実的でない）</li>
+                            <li><strong>タンパク質例</strong>: LBM60kgの人の目標120-150g = 鶏むね肉600-750g</li>
+                            <li><strong>時間と利便性</strong>: トレーニング後の素早い栄養補給</li>
+                        </ul>
+                        <p class="mt-2">サプリメントは「食事の代替」ではなく「補助」です。食事を最優先し、不足分を効率的に補う手段として活用してください。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 結論とまとめ -->
+        <section class="mb-12">
+            <h2 class="section-header text-xl font-bold">
+                7. 結論とまとめ
+            </h2>
+            <div class="conclusion-box">
+                <h3 class="text-2xl font-bold mb-4">📌 本モジュールのまとめ</h3>
+                <ul class="space-y-3 text-lg">
+                    <li>✅ クレアチンモノハイドレートが最優先（3-5g/日継続）</li>
+                    <li>✅ EAAはBCAAより優位性が高い（10-15g、トレーニング中・後）</li>
+                    <li>✅ 予算制約下ではプロテイン+クレアチンで十分</li>
+                    <li>✅ ベータアラニン・HMBは条件付きで有効</li>
+                    <li>✅ 科学的根拠に基づく選択で無駄を削減</li>
+                </ul>
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-xl font-semibold mb-3">🎯 今日から始められること</p>
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>1日のタンパク質摂取量を計算・最適化</li>
+                        <li>クレアチンモノハイドレート製品を選択・購入</li>
+                        <li>トレーニング後の摂取タイミングを習慣化</li>
+                        <li>効果測定（筋力・体重・体組成）を開始</li>
+                        <li>Your Coach+でサプリメント摂取を記録・追跡</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- 関連モジュール -->
+        <section class="mb-12 rounded-lg p-6" style="background: #ffffff; border-left: 4px solid #3b82f6;">
+            <h2 class="text-2xl font-bold mb-4" style="color: #1e40af;">🔗 関連モジュール</h2>
+            <div class="flex flex-wrap gap-2">
+                <a href="Nutrition/macro/protein_textbook_new.html" class="related-link">プロテイン科学と実践</a>
+                <a href="Nutrition/macro/carb_textbook_new.html" class="related-link">炭水化物の教科書</a>
+                <a href="mental_textbook_new.html" class="related-link">メンタルトレーニング</a>
+            </div>
+        </section>
+
+        <!-- メタ情報 -->
+        <section class="meta-info">
+            <h3 class="font-bold text-gray-900 mb-3">📝 モジュール情報</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-700">
+                <div>
+                    <p><strong>編纂者:</strong> PG BASE編集チーム</p>
+                    <p><strong>作成日:</strong> 2025年10月</p>
+                    <p><strong>更新日:</strong> 2025年10月</p>
+                    <p><strong>バージョン:</strong> 1.0</p>
+                </div>
+                <div>
+                    <p><strong>カテゴリー:</strong> スポーツ栄養学</p>
+                    <p><strong>レベル:</strong> 初級～中級レベル</p>
+                    <p><strong>読了時間:</strong> 約30分</p>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t" style="border-color: #22c55e;">
+                <p class="font-bold text-gray-900 mb-2">🔍 編纂プロセス</p>
+                <p class="text-sm text-gray-700">
+                    本モジュールは、クレアチン・アミノ酸・応用サプリメントに関する数百の科学的研究を統合し、実践的な推奨事項を提供するために作成されました。
+                    定期的に内容を見直し、最新の研究成果を反映するよう更新しています。
+                </p>
+            </div>
+        </section>
+
+        <!-- 免責事項 -->
+        <section class="bg-gray-100 p-6 rounded-lg mt-8 text-sm text-gray-600">
+            <p class="font-bold text-gray-900 mb-2">⚠️ 免責事項</p>
+            <p>
+                本モジュールの情報は教育・情報提供目的で作成されており、医療・栄養アドバイスの代替ではありません。
+                個別の健康状態やサプリメント摂取については、必ず医師・管理栄養士・専門家にご相談ください。
+                本情報は信頼できる情報源に基づいていますが、完全性・正確性を保証するものではありません。
+                本情報の利用により生じたいかなる損害についても、Your Coach+および編纂者は責任を負いかねます。
+            </p>
+        </section>
+
+    </div>
+
+    <!-- スクロールトップボタン -->
+    <button
+        onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        class="scroll-top-btn"
+        aria-label="ページトップへ"
+    >
+        ↑
+    </button>
+
+    <script>
+        function toggleQA(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('span');
+
+            answer.classList.toggle('active');
+            icon.textContent = answer.classList.contains('active') ? '-' : '+';
+        }
+    </script>
+</body>
+</html>
