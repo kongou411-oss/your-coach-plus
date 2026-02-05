@@ -16,7 +16,7 @@ android {
         applicationId = "com.yourcoach.plus"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 79
+        versionCode = 82
         versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -27,11 +27,10 @@ android {
 
     signingConfigs {
         create("release") {
-            // TODO: Configure release signing
-            // storeFile = file("path/to/keystore")
-            // storePassword = "password"
-            // keyAlias = "alias"
-            // keyPassword = "password"
+            storeFile = file("yourcoach-release-key.jks")
+            storePassword = "yourcoach123"
+            keyAlias = "yourcoach"
+            keyPassword = "yourcoach123"
         }
     }
 
@@ -47,7 +46,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -68,6 +67,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 }
@@ -103,6 +105,7 @@ dependencies {
 
     // CameraX (AI食品認識用)
     implementation(libs.bundles.camera)
+    implementation("com.google.guava:guava:32.1.3-android")
 
     // Charts
     implementation(libs.vico.compose)

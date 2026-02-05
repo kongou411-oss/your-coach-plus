@@ -44,3 +44,4 @@ functions/node_modules/
 functions/.env
 nul
 *.p8
+ycn_native/androidApp/yourcoach-release-key.jks

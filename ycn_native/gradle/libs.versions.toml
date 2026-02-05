@@ -19,10 +19,10 @@ kmpViewModel = "1.0.0-ALPHA-19"
 composeMultiplatform = "1.7.0"
 
 # Android
-agp = "8.2.2"
-compileSdk = "34"
+agp = "8.5.2"
+compileSdk = "35"
 minSdk = "26"
-targetSdk = "34"
+targetSdk = "35"
 
 # Compose
 composeBom = "2024.10.01"
@@ -194,7 +194,6 @@ firebase = [
     "firebase-storage-ktx",
     "firebase-messaging-ktx",
     "firebase-crashlytics-ktx",
-    "firebase-analytics-ktx",
     "firebase-functions-ktx"
 ]
 
