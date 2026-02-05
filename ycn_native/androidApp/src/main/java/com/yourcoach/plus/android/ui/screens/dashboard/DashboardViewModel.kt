@@ -2,7 +2,6 @@ package com.yourcoach.plus.android.ui.screens.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
 import com.yourcoach.plus.shared.domain.model.Condition
 import com.yourcoach.plus.shared.domain.model.DailyScore
 import com.yourcoach.plus.shared.domain.model.Directive
@@ -20,6 +19,7 @@ import com.yourcoach.plus.shared.domain.model.MealSlot
 import com.yourcoach.plus.shared.domain.model.MealSlotConfig
 import com.yourcoach.plus.shared.domain.model.FoodChoice
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
+import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.BadgeRepository
 import com.yourcoach.plus.shared.domain.repository.ConditionRepository
 import com.yourcoach.plus.shared.domain.repository.RoutineRepository
@@ -232,6 +232,7 @@ private data class DashboardDataBundle(
  * ダッシュボードViewModel
  */
 class DashboardViewModel(
+    private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val mealRepository: MealRepository,
     private val workoutRepository: WorkoutRepository,
@@ -245,9 +246,9 @@ class DashboardViewModel(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    // Firebase Authから現在のユーザーIDを取得
+    // AuthRepository経由で現在のユーザーIDを取得
     private val currentUserId: String?
-        get() = FirebaseAuth.getInstance().currentUser?.uid
+        get() = authRepository.getCurrentUserId()
 
     init {
         loadDashboardData()

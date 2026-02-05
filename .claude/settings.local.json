@@ -143,7 +143,19 @@
       "Bash(done)",
       "Bash(magick:*)",
       "Bash(convert:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" log --oneline --all)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" log --name-status --follow --all)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" show eee2d2e --stat)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" log --all --format=\"%h %s\")",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" log --name-only --all)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" status --short)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" ls-files --deleted)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" show HEAD:APP_STORE_IAP_FIX_GUIDE.md)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" show HEAD:GOOGLE_PLAY_SETUP.md)",
+      "Bash(git -C \"C:\\\\Users\\\\yourc\\\\ycn_re\" log --all --oneline)",
+      "Bash(git rm:*)",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []
