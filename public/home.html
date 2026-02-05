@@ -47,32 +47,42 @@
         <div class="fullpage-wrapper" id="fullpage-wrapper">
 
             <!-- Section 0: Hero -->
-            <section class="section bg-black">
-                <div class="section-content text-center">
-                    <h1 class="text-5xl md:text-7xl font-bold text-white mb-4">Your Coach<span class="text-[#4A9EFF]">+</span></h1>
-                    <p class="text-2xl md:text-4xl font-bold text-white mb-4">常識が示した限界。<br>そこが、俺たちのスタートラインだ。</p>
-                    <p class="text-base md:text-lg text-gray-300 mb-2">みんなは「無理だ」と言うかもしれない。</p>
-                    <p class="text-base md:text-lg text-gray-300 mb-2">だが、コンディションが完璧なら？ 迷いがなければ？</p>
-                    <p class="text-sm md:text-base text-[#4A9EFF] font-bold mb-8">科学と本能の融合が、あなたを限界の先へ。</p>
+            <section class="section bg-black relative">
+                <div class="section-content text-center flex flex-col justify-center">
+                    <!-- Main Copy -->
+                    <div class="mb-10">
+                        <h1 class="text-5xl md:text-7xl font-bold text-white mb-4">Your Coach<span class="text-[#4A9EFF]">+</span></h1>
+                        <p class="text-2xl md:text-4xl font-bold text-white mb-4">常識が示した限界。<br>そこが、俺たちのスタートラインだ。</p>
+                        <p class="text-base md:text-lg text-gray-300 mb-1">みんなは「無理だ」と言うかもしれない。</p>
+                        <p class="text-base md:text-lg text-gray-300 mb-3">だが、コンディションが完璧なら？ 迷いがなければ？</p>
+                        <p class="text-base md:text-lg text-[#4A9EFF] font-bold mb-8">科学と本能の融合が、あなたを限界の先へ。</p>
+                    </div>
 
                     <!-- Store & YouTube Links -->
-                    <div class="flex flex-col items-center gap-6">
+                    <div class="flex flex-col items-center gap-4">
                         <!-- Store Links -->
                         <div class="flex flex-row items-center justify-center gap-4">
                             <a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
-                                <img src="https://play.google.com/intl/ja/badges/static/images/badges/ja_badge_web_generic.png" alt="Google Play で手に入れよう" class="h-10">
+                                <img src="https://play.google.com/intl/ja/badges/static/images/badges/ja_badge_web_generic.png" alt="Google Play で手に入れよう" class="h-14">
                             </a>
                             <a href="https://apps.apple.com/jp/app/your-coach/id6757575338" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
-                                <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83" alt="App Storeからダウンロード" class="h-10">
+                                <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83" alt="App Storeからダウンロード" class="h-12">
                             </a>
                         </div>
                         <!-- YouTube CTA -->
-                        <a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold h-10 px-6 rounded-lg hover:bg-red-700 transition text-sm shadow-lg">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                            アプリ紹介動画を見る
+                        <a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold h-12 px-8 rounded-lg hover:bg-red-700 transition text-base shadow-lg">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            YouTube
                         </a>
-                        <p class="text-gray-500 text-xs">使い方・設計思想を動画で解説</p>
                     </div>
+                    <p class="text-gray-500 text-sm mt-3">使い方・設計思想を動画で解説</p>
+                </div>
+
+                <!-- Scroll Indicator (absolute bottom) -->
+                <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+                    <svg class="w-6 h-6 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
                 </div>
             </section>
 
@@ -307,14 +317,14 @@
                             </div>
                             <div class="flex-1 text-center md:text-left">
                                 <h3 class="text-xl font-bold text-gray-900 mb-3">Your Coach+ 開発者　櫻井喜樹</h3>
-                                <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-2">
+                                <div class="flex flex-col items-center md:items-start gap-2 mb-3">
                                     <span class="bg-[#4A9EFF]/10 text-[#4A9EFF] font-bold px-3 py-1 rounded-full text-sm">ウエイトリフティング元国体入賞者</span>
                                     <span class="bg-emerald-500/10 text-emerald-600 font-bold px-3 py-1 rounded-full text-sm">5か月-20kgダイエット成功</span>
                                     <span class="bg-orange-500/10 text-orange-600 font-bold px-3 py-1 rounded-full text-sm">24hジム元現場責任者</span>
                                     <span class="bg-purple-500/10 text-purple-600 font-bold px-3 py-1 rounded-full text-sm">大阪WL協会役員・大会個人協賛</span>
                                     <span class="bg-gray-500/10 text-gray-600 font-bold px-3 py-1 rounded-full text-sm">172cm 76kg</span>
                                 </div>
-                                <div class="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                                <div class="flex flex-col items-center md:items-start gap-1 mb-4">
                                     <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">ベンチプレス 140kg</span>
                                     <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">デッドリフト 230kg</span>
                                     <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">スクワット 240kg</span>
@@ -674,39 +684,40 @@
 
             <!-- Section 11: Footer -->
             <section class="section bg-black">
-                <div class="section-content text-center">
-                    <div class="mb-8">
-                        <h2 class="text-3xl font-bold text-white mb-4">Your Coach<span class="text-[#4A9EFF]">+</span></h2>
-                        <p class="text-gray-400">迷う時間を、鍛える時間へ。</p>
-                        <p class="text-[#4A9EFF] text-sm mt-2">あなたの努力が、正しく報われる世界を。</p>
+                <div class="section-content text-center flex flex-col justify-center">
+                    <!-- Logo & Tagline -->
+                    <div style="margin-bottom: 48px;">
+                        <h2 class="text-4xl font-bold text-white mb-4">Your Coach<span class="text-[#4A9EFF]">+</span></h2>
+                        <p class="text-gray-400 text-lg mb-1">迷う時間を、鍛える時間へ。</p>
+                        <p class="text-[#4A9EFF] text-base">あなたの努力が、正しく報われる世界を。</p>
                     </div>
 
                     <!-- Store & YouTube Links -->
-                    <div class="flex flex-col items-center gap-6 mb-8">
+                    <div class="flex flex-col items-center gap-4" style="margin-bottom: 48px;">
                         <div class="flex flex-row items-center justify-center gap-4">
                             <a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
-                                <img src="https://play.google.com/intl/ja/badges/static/images/badges/ja_badge_web_generic.png" alt="Google Play で手に入れよう" class="h-10">
+                                <img src="https://play.google.com/intl/ja/badges/static/images/badges/ja_badge_web_generic.png" alt="Google Play で手に入れよう" class="h-14">
                             </a>
                             <a href="https://apps.apple.com/jp/app/your-coach/id6757575338" target="_blank" rel="noopener noreferrer" class="hover:opacity-80 transition">
-                                <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83" alt="App Storeからダウンロード" class="h-10">
+                                <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83" alt="App Storeからダウンロード" class="h-12">
                             </a>
                         </div>
-                        <a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold h-10 px-6 rounded-lg hover:bg-red-700 transition text-sm shadow-lg">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        <a href="https://www.youtube.com/@YourCoachPlusOFFICIAL" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold h-12 px-8 rounded-lg hover:bg-red-700 transition text-base shadow-lg">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                             YouTube
                         </a>
                     </div>
 
-                    <!-- Links -->
-                    <div class="space-x-4 text-white text-xs mb-4">
-                        <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="hover:underline">プライバシーポリシー</a>
-                        <span>|</span>
-                        <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="hover:underline">利用規約</a>
-                        <span>|</span>
-                        <a href="/tokushoho.html" target="_blank" rel="noopener noreferrer" class="hover:underline">特定商取引法</a>
+                    <!-- Footer Links -->
+                    <div class="border-t border-gray-800" style="padding-top: 32px;">
+                        <div class="flex flex-wrap justify-center gap-6 mb-6">
+                            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition text-sm">プライバシーポリシー</a>
+                            <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition text-sm">利用規約</a>
+                            <a href="/tokushoho.html" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition text-sm">特定商取引法</a>
+                        </div>
+                        <p class="text-gray-500 text-sm mb-4">お問い合わせ: official@your-coach-plus.com</p>
+                        <p class="text-gray-600 text-xs">© 2025 Your Coach+. All rights reserved.</p>
                     </div>
-                    <p class="text-gray-400 text-xs mb-2">お問い合わせ: official@your-coach-plus.com</p>
-                    <p class="text-gray-500 text-xs">© 2025 Your Coach+. All rights reserved.</p>
                 </div>
             </section>
 
