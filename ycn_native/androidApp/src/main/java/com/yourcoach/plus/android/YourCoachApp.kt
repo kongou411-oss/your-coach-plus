@@ -25,13 +25,21 @@ class YourCoachApp : Application() {
 
         // Initialize Firebase App Check
         val firebaseAppCheck = FirebaseAppCheck.getInstance()
-        if (BuildConfig.DEBUG) {
-            // Debug build: use debug provider
-            firebaseAppCheck.installAppCheckProviderFactory(
-                com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
-            )
-        } else {
-            // Release build: use Play Integrity
+        try {
+            if (BuildConfig.DEBUG) {
+                // Debug build: use debug provider (loaded via reflection to avoid compile error in release)
+                val debugProviderClass = Class.forName("com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory")
+                val getInstance = debugProviderClass.getMethod("getInstance")
+                val factory = getInstance.invoke(null) as com.google.firebase.appcheck.AppCheckProviderFactory
+                firebaseAppCheck.installAppCheckProviderFactory(factory)
+            } else {
+                // Release build: use Play Integrity
+                firebaseAppCheck.installAppCheckProviderFactory(
+                    PlayIntegrityAppCheckProviderFactory.getInstance()
+                )
+            }
+        } catch (e: Exception) {
+            // Fallback to Play Integrity if debug provider not available
             firebaseAppCheck.installAppCheckProviderFactory(
                 PlayIntegrityAppCheckProviderFactory.getInstance()
             )

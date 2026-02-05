@@ -27,6 +27,7 @@ import com.yourcoach.plus.shared.domain.service.ConversationMessage
 import com.yourcoach.plus.shared.util.DateUtil
 import com.yourcoach.plus.shared.data.database.FoodDatabase
 import com.yourcoach.plus.shared.data.database.BodymakingFoodDatabase
+import com.yourcoach.plus.shared.domain.usecase.NutritionCalculator
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,7 +57,16 @@ data class AnalysisUiState(
     val workouts: List<Workout> = emptyList(),
     val userProfile: UserProfile? = null,
     val condition: Condition? = null,  // コンディション記録
-    val isRestDay: Boolean = false  // 休養日フラグ
+    val isRestDay: Boolean = false,  // 休養日フラグ
+    // ミクロ+データ
+    val averageDiaas: Float = 0f,
+    val fattyAcidScore: Int = 0,
+    val fattyAcidLabel: String = "-",
+    val totalFiber: Float = 0f,
+    val fiberTarget: Float = 25f,
+    val totalGL: Float = 0f,
+    val vitaminAvg: Float = 0f,
+    val mineralAvg: Float = 0f
 )
 
 /**
@@ -125,15 +135,19 @@ class AnalysisViewModel(
             }
 
             // ユーザープロフィール
+            var profile: UserProfile? = null
             userRepository.getUser(uid)
                 .onSuccess { user ->
+                    profile = user?.profile
                     _uiState.update { it.copy(userProfile = user?.profile) }
                 }
 
             // 食事記録
+            var meals: List<Meal> = emptyList()
             mealRepository.getMealsForDate(uid, today)
-                .onSuccess { meals ->
-                    _uiState.update { it.copy(meals = meals) }
+                .onSuccess { loadedMeals ->
+                    meals = loadedMeals
+                    _uiState.update { it.copy(meals = loadedMeals) }
                 }
 
             // 運動記録
@@ -163,6 +177,37 @@ class AnalysisViewModel(
                 .onSuccess { isRestDay ->
                     _uiState.update { it.copy(isRestDay = isRestDay) }
                 }
+
+            // ミクロ+データを計算
+            if (meals.isNotEmpty() && profile != null) {
+                val weight = profile?.weight ?: 70f
+                val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
+                val lbm = weight * (1 - bodyFatPercentage / 100f)
+                val mealsPerDay = profile?.mealsPerDay ?: 5
+
+                val detailedNutrition = NutritionCalculator.calculate(meals, true, lbm, mealsPerDay, profile?.goal)
+
+                // ビタミン・ミネラル平均充足率を計算
+                val vitaminAvg = if (detailedNutrition.vitaminScores.isNotEmpty()) {
+                    detailedNutrition.vitaminScores.values.average().toFloat() * 100
+                } else 0f
+                val mineralAvg = if (detailedNutrition.mineralScores.isNotEmpty()) {
+                    detailedNutrition.mineralScores.values.average().toFloat() * 100
+                } else 0f
+
+                _uiState.update {
+                    it.copy(
+                        averageDiaas = detailedNutrition.averageDiaas,
+                        fattyAcidScore = detailedNutrition.fattyAcidScore,
+                        fattyAcidLabel = detailedNutrition.fattyAcidLabel,
+                        totalFiber = detailedNutrition.totalFiber,
+                        fiberTarget = detailedNutrition.fiberTarget,
+                        totalGL = detailedNutrition.totalGL,
+                        vitaminAvg = vitaminAvg,
+                        mineralAvg = mineralAvg
+                    )
+                }
+            }
 
             _uiState.update { it.copy(isLoading = false) }
         }
@@ -292,6 +337,35 @@ class AnalysisViewModel(
                 android.util.Log.d("AnalysisVM", "effectiveScore: fatScore=${effectiveScore.fatScore}, carbsScore=${effectiveScore.carbsScore}")
                 android.util.Log.d("AnalysisVM", "==========================================")
 
+                // LBM（除脂肪体重）を計算
+                val weight = profile?.weight ?: 70f
+                val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
+                val lbm = weight * (1 - bodyFatPercentage / 100f)
+
+                // LBMベースの身体変化予測テキストを生成
+                val actualCalories = effectiveScore.totalCalories
+                val calorieDiff = actualCalories - targetCalories
+                val predictionText = when {
+                    calorieDiff > 200 -> {
+                        val excessCal = calorieDiff
+                        // オーバーカロリーの場合: 筋肉30%、脂肪70%で分配（トレーニングありの場合）
+                        val muscleRatio = if (state.workouts.isNotEmpty()) 0.3f else 0.1f
+                        val muscleGain = (excessCal * muscleRatio / 7700f * 1000).toInt() // g単位
+                        val fatGain = (excessCal * (1 - muscleRatio) / 7700f * 1000).toInt()
+                        "理論上、筋肉が約${muscleGain}g、体脂肪が約${fatGain}g増加するペースです。${if (profile?.goal?.name == "LOSE_WEIGHT") "減量中のため脂肪増加に注意。" else ""}"
+                    }
+                    calorieDiff < -200 -> {
+                        val deficitCal = -calorieDiff
+                        // アンダーカロリーの場合: 脂肪80%、筋肉20%で減少（タンパク質摂取十分なら筋肉維持）
+                        val proteinRatio = effectiveScore.totalProtein / (lbm * 2f)  // LBM×2gが目標
+                        val muscleRatio = if (proteinRatio >= 0.9f) 0.05f else 0.2f
+                        val fatLoss = (deficitCal * (1 - muscleRatio) / 7700f * 1000).toInt()
+                        val muscleLoss = (deficitCal * muscleRatio / 7700f * 1000).toInt()
+                        "理論上、体脂肪が約${fatLoss}g減少するペースです。${if (muscleLoss > 10) "筋肉も約${muscleLoss}g減少の恐れ。タンパク質摂取を増やしましょう。" else "タンパク質は十分で筋肉維持できています。"}"
+                    }
+                    else -> "カロリー収支はほぼ均衡しており、体組成は安定しています。"
+                }
+
                 // 分析リクエストデータを構築（プロンプト生成はCloud Functions側で行う）
                 val requestData = hashMapOf(
                     "userId" to uid,
@@ -304,6 +378,7 @@ class AnalysisViewModel(
                         "age" to (profile?.age ?: 0),
                         "weight" to (profile?.weight ?: 0f),
                         "targetWeight" to (profile?.targetWeight ?: 0f),
+                        "lbm" to lbm,  // LBM追加
                         "budgetTier" to (profile?.budgetTier ?: 2),
                         "mealsPerDay" to (profile?.mealsPerDay ?: 3),
                         "trainingAfterMeal" to profile?.trainingAfterMeal,
@@ -363,7 +438,20 @@ class AnalysisViewModel(
                     "targetProtein" to targetProtein,
                     "targetFat" to targetFat,
                     "targetCarbs" to targetCarbs,
-                    "isRestDay" to state.isRestDay
+                    "isRestDay" to state.isRestDay,
+                    // ミクロ+データ
+                    "microPlus" to hashMapOf(
+                        "diaas" to state.averageDiaas,
+                        "fattyAcidScore" to state.fattyAcidScore,
+                        "fattyAcidLabel" to state.fattyAcidLabel,
+                        "fiber" to state.totalFiber,
+                        "fiberTarget" to state.fiberTarget,
+                        "gl" to state.totalGL,
+                        "vitaminAvg" to state.vitaminAvg,
+                        "mineralAvg" to state.mineralAvg
+                    ),
+                    // LBMベース身体変化予測
+                    "predictionText" to predictionText
                 )
 
                 // Firestoreにリクエストを作成

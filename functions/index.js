@@ -834,6 +834,122 @@ exports.adminAddCredits = onCall({
   }
 });
 
+// ===== 管理者機能: 法人契約作成 =====
+exports.adminCreateContract = onCall({
+  region: "asia-northeast2",
+  secrets: [gmailUser, gmailAppPassword],
+}, async (request) => {
+  // 認証チェック
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  // 管理者メールチェック
+  const ADMIN_EMAILS = ['official@your-coach-plus.com', 'kongou411@gmail.com'];
+  const userEmail = request.auth.token.email;
+  if (!ADMIN_EMAILS.includes(userEmail)) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  const {companyName, email, planId, licenses, sendEmail} = request.data;
+
+  if (!companyName || !email) {
+    throw new HttpsError("invalid-argument", "企業名とメールアドレスは必須です");
+  }
+
+  try {
+    // 有効期限（1年後）
+    const validUntil = new Date();
+    validUntil.setFullYear(validUntil.getFullYear() + 1);
+
+    // 法人契約情報を保存
+    const contractData = {
+      organizationName: companyName,
+      email: email,
+      planId: planId || 'custom',
+      licenses: licenses || 10,
+      registeredUsers: [],
+      status: 'active',
+      price: 0, // 手動作成のため0
+      validUntil: admin.firestore.Timestamp.fromDate(validUntil),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth.uid,
+      isManual: true
+    };
+
+    const contractRef = await admin.firestore().collection('corporateContracts').add(contractData);
+    console.log(`[Admin] Contract created: ${contractRef.id}, Organization: ${companyName}`);
+
+    // メール送信
+    if (sendEmail) {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser.value(),
+          pass: gmailAppPassword.value(),
+        },
+      });
+
+      const mailOptions = {
+        from: `"Your Coach+" <${gmailUser.value()}>`,
+        to: email,
+        subject: '[Your Coach+] 法人プランのご案内',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4A9EFF;">Your Coach+ 法人プラン</h2>
+            <p>${companyName} 様</p>
+            <p>Your Coach+ 法人プランのご契約をいただき、誠にありがとうございます。</p>
+
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #0369a1;">ご契約内容</h3>
+              <p><strong>所属名:</strong> ${companyName}</p>
+              <p><strong>プラン:</strong> ${planId}</p>
+              <p><strong>ライセンス数:</strong> ${licenses}名</p>
+              <p><strong>有効期限:</strong> ${validUntil.toLocaleDateString('ja-JP')}</p>
+            </div>
+
+            <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+              <h3 style="margin-top: 0; color: #92400e;">重要: 会員様への共有事項</h3>
+              <p style="font-size: 18px; font-weight: bold; color: #92400e;">所属名: ${companyName}</p>
+              <p style="margin-bottom: 0;">この所属名を会員様にお伝えください。会員様がアプリ内で入力するとPremium機能が有効になります。</p>
+            </div>
+
+            <h3>利用開始までの流れ</h3>
+            <ol>
+              <li>会員様に Your Coach+ アプリをダウンロード・アカウント作成いただきます</li>
+              <li>会員様に上記の所属名「${companyName}」をお伝えください</li>
+              <li>会員様がアプリの設定画面で所属名を入力します</li>
+              <li>入力完了後、即座に全Premium機能が利用可能になります</li>
+            </ol>
+
+            <p>所属名は会員様の数だけ共有いただけます（ライセンス数上限まで）。</p>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            <p style="color: #6b7280; font-size: 12px;">
+              Your Coach+ サポートチーム<br>
+              official@your-coach-plus.com
+            </p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`[Admin] Confirmation email sent to ${email}`);
+    }
+
+    return {
+      success: true,
+      contractId: contractRef.id,
+      organizationName: companyName
+    };
+
+  } catch (error) {
+    console.error('[Admin] Create contract failed:', error);
+    throw new HttpsError("internal", "契約の作成に失敗しました: " + error.message);
+  }
+});
+
 // ===== デバッグ用: 自分自身にクレジット追加（後日削除予定） =====
 exports.debugAddCredits = onCall({
   region: "asia-northeast1",
@@ -896,11 +1012,15 @@ exports.sendFeedback = onCall({
     throw new HttpsError("unauthenticated", "ログインが必要です");
   }
 
-  const {feedback, userId, userEmail, timestamp} = request.data;
+  const {type, feedback, userId, userEmail, timestamp} = request.data;
 
   if (!feedback || !feedback.trim()) {
     throw new HttpsError("invalid-argument", "フィードバック内容が空です");
   }
+
+  // フィードバック種類の日本語ラベル
+  const typeLabel = type === "bug_report" ? "バグ・不具合報告" : "機能リクエスト・要望";
+  const typeEmoji = type === "bug_report" ? "🐛" : "💡";
 
   try {
     // Gmail設定（シークレットから取得）
@@ -916,14 +1036,15 @@ exports.sendFeedback = onCall({
     const adminMailOptions = {
       from: `"Your Coach+ フィードバック" <${gmailUser.value()}>`,
       to: "official@your-coach-plus.com",
-      subject: `[Your Coach+] ユーザーフィードバック from ${userEmail}`,
+      subject: `${typeEmoji} [Your Coach+] ${typeLabel} from ${userEmail}`,
       html: `
-        <h2>Your Coach+ フィードバック</h2>
+        <h2>${typeEmoji} Your Coach+ フィードバック</h2>
+        <p><strong>種類:</strong> <span style="background: ${type === "bug_report" ? "#FFEBEE" : "#E8F5E9"}; padding: 4px 8px; border-radius: 4px;">${typeLabel}</span></p>
         <p><strong>ユーザーID:</strong> ${userId}</p>
         <p><strong>メールアドレス:</strong> ${userEmail}</p>
         <p><strong>送信日時:</strong> ${new Date(timestamp).toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})}</p>
         <hr>
-        <h3>フィードバック内容:</h3>
+        <h3>内容:</h3>
         <p style="white-space: pre-wrap;">${feedback}</p>
       `,
     };
@@ -1814,7 +1935,7 @@ exports.getAdminUserList = onCall({
 
 // ===== B2B2C企業向けプラン =====
 
-// B2B2C企業向けCheckoutセッション作成
+// 法人向けCheckoutセッション作成
 exports.createB2B2CCheckoutSession = onCall({
   region: "asia-northeast2",
   secrets: [stripeSecretKey],
@@ -1866,9 +1987,9 @@ exports.createB2B2CCheckoutSession = onCall({
 
     console.log(`[B2B2C] Creating checkout session for company: ${companyName}, plan: ${planId}`);
 
-    // Stripe Checkoutセッション作成
+    // Stripe Checkoutセッション作成（年間一括払い）
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
+      mode: 'payment',
       payment_method_types: ['card'],
       line_items: [{
         price: plan.stripePriceId,
@@ -1914,32 +2035,26 @@ function generateB2B2CAccessCode() {
   return code; // 例: B2B-A1B2-C3D4-E5F6
 }
 
-// B2B2C Webhookハンドラ（Stripe決済完了時の処理）
+// 法人契約 Webhookハンドラ（Stripe決済完了時の処理）
 async function handleB2B2CCheckout(session) {
   const {planId, companyName, companyEmail, licenses, price} = session.metadata;
 
-  console.log(`[B2B2C] Processing checkout for company: ${companyName}, plan: ${planId}`);
+  console.log(`[Corporate] Processing checkout for company: ${companyName}, plan: ${planId}`);
 
   try {
-    // アクセスコード生成
-    const accessCode = generateB2B2CAccessCode();
-
     // 有効期限（1年後）
     const validUntil = new Date();
     validUntil.setFullYear(validUntil.getFullYear() + 1);
 
-    // 企業アカウント作成
-    const orgData = {
-      name: companyName,
+    // 法人契約情報を保存
+    const contractData = {
+      organizationName: companyName, // これが所属名として使用される
       email: companyEmail,
       planId: planId,
-      stripePriceId: session.line_items?.data[0]?.price?.id || '',
-      stripeSubscriptionId: session.subscription,
+      stripeSessionId: session.id,
       stripeCustomerId: session.customer,
-      accessCode: accessCode,
       licenses: parseInt(licenses),
-      usedLicenses: 0,
-      users: [],
+      registeredUsers: [],
       status: 'active',
       price: parseInt(price),
       validUntil: admin.firestore.Timestamp.fromDate(validUntil),
@@ -1947,188 +2062,124 @@ async function handleB2B2CCheckout(session) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    const orgRef = await admin.firestore().collection('b2b2cOrganizations').add(orgData);
+    const contractRef = await admin.firestore().collection('corporateContracts').add(contractData);
 
-    console.log(`[B2B2C] Organization created: ${orgRef.id}, Access Code: ${accessCode}`);
+    console.log(`[Corporate] Contract created: ${contractRef.id}, Organization: ${companyName}`);
 
-    // 企業にアクセスコードをメール送信
+    // メール送信設定
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser.value(),
+        pass: gmailAppPassword.value(),
+      },
+    });
+
+    // 1. 管理者に通知メール送信
     try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: gmailUser.value(),
-          pass: gmailAppPassword.value(),
-        },
-      });
-
-      const mailOptions = {
+      const adminMailOptions = {
         from: `"Your Coach+" <${gmailUser.value()}>`,
-        to: companyEmail,
-        subject: '[Your Coach+] 企業プランのご登録ありがとうございます',
+        to: 'official@your-coach-plus.com',
+        subject: `[法人契約] 新規申込: ${companyName}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #f59e0b;">Your Coach+ 企業プラン</h2>
-            <p>${companyName} 様</p>
-            <p>この度は Your Coach+ 企業プランにご登録いただき、誠にありがとうございます。</p>
-            
-            <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0; color: #92400e;">アクセスコード</h3>
-              <p style="font-size: 24px; font-weight: bold; color: #1f2937; letter-spacing: 2px;">${accessCode}</p>
+            <h2 style="color: #4A9EFF;">新規法人契約のお知らせ</h2>
+
+            <div style="background: #e0f2fe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #0369a1;">契約情報</h3>
+              <p><strong>所属名（企業名）:</strong> ${companyName}</p>
+              <p><strong>メールアドレス:</strong> ${companyEmail}</p>
+              <p><strong>プラン:</strong> ${planId}</p>
+              <p><strong>ライセンス数:</strong> ${licenses}名</p>
+              <p><strong>料金:</strong> ¥${parseInt(price).toLocaleString()}</p>
+              <p><strong>有効期限:</strong> ${validUntil.toLocaleDateString('ja-JP')}</p>
+              <p><strong>契約ID:</strong> ${contractRef.id}</p>
             </div>
-            
-            <h3>ご利用方法</h3>
+
+            <h3>フロー</h3>
             <ol>
-              <li>従業員・会員の方に上記アクセスコードを共有してください</li>
-              <li>従業員・会員は Your Coach+ アプリの「設定」→「その他」→「コード入力」でコードを入力</li>
-              <li>Premium機能がご利用いただけます</li>
+              <li>企業担当者に所属名「${companyName}」を案内済み</li>
+              <li>会員様がアプリで所属名を入力してPremium有効化</li>
+              <li>管理画面で登録状況を確認可能</li>
             </ol>
-            
-            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>プラン:</strong> ${planId}</p>
-              <p style="margin: 5px 0;"><strong>ライセンス数:</strong> ${licenses}名</p>
-              <p style="margin: 0;"><strong>有効期限:</strong> ${validUntil.toLocaleDateString('ja-JP')}</p>
-            </div>
-            
-            <p>ご不明な点がございましたら、アプリ内のフィードバック機能よりお問い合わせください。</p>
-            
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-            <p style="color: #6b7280; font-size: 12px;">Your Coach+ サポートチーム</p>
+
+            <p><a href="https://your-coach-plus.web.app/admin.html" style="color: #4A9EFF;">管理画面を開く</a></p>
           </div>
         `,
       };
 
-      await transporter.sendMail(mailOptions);
-      console.log(`[B2B2C] Access code email sent to ${companyEmail}`);
+      await transporter.sendMail(adminMailOptions);
+      console.log(`[Corporate] Admin notification sent`);
     } catch (emailError) {
-      // メール送信失敗してもアカウント作成は成功とする
-      console.error('[B2B2C] Failed to send email:', emailError);
+      console.error('[Corporate] Failed to send admin notification:', emailError);
+    }
+
+    // 2. 企業に確認メール送信
+    try {
+      const companyMailOptions = {
+        from: `"Your Coach+" <${gmailUser.value()}>`,
+        to: companyEmail,
+        subject: '[Your Coach+] 法人プランのお申し込みありがとうございます',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4A9EFF;">Your Coach+ 法人プラン</h2>
+            <p>${companyName} 様</p>
+            <p>この度は Your Coach+ 法人プランにお申し込みいただき、誠にありがとうございます。</p>
+            <p>決済処理が完了いたしました。</p>
+
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #0369a1;">ご契約内容</h3>
+              <p><strong>所属名:</strong> ${companyName}</p>
+              <p><strong>プラン:</strong> ${planId}</p>
+              <p><strong>ライセンス数:</strong> ${licenses}名</p>
+              <p><strong>有効期限:</strong> ${validUntil.toLocaleDateString('ja-JP')}</p>
+            </div>
+
+            <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+              <h3 style="margin-top: 0; color: #92400e;">重要: 会員様への共有事項</h3>
+              <p style="font-size: 18px; font-weight: bold; color: #92400e;">所属名: ${companyName}</p>
+              <p style="margin-bottom: 0;">この所属名を会員様にお伝えください。会員様がアプリ内で入力するとPremium機能が有効になります。</p>
+            </div>
+
+            <h3>利用開始までの流れ</h3>
+            <ol>
+              <li>会員様に Your Coach+ アプリをダウンロード・アカウント作成いただきます</li>
+              <li>会員様に上記の所属名「${companyName}」をお伝えください</li>
+              <li>会員様がアプリの設定画面で所属名を入力します</li>
+              <li>入力完了後、即座に全Premium機能が利用可能になります</li>
+            </ol>
+
+            <p>所属名は会員様の数だけ共有いただけます（ライセンス数上限まで）。</p>
+
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+            <p style="color: #6b7280; font-size: 12px;">
+              Your Coach+ サポートチーム<br>
+              official@your-coach-plus.com
+            </p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(companyMailOptions);
+      console.log(`[Corporate] Confirmation email sent to ${companyEmail}`);
+    } catch (emailError) {
+      console.error('[Corporate] Failed to send company email:', emailError);
     }
 
     return {
       success: true,
-      organizationId: orgRef.id,
-      accessCode: accessCode
+      contractId: contractRef.id,
+      organizationName: companyName
     };
 
   } catch (error) {
-    console.error('[B2B2C] Failed to process checkout:', error);
+    console.error('[Corporate] Failed to process checkout:', error);
     throw error;
   }
 }
 
-// B2B2Cコード検証機能
-exports.validateB2B2CCode = onCall({
-  region: "asia-northeast2",
-}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "ログインが必要です");
-  }
-
-  const userId = request.auth.uid;
-  const {accessCode} = request.data;
-
-  if (!accessCode) {
-    throw new HttpsError("invalid-argument", "アクセスコードは必須です");
-  }
-
-  try {
-    console.log(`[B2B2C] Validating code ${accessCode} for user ${userId}`);
-
-    // 1. コードが存在するか確認
-    const orgSnapshot = await admin.firestore()
-      .collection('b2b2cOrganizations')
-      .where('accessCode', '==', accessCode)
-      .limit(1)
-      .get();
-
-    if (orgSnapshot.empty) {
-      throw new HttpsError("not-found", "無効なアクセスコードです");
-    }
-
-    const orgDoc = orgSnapshot.docs[0];
-    const org = orgDoc.data();
-
-    // 2. サブスクが有効か確認
-    if (org.status !== 'active') {
-      throw new HttpsError("permission-denied", "このコードは無効です（サブスク終了）");
-    }
-
-    // 3. 有効期限チェック
-    if (org.validUntil && org.validUntil.toDate() < new Date()) {
-      throw new HttpsError("permission-denied", "このコードは期限切れです");
-    }
-
-    // 4. ライセンス数チェック（無制限プランの場合はスキップ）
-    if (org.licenses !== -1) {
-      const usedLicenses = org.usedLicenses || 0;
-      if (usedLicenses >= org.licenses) {
-        throw new HttpsError("resource-exhausted", "ライセンス上限に達しています");
-      }
-    }
-
-    // 5. ユーザーが既に企業コードを使用していないかチェック
-    const userDoc = await admin.firestore()
-      .collection('users')
-      .doc(userId)
-      .get();
-
-    const userData = userDoc.exists ? userDoc.data() : {};
-
-    // 5a. 別の企業に所属している場合はエラー
-    if (userData.b2b2cOrgId && userData.b2b2cOrgId !== orgDoc.id) {
-      throw new HttpsError("already-exists", "既に別の企業コードを使用しています。変更するには管理者にお問い合わせください。");
-    }
-
-    // 5b. 同じ企業に既に登録済みの場合はスキップ（重複登録防止）
-    if (userData.b2b2cOrgId === orgDoc.id) {
-      console.log(`[B2B2C] User ${userId} already registered with org ${orgDoc.id}`);
-      return {
-        success: true,
-        message: "既にこの企業コードで登録済みです。",
-        organizationName: org.name,
-        planName: org.planId,
-        alreadyRegistered: true
-      };
-    }
-
-    // 6. ユーザーアカウントを更新（存在しない場合は作成）
-    // B2Bユーザーはクレジット100付与
-    await admin.firestore().collection('users').doc(userId).set({
-      isPremium: true,
-      b2b2cOrgId: orgDoc.id,
-      b2b2cOrgName: org.name,
-      b2b2cAccessCode: accessCode,
-      b2b2cJoinedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paidCredits: (userData.paidCredits || 0) + 100,
-    }, { merge: true });
-
-    // 7. 使用ライセンス数をインクリメント（新規登録時のみ）
-    await orgDoc.ref.update({
-      usedLicenses: admin.firestore.FieldValue.increment(1),
-      users: admin.firestore.FieldValue.arrayUnion(userId),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log(`[B2B2C] Code ${accessCode} validated for user ${userId}`);
-
-    return {
-      success: true,
-      message: "企業コードを適用しました。Premium機能が利用可能になりました。",
-      organizationName: org.name,
-      planName: org.planId
-    };
-
-  } catch (error) {
-    console.error(`[B2B2C] Code validation failed for user ${userId}:`, error);
-    if (error instanceof HttpsError) {
-      throw error;
-    }
-    throw new HttpsError("internal", "コードの検証に失敗しました", error.message);
-  }
-});
-
-// B2B2C所属名検証機能（iOS対応版）
-// コードではなく所属名で法人プラン適用
+// 所属名検証機能
+// ユーザーが入力した所属名で法人プラン適用
 exports.validateOrganizationName = onCall({
   region: "asia-northeast2",
 }, async (request) => {
@@ -2146,89 +2197,90 @@ exports.validateOrganizationName = onCall({
   const normalizedName = organizationName.trim();
 
   try {
-    console.log(`[B2B2C] Validating organization name "${normalizedName}" for user ${userId}`);
+    console.log(`[Corporate] Validating organization name "${normalizedName}" for user ${userId}`);
 
-    // 1. 所属名が存在するか確認（大文字小文字区別なし）
-    const orgSnapshot = await admin.firestore()
-      .collection('b2b2cOrganizations')
-      .where('name', '==', normalizedName)
+    // corporateContracts コレクションを検索
+    const contractSnapshot = await admin.firestore()
+      .collection('corporateContracts')
+      .where('organizationName', '==', normalizedName)
+      .where('status', '==', 'active')
       .limit(1)
       .get();
 
-    if (orgSnapshot.empty) {
+    if (contractSnapshot.empty) {
       throw new HttpsError("not-found", "この所属名は登録されていません");
     }
 
-    const orgDoc = orgSnapshot.docs[0];
-    const org = orgDoc.data();
+    const contractDoc = contractSnapshot.docs[0];
+    const contract = contractDoc.data();
+    console.log(`[Corporate] Found contract: ${contractDoc.id}`);
 
-    // 2. サブスクが有効か確認
-    if (org.status !== 'active') {
+    // 3. ステータスチェック
+    if (contract.status !== 'active') {
       throw new HttpsError("permission-denied", "この所属は現在無効です");
     }
 
-    // 3. 有効期限チェック
-    if (org.validUntil && org.validUntil.toDate() < new Date()) {
+    // 4. 有効期限チェック
+    if (contract.validUntil && contract.validUntil.toDate() < new Date()) {
       throw new HttpsError("permission-denied", "この所属の契約期限が切れています");
     }
 
-    // 4. ライセンス数チェック（無制限プランの場合はスキップ）
-    if (org.licenses !== -1) {
-      const usedLicenses = org.usedLicenses || 0;
-      if (usedLicenses >= org.licenses) {
+    // 5. ライセンス数チェック（無制限プランの場合はスキップ）
+    const licenses = contract.licenses || -1;
+    if (licenses !== -1) {
+      const registeredUsers = contract.registeredUsers || [];
+      if (registeredUsers.length >= licenses && !registeredUsers.includes(userId)) {
         throw new HttpsError("resource-exhausted", "この所属の登録上限に達しています");
       }
     }
 
-    // 5. ユーザーが既に企業に所属していないかチェック
+    // 6. ユーザー情報取得
     const userDoc = await admin.firestore()
       .collection('users')
       .doc(userId)
       .get();
 
     const userData = userDoc.exists ? userDoc.data() : {};
+    const orgName = contract.organizationName;
 
-    // 5a. 別の企業に所属している場合はエラー
-    if (userData.b2b2cOrgId && userData.b2b2cOrgId !== orgDoc.id) {
-      throw new HttpsError("already-exists", "既に別の所属に登録されています。変更するには現在の所属を解除してください。");
-    }
-
-    // 5b. 同じ企業に既に登録済みの場合はスキップ（重複登録防止）
-    if (userData.b2b2cOrgId === orgDoc.id) {
-      console.log(`[B2B2C] User ${userId} already registered with org ${orgDoc.id}`);
+    // 7. 既に同じ所属に登録済みかチェック
+    if (userData.organizationName === orgName) {
+      console.log(`[Corporate] User ${userId} already registered with "${orgName}"`);
       return {
         success: true,
         message: "既にこの所属で登録済みです。",
-        organizationName: org.name,
-        planName: org.planId,
+        organizationName: orgName,
         alreadyRegistered: true
       };
     }
 
-    // 6. ユーザーアカウントを更新（存在しない場合は作成）
-    // B2Bユーザーはクレジット100付与
-    await admin.firestore().collection('users').doc(userId).set({
-      isPremium: true,
-      b2b2cOrgId: orgDoc.id,
-      b2b2cOrgName: org.name,
-      b2b2cJoinedAt: admin.firestore.FieldValue.serverTimestamp(),
-      paidCredits: (userData.paidCredits || 0) + 100,
-    }, { merge: true });
+    // 8. ユーザーアカウントを更新
+    // 所属名でPremium有効化 + クレジット100付与（初回のみ）
+    const updateData = {
+      organizationName: orgName,
+      organizationJoinedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
 
-    // 7. 使用ライセンス数をインクリメント（新規登録時のみ）
-    await orgDoc.ref.update({
-      usedLicenses: admin.firestore.FieldValue.increment(1),
-      users: admin.firestore.FieldValue.arrayUnion(userId),
+    // 初回登録時のみクレジット付与
+    if (!userData.organizationName) {
+      updateData.paidCredits = (userData.paidCredits || 0) + 100;
+    }
+
+    await admin.firestore().collection('users').doc(userId).set(updateData, { merge: true });
+
+    // 9. 契約の登録ユーザー一覧を更新
+    await contractDoc.ref.update({
+      registeredUsers: admin.firestore.FieldValue.arrayUnion(userId),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log(`[B2B2C] Organization "${normalizedName}" validated for user ${userId}`);
+    console.log(`[Corporate] Organization "${orgName}" validated for user ${userId}`);
 
     return {
       success: true,
-      message: `${org.name}の所属として登録しました。Premium機能が利用可能になりました。`,
-      organizationName: org.name,
-      planName: org.planId
+      message: `${orgName}の所属として登録しました。Premium機能が利用可能になりました。`,
+      organizationName: orgName,
+      planName: contract.planId || null
     };
 
   } catch (error) {
@@ -2240,7 +2292,7 @@ exports.validateOrganizationName = onCall({
   }
 });
 
-// B2B2C所属解除機能
+// 所属解除機能
 exports.leaveOrganization = onCall({
   region: "asia-northeast2",
 }, async (request) => {
@@ -2261,28 +2313,33 @@ exports.leaveOrganization = onCall({
     }
 
     const userData = userDoc.data();
-    const orgId = userData.b2b2cOrgId;
+    const organizationName = userData.organizationName;
 
-    if (!orgId) {
+    if (!organizationName) {
       throw new HttpsError("failed-precondition", "現在どの所属にも登録されていません");
     }
 
     // ユーザーから所属情報を削除
     await admin.firestore().collection('users').doc(userId).update({
-      isPremium: false,
-      b2b2cOrgId: admin.firestore.FieldValue.delete(),
-      b2b2cOrgName: admin.firestore.FieldValue.delete(),
-      b2b2cJoinedAt: admin.firestore.FieldValue.delete(),
+      organizationName: admin.firestore.FieldValue.delete(),
+      organizationJoinedAt: admin.firestore.FieldValue.delete(),
     });
 
-    // 組織の使用ライセンス数をデクリメント
-    await admin.firestore().collection('b2b2cOrganizations').doc(orgId).update({
-      usedLicenses: admin.firestore.FieldValue.increment(-1),
-      users: admin.firestore.FieldValue.arrayRemove(userId),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    // 契約の登録ユーザー一覧から削除
+    const contractSnapshot = await admin.firestore()
+      .collection('corporateContracts')
+      .where('organizationName', '==', organizationName)
+      .limit(1)
+      .get();
 
-    console.log(`[B2B2C] User ${userId} left organization ${orgId}`);
+    if (!contractSnapshot.empty) {
+      await contractSnapshot.docs[0].ref.update({
+        registeredUsers: admin.firestore.FieldValue.arrayRemove(userId),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    console.log(`[Corporate] User ${userId} left organization ${organizationName}`);
 
     return {
       success: true,
@@ -2290,7 +2347,7 @@ exports.leaveOrganization = onCall({
     };
 
   } catch (error) {
-    console.error(`[B2B2C] Leave organization failed for user ${userId}:`, error);
+    console.error(`[Corporate] Leave organization failed for user ${userId}:`, error);
     if (error instanceof HttpsError) {
       throw error;
     }
@@ -4315,7 +4372,7 @@ exports.processAnalysisRequest = onDocumentCreated({
   }
 });
 
-// ===== 分析プロンプト生成（振り返り専用・クエスト生成は分離済み） =====
+// ===== 分析プロンプト生成（ミクロ+統合・LBM予測対応版） =====
 function generateAnalysisPrompt(data) {
   const {
     profile,
@@ -4327,6 +4384,10 @@ function generateAnalysisPrompt(data) {
     targetProtein,
     targetFat,
     targetCarbs,
+    // ミクロ+データ
+    microPlus,
+    // LBM予測テキスト
+    predictionText,
   } = data;
 
   // スコアが0の場合、食事データから簡易計算（暫定対応）
@@ -4344,13 +4405,20 @@ function generateAnalysisPrompt(data) {
     };
   }
 
-  // 目標名
+  // 目標名と評価コンテキスト
   const goalName = {
     "LOSE_WEIGHT": "減量",
     "MAINTAIN": "メンテナンス",
     "GAIN_MUSCLE": "筋肉増加・バルクアップ",
     "IMPROVE_HEALTH": "健康改善",
   }[profile?.goal] || "メンテナンス";
+
+  const goalContext = {
+    "LOSE_WEIGHT": "※ 減量中＝カロリー超過に厳しく、不足に寛容。",
+    "GAIN_MUSCLE": "※ バルクアップ中＝カロリー不足に厳しく、超過に寛容。",
+    "MAINTAIN": "※ メンテナンス中＝過不足なくバランス重視。",
+    "IMPROVE_HEALTH": "※ 健康改善中＝ミクロ+指標を特に重視。",
+  }[profile?.goal] || "";
 
   // 食事情報
   let mealsText = "";
@@ -4380,57 +4448,112 @@ function generateAnalysisPrompt(data) {
     }).join("\n");
   }
 
-  return `あなたはボディメイク専門のパーソナルトレーナーです。
-ユーザーの本日の記録を分析し、振り返りフィードバックを提供してください。
+  // ミクロ+セクション（データがある場合のみ）
+  const micro = microPlus || {};
+  const microSection = `
+## 今日の実績（ミクロ+ 品質指標）
+- DIAAS（タンパク質品質）: ${micro.diaas?.toFixed(2) || "未計測"}（基準: 1.0以上で良質）
+- 脂肪酸バランス: ${micro.fattyAcidLabel || "未計測"}（スコア: ${micro.fattyAcidScore || "-"}/5）
+- 食物繊維: ${micro.fiber?.toFixed(1) || "0"}g（目標: ${Math.round(micro.fiberTarget || 25)}g）
+- GL値（血糖負荷）: ${Math.round(micro.gl || 0)}（基準: 100以下で低負荷）
+- ビタミン充足率: ${Math.round(micro.vitaminAvg || 0)}%
+- ミネラル充足率: ${Math.round(micro.mineralAvg || 0)}%`;
 
-## ユーザー情報
+  // LBM予測セクション
+  const lbmSection = predictionText ? `
+## 今日の理論上の身体変化予測
+${predictionText}
+※ この予測値に基づき、現在のペースが良いか悪いかを判断材料にすること。` : "";
+
+  // 達成率計算
+  const calPercent = Math.round(((effectiveScore?.totalCalories || 0) / (targetCalories || 2000)) * 100);
+  const pPercent = Math.round(((effectiveScore?.totalProtein || 0) / (targetProtein || 120)) * 100);
+  const fPercent = Math.round(((effectiveScore?.totalFat || 0) / (targetFat || 60)) * 100);
+  const cPercent = Math.round(((effectiveScore?.totalCarbs || 0) / (targetCarbs || 250)) * 100);
+
+  return `あなたはボディメイク専門のハイレベルなパーソナルトレーナーです。
+ユーザーの本日の食事・運動記録、および詳細な栄養品質データ（ミクロ+）を分析し、JSON形式でフィードバックを提供してください。
+
+## トーンとマナー
+- ユーザーのモチベーションを維持する、励ましと共感のある口調。
+- 専門的かつ具体的。
+- 目的（減量/増量）に合わせたアドバイスを行うこと。
+
+## ユーザープロファイル
 - 目的: ${goalName}
+  ${goalContext}
 - 性別: ${profile?.gender || "不明"}
 - 年齢: ${profile?.age || "不明"}歳
-- 体重: ${profile?.weight || "不明"}kg
-- 目標体重: ${profile?.targetWeight || "不明"}kg
-${isRestDay ? "- 本日は休養日" : ""}
+- 体重: ${profile?.weight || "不明"}kg（目標: ${profile?.targetWeight || "不明"}kg）
+- LBM（除脂肪体重）: ${profile?.lbm?.toFixed(1) || "不明"}kg
+${isRestDay ? "- 本日は休養日（無理な運動は提案せず、回復を優先するコメントをすること）" : "- 本日はトレーニング推奨日"}
+${lbmSection}
 
-## 今日の目標
+## 今日の目標（マクロ）
 - カロリー: ${targetCalories || 2000}kcal
-- タンパク質: ${Math.round(targetProtein || 120)}g
-- 脂質: ${Math.round(targetFat || 60)}g
-- 炭水化物: ${Math.round(targetCarbs || 250)}g
+- P（タンパク質）: ${Math.round(targetProtein || 120)}g
+- F（脂質）: ${Math.round(targetFat || 60)}g
+- C（炭水化物）: ${Math.round(targetCarbs || 250)}g
 
-## 今日の実績
-- カロリー: ${Math.round(effectiveScore?.totalCalories || 0)}kcal（達成率: ${Math.round(((effectiveScore?.totalCalories || 0) / (targetCalories || 2000)) * 100)}%）
-- タンパク質: ${Math.round(effectiveScore?.totalProtein || 0)}g（達成率: ${Math.round(((effectiveScore?.totalProtein || 0) / (targetProtein || 120)) * 100)}%）
-- 脂質: ${Math.round(effectiveScore?.totalFat || 0)}g（達成率: ${Math.round(((effectiveScore?.totalFat || 0) / (targetFat || 60)) * 100)}%）
-- 炭水化物: ${Math.round(effectiveScore?.totalCarbs || 0)}g（達成率: ${Math.round(((effectiveScore?.totalCarbs || 0) / (targetCarbs || 250)) * 100)}%）
+## 今日の実績（マクロ）
+- カロリー: ${Math.round(effectiveScore?.totalCalories || 0)}kcal（達成率: ${calPercent}%）
+- P: ${Math.round(effectiveScore?.totalProtein || 0)}g（達成率: ${pPercent}%）
+- F: ${Math.round(effectiveScore?.totalFat || 0)}g（達成率: ${fPercent}%）
+- C: ${Math.round(effectiveScore?.totalCarbs || 0)}g（達成率: ${cPercent}%）
+${microSection}
 
-## 食事記録
-${mealsText || "記録なし"}
+## 入力データ
+【食事記録】
+${mealsText || "記録なし（記録をつけるとより正確なアドバイスができます）"}
 
-## 運動記録
+【運動記録】
 ${workoutsText || "記録なし"}
 
-## 出力形式（JSON厳守）
-以下のスキーマに従ってJSONのみを出力してください。Markdownは使用しないでください。
+## 評価ロジック（厳格モード）
 
+### ステップ1: マクロ評価（ベースランク）
+上から順に判定し、最初に該当したランクを採用:
+- **S**: 全マクロが目標の 95%〜105% 以内（完璧）
+- **A**: 全マクロが目標の 90%〜110% 以内
+- **B**: 全マクロが目標の 80%〜120% 以内
+- **C**: いずれかが目標の 70%〜130% 以内（Bの範囲外）
+- **D**: いずれかが目標の 60%未満 または 140%超
+
+※ ただし、減量中でカロリー/脂質が目標より低い場合、またはバルクアップ中で目標より高い場合は、評価を1ランク上げてもよい（柔軟な評価）。
+
+### ステップ2: ミクロ+によるランク調整（重要）
+以下の「質の悪い」条件に該当する場合、ベースランクから**1段階ダウン**させてください（例: A → B）:
+1. DIAASが 0.75未満（タンパク質の質が低い）
+2. 食物繊維が目標の60%未満（${Math.round((micro.fiberTarget || 25) * 0.6)}g未満、腸内環境悪化のリスク）
+3. GL値が 120超（血糖値スパイクのリスク）
+4. 脂肪酸スコアが 2以下（悪い脂質バランス）
+
+### ステップ3: アドバイスの生成
+- 数値だけでなく、【食事記録】にある**具体的なメニュー名**を挙げて原因を指摘すること（例：「昼食のラーメンが脂質超過の原因です」）。
+- 【運動記録】の内容を踏まえ、消費カロリーとのバランスに言及すること。
+- ミクロ+指標が高ければそこも褒める。
+
+## 出力形式（JSON Schema）
 {
   "daily_summary": {
-    "grade": "A〜Dの評価（A:目標達成、B:概ね達成、C:改善必要、D:大幅改善必要）",
-    "comment": "50文字以内の総評"
+    "grade": "S/A/B/C/D",
+    "grade_adjustment_reason": "ランクダウンした場合の理由（例：PFCは完璧ですが、食物繊維不足のため1ランク下げています）。調整なしの場合は「なし」",
+    "comment": "50文字以内の総評（LBM変化予測にも触れると良い）"
   },
-  "good_points": ["良かった点1", "良かった点2"],
-  "improvement_points": [
-    {"point": "改善点", "suggestion": "具体的な改善案"}
+  "good_points": [
+    "良かった点（具体的な行動や数値を褒める）",
+    "良かった点2"
   ],
-  "advice": "明日に向けた一言アドバイス"
+  "improvement_points": [
+    {
+      "point": "改善点（例：脂質が目標を20gオーバーしています）",
+      "suggestion": "具体的な改善案（例：夕食のドレッシングをノンオイルに変えましょう）"
+    }
+  ],
+  "advice": "明日に向けた具体的かつ前向きなアドバイス（質と量の両面から・100文字以内）"
 }
 
-## 評価基準
-- A: 全マクロが目標の90%〜110%以内
-- B: 全マクロが目標の80%〜120%以内
-- C: いずれかのマクロが目標の70%〜130%外
-- D: いずれかのマクロが目標の60%未満または140%超
-
-Output valid JSON only.`;
+Output valid JSON only. Do not include markdown formatting or code blocks.`;
 }
 
 // ===== 食材リストフィルタリング =====
@@ -4497,14 +4620,15 @@ function getFilteredFoodList(budgetTier, ngFoods, favoriteFoods) {
   return result.join("\n");
 }
 
-// ===== AI分析用JSONスキーマ（振り返り専用・クエスト生成は分離済み） =====
+// ===== AI分析用JSONスキーマ（ミクロ+統合版） =====
 const ANALYSIS_SCHEMA = {
   type: "object",
   properties: {
     daily_summary: {
       type: "object",
       properties: {
-        grade: { type: "string", enum: ["A", "B", "C", "D"] },
+        grade: { type: "string", enum: ["S", "A", "B", "C", "D"] },
+        grade_adjustment_reason: { type: "string" },  // ランク調整理由（なし or 理由）
         comment: { type: "string" }
       },
       required: ["grade", "comment"]
@@ -4520,7 +4644,7 @@ const ANALYSIS_SCHEMA = {
         }
       }
     },
-    advice: { type: "string" }  // 明日に向けた一言アドバイス
+    advice: { type: "string" }  // 明日に向けた質と量の両面からのアドバイス
   },
   required: ["daily_summary"]
 };
@@ -4803,6 +4927,7 @@ function generateQuestPrompt(data) {
     targetFat,
     targetCarbs,
     targetCalories,
+    fiberTarget,
     trainingAfterMeal,
     trainingDuration,
     trainingStyle,
@@ -4891,12 +5016,13 @@ function generateQuestPrompt(data) {
 - 予算: Tier ${budgetTier || 2}（1=ローコスト, 2=アスリート）
 - 食事回数: ${mealsPerDay}食
 
-## 🎯 1日の目標PFC（必達）
-- **タンパク質: ${Math.round(targetProtein)}g**（許容: ${Math.round(targetProtein) - 3}〜${Math.round(targetProtein) + 3}g）
-- **脂質: ${Math.round(targetFat)}g**（許容: ±5g）
-- **炭水化物: ${Math.round(targetCarbs)}g**（調整用）
-- **カロリー: ${calories}kcal**（許容: ${calories - 100}〜${calories}kcal）
+## 🎯 1日の目標（カロリー最優先）
+- **カロリー: ${calories - 100}kcal**（許容: ${calories - 150}〜${calories - 50}kcal）← **最優先制約**
+- タンパク質: ${Math.round(targetProtein)}g（許容: ${Math.round(targetProtein) - 5}〜${Math.round(targetProtein)}g、**超過禁止**）
+- 脂質: ${Math.round(targetFat)}g（許容: ${Math.round(targetFat) - 5}〜${Math.round(targetFat)}g、**超過禁止**）
+- 炭水化物: ${Math.round(targetCarbs)}g（調整用、カロリー調整に使う）
 - LBM: ${Math.round(lbm)}kg → 塩分 ${saltPerMeal}g/食
+- 食物繊維: ${Math.round(fiberTarget || 25)}g → 野菜${Math.round((fiberTarget || 25) * 20)}g相当
 ${ngFoods ? `- NG食材: ${ngFoods}` : ""}
 
 ## 各食事のスケジュール（**必ずこの時刻を使用**）
@@ -4914,7 +5040,7 @@ ${proteinStrategy.note ? `  → 注意: ${proteinStrategy.note}` : ''}
 - 鶏むね肉（皮なし）: 100g（P23g, F2g）をベースに調整
 - 全卵Lサイズ: 1個（P8g F6.5g, 64g）をベースに調整
 - 白米: 200g（C74g）をベースに調整
-- ブロッコリー: 50g をベースに調整
+- ブロッコリー: ${Math.round((fiberTarget || 25) * 4)}g をベースに（食物繊維${Math.round(fiberTarget || 25)}g達成用）
 - 切り餅: 100g（トレ前後のベース量）
 - **ピンク岩塩: ${saltPerMeal}g を毎食追加（必須）** ← LBM ${Math.round(lbm)}kg から算出
 - オリーブオイル: 脂質不足時に5〜10g追加（**トレ前後の食事には絶対に追加しない**）
@@ -4956,9 +5082,20 @@ ${hasTraining ? `- name: "${splitTypeJa}トレーニング"
 - **脂質が1日目標に対して不足する場合、トレ前後以外の食事にオリーブオイルを5〜10g追加**
 - **部位別タンパク質「${proteinStrategy.food_id}」を1食目(slot 1)に必ず配置**（休み/オフ日は鶏むね肉）
 - 外食予定の食事はfoods: []で出力
-- **出力前にセルフチェック（必須）**:
-  1. **タンパク質が${Math.round(targetProtein) - 3}〜${Math.round(targetProtein) + 3}gになっているか計算**。不足なら鶏むね肉を増量、超過なら減量
-  2. **カロリーが${calories - 100}〜${calories}kcalになっているか計算**。超過なら白米を減量
+- **出力前にセルフチェック（必須・計算を実行）**:
+  1. **カロリー計算（最優先）**: 以下の換算で全食材を合計
+     - 鶏むね肉: 100g = 114kcal（P23×4 + F2×9）
+     - 牛赤身肉: 100g = 120kcal（P21×4 + F4×9）
+     - サバ: 100g = 212kcal（P26×4 + F12×9）
+     - 鮭: 100g = 124kcal（P22×4 + F4×9）
+     - 全卵: 64g = 91kcal（P8×4 + F6.5×9）
+     - 白米: 100g = 168kcal（C37×4 + P2.5×4）
+     - 玄米: 100g = 155kcal（C35×4 + P2.8×4）
+     - 餅: 100g = 216kcal（C50×4 + P4×4）
+     - オリーブオイル: 10g = 90kcal（F10×9）
+  2. **合計が${calories - 150}〜${calories - 50}kcal範囲内か確認**
+  3. **超過なら白米/餅を10g単位で減量**（白米10g = 17kcal減）
+  4. タンパク質が${Math.round(targetProtein) - 5}〜${Math.round(targetProtein)}gか確認（超過禁止）
 
 ## 出力例（このJSON形式に厳密に従うこと）
 \`\`\`json

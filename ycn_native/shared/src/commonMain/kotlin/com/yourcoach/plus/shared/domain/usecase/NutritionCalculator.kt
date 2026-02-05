@@ -1,6 +1,7 @@
 package com.yourcoach.plus.shared.domain.usecase
 
 import com.yourcoach.plus.shared.domain.model.DetailedNutrition
+import com.yourcoach.plus.shared.domain.model.FitnessGoal
 import com.yourcoach.plus.shared.domain.model.Meal
 import kotlin.math.min
 
@@ -17,14 +18,24 @@ object NutritionCalculator {
      * @param isBodymaker ボディメイカーモードか
      * @param lbm 除脂肪体重 (kg)
      * @param mealsPerDay 1日の想定食事回数
+     * @param goal フィットネス目標（食物繊維目標値の調整用）
      * @return 詳細栄養素データ
      */
     fun calculate(
         meals: List<Meal>,
         isBodymaker: Boolean,
         lbm: Float = 56f,
-        mealsPerDay: Int = 5
+        mealsPerDay: Int = 5,
+        goal: FitnessGoal? = null
     ): DetailedNutrition {
+        // 食物繊維目標値（LBMベース + 目標別調整）
+        val baseFiber = lbm * 0.4f  // ベース: LBMの40%
+        val fiberTarget = when (goal) {
+            FitnessGoal.LOSE_WEIGHT -> baseFiber * 1.25f   // 減量: +25%（満腹感UP）
+            FitnessGoal.GAIN_MUSCLE -> baseFiber * 0.9f    // バルク: -10%（消化促進）
+            FitnessGoal.MAINTAIN -> baseFiber              // 維持: そのまま
+            else -> baseFiber
+        }
         // GL上限（LBMベース）- 筋肉量が多いほどグリコーゲン貯蔵能力が高い
         val glCoefficient = if (isBodymaker) 3f else 2f
         val glLimit = (lbm * glCoefficient).coerceAtLeast(80f)
@@ -38,7 +49,8 @@ object NutritionCalculator {
                 glLabel = "未記録",
                 mealsPerDay = mealsPerDay,
                 mealGLLimit = glLimit / mealsPerDay,
-                mealAbsoluteGLLimit = mealAbsoluteGLLimit
+                mealAbsoluteGLLimit = mealAbsoluteGLLimit,
+                fiberTarget = fiberTarget
             )
         }
 
@@ -152,9 +164,9 @@ object NutritionCalculator {
             totalFat, saturatedFat, monounsaturatedFat
         )
 
-        // 食物繊維スコア計算
+        // 食物繊維スコア計算（目標値ベース）
         val carbFiberRatio = if (totalFiber > 0) totalCarbs / totalFiber else 0f
-        val (fiberScore, fiberRating, fiberLabel) = calculateFiberScore(totalCarbs, totalFiber)
+        val (fiberScore, fiberRating, fiberLabel) = calculateFiberScore(totalFiber, fiberTarget)
 
         // ビタミン充足率
         val vitaminScores = vitaminTargets.mapValues { (key, target) ->
@@ -241,6 +253,7 @@ object NutritionCalculator {
             totalFiber = totalFiber,
             totalSolubleFiber = totalSolubleFiber,
             totalInsolubleFiber = totalInsolubleFiber,
+            fiberTarget = fiberTarget,
             carbFiberRatio = carbFiberRatio,
             fiberScore = fiberScore,
             fiberRating = fiberRating,
@@ -269,17 +282,24 @@ object NutritionCalculator {
         }
     }
 
+    /**
+     * 食物繊維スコア計算（目標値ベース）
+     * @param totalFiber 実際の摂取量
+     * @param fiberTarget 目標値（LBM×0.4×目標係数）
+     */
     private fun calculateFiberScore(
-        totalCarbs: Float,
-        totalFiber: Float
+        totalFiber: Float,
+        fiberTarget: Float
     ): Triple<Int, String, String> {
-        if (totalCarbs + totalFiber <= 0) return Triple(0, "-", "-")
+        if (fiberTarget <= 0) return Triple(0, "-", "-")
 
-        val fiberPercent = (totalFiber / (totalCarbs + totalFiber)) * 100
+        val ratio = totalFiber / fiberTarget
         return when {
-            fiberPercent < 5 -> Triple(2, "★★☆☆☆", "要改善")
-            fiberPercent < 10 -> Triple(4, "★★★★☆", "良好")
-            else -> Triple(5, "★★★★★", "優秀")
+            ratio >= 1.0f -> Triple(5, "★★★★★", "優秀")      // 100%以上達成
+            ratio >= 0.8f -> Triple(4, "★★★★☆", "良好")      // 80%以上
+            ratio >= 0.6f -> Triple(3, "★★★☆☆", "普通")      // 60%以上
+            ratio >= 0.4f -> Triple(2, "★★☆☆☆", "不足")      // 40%以上
+            else -> Triple(1, "★☆☆☆☆", "要改善")             // 40%未満
         }
     }
 }

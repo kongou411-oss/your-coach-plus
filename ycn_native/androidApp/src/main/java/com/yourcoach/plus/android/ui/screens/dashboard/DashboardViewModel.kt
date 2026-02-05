@@ -485,8 +485,8 @@ class DashboardViewModel(
                     )
                 }
 
-                // TDEEと目標PFCを計算
-                val (targetCalories, targetProtein, targetCarbs, targetFat) = calculateTargets(user)
+                // TDEEと目標PFCを計算（日常活動 + 目的調整 + トレ日加算）
+                val (targetCalories, targetProtein, targetCarbs, targetFat) = calculateTargets(user, todayRoutine, isManualRestDay)
 
                 // 合計栄養素を計算
                 val totalCalories = meals.sumOf { it.totalCalories }
@@ -494,14 +494,14 @@ class DashboardViewModel(
                 val totalCarbs = meals.sumOf { it.totalCarbs.toDouble() }.toFloat()
                 val totalFat = meals.sumOf { it.totalFat.toDouble() }.toFloat()
 
-                // 詳細栄養素を計算（proteinCoefficient >= 2.0 でボディメイカー判定）
-                val isBodymaker = (user?.profile?.proteinCoefficient ?: 2.3f) >= 2.0f
+                // 詳細栄養素を計算
+                val isBodymaker = true  // 全ユーザー共通でボディメイカーモード
                 val profile = user?.profile
                 val weight = profile?.weight ?: 70f
                 val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
                 val lbm = weight * (1 - bodyFatPercentage / 100f)
                 val mealsPerDay = profile?.mealsPerDay ?: 5
-                val detailedNutrition = NutritionCalculator.calculate(meals, isBodymaker, lbm, mealsPerDay)
+                val detailedNutrition = NutritionCalculator.calculate(meals, isBodymaker, lbm, mealsPerDay, profile?.goal)
 
                 // タイムライン情報を計算（ルーティン連動）
                 val timelineInfo = calculateTimelineInfo(user, meals, todayRoutine)
@@ -609,9 +609,13 @@ class DashboardViewModel(
 
     /**
      * ユーザープロフィールから目標PFCを取得
-     * プロフィールに保存された値を優先し、なければ計算で求める
+     * TDEE（日常活動）+ 目的調整 + トレ日加算で計算
      */
-    private fun calculateTargets(user: User?): NutritionTargets {
+    private fun calculateTargets(
+        user: User?,
+        todayRoutine: com.yourcoach.plus.shared.domain.model.RoutineDay? = null,
+        isManualRestDay: Boolean = false
+    ): NutritionTargets {
         val profile = user?.profile
 
         if (profile == null || profile.weight == null) {
@@ -619,26 +623,8 @@ class DashboardViewModel(
             return NutritionTargets(2000, 120f, 250f, 60f)
         }
 
-        // プロフィールに保存された目標値があればそれを使用（プロフィール設定で保存した値）
-        val savedTargetCalories = profile.targetCalories
-        val savedTargetProtein = profile.targetProtein
-        val savedTargetFat = profile.targetFat
-        val savedTargetCarbs = profile.targetCarbs
-
-        if (savedTargetCalories != null && savedTargetProtein != null &&
-            savedTargetFat != null && savedTargetCarbs != null) {
-            // 保存された値をそのまま使用
-            return NutritionTargets(
-                savedTargetCalories,
-                savedTargetProtein,
-                savedTargetCarbs,
-                savedTargetFat
-            )
-        }
-
-        // 保存された値がない場合は計算で求める（後方互換性）
         val weight = profile.weight!!
-        val bodyFatPercentage = profile.bodyFatPercentage ?: 20f  // デフォルト20%
+        val bodyFatPercentage = profile.bodyFatPercentage ?: 20f
 
         // LBM（除脂肪体重）を計算
         val lbm = weight * (1 - bodyFatPercentage / 100)
@@ -646,24 +632,18 @@ class DashboardViewModel(
 
         // BMR計算（Katch-McArdle式 + 脂肪組織代謝）
         val lbmMetabolism = 370 + (21.6 * lbm)
-        val fatMetabolism = fatMass * 4.5f  // 脂肪組織の代謝: 4.5 kcal/kg/日
+        val fatMetabolism = fatMass * 4.5f
         val bmr = lbmMetabolism + fatMetabolism
 
-        // 活動係数
-        val activityMultiplier = when (profile.activityLevel) {
-            com.yourcoach.plus.shared.domain.model.ActivityLevel.SEDENTARY -> 1.05f
-            com.yourcoach.plus.shared.domain.model.ActivityLevel.LIGHT -> 1.225f
-            com.yourcoach.plus.shared.domain.model.ActivityLevel.MODERATE -> 1.4f
-            com.yourcoach.plus.shared.domain.model.ActivityLevel.ACTIVE -> 1.575f
-            com.yourcoach.plus.shared.domain.model.ActivityLevel.VERY_ACTIVE -> 1.75f
-            else -> 1.4f
-        }
+        // 日常活動係数（運動を除く）
+        val activityMultiplier = profile.activityLevel?.multiplier
+            ?: com.yourcoach.plus.shared.domain.model.ActivityLevel.DESK_WORK.multiplier
 
-        // TDEE計算
+        // TDEE計算（日常活動のみ）
         val tdee = (bmr * activityMultiplier).toFloat()
 
         // 目標に応じたカロリー調整
-        val calorieAdjustment = when (profile.goal) {
+        val goalAdjustment = when (profile.goal) {
             com.yourcoach.plus.shared.domain.model.FitnessGoal.LOSE_WEIGHT -> -300f
             com.yourcoach.plus.shared.domain.model.FitnessGoal.GAIN_MUSCLE -> 300f
             com.yourcoach.plus.shared.domain.model.FitnessGoal.MAINTAIN -> 0f
@@ -671,26 +651,29 @@ class DashboardViewModel(
         }
 
         // カスタムカロリー調整がプロフィールにある場合は優先
-        val finalCalorieAdjustment = if (profile.calorieAdjustment != 0) {
+        val calorieAdjustment = if (profile.calorieAdjustment != 0) {
             profile.calorieAdjustment.toFloat()
         } else {
-            calorieAdjustment
+            goalAdjustment
         }
 
-        val adjustedCalories = tdee + finalCalorieAdjustment
+        // トレ日加算（ルーティンから部位を取得）
+        val isRestDay = isManualRestDay || (todayRoutine?.isRestDay == true)
+        val trainingBonus = com.yourcoach.plus.shared.domain.model.TrainingCalorieBonus.fromSplitType(
+            todayRoutine?.splitType,
+            isRestDay
+        )
 
-        // タンパク質係数（プロフィールから取得、デフォルト2.3）
-        val proteinCoefficient = profile.proteinCoefficient
-        val targetProtein = lbm * proteinCoefficient
-        val proteinCalories = targetProtein * 4
+        val adjustedCalories = tdee + calorieAdjustment + trainingBonus
 
-        // 脂質は25%
-        val fatCalories = adjustedCalories * 0.25f
-        val targetFat = fatCalories / 9
+        // PFC比率から計算（デフォルト P30/F25/C45）
+        val proteinRatio = profile.proteinRatioPercent / 100f
+        val fatRatio = profile.fatRatioPercent / 100f
+        val carbRatio = profile.carbRatioPercent / 100f
 
-        // 炭水化物: 残りすべて
-        val carbCalories = adjustedCalories - proteinCalories - fatCalories
-        val targetCarbs = (carbCalories / 4).coerceAtLeast(0f)
+        val targetProtein = adjustedCalories * proteinRatio / 4f
+        val targetFat = adjustedCalories * fatRatio / 9f
+        val targetCarbs = adjustedCalories * carbRatio / 4f
 
         return NutritionTargets(
             adjustedCalories.toInt(),
@@ -920,8 +903,9 @@ class DashboardViewModel(
                 .onSuccess {
                     _uiState.update { it.copy(calorieOverride = null) }
                     // 元の目標に戻す
-                    val user = _uiState.value.user
-                    val (targetCalories, targetProtein, targetCarbs, targetFat) = calculateTargets(user)
+                    val state = _uiState.value
+                    val user = state.user
+                    val (targetCalories, targetProtein, targetCarbs, targetFat) = calculateTargets(user, state.todayRoutine, state.isManualRestDay)
                     _uiState.update { state ->
                         state.copy(
                             targetCalories = targetCalories,
@@ -941,8 +925,9 @@ class DashboardViewModel(
      * オーバーライドに基づいて目標カロリー・PFCを再計算
      */
     private fun recalculateTargetsWithOverride(override: com.yourcoach.plus.shared.domain.model.CalorieOverride) {
-        val user = _uiState.value.user
-        val (baseCalories, _, _, _) = calculateTargets(user)
+        val state = _uiState.value
+        val user = state.user
+        val (baseCalories, _, _, _) = calculateTargets(user, state.todayRoutine, state.isManualRestDay)
 
         // カロリー調整を適用
         val adjustedCalories = baseCalories + override.calorieAdjustment
@@ -986,13 +971,13 @@ class DashboardViewModel(
                     // 食事リストから削除して再計算
                     val updatedMeals = _uiState.value.meals.filter { it.id != meal.id }
                     val user = _uiState.value.user
-                    val isBodymaker = (user?.profile?.proteinCoefficient ?: 2.3f) >= 2.0f
+                    val isBodymaker = true  // 全ユーザー共通でボディメイカーモード
                     val profile = user?.profile
                     val weight = profile?.weight ?: 70f
                     val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
                     val lbm = weight * (1 - bodyFatPercentage / 100f)
                     val mealsPerDay = profile?.mealsPerDay ?: 5
-                    val detailedNutrition = NutritionCalculator.calculate(updatedMeals, isBodymaker, lbm, mealsPerDay)
+                    val detailedNutrition = NutritionCalculator.calculate(updatedMeals, isBodymaker, lbm, mealsPerDay, profile?.goal)
 
                     _uiState.update { state ->
                         state.copy(
@@ -2836,7 +2821,6 @@ class DashboardViewModel(
                 // プロフィール情報を収集
                 val profile = user.profile
                 val goal = profile?.goal?.name ?: "MAINTAIN"
-                val activityLevel = profile?.activityLevel?.name ?: "MODERATE"
                 val budgetTier = profile?.budgetTier ?: 2
                 val mealsPerDay = profile?.mealsPerDay ?: 5
                 val trainingAfterMeal = profile?.trainingAfterMeal
@@ -2871,15 +2855,27 @@ class DashboardViewModel(
 
                 android.util.Log.d("DashboardVM", "generateQuest: 翌日ルーティン=$rawSplitType → $splitType")
 
-                // 目標PFC
-                val targetProtein = _uiState.value.targetProtein
-                val targetCarbs = _uiState.value.targetCarbs
-                val targetFat = _uiState.value.targetFat
-                val targetCalories = _uiState.value.targetCalories
+                // 目標PFC（明日のルーティンに基づいて再計算）
+                val tomorrowTargets = calculateTargets(user, tomorrowRoutine, isManualRestDay = false)
+                val targetProtein = tomorrowTargets.protein
+                val targetCarbs = tomorrowTargets.carbs
+                val targetFat = tomorrowTargets.fat
+                val targetCalories = tomorrowTargets.calories
+
+                android.util.Log.d("DashboardVM", "generateQuest: 明日の目標 cal=$targetCalories, P=$targetProtein, F=$targetFat, C=$targetCarbs")
 
                 // 体組成（LBM計算用）
                 val weight = profile?.weight ?: 70f
                 val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
+                val lbm = weight * (1 - bodyFatPercentage / 100f)
+
+                // 食物繊維目標値（LBMベース + 目標別調整）
+                val baseFiber = lbm * 0.4f
+                val fiberTarget = when (profile?.goal) {
+                    com.yourcoach.plus.shared.domain.model.FitnessGoal.LOSE_WEIGHT -> baseFiber * 1.25f
+                    com.yourcoach.plus.shared.domain.model.FitnessGoal.GAIN_MUSCLE -> baseFiber * 0.9f
+                    else -> baseFiber
+                }
 
                 // タイムスケジュール
                 val wakeUpTime = profile?.wakeUpTime ?: "06:00"
@@ -2889,7 +2885,6 @@ class DashboardViewModel(
 
                 val data = hashMapOf(
                     "goal" to goal,
-                    "activityLevel" to activityLevel,
                     "budgetTier" to budgetTier,
                     "mealsPerDay" to mealsPerDay,
                     "splitType" to splitType,
@@ -2898,6 +2893,7 @@ class DashboardViewModel(
                     "targetCarbs" to targetCarbs,
                     "targetFat" to targetFat,
                     "targetCalories" to targetCalories,
+                    "fiberTarget" to fiberTarget,
                     "trainingAfterMeal" to trainingAfterMeal,
                     "wakeUpTime" to wakeUpTime,
                     "trainingTime" to trainingTime,

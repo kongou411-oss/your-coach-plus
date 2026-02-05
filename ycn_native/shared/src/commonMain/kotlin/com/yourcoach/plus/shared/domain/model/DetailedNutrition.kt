@@ -40,6 +40,7 @@ data class DetailedNutrition(
     val totalFiber: Float = 0f,
     val totalSolubleFiber: Float = 0f,      // 水溶性食物繊維
     val totalInsolubleFiber: Float = 0f,    // 不溶性食物繊維
+    val fiberTarget: Float = 25f,           // 目標食物繊維量（LBM×0.4×目標係数）
     val carbFiberRatio: Float = 0f,
     val fiberScore: Int = 0,
     val fiberRating: String = "-",
