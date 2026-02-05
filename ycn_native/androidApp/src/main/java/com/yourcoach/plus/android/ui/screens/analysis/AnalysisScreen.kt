@@ -840,18 +840,7 @@ private fun ProfileSettingsSection(
 
                     // タンパク質 + LBM係数
                     val targetP = userProfile?.targetProtein ?: 120f
-                    val weight = userProfile?.weight
-                    val bodyFat = userProfile?.bodyFatPercentage
-                    val lbm = if (weight != null && bodyFat != null && bodyFat > 0 && bodyFat < 100) {
-                        weight * (1 - bodyFat / 100)
-                    } else null
-                    // 直接保存された係数を使用（なければ計算）
-                    val savedCoefficient = userProfile?.proteinCoefficient
-                    val coefficientText = if (lbm != null && lbm > 0) {
-                        val coef = savedCoefficient ?: (targetP / lbm)
-                        " ← LBM${lbm.toInt()}kg × ${String.format("%.1f", coef)}"
-                    } else ""
-                    SettingRow("タンパク質", "${targetP.toInt()} g$coefficientText")
+                    SettingRow("タンパク質", "${targetP.toInt()} g")
 
                     SettingRow("脂質", "${userProfile?.targetFat?.toInt() ?: 60} g")
                     SettingRow("炭水化物", "${userProfile?.targetCarbs?.toInt() ?: 250} g")

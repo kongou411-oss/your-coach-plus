@@ -417,21 +417,24 @@ private fun Step2GoalsActivity(state: ProfileSetupState, screenModel: ProfileSet
 
         Text("活動レベル", fontWeight = FontWeight.Medium)
         val activityLevels = listOf(
-            ActivityLevel.SEDENTARY to "ほぼ運動しない",
-            ActivityLevel.LIGHT to "週1-2回",
-            ActivityLevel.MODERATE to "週3-4回",
-            ActivityLevel.ACTIVE to "週5-6回",
-            ActivityLevel.VERY_ACTIVE to "毎日激しく"
+            ActivityLevel.DESK_WORK to "デスクワーク",
+            ActivityLevel.STANDING_WORK to "立ち仕事",
+            ActivityLevel.PHYSICAL_LABOR to "肉体労働"
         )
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            activityLevels.forEach { (level, label) ->
+            activityLevels.forEach { (level, _) ->
                 SelectableCard(
                     selected = state.activityLevel == level,
                     onClick = { screenModel.updateActivityLevel(level) },
-                    label = label
+                    label = level.displayName
                 )
             }
         }
+        Text(
+            text = "※ 運動の消費カロリーはルーティンから自動加算",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 

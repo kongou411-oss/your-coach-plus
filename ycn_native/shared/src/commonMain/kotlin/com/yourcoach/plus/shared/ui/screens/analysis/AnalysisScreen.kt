@@ -847,19 +847,7 @@ private fun ProfileSettingsSection(
 
                     // Protein + LBM coefficient
                     val targetP = userProfile?.targetProtein ?: 120f
-                    val weight = userProfile?.weight
-                    val bodyFat = userProfile?.bodyFatPercentage
-                    val lbm = if (weight != null && bodyFat != null && bodyFat > 0 && bodyFat < 100) {
-                        weight * (1 - bodyFat / 100)
-                    } else null
-                    // Use saved coefficient directly (calculate if not available)
-                    val savedCoefficient = userProfile?.proteinCoefficient
-                    val coefficientText = if (lbm != null && lbm > 0) {
-                        val coef = savedCoefficient ?: (targetP / lbm)
-                        val coefStr = ((coef * 10).toInt() / 10.0).toString()
-                        " <- LBM${lbm.toInt()}kg x $coefStr"
-                    } else ""
-                    SettingRow("Protein", "${targetP.toInt()} g$coefficientText")
+                    SettingRow("Protein", "${targetP.toInt()} g")
 
                     SettingRow("Fat", "${userProfile?.targetFat?.toInt() ?: 60} g")
                     SettingRow("Carbs", "${userProfile?.targetCarbs?.toInt() ?: 250} g")

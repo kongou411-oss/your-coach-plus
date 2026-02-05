@@ -74,14 +74,13 @@ fun OnboardingScreen(
     var weight by remember { mutableStateOf("") }
     var bodyFatPercentage by remember { mutableStateOf("") }
     var targetWeight by remember { mutableStateOf("") }
-    var activityLevel by remember { mutableStateOf(ActivityLevel.MODERATE) }
+    var activityLevel by remember { mutableStateOf(ActivityLevel.DESK_WORK) }
     var goal by remember { mutableStateOf(FitnessGoal.MAINTAIN) }
     var mealsPerDay by remember { mutableIntStateOf(5) }
     var proteinRatio by remember { mutableIntStateOf(30) }
     var fatRatio by remember { mutableIntStateOf(25) }
     var carbRatio by remember { mutableIntStateOf(45) }
     var calorieAdjustment by remember { mutableIntStateOf(0) }
-    var proteinCoefficient by remember { mutableFloatStateOf(2.3f) }
     var budgetTier by remember { mutableIntStateOf(2) }
 
     // ========== ルーティンデータ ==========
@@ -119,13 +118,7 @@ fun OnboardingScreen(
 
     val tdee = remember(bmr, activityLevel) {
         bmr?.let { b ->
-            val multiplier = when (activityLevel) {
-                ActivityLevel.SEDENTARY -> 1.2f
-                ActivityLevel.LIGHT -> 1.375f
-                ActivityLevel.MODERATE -> 1.55f
-                ActivityLevel.ACTIVE -> 1.725f
-                ActivityLevel.VERY_ACTIVE -> 1.9f
-            }
+            val multiplier = activityLevel.multiplier
             b * multiplier
         }
     }
@@ -144,32 +137,6 @@ fun OnboardingScreen(
             calorieAdjustment = defaultAdjustment
         }
         previousGoal = goal
-    }
-
-    // タンパク質係数変更時のPFC自動計算
-    var previousCoefficient by remember { mutableStateOf<Float?>(null) }
-    LaunchedEffect(proteinCoefficient, weight, bodyFatPercentage, tdee, calorieAdjustment) {
-        if (previousCoefficient != null && previousCoefficient != proteinCoefficient) {
-            val w = weight.toFloatOrNull()
-            val bf = bodyFatPercentage.toFloatOrNull()
-            val currentTdee = tdee
-
-            if (w != null && bf != null && bf > 0 && bf < 100 && currentTdee != null) {
-                val lbm = w * (1 - bf / 100)
-                val targetProteinG = lbm * proteinCoefficient
-                val targetCal = (currentTdee + calorieAdjustment).toInt()
-
-                val proteinCal = targetProteinG * 4
-                val newProteinRatio = ((proteinCal / targetCal) * 100).toInt().coerceIn(10, 50)
-                val newFatRatio = 25
-                val newCarbRatio = (100 - newProteinRatio - newFatRatio).coerceIn(20, 65)
-
-                proteinRatio = newProteinRatio
-                fatRatio = newFatRatio
-                carbRatio = newCarbRatio
-            }
-        }
-        previousCoefficient = proteinCoefficient
     }
 
     val targetCalories = remember(tdee, calorieAdjustment) {
@@ -211,7 +178,6 @@ fun OnboardingScreen(
                     targetWeight = targetWeight.toFloatOrNull(),
                     activityLevel = activityLevel,
                     goal = goal,
-                    proteinCoefficient = proteinCoefficient,
                     targetCalories = targetCalories,
                     targetProtein = calcTargetProtein,
                     targetFat = calcTargetFat,
@@ -357,7 +323,6 @@ fun OnboardingScreen(
                         fatRatio = fatRatio, onFatRatioChange = { fatRatio = it },
                         carbRatio = carbRatio, onCarbRatioChange = { carbRatio = it },
                         calorieAdjustment = calorieAdjustment, onCalorieAdjustmentChange = { calorieAdjustment = it },
-                        proteinCoefficient = proteinCoefficient, onProteinCoefficientChange = { proteinCoefficient = it },
                         budgetTier = budgetTier, onBudgetTierChange = { budgetTier = it },
                         bmr = bmr, tdee = tdee, targetCalories = targetCalories
                     )
@@ -532,7 +497,6 @@ private fun ProfileStep(
     fatRatio: Int, onFatRatioChange: (Int) -> Unit,
     carbRatio: Int, onCarbRatioChange: (Int) -> Unit,
     calorieAdjustment: Int, onCalorieAdjustmentChange: (Int) -> Unit,
-    proteinCoefficient: Float, onProteinCoefficientChange: (Float) -> Unit,
     budgetTier: Int, onBudgetTierChange: (Int) -> Unit,
     bmr: Float?, tdee: Float?, targetCalories: Int?
 ) {
@@ -774,44 +738,6 @@ private fun ProfileStep(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // タンパク質係数
-                val w = weight.toFloatOrNull()
-                val bf = bodyFatPercentage.toFloatOrNull()
-                val lbm = if (w != null && bf != null && bf > 0 && bf < 100) w * (1 - bf / 100) else null
-
-                Text(
-                    text = "タンパク質係数: ×${String.format("%.1f", proteinCoefficient)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Slider(
-                    value = proteinCoefficient,
-                    onValueChange = { onProteinCoefficientChange((it * 10).toInt() / 10f) },
-                    valueRange = 2.0f..3.0f,
-                    steps = 9,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("×2.0", style = MaterialTheme.typography.labelSmall)
-                    Text("×2.5", style = MaterialTheme.typography.labelSmall)
-                    Text("×3.0", style = MaterialTheme.typography.labelSmall)
-                }
-                if (lbm != null) {
-                    val targetP = (lbm * proteinCoefficient).toInt()
-                    Text(
-                        text = "LBM ${lbm.toInt()}kg × ${String.format("%.1f", proteinCoefficient)} = 目標P ${targetP}g",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Primary,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // 食事回数
                 Text(
                     text = "1日の食事回数",
@@ -834,9 +760,9 @@ private fun ProfileStep(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ウエイトトレーニングの頻度
+                // 日常活動レベル
                 Text(
-                    text = "ウエイトトレーニングの頻度",
+                    text = "日常活動（運動以外）",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -844,22 +770,18 @@ private fun ProfileStep(
                     ActivityLevel.entries.forEach { level ->
                         FilterChip(
                             onClick = { onActivityLevelChange(level) },
-                            label = {
-                                Text(
-                                    when (level) {
-                                        ActivityLevel.SEDENTARY -> "トレーニングしない"
-                                        ActivityLevel.LIGHT -> "週1〜2回"
-                                        ActivityLevel.MODERATE -> "週3〜4回"
-                                        ActivityLevel.ACTIVE -> "週5〜6回"
-                                        ActivityLevel.VERY_ACTIVE -> "週6回以上（ハード）"
-                                    }
-                                )
-                            },
+                            label = { Text(level.displayName) },
                             selected = activityLevel == level,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
+                Text(
+                    text = "※ 運動の消費カロリーはルーティンから自動加算されます",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 

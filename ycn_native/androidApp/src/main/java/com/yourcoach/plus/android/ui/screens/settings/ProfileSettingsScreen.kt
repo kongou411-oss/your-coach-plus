@@ -73,15 +73,13 @@ fun ProfileSettingsScreen(
     var weight by remember(loadedProfile) { mutableStateOf(loadedProfile?.weight?.toString() ?: "") }
     var bodyFatPercentage by remember(loadedProfile) { mutableStateOf(loadedProfile?.bodyFatPercentage?.toString() ?: "") }
     var targetWeight by remember(loadedProfile) { mutableStateOf(loadedProfile?.targetWeight?.toString() ?: "") }
-    var activityLevel by remember(loadedProfile) { mutableStateOf(loadedProfile?.activityLevel ?: ActivityLevel.MODERATE) }
+    var activityLevel by remember(loadedProfile) { mutableStateOf(loadedProfile?.activityLevel ?: ActivityLevel.DESK_WORK) }
     var goal by remember(loadedProfile) { mutableStateOf(loadedProfile?.goal ?: FitnessGoal.MAINTAIN) }
     var mealsPerDay by remember(loadedProfile) { mutableIntStateOf(loadedProfile?.mealsPerDay ?: 5) }
     var proteinRatio by remember(loadedProfile) { mutableIntStateOf(loadedProfile?.proteinRatioPercent ?: 30) }
     var fatRatio by remember(loadedProfile) { mutableIntStateOf(loadedProfile?.fatRatioPercent ?: 25) }
     var carbRatio by remember(loadedProfile) { mutableIntStateOf(loadedProfile?.carbRatioPercent ?: 45) }
     var calorieAdjustment by remember(loadedProfile) { mutableIntStateOf(loadedProfile?.calorieAdjustment ?: 0) }
-    // タンパク質係数（LBM × coefficient = 目標P）
-    var proteinCoefficient by remember(loadedProfile) { mutableFloatStateOf(loadedProfile?.proteinCoefficient ?: 2.3f) }
     // 食費設定
     var budgetTier by remember(loadedProfile) { mutableIntStateOf(loadedProfile?.budgetTier ?: 2) }
     var isSaving by remember { mutableStateOf(false) }
@@ -110,13 +108,7 @@ fun ProfileSettingsScreen(
 
     val tdee = remember(bmr, activityLevel) {
         bmr?.let { b ->
-            val multiplier = when (activityLevel) {
-                ActivityLevel.SEDENTARY -> 1.2f
-                ActivityLevel.LIGHT -> 1.375f
-                ActivityLevel.MODERATE -> 1.55f
-                ActivityLevel.ACTIVE -> 1.725f
-                ActivityLevel.VERY_ACTIVE -> 1.9f
-            }
+            val multiplier = activityLevel.multiplier
             b * multiplier
         }
     }
@@ -139,36 +131,6 @@ fun ProfileSettingsScreen(
         }
         previousGoal = goal
         isInitialLoad = false
-    }
-
-    // タンパク質係数変更時にPFC比率を自動計算（LBMベース）
-    var previousCoefficient by remember { mutableStateOf<Float?>(null) }
-    LaunchedEffect(proteinCoefficient, weight, bodyFatPercentage, tdee, calorieAdjustment) {
-        // 係数が変更された場合のみPFC比率を更新
-        if (previousCoefficient != null && previousCoefficient != proteinCoefficient) {
-            val w = weight.toFloatOrNull()
-            val bf = bodyFatPercentage.toFloatOrNull()
-            val currentTdee = tdee
-
-            if (w != null && bf != null && bf > 0 && bf < 100 && currentTdee != null) {
-                val lbm = w * (1 - bf / 100)
-                val targetProteinG = lbm * proteinCoefficient
-                val targetCal = (currentTdee + calorieAdjustment).toInt()
-
-                // タンパク質比率を計算（カロリーベース）
-                val proteinCal = targetProteinG * 4
-                val newProteinRatio = ((proteinCal / targetCal) * 100).toInt().coerceIn(10, 50)
-
-                // 脂質は25%固定、炭水化物は残り
-                val newFatRatio = 25
-                val newCarbRatio = (100 - newProteinRatio - newFatRatio).coerceIn(20, 65)
-
-                proteinRatio = newProteinRatio
-                fatRatio = newFatRatio
-                carbRatio = newCarbRatio
-            }
-        }
-        previousCoefficient = proteinCoefficient
     }
 
     val targetCalories = remember(tdee, calorieAdjustment) {
@@ -211,7 +173,6 @@ fun ProfileSettingsScreen(
                     targetWeight = targetWeight.toFloatOrNull(),
                     activityLevel = activityLevel,
                     goal = goal,
-                    proteinCoefficient = proteinCoefficient,  // LBM × coefficient
                     targetCalories = targetCalories,
                     targetProtein = calcTargetProtein,
                     targetFat = calcTargetFat,
@@ -475,52 +436,6 @@ fun ProfileSettingsScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // タンパク質係数（LBM × coefficient）
-                    val w = weight.toFloatOrNull()
-                    val bf = bodyFatPercentage.toFloatOrNull()
-                    val lbm = if (w != null && bf != null && bf > 0 && bf < 100) w * (1 - bf / 100) else null
-
-                    Text(
-                        text = "タンパク質係数: ×${String.format("%.1f", proteinCoefficient)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Slider(
-                        value = proteinCoefficient,
-                        onValueChange = { proteinCoefficient = (it * 10).toInt() / 10f },  // 0.1刻み
-                        valueRange = 2.0f..3.0f,
-                        steps = 9,  // 2.0, 2.1, 2.2, ... 3.0
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("×2.0", style = MaterialTheme.typography.labelSmall)
-                        Text("×2.5", style = MaterialTheme.typography.labelSmall)
-                        Text("×3.0", style = MaterialTheme.typography.labelSmall)
-                    }
-                    // LBM計算結果の表示
-                    if (lbm != null) {
-                        val targetP = (lbm * proteinCoefficient).toInt()
-                        Text(
-                            text = "LBM ${lbm.toInt()}kg × ${String.format("%.1f", proteinCoefficient)} = 目標P ${targetP}g",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Primary,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    } else {
-                        Text(
-                            text = "体脂肪率を入力するとLBMから目標Pを計算します",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
                     // 食事回数
                     Text(
                         text = "1日の食事回数",
@@ -544,7 +459,7 @@ fun ProfileSettingsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "活動レベル",
+                        text = "日常活動（運動以外）",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -552,22 +467,18 @@ fun ProfileSettingsScreen(
                         ActivityLevel.entries.forEach { level ->
                             FilterChip(
                                 onClick = { activityLevel = level },
-                                label = {
-                                    Text(
-                                        when (level) {
-                                            ActivityLevel.SEDENTARY -> "ほとんど運動しない"
-                                            ActivityLevel.LIGHT -> "週1-2回の軽い運動"
-                                            ActivityLevel.MODERATE -> "週3-4回の運動"
-                                            ActivityLevel.ACTIVE -> "週5-6回の運動"
-                                            ActivityLevel.VERY_ACTIVE -> "毎日激しい運動"
-                                        }
-                                    )
-                                },
+                                label = { Text(level.displayName) },
                                 selected = activityLevel == level,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
+                    Text(
+                        text = "※ 運動の消費カロリーはルーティンから自動加算されます",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 

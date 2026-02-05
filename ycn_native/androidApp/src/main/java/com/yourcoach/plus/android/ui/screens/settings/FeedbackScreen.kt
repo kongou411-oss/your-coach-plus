@@ -1,6 +1,9 @@
 package com.yourcoach.plus.android.ui.screens.settings
 
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,18 +11,46 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.functions.ktx.functions
 import com.google.firebase.ktx.Firebase
+import com.yourcoach.plus.android.ui.theme.AccentOrange
 import com.yourcoach.plus.android.ui.theme.Primary
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+
+/**
+ * フィードバックタイプ
+ */
+enum class FeedbackType(
+    val label: String,
+    val icon: ImageVector,
+    val placeholder: String,
+    val color: Color
+) {
+    FEATURE_REQUEST(
+        label = "機能リクエスト・要望",
+        icon = Icons.Default.Lightbulb,
+        placeholder = "こんな機能がほしい、こうなったら便利、など何でもお書きください。",
+        color = Color(0xFF4CAF50)
+    ),
+    BUG_REPORT(
+        label = "バグ・不具合報告",
+        icon = Icons.Default.BugReport,
+        placeholder = "どの画面で、どんな操作をしたときに、何が起きたかを教えてください。",
+        color = Color(0xFFEF5350)
+    )
+}
 
 /**
  * フィードバック画面
@@ -29,6 +60,7 @@ import kotlinx.coroutines.tasks.await
 fun FeedbackScreen(
     onNavigateBack: () -> Unit
 ) {
+    var selectedType by remember { mutableStateOf<FeedbackType?>(null) }
     var feedbackText by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
@@ -115,6 +147,31 @@ fun FeedbackScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // フィードバックタイプ選択
+            Text(
+                text = "種類を選択",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                FeedbackType.entries.forEach { type ->
+                    FeedbackTypeCard(
+                        type = type,
+                        isSelected = selectedType == type,
+                        onClick = { selectedType = type },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // フィードバック入力欄
             OutlinedTextField(
                 value = feedbackText,
@@ -123,9 +180,12 @@ fun FeedbackScreen(
                     .fillMaxWidth()
                     .height(200.dp),
                 placeholder = {
-                    Text("バグ報告、機能リクエスト、使いづらい点など、何でもお気軽にお書きください。")
+                    Text(
+                        selectedType?.placeholder
+                            ?: "上から種類を選択してください"
+                    )
                 },
-                enabled = !isSending,
+                enabled = !isSending && selectedType != null,
                 shape = RoundedCornerShape(12.dp)
             )
 
@@ -146,6 +206,7 @@ fun FeedbackScreen(
                 onClick = {
                     scope.launch {
                         sendFeedback(
+                            feedbackType = selectedType!!,
                             feedbackText = feedbackText,
                             onSending = { isSending = it },
                             onSuccess = { showSuccessDialog = true },
@@ -156,9 +217,9 @@ fun FeedbackScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = feedbackText.isNotBlank() && !isSending,
+                enabled = selectedType != null && feedbackText.isNotBlank() && !isSending,
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
             ) {
                 if (isSending) {
                     CircularProgressIndicator(
@@ -173,7 +234,7 @@ fun FeedbackScreen(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("フィードバックを送信")
+                    Text("送信", fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -190,9 +251,59 @@ fun FeedbackScreen(
 }
 
 /**
+ * フィードバックタイプ選択カード
+ */
+@Composable
+private fun FeedbackTypeCard(
+    type: FeedbackType,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val borderColor = if (isSelected) type.color else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val backgroundColor = if (isSelected) type.color.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
+
+    Card(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = type.icon,
+                contentDescription = null,
+                tint = if (isSelected) type.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = type.label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) type.color else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+/**
  * フィードバックを送信
  */
 private suspend fun sendFeedback(
+    feedbackType: FeedbackType,
     feedbackText: String,
     onSending: (Boolean) -> Unit,
     onSuccess: () -> Unit,
@@ -210,10 +321,16 @@ private suspend fun sendFeedback(
             return
         }
 
-        Log.d("Feedback", "Sending feedback: ${feedbackText.take(50)}...")
+        val typeLabel = when (feedbackType) {
+            FeedbackType.FEATURE_REQUEST -> "feature_request"
+            FeedbackType.BUG_REPORT -> "bug_report"
+        }
+
+        Log.d("Feedback", "Sending feedback [$typeLabel]: ${feedbackText.take(50)}...")
 
         val functions = Firebase.functions("asia-northeast2")
         val data = hashMapOf(
+            "type" to typeLabel,
             "feedback" to feedbackText,
             "userId" to userId,
             "userEmail" to (userEmail ?: ""),

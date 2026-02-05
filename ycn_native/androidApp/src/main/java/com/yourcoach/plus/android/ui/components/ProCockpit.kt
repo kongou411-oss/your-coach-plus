@@ -644,7 +644,7 @@ fun CommandFooter(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // 明日の準備ボタン
+            // 明日の指示書ボタン
             Button(
                 onClick = onGenerateQuestClick,
                 enabled = !isGeneratingQuest,
@@ -668,7 +668,7 @@ fun CommandFooter(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = "明日の準備",
+                        text = "明日の指示書",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

@@ -18,8 +18,11 @@ data class User(
     val lastLoginBonusDate: String? = null,  // ログインボーナス日付 (yyyy-MM-dd)
     // 法人プラン（所属）
     val b2b2cOrgId: String? = null,
-    val b2b2cOrgName: String? = null
+    val b2b2cOrgName: String? = null,
+    val organizationName: String? = null  // 新システム: 所属名
 ) {
+    // 所属による Premium 判定
+    val hasCorporatePremium: Boolean get() = !organizationName.isNullOrEmpty() || !b2b2cOrgId.isNullOrEmpty()
     // 合計クレジット
     val totalCredits: Int get() = freeCredits + paidCredits
 }
@@ -36,9 +39,6 @@ data class UserProfile(
     val targetWeight: Float? = null,
     val activityLevel: ActivityLevel? = null,
     val goal: FitnessGoal? = null,
-    // タンパク質係数（LBM × coefficient = 目標タンパク質g）
-    // 2.0〜3.0の範囲、筋トレユーザー向け
-    val proteinCoefficient: Float = 2.3f,
     // 旧style（後方互換性のため残す、使用しない）
     val style: String? = null,
     // 理想の体型
@@ -126,18 +126,11 @@ data class UserProfile(
     }
 
     /**
-     * TDEEを計算
+     * TDEEを計算（日常活動のみ、運動は別途加算）
      */
     fun calculateTDEE(): Float? {
         val bmr = calculateBMR() ?: return null
-        val multiplier = when (activityLevel) {
-            ActivityLevel.SEDENTARY -> 1.2f
-            ActivityLevel.LIGHT -> 1.375f
-            ActivityLevel.MODERATE -> 1.55f
-            ActivityLevel.ACTIVE -> 1.725f
-            ActivityLevel.VERY_ACTIVE -> 1.9f
-            null -> 1.55f
-        }
+        val multiplier = activityLevel?.multiplier ?: ActivityLevel.DESK_WORK.multiplier
         return bmr * multiplier
     }
 
@@ -205,13 +198,74 @@ enum class Gender {
     MALE, FEMALE, OTHER
 }
 
+/**
+ * 日常活動レベル（運動を除く）
+ */
 @Serializable
-enum class ActivityLevel {
-    SEDENTARY,      // ほとんど運動しない
-    LIGHT,          // 週1-2回の軽い運動
-    MODERATE,       // 週3-4回の運動
-    ACTIVE,         // 週5-6回の運動
-    VERY_ACTIVE     // 毎日激しい運動
+enum class ActivityLevel(val multiplier: Float, val displayName: String) {
+    DESK_WORK(1.2f, "デスクワーク"),      // 座り仕事中心
+    STANDING_WORK(1.4f, "立ち仕事"),      // 接客・軽作業など
+    PHYSICAL_LABOR(1.6f, "肉体労働");     // 建設・運搬など
+
+    companion object {
+        // 旧値からの変換（後方互換性）
+        fun fromLegacy(legacy: String?): ActivityLevel = when (legacy) {
+            "SEDENTARY", "LIGHT" -> DESK_WORK
+            "MODERATE" -> STANDING_WORK
+            "ACTIVE", "VERY_ACTIVE" -> PHYSICAL_LABOR
+            else -> DESK_WORK
+        }
+    }
+}
+
+/**
+ * 部位別トレーニング消費カロリー加算値
+ */
+object TrainingCalorieBonus {
+    // 単一部位
+    const val LEGS = 500           // 脚（大腿四頭筋・ハム・臀筋）
+    const val BACK = 450           // 背中（広背筋・脊柱起立筋）
+    const val CHEST = 400          // 胸（大胸筋）
+    const val SHOULDERS = 350      // 肩（三角筋）
+    const val ARMS = 300           // 腕（二頭・三頭）
+    const val ABS = 250            // 腹筋・体幹
+
+    // 複合部位
+    const val FULL_BODY = 500      // 全身
+    const val LOWER_BODY = 500     // 下半身
+    const val UPPER_BODY = 400     // 上半身
+    const val PUSH = 400           // プッシュ（胸+肩+三頭）
+    const val PULL = 450           // プル（背中+二頭）
+    const val CHEST_TRICEPS = 400  // 胸・三頭
+    const val BACK_BICEPS = 450    // 背中・二頭
+    const val SHOULDERS_ARMS = 350 // 肩・腕
+
+    // 休養日
+    const val REST = 0
+
+    /**
+     * splitTypeから加算値を取得
+     */
+    fun fromSplitType(splitType: String?, isRestDay: Boolean): Int {
+        if (isRestDay) return REST
+        return when (splitType) {
+            "脚" -> LEGS
+            "背中" -> BACK
+            "胸" -> CHEST
+            "肩" -> SHOULDERS
+            "腕" -> ARMS
+            "腹筋・体幹" -> ABS
+            "全身" -> FULL_BODY
+            "下半身" -> LOWER_BODY
+            "上半身" -> UPPER_BODY
+            "プッシュ" -> PUSH
+            "プル" -> PULL
+            "胸・三頭" -> CHEST_TRICEPS
+            "背中・二頭" -> BACK_BICEPS
+            "肩・腕" -> SHOULDERS_ARMS
+            else -> UPPER_BODY  // 不明な場合はデフォルト
+        }
+    }
 }
 
 @Serializable

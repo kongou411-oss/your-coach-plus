@@ -100,6 +100,58 @@
             transform: none;
         }
 
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider span {
+            padding: 0 16px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 14px;
+            background: white;
+            color: #333;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn-google:hover {
+            border-color: #4285f4;
+            background: #f8f9fa;
+        }
+
+        .btn-google:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-google img {
+            width: 20px;
+            height: 20px;
+        }
+
         .error-message {
             background: #fee;
             color: #c33;
@@ -145,6 +197,15 @@
                 ログイン
             </button>
         </form>
+
+        <div class="divider">
+            <span>または</span>
+        </div>
+
+        <button type="button" class="btn-google" id="google-login-btn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+            Googleでログイン
+        </button>
     </div>
 
     <!-- Firebase SDK -->
@@ -164,6 +225,7 @@
 
         const loginForm = document.getElementById('login-form');
         const loginBtn = document.getElementById('login-btn');
+        const googleLoginBtn = document.getElementById('google-login-btn');
         const errorMessage = document.getElementById('error-message');
 
         function showError(message) {
@@ -175,6 +237,45 @@
             errorMessage.classList.remove('show');
         }
 
+        // Googleログイン
+        googleLoginBtn.addEventListener('click', async () => {
+            hideError();
+            googleLoginBtn.disabled = true;
+            googleLoginBtn.textContent = 'ログイン中...';
+
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+
+                // 管理者メールチェック
+                if (!ADMIN_EMAILS.includes(user.email)) {
+                    await auth.signOut();
+                    showError('管理者権限がありません: ' + user.email);
+                    googleLoginBtn.disabled = false;
+                    googleLoginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">Googleでログイン';
+                    return;
+                }
+
+                // ログイン成功 → 管理画面へリダイレクト
+                window.location.href = '/admin.html';
+            } catch (error) {
+                console.error('Google login error:', error);
+
+                let errorMsg = 'Googleログインに失敗しました';
+                if (error.code === 'auth/popup-closed-by-user') {
+                    errorMsg = 'ログインがキャンセルされました';
+                } else if (error.code === 'auth/popup-blocked') {
+                    errorMsg = 'ポップアップがブロックされました。ポップアップを許可してください';
+                }
+
+                showError(errorMsg);
+                googleLoginBtn.disabled = false;
+                googleLoginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">Googleでログイン';
+            }
+        });
+
+        // メール/パスワードログイン
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             hideError();

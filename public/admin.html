@@ -280,17 +280,11 @@
     <div class="container">
         <!-- タブ切り替え -->
         <div class="flex flex-wrap gap-2 mb-6">
-            <button id="tab-giftcode" onclick="switchTab('giftcode')" class="px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white">
-                🎁 ギフトコード
-            </button>
-            <button id="tab-b2b2c" onclick="switchTab('b2b2c')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
-                🏢 B2B2C企業
+            <button id="tab-affiliation" onclick="switchTab('affiliation')" class="px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white">
+                🏢 所属名管理
             </button>
             <button id="tab-users" onclick="switchTab('users')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 👥 ユーザー管理
-            </button>
-            <button id="tab-referrals" onclick="switchTab('referrals')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
-                🤝 紹介コード
             </button>
             <button id="tab-comy" onclick="switchTab('comy')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 💬 COMY投稿
@@ -303,91 +297,130 @@
             </button>
         </div>
 
-        <!-- ギフトコード管理セクション -->
-        <div id="giftcode-section">
-            <!-- 新規コード作成 -->
+        <!-- 所属名管理セクション -->
+        <div id="affiliation-section">
+            <!-- 統計情報 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>法人契約数</h3>
+                    <div class="value" id="total-contracts">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>所属名登録数</h3>
+                    <div class="value" id="total-affiliations">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>所属名利用ユーザー数</h3>
+                    <div class="value" id="affiliation-users">-</div>
+                </div>
+            </div>
+
+            <!-- 法人契約を手動作成 -->
             <div class="section mb-6">
                 <div class="section-header">
-                    <h2>➕ 新規ギフトコード作成</h2>
+                    <h2>🏢 法人契約を作成</h2>
                 </div>
                 <div class="section-content">
                     <div class="grid md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">コード</label>
-                            <input type="text" id="new-code"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 uppercase font-mono"
-                                placeholder="例: FAMILYPLUS2025"
-                                oninput="this.value = this.value.toUpperCase()">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">企業名（所属名）*</label>
+                            <input type="text" id="contract-company-name"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="例: 株式会社ABC">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">メモ（任意）</label>
-                            <input type="text" id="new-note"
+                            <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス*</label>
+                            <input type="email" id="contract-email"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="例: 家族配布用">
+                                placeholder="例: info@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">プラン*</label>
+                            <select id="contract-plan"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <option value="standard">スタンダード（10名）</option>
+                                <option value="pro">プロ（30名）</option>
+                                <option value="elite">エリート（100名）</option>
+                                <option value="custom">カスタム</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ライセンス数</label>
+                            <input type="number" id="contract-licenses"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="カスタムの場合のみ入力" min="1">
                         </div>
                     </div>
-                    <button onclick="createGiftCode()" id="create-btn" class="btn-primary">
-                        ✨ コードを作成
+                    <div class="flex items-center gap-4 mb-4">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="contract-send-email" checked class="w-4 h-4">
+                            <span class="text-sm text-gray-700">確認メールを送信する</span>
+                        </label>
+                    </div>
+                    <button onclick="createContract()" id="create-contract-btn" class="btn-primary">
+                        ✨ 契約を作成
                     </button>
                 </div>
             </div>
 
-            <!-- ギフトコード一覧 -->
-            <div class="section">
+            <!-- 法人契約一覧 -->
+            <div class="section mb-6">
                 <div class="section-header">
-                    <h2>📋 ギフトコード一覧</h2>
-                    <button onclick="loadGiftCodes()" class="btn-secondary">🔄 更新</button>
+                    <h2>📋 法人契約一覧</h2>
+                    <button onclick="loadContracts()" class="btn-secondary">🔄 更新</button>
                 </div>
                 <div class="section-content">
-                    <div id="giftcode-loading" class="loading">コードを読み込んでいます...</div>
-                    <div id="giftcode-list" class="space-y-4" style="display:none;"></div>
-                    <div id="giftcode-empty" class="empty-state" style="display:none;">
+                    <div id="contracts-loading" class="loading">データを読み込んでいます...</div>
+                    <div id="contracts-list" style="display:none;"></div>
+                    <div id="contracts-empty" class="empty-state" style="display:none;">
                         <div class="empty-state-icon">📭</div>
-                        <p>まだギフトコードがありません</p>
+                        <p>法人契約はありません</p>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- B2B2Cセクション（既存） -->
-        <div id="b2b2c-section" style="display:none;">
-            <!-- 統計情報 -->
-            <div class="stats-grid">
-            <div class="stat-card">
-                <h3>契約企業数</h3>
-                <div class="value" id="total-orgs">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>総ライセンス数</h3>
-                <div class="value" id="total-licenses">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>使用中ライセンス</h3>
-                <div class="value" id="used-licenses">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>月間収益</h3>
-                <div class="value" id="monthly-revenue">-</div>
-            </div>
-        </div>
-
-        <!-- 企業一覧 -->
-        <div class="section">
-            <div class="section-header">
-                <h2>契約企業一覧</h2>
-            </div>
-            <div class="section-content">
-                <div id="loading" class="loading">
-                    企業情報を読み込んでいます...
+            <!-- ユーザーに所属名を設定 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>➕ ユーザーに所属名を設定</h2>
                 </div>
-                <div id="org-list" class="org-list" style="display:none;"></div>
-                <div id="empty-state" class="empty-state" style="display:none;">
-                    <div class="empty-state-icon">📭</div>
-                    <p>まだ契約企業がありません</p>
+                <div class="section-content">
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ユーザーID または メールアドレス</label>
+                            <input type="text" id="affiliation-user-id"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="例: user123 または user@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">所属名</label>
+                            <input type="text" id="affiliation-org-name"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="例: 株式会社ABC">
+                        </div>
+                    </div>
+                    <button onclick="setUserAffiliation()" id="set-affiliation-btn" class="btn-primary">
+                        ✨ 所属名を設定
+                    </button>
                 </div>
             </div>
-        </div>
-        </div><!-- B2B2Cセクション終了 -->
+
+            <!-- 所属名別ユーザー一覧 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>📋 所属名別ユーザー一覧</h2>
+                    <button onclick="loadAffiliations()" class="btn-secondary">🔄 更新</button>
+                </div>
+                <div class="section-content">
+                    <div id="affiliation-loading" class="loading">データを読み込んでいます...</div>
+                    <div id="affiliation-list" class="space-y-4" style="display:none;"></div>
+                    <div id="affiliation-empty" class="empty-state" style="display:none;">
+                        <div class="empty-state-icon">📭</div>
+                        <p>所属名が設定されたユーザーはいません</p>
+                    </div>
+                </div>
+            </div>
+        </div><!-- 所属名管理セクション終了 -->
 
         <!-- ユーザー管理セクション -->
         <div id="users-section" style="display:none;">
@@ -402,12 +435,12 @@
                     <div class="value" id="premium-users">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>B2B/ギフトコード利用</h3>
-                    <div class="value" id="code-users">-</div>
+                    <h3>所属名利用</h3>
+                    <div class="value" id="org-users">-</div>
                 </div>
                 <div class="stat-card">
-                    <h3>トライアル中</h3>
-                    <div class="value" id="trial-users">-</div>
+                    <h3>Google Play課金</h3>
+                    <div class="value" id="billing-users">-</div>
                 </div>
             </div>
 
@@ -420,10 +453,8 @@
                             <select id="user-filter" onchange="loadUsers()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                                 <option value="all">全ユーザー</option>
                                 <option value="premium">Premium会員のみ</option>
-                                <option value="b2b">B2Bコード利用者</option>
-                                <option value="gift">ギフトコード利用者</option>
-                                <option value="stripe">Stripe課金者</option>
-                                <option value="trial">トライアル中</option>
+                                <option value="affiliation">所属名利用者</option>
+                                <option value="billing">Google Play課金者</option>
                             </select>
                         </label>
                         <button onclick="loadUsers()" class="btn-secondary">🔄 更新</button>
@@ -464,69 +495,6 @@
             </div>
         </div><!-- ユーザー管理セクション終了 -->
 
-        <!-- 紹介コードセクション -->
-        <div id="referrals-section" style="display:none;">
-            <!-- 統計 -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>総紹介数</h3>
-                    <div class="value" id="total-referrals">-</div>
-                </div>
-                <div class="stat-card">
-                    <h3>紹介者数（コード発行）</h3>
-                    <div class="value" id="referrer-count">-</div>
-                </div>
-                <div class="stat-card">
-                    <h3>被紹介者数</h3>
-                    <div class="value" id="referee-count">-</div>
-                </div>
-                <div class="stat-card">
-                    <h3>付与クレジット合計</h3>
-                    <div class="value" id="total-referral-credits">-</div>
-                </div>
-            </div>
-
-            <!-- 紹介コード一覧 -->
-            <div class="section">
-                <div class="section-header">
-                    <h2>🤝 紹介コード利用状況</h2>
-                    <button onclick="loadReferrals()" class="btn-secondary">🔄 更新</button>
-                </div>
-                <div class="section-content">
-                    <div id="referrals-loading" class="loading">紹介データを読み込んでいます...</div>
-                    <div id="referrals-list" style="display:none;">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left font-medium text-gray-600">紹介者</th>
-                                        <th class="px-4 py-3 text-left font-medium text-gray-600">紹介コード</th>
-                                        <th class="px-4 py-3 text-left font-medium text-gray-600">被紹介者</th>
-                                        <th class="px-4 py-3 text-left font-medium text-gray-600">適用日時</th>
-                                        <th class="px-4 py-3 text-left font-medium text-gray-600">ステータス</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="referrals-tbody" class="divide-y divide-gray-200"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div id="referrals-empty" class="empty-state" style="display:none;">
-                        <div class="empty-state-icon">🤝</div>
-                        <p>まだ紹介コードが使用されていません</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 紹介者別詳細 -->
-            <div class="section">
-                <div class="section-header">
-                    <h2>👤 紹介者別サマリー</h2>
-                </div>
-                <div class="section-content">
-                    <div id="referrer-summary" class="space-y-4"></div>
-                </div>
-            </div>
-        </div><!-- 紹介コードセクション終了 -->
 
         <!-- COMYセクション -->
         <div id="comy-section" style="display:none;">
@@ -820,13 +788,12 @@
             }
 
             // データ読み込み
-            await loadGiftCodes();
-            await loadOrganizations();
+            await loadAffiliations();
         });
 
         // タブ切り替え
         function switchTab(tab) {
-            const sections = ['giftcode', 'b2b2c', 'users', 'referrals', 'comy', 'analytics', 'pgbase'];
+            const sections = ['affiliation', 'users', 'comy', 'analytics', 'pgbase'];
             const activeClass = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
             const inactiveClass = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
 
@@ -838,8 +805,8 @@
             });
 
             // データ読み込み
+            if (tab === 'affiliation') { loadContracts(); loadAffiliations(); }
             if (tab === 'users') loadUsers();
-            if (tab === 'referrals') loadReferrals();
             if (tab === 'comy') loadCommunityPosts();
             if (tab === 'analytics') loadAnalytics();
             if (tab === 'pgbase') loadPgBaseArticles();
@@ -852,174 +819,6 @@
             });
         }
 
-        // 企業一覧読み込み
-        async function loadOrganizations() {
-            try {
-                const snapshot = await db.collection('b2b2cOrganizations').get();
-
-                const loading = document.getElementById('loading');
-                const orgList = document.getElementById('org-list');
-                const emptyState = document.getElementById('empty-state');
-
-                loading.style.display = 'none';
-
-                if (snapshot.empty) {
-                    emptyState.style.display = 'block';
-                    updateStats([], 0, 0);
-                    return;
-                }
-
-                orgList.style.display = 'flex';
-
-                const organizations = [];
-                let totalLicenses = 0;
-                let usedLicenses = 0;
-
-                snapshot.forEach(doc => {
-                    const org = { id: doc.id, ...doc.data() };
-                    organizations.push(org);
-
-                    if (org.licenses !== -1) {
-                        totalLicenses += org.licenses;
-                    }
-                    usedLicenses += org.users ? org.users.length : 0;
-                });
-
-                // 各企業の使用者を取得
-                for (const org of organizations) {
-                    console.log(`[B2B2C] Searching users for org ${org.id} (${org.name})`);
-                    const usersSnapshot = await db.collection('users')
-                        .where('b2b2cOrgId', '==', org.id)
-                        .get();
-                    org.users = [];
-                    console.log(`[B2B2C] Found ${usersSnapshot.size} users`);
-                    usersSnapshot.forEach(userDoc => {
-                        const userData = userDoc.data();
-                        org.users.push({
-                            id: userDoc.id,
-                            email: userData.email || '不明',
-                            displayName: userData.displayName || userData.nickname || '名前未設定'
-                        });
-                    });
-                }
-
-                // 統計情報更新
-                updateStats(organizations, totalLicenses, usedLicenses);
-
-                // 企業カード表示
-                orgList.innerHTML = organizations.map(org => createOrgCard(org)).join('');
-
-            } catch (error) {
-                console.error('Error loading organizations:', error);
-                document.getElementById('loading').innerHTML =
-                    '<p style="color: red;">エラーが発生しました: ' + error.message + '</p>';
-            }
-        }
-
-        // 統計情報更新
-        function updateStats(organizations, totalLicenses, usedLicenses) {
-            document.getElementById('total-orgs').textContent = organizations.length;
-            document.getElementById('total-licenses').textContent =
-                totalLicenses > 0 ? totalLicenses : '無制限含む';
-            document.getElementById('used-licenses').textContent = usedLicenses;
-
-            // 月間収益計算（年間プランを12で割る）
-            const monthlyRevenue = organizations.reduce((sum, org) => {
-                return sum + (org.price || 0) / 12;
-            }, 0);
-            document.getElementById('monthly-revenue').textContent =
-                '¥' + Math.round(monthlyRevenue).toLocaleString();
-        }
-
-        // 企業カード生成
-        function createOrgCard(org) {
-            const usagePercent = org.licenses === -1
-                ? 0
-                : Math.round(((org.users ? org.users.length : 0) / org.licenses) * 100);
-
-            const planName = getPlanName(org.planId);
-            const statusClass = org.status === 'active' ? 'active' : 'cancelled';
-            const statusText = org.status === 'active' ? '✅ 有効' : '❌ 無効';
-
-            return `
-                <div class="org-card">
-                    <div class="org-header">
-                        <div>
-                            <div class="org-name">${org.name || '企業名未設定'}</div>
-                            <div class="org-email">${org.email || 'メール未設定'}</div>
-                        </div>
-                        <div class="org-status ${statusClass}">${statusText}</div>
-                    </div>
-
-                    <div class="org-info">
-                        <div class="org-info-item">
-                            <div class="org-info-label">プラン</div>
-                            <div class="org-info-value">${planName}</div>
-                        </div>
-                        <div class="org-info-item">
-                            <div class="org-info-label">年間料金</div>
-                            <div class="org-info-value">¥${(org.price || 0).toLocaleString()}</div>
-                        </div>
-                        <div class="org-info-item">
-                            <div class="org-info-label">ライセンス使用状況</div>
-                            <div class="org-info-value">
-                                ${org.users ? org.users.length : 0} / ${org.licenses === -1 ? '無制限' : org.licenses}
-                                ${org.licenses !== -1 ? `(${usagePercent}%)` : ''}
-                            </div>
-                            ${org.licenses !== -1 ? `
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${usagePercent}%"></div>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="org-info-item">
-                            <div class="org-info-label">有効期限</div>
-                            <div class="org-info-value">
-                                ${org.validUntil ? formatDate(org.validUntil.toDate()) : '未設定'}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="org-info-item">
-                        <div class="org-info-label">アクセスコード</div>
-                        <div class="code-display">${org.accessCode || 'コード未発行'}</div>
-                    </div>
-
-                    ${org.users && org.users.length > 0 ? `
-                        <details class="mt-4">
-                            <summary class="text-sm text-blue-600 cursor-pointer hover:underline font-medium">
-                                👥 使用者一覧 (${org.users.length}人)
-                            </summary>
-                            <div class="mt-2 bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-200">
-                                ${org.users.map((user, i) => `
-                                    <div class="text-sm flex items-center gap-2 ${i > 0 ? 'pt-2 border-t border-gray-100' : ''}">
-                                        <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">${i + 1}</span>
-                                        <div>
-                                            <span class="text-gray-800 font-medium">${user.displayName}</span>
-                                            <span class="text-gray-400 text-xs ml-2">${user.email}</span>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </details>
-                    ` : '<p class="text-sm text-gray-400 mt-4">👥 使用者なし</p>'}
-                </div>
-            `;
-        }
-
-        // プラン名取得
-        function getPlanName(planId) {
-            const planNames = {
-                'beginner': 'ビギナープラン（10人）',
-                'pro': 'プロプラン（30人）',
-                'max': 'MAXプラン（無制限）',
-                'custom_beginner': 'カスタムビギナー（10人・30%OFF）',
-                'custom_pro': 'カスタムプロ（30人・30%OFF）',
-                'custom_max': 'カスタムMAX（無制限・30%OFF）'
-            };
-            return planNames[planId] || planId;
-        }
-
         // 日付フォーマット
         function formatDate(date) {
             return date.toLocaleDateString('ja-JP', {
@@ -1029,163 +828,299 @@
             });
         }
 
-        // ===== ギフトコード管理機能 =====
+        // ===== 所属名管理機能 =====
 
-        // ギフトコード一覧読み込み
-        async function loadGiftCodes() {
-            if (!adminPassword) {
-                document.getElementById('giftcode-loading').innerHTML = '<p style="color: orange;">パスワードが設定されていません</p>';
+        // 法人契約作成
+        async function createContract() {
+            const companyName = document.getElementById('contract-company-name').value.trim();
+            const email = document.getElementById('contract-email').value.trim();
+            const planId = document.getElementById('contract-plan').value;
+            const customLicenses = document.getElementById('contract-licenses').value;
+            const sendEmail = document.getElementById('contract-send-email').checked;
+
+            if (!companyName || !email) {
+                alert('企業名とメールアドレスは必須です');
                 return;
             }
 
+            // プランに応じたライセンス数
+            const planLicenses = {
+                'standard': 10,
+                'pro': 30,
+                'elite': 100,
+                'custom': parseInt(customLicenses) || 10
+            };
+            const licenses = planLicenses[planId];
+
+            const btn = document.getElementById('create-contract-btn');
+            btn.disabled = true;
+            btn.textContent = '作成中...';
+
             try {
-                const getGiftCodes = functions.httpsCallable('getGiftCodes');
-                const result = await getGiftCodes({ adminPassword });
+                const createContractFn = functions.httpsCallable('adminCreateContract');
+                const result = await createContractFn({
+                    companyName,
+                    email,
+                    planId,
+                    licenses,
+                    sendEmail
+                });
 
-                const loading = document.getElementById('giftcode-loading');
-                const list = document.getElementById('giftcode-list');
-                const empty = document.getElementById('giftcode-empty');
-
-                loading.style.display = 'none';
-
-                if (!result.data.success || result.data.codes.length === 0) {
-                    empty.style.display = 'block';
-                    list.style.display = 'none';
-                    return;
+                if (result.data.success) {
+                    alert('契約を作成しました: ' + companyName);
+                    document.getElementById('contract-company-name').value = '';
+                    document.getElementById('contract-email').value = '';
+                    document.getElementById('contract-plan').value = 'standard';
+                    document.getElementById('contract-licenses').value = '';
+                    loadContracts();
                 }
-
-                empty.style.display = 'none';
-                list.style.display = 'block';
-                console.log('[GiftCodes] Result:', result.data.codes);
-                renderGiftCodes(result.data.codes);
-
             } catch (error) {
-                console.error('Load gift codes error:', error);
-                document.getElementById('giftcode-loading').innerHTML =
-                    '<p style="color: red;">エラー: ' + (error.message || 'パスワードが正しくない可能性があります') + '</p>';
+                console.error('Create contract error:', error);
+                alert('エラー: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '✨ 契約を作成';
             }
         }
 
-        // ギフトコード一覧表示
-        function renderGiftCodes(codes) {
-            const container = document.getElementById('giftcode-list');
-            container.innerHTML = codes.map(code => `
-                <div class="border-2 rounded-xl p-4 transition-all ${code.isActive ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-100'}">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono font-bold text-xl ${code.isActive ? 'text-green-700' : 'text-gray-400'}">${code.code}</span>
-                            <span class="px-2 py-1 text-xs rounded-full font-medium ${code.isActive ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600'}">
-                                ${code.isActive ? '✅ 有効' : '❌ 無効'}
-                            </span>
+        // 法人契約一覧読み込み
+        async function loadContracts() {
+            const loading = document.getElementById('contracts-loading');
+            const list = document.getElementById('contracts-list');
+            const empty = document.getElementById('contracts-empty');
+
+            loading.style.display = 'block';
+            list.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                const snapshot = await db.collection('corporateContracts')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                document.getElementById('total-contracts').textContent = snapshot.size;
+
+                loading.style.display = 'none';
+
+                if (snapshot.empty) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                list.style.display = 'block';
+                const contracts = [];
+                snapshot.forEach(doc => {
+                    contracts.push({ id: doc.id, ...doc.data() });
+                });
+                renderContracts(contracts);
+
+            } catch (error) {
+                console.error('Load contracts error:', error);
+                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
+            }
+        }
+
+        // 法人契約一覧表示
+        function renderContracts(contracts) {
+            const container = document.getElementById('contracts-list');
+            container.innerHTML = `
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left">所属名</th>
+                            <th class="px-4 py-2 text-left">メール</th>
+                            <th class="px-4 py-2 text-center">プラン</th>
+                            <th class="px-4 py-2 text-center">ライセンス</th>
+                            <th class="px-4 py-2 text-center">利用中</th>
+                            <th class="px-4 py-2 text-center">有効期限</th>
+                            <th class="px-4 py-2 text-center">状態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${contracts.map(c => {
+                            const validUntil = c.validUntil?.toDate ? c.validUntil.toDate().toLocaleDateString('ja-JP') : '-';
+                            const isExpired = c.validUntil?.toDate && c.validUntil.toDate() < new Date();
+                            const statusClass = c.status === 'active' && !isExpired ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                            const statusText = c.status === 'active' && !isExpired ? '有効' : '無効';
+                            return `
+                                <tr class="border-t hover:bg-gray-50">
+                                    <td class="px-4 py-3 font-medium">${c.organizationName || '-'}</td>
+                                    <td class="px-4 py-3">${c.email || '-'}</td>
+                                    <td class="px-4 py-3 text-center">${c.planId || '-'}</td>
+                                    <td class="px-4 py-3 text-center">${c.licenses || '-'}</td>
+                                    <td class="px-4 py-3 text-center">${(c.registeredUsers || []).length}</td>
+                                    <td class="px-4 py-3 text-center">${validUntil}</td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusText}</span>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // 所属名別ユーザー一覧読み込み
+        async function loadAffiliations() {
+            const loading = document.getElementById('affiliation-loading');
+            const list = document.getElementById('affiliation-list');
+            const empty = document.getElementById('affiliation-empty');
+
+            loading.style.display = 'block';
+            list.style.display = 'none';
+            empty.style.display = 'none';
+
+            try {
+                // organizationNameが設定されているユーザーを取得
+                const snapshot = await db.collection('users')
+                    .where('organizationName', '!=', null)
+                    .get();
+
+                const affiliationMap = {};
+                let totalUsers = 0;
+
+                snapshot.forEach(doc => {
+                    const user = { id: doc.id, ...doc.data() };
+                    const orgName = user.organizationName;
+                    if (orgName && orgName.trim()) {
+                        if (!affiliationMap[orgName]) {
+                            affiliationMap[orgName] = [];
+                        }
+                        affiliationMap[orgName].push(user);
+                        totalUsers++;
+                    }
+                });
+
+                // 統計更新
+                document.getElementById('total-affiliations').textContent = Object.keys(affiliationMap).length;
+                document.getElementById('affiliation-users').textContent = totalUsers;
+
+                loading.style.display = 'none';
+
+                if (Object.keys(affiliationMap).length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                list.style.display = 'block';
+                renderAffiliations(affiliationMap);
+
+            } catch (error) {
+                console.error('Load affiliations error:', error);
+                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
+            }
+        }
+
+        // 所属名別ユーザー一覧表示
+        function renderAffiliations(affiliationMap) {
+            const container = document.getElementById('affiliation-list');
+            const sortedOrgs = Object.keys(affiliationMap).sort();
+
+            container.innerHTML = sortedOrgs.map(orgName => {
+                const users = affiliationMap[orgName];
+                return `
+                    <div class="border-2 rounded-xl p-4 border-blue-300 bg-blue-50">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-3">
+                                <span class="font-bold text-xl text-blue-700">🏢 ${orgName}</span>
+                                <span class="px-2 py-1 text-xs rounded-full font-medium bg-blue-200 text-blue-800">
+                                    ${users.length}人
+                                </span>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="toggleGiftCode('${code.code}', ${!code.isActive})"
-                                class="px-3 py-1.5 text-sm rounded-lg font-medium transition ${code.isActive ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}">
-                                ${code.isActive ? '🔒 無効化' : '🔓 有効化'}
-                            </button>
-                            <button onclick="deleteGiftCode('${code.code}')"
-                                class="px-3 py-1.5 text-sm rounded-lg font-medium bg-red-100 text-red-700 hover:bg-red-200 transition">
-                                🗑️ 削除
-                            </button>
-                        </div>
-                    </div>
 
-                    ${code.note ? `<p class="text-sm text-gray-600 mb-3">📝 ${code.note}</p>` : ''}
-
-                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                        <span>👥 使用者: <strong class="text-gray-800">${code.usedCount}人</strong></span>
-                        ${code.createdAt ? `<span>📅 作成: ${new Date(code.createdAt).toLocaleDateString('ja-JP')}</span>` : ''}
-                        ${code.lastUsedAt ? `<span>🕐 最終使用: ${new Date(code.lastUsedAt).toLocaleDateString('ja-JP')}</span>` : ''}
-                    </div>
-
-                    ${code.usedByDetails && code.usedByDetails.length > 0 ? `
                         <details class="mt-3" open>
-                            <summary class="text-sm text-purple-600 cursor-pointer hover:underline font-medium">
-                                👤 使用者詳細 (${code.usedByDetails.length}人)
+                            <summary class="text-sm text-blue-600 cursor-pointer hover:underline font-medium">
+                                👤 所属ユーザー一覧
                             </summary>
                             <div class="mt-2 bg-white rounded-lg p-3 space-y-2 border border-gray-200">
-                                ${code.usedByDetails.map((user, i) => `
-                                    <div class="text-sm flex items-center gap-2 ${i > 0 ? 'pt-2 border-t border-gray-100' : ''}">
-                                        <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">${i + 1}</span>
-                                        <div>
-                                            <span class="text-gray-800 font-medium">${user.displayName || '名前未設定'}</span>
-                                            <span class="text-gray-400 text-xs ml-2">${user.email || 'メール未取得'}</span>
+                                ${users.map((user, i) => `
+                                    <div class="text-sm flex items-center justify-between ${i > 0 ? 'pt-2 border-t border-gray-100' : ''}">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">${i + 1}</span>
+                                            <div>
+                                                <span class="text-gray-800 font-medium">${user.displayName || user.nickname || '名前未設定'}</span>
+                                                <span class="text-gray-400 text-xs ml-2">${user.email || ''}</span>
+                                            </div>
                                         </div>
+                                        <button onclick="removeUserAffiliation('${user.id}', '${orgName}')"
+                                            class="px-2 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200 transition">
+                                            解除
+                                        </button>
                                     </div>
                                 `).join('')}
                             </div>
                         </details>
-                    ` : `<p class="text-sm text-gray-400 mt-3">👤 使用者詳細: なし（usedCount: ${code.usedCount}）</p>`}
-                </div>
-            `).join('');
+                    </div>
+                `;
+            }).join('');
         }
 
-        // ギフトコード作成
-        async function createGiftCode() {
-            const code = document.getElementById('new-code').value.trim().toUpperCase();
-            const note = document.getElementById('new-note').value.trim();
-            const btn = document.getElementById('create-btn');
+        // ユーザーに所属名を設定
+        async function setUserAffiliation() {
+            const userIdOrEmail = document.getElementById('affiliation-user-id').value.trim();
+            const orgName = document.getElementById('affiliation-org-name').value.trim();
+            const btn = document.getElementById('set-affiliation-btn');
 
-            if (!code) {
-                alert('コードを入力してください');
+            if (!userIdOrEmail) {
+                alert('ユーザーIDまたはメールアドレスを入力してください');
                 return;
             }
-            if (code.length < 3) {
-                alert('コードは3文字以上で入力してください');
+            if (!orgName) {
+                alert('所属名を入力してください');
                 return;
             }
 
             btn.disabled = true;
-            btn.textContent = '⏳ 作成中...';
+            btn.textContent = '⏳ 設定中...';
 
             try {
-                const createGiftCodeFn = functions.httpsCallable('createGiftCode');
-                const result = await createGiftCodeFn({ code, note, adminPassword });
-
-                if (result.data.success) {
-                    alert('✅ コードを作成しました\n\nコード: ' + code);
-                    document.getElementById('new-code').value = '';
-                    document.getElementById('new-note').value = '';
-                    await loadGiftCodes();
+                // メールアドレスかIDかを判定
+                let userId = userIdOrEmail;
+                if (userIdOrEmail.includes('@')) {
+                    // メールアドレスからユーザーを検索
+                    const snapshot = await db.collection('users')
+                        .where('email', '==', userIdOrEmail)
+                        .limit(1)
+                        .get();
+                    if (snapshot.empty) {
+                        throw new Error('該当するユーザーが見つかりません: ' + userIdOrEmail);
+                    }
+                    userId = snapshot.docs[0].id;
                 }
+
+                // ユーザーのorganizationNameを更新
+                await db.collection('users').doc(userId).update({
+                    organizationName: orgName
+                });
+
+                alert('✅ 所属名を設定しました\n\nユーザー: ' + userIdOrEmail + '\n所属名: ' + orgName);
+                document.getElementById('affiliation-user-id').value = '';
+                document.getElementById('affiliation-org-name').value = '';
+                await loadAffiliations();
+
             } catch (error) {
-                console.error('Create code error:', error);
-                alert('❌ ' + (error.message || '作成に失敗しました'));
+                console.error('Set affiliation error:', error);
+                alert('❌ ' + (error.message || '設定に失敗しました'));
             } finally {
                 btn.disabled = false;
-                btn.textContent = '✨ コードを作成';
+                btn.textContent = '✨ 所属名を設定';
             }
         }
 
-        // ギフトコード有効/無効切り替え
-        async function toggleGiftCode(code, isActive) {
-            if (!confirm(`コード「${code}」を${isActive ? '有効化' : '無効化'}しますか？`)) return;
+        // ユーザーの所属名を解除
+        async function removeUserAffiliation(userId, orgName) {
+            if (!confirm(`このユーザーの所属名「${orgName}」を解除しますか？\n\nプレミアム機能が使えなくなります。`)) return;
 
             try {
-                const toggleGiftCodeFn = functions.httpsCallable('toggleGiftCode');
-                const result = await toggleGiftCodeFn({ code, isActive, adminPassword });
-                if (result.data.success) {
-                    await loadGiftCodes();
-                }
+                await db.collection('users').doc(userId).update({
+                    organizationName: firebase.firestore.FieldValue.delete()
+                });
+                await loadAffiliations();
             } catch (error) {
-                console.error('Toggle code error:', error);
-                alert('❌ 更新に失敗しました: ' + (error.message || error));
-            }
-        }
-
-        // ギフトコード削除
-        async function deleteGiftCode(code) {
-            if (!confirm(`⚠️ コード「${code}」を削除しますか？\n\nこの操作は取り消せません。`)) return;
-
-            try {
-                const deleteGiftCodeFn = functions.httpsCallable('deleteGiftCode');
-                const result = await deleteGiftCodeFn({ code, adminPassword });
-                if (result.data.success) {
-                    await loadGiftCodes();
-                }
-            } catch (error) {
-                console.error('Delete code error:', error);
-                alert('❌ 削除に失敗しました: ' + (error.message || error));
+                console.error('Remove affiliation error:', error);
+                alert('❌ 解除に失敗しました: ' + (error.message || error));
             }
         }
 
@@ -1224,23 +1159,21 @@
                 allUsers = [];
                 const now = new Date();
                 let premiumCount = 0;
-                let codeCount = 0;
-                let trialCount = 0;
+                let orgCount = 0;
+                let billingCount = 0;
 
                 result.data.users.forEach(user => {
-                    // Premium判定
-                    const isPremium = user.subscription?.status === 'active' ||
-                                      user.b2b2cOrgId ||
-                                      user.subscription?.giftCodeActive === true;
+                    // Premium判定（所属名があるか、isPremiumがtrue）
+                    const hasOrganization = user.organizationName && user.organizationName.trim();
+                    const isPremium = user.isPremium === true || hasOrganization;
 
                     // 登録日・ログイン日（Firebase Authから取得済み）
                     const regDate = user.createdAt ? new Date(user.createdAt) : new Date();
                     const lastLogin = user.lastLoginAt ? new Date(user.lastLoginAt) : null;
                     const daysSinceReg = Math.floor((now - regDate) / (1000 * 60 * 60 * 24));
-                    const isTrialActive = !isPremium && daysSinceReg <= 7;
 
                     user._isPremium = isPremium;
-                    user._isTrialActive = isTrialActive;
+                    user._hasOrganization = hasOrganization;
                     user._regDate = regDate;
                     user._lastLogin = lastLogin;
                     user._daysSinceReg = daysSinceReg;
@@ -1248,15 +1181,15 @@
                     allUsers.push(user);
 
                     if (isPremium) premiumCount++;
-                    if (user.b2b2cOrgId || user.subscription?.giftCodeActive) codeCount++;
-                    if (isTrialActive) trialCount++;
+                    if (hasOrganization) orgCount++;
+                    if (user.isPremium === true && !hasOrganization) billingCount++;
                 });
 
                 // 統計更新
                 document.getElementById('total-users').textContent = allUsers.length;
                 document.getElementById('premium-users').textContent = premiumCount;
-                document.getElementById('code-users').textContent = codeCount;
-                document.getElementById('trial-users').textContent = trialCount;
+                document.getElementById('org-users').textContent = orgCount;
+                document.getElementById('billing-users').textContent = billingCount;
 
                 // フィルター適用
                 let filtered = allUsers;
@@ -1264,17 +1197,11 @@
                     case 'premium':
                         filtered = allUsers.filter(u => u._isPremium);
                         break;
-                    case 'b2b':
-                        filtered = allUsers.filter(u => u.b2b2cOrgId);
+                    case 'affiliation':
+                        filtered = allUsers.filter(u => u._hasOrganization);
                         break;
-                    case 'gift':
-                        filtered = allUsers.filter(u => u.subscription?.giftCodeActive);
-                        break;
-                    case 'stripe':
-                        filtered = allUsers.filter(u => u.subscription?.status === 'active' && !u.b2b2cOrgId && !u.subscription?.giftCodeActive);
-                        break;
-                    case 'trial':
-                        filtered = allUsers.filter(u => u._isTrialActive);
+                    case 'billing':
+                        filtered = allUsers.filter(u => u.isPremium === true && !u._hasOrganization);
                         break;
                 }
 
@@ -1302,20 +1229,11 @@
             const tbody = document.getElementById('users-tbody');
             tbody.innerHTML = users.map(user => {
                 const status = [];
-                if (user.subscription?.status === 'active' && !user.b2b2cOrgId && !user.subscription?.giftCodeActive) {
-                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">💳 Stripe</span>');
+                if (user.isPremium === true && !user._hasOrganization) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">💳 課金</span>');
                 }
-                if (user.b2b2cOrgId) {
-                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">🏢 B2B</span>');
-                }
-                if (user.subscription?.giftCodeActive) {
-                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">🎁 ギフト</span>');
-                }
-                if (user._isTrialActive) {
-                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">🆓 トライアル</span>');
-                }
-                if (user.referredBy) {
-                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-pink-100 text-pink-800">🤝 紹介</span>');
+                if (user._hasOrganization) {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">🏢 ' + (user.organizationName || '所属') + '</span>');
                 }
                 if (status.length === 0) {
                     status.push('<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">無料</span>');
@@ -1371,129 +1289,11 @@
                 `無料クレジット: ${user.freeCredits || 0}`,
                 `有償クレジット: ${user.paidCredits || 0}`,
                 `---`,
-                `Stripeステータス: ${user.subscription?.status || 'なし'}`,
-                `B2B組織ID: ${user.b2b2cOrgId || 'なし'}`,
-                `ギフトコード: ${user.subscription?.giftCodeActive ? '有効' : 'なし'}`,
-                `---`,
-                `紹介コード: ${user.referralCode || '未発行'}`,
-                `紹介者ID: ${user.referredBy || 'なし'}`,
+                `Premium: ${user.isPremium ? 'はい' : 'いいえ'}`,
+                `所属名: ${user.organizationName || 'なし'}`,
             ];
 
             alert(details.join('\n'));
-        }
-
-        // ===== 紹介コード管理機能 =====
-        let allReferrals = [];
-
-        async function loadReferrals() {
-            const loading = document.getElementById('referrals-loading');
-            const list = document.getElementById('referrals-list');
-            const empty = document.getElementById('referrals-empty');
-
-            loading.style.display = 'block';
-            list.style.display = 'none';
-            empty.style.display = 'none';
-
-            try {
-                // referralsコレクションを取得
-                const snapshot = await db.collection('referrals').orderBy('createdAt', 'desc').get();
-                allReferrals = [];
-
-                const referrerMap = {};
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    allReferrals.push({ id: doc.id, ...data });
-
-                    // 紹介者別集計
-                    const referrerId = data.referrerId;
-                    if (!referrerMap[referrerId]) {
-                        referrerMap[referrerId] = {
-                            referrerId,
-                            referrerName: data.referrerInfo?.displayName || '不明',
-                            referrerEmail: data.referrerInfo?.email || '不明',
-                            referees: []
-                        };
-                    }
-                    referrerMap[referrerId].referees.push(data);
-                });
-
-                // 統計更新
-                const uniqueReferrers = Object.keys(referrerMap).length;
-                document.getElementById('total-referrals').textContent = allReferrals.length;
-                document.getElementById('referrer-count').textContent = uniqueReferrers;
-                document.getElementById('referee-count').textContent = allReferrals.length;
-                document.getElementById('total-referral-credits').textContent = (allReferrals.length * 100) + '回'; // 双方50ずつ
-
-                loading.style.display = 'none';
-
-                if (allReferrals.length === 0) {
-                    empty.style.display = 'block';
-                    document.getElementById('referrer-summary').innerHTML = '<p class="text-gray-500 text-center">データがありません</p>';
-                    return;
-                }
-
-                list.style.display = 'block';
-                renderReferrals(allReferrals);
-                renderReferrerSummary(Object.values(referrerMap));
-
-            } catch (error) {
-                console.error('Load referrals error:', error);
-                loading.innerHTML = '<p style="color: red;">エラー: ' + error.message + '</p>';
-            }
-        }
-
-        function renderReferrals(referrals) {
-            const tbody = document.getElementById('referrals-tbody');
-            tbody.innerHTML = referrals.map(ref => {
-                const createdAt = ref.createdAt?.toDate?.() || new Date();
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3">
-                            <div class="font-medium text-gray-900">${ref.referrerInfo?.displayName || '不明'}</div>
-                            <div class="text-xs text-gray-500">${ref.referrerInfo?.email || ''}</div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <span class="font-mono text-pink-600 font-medium">${ref.referralCode || '-'}</span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="text-xs text-gray-500">${ref.referredUserId || '-'}</div>
-                        </td>
-                        <td class="px-4 py-3 text-gray-600 text-sm">
-                            ${createdAt.toLocaleDateString('ja-JP')} ${createdAt.toLocaleTimeString('ja-JP', {hour: '2-digit', minute: '2-digit'})}
-                        </td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 text-xs rounded-full ${ref.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                                ${ref.status === 'completed' ? '✅ 完了' : '⏳ ' + (ref.status || '不明')}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderReferrerSummary(referrers) {
-            const container = document.getElementById('referrer-summary');
-            // 紹介人数でソート
-            referrers.sort((a, b) => b.referees.length - a.referees.length);
-
-            container.innerHTML = referrers.map(r => `
-                <div class="border border-gray-200 rounded-lg p-4">
-                    <div class="flex items-start justify-between mb-2">
-                        <div>
-                            <div class="font-medium text-gray-900">${r.referrerName}</div>
-                            <div class="text-sm text-gray-500">${r.referrerEmail}</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-bold text-pink-600">${r.referees.length}人</div>
-                            <div class="text-xs text-gray-500">紹介</div>
-                        </div>
-                    </div>
-                    <div class="text-sm text-gray-600">
-                        獲得クレジット: <span class="font-medium text-green-600">${r.referees.length * 50}回</span>
-                    </div>
-                </div>
-            `).join('');
         }
 
         // ===== COMY投稿管理機能 =====

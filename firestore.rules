@@ -18,7 +18,9 @@ service cloud.firestore {
 
     // 管理者かどうか（メールアドレスベース）
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.email == 'official@your-coach-plus.com';
+      return isAuthenticated() &&
+        (request.auth.token.email == 'official@your-coach-plus.com' ||
+         request.auth.token.email == 'kongou411@gmail.com');
     }
 
     // ============================================
@@ -34,6 +36,14 @@ service cloud.firestore {
     match /b2b2cOrganizations/{orgId} {
       allow read: if isAuthenticated();
       allow write: if false;
+    }
+
+    // ============================================
+    // corporateContracts: 法人契約（管理者のみ読み取り可能）
+    // ============================================
+    match /corporateContracts/{contractId} {
+      allow read: if isAdmin();
+      allow write: if false; // Cloud Functionsのみ
     }
 
     // ============================================

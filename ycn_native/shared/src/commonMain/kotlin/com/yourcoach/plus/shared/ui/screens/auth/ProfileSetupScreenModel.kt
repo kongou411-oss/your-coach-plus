@@ -30,7 +30,7 @@ data class ProfileSetupState(
     val bodyFatPercentage: String = "15",
     val targetWeight: String = "70",
     // Step 2: 目標・活動レベル
-    val activityLevel: ActivityLevel = ActivityLevel.MODERATE,
+    val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
     val calorieAdjustment: Int = 0,
     val mealsPerDay: Int = 5,

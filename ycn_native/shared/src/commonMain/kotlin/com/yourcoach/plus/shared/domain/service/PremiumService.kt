@@ -15,7 +15,8 @@ object PremiumService {
      * Premium判定（7日以内の無料トライアル or サブスク有効）
      * @param subscriptionStatus サブスクリプションステータス
      * @param usageDays 利用日数（登録日からの経過日数）
-     * @param b2b2cOrgId B2B2C組織ID（あれば）
+     * @param b2b2cOrgId B2B2C組織ID（あれば）- 旧システム
+     * @param organizationName 所属名（あれば）- 新システム
      * @param giftCodeActive ギフトコード有効フラグ
      * @return Premium利用可能かどうか
      */
@@ -23,6 +24,7 @@ object PremiumService {
         subscriptionStatus: String?,
         usageDays: Int,
         b2b2cOrgId: String? = null,
+        organizationName: String? = null,
         giftCodeActive: Boolean = false
     ): Boolean {
         // 7日以内の無料トライアル期間
@@ -35,7 +37,12 @@ object PremiumService {
             return true
         }
 
-        // B2B2C組織に所属している場合
+        // 所属名が設定されている場合（新システム）
+        if (!organizationName.isNullOrEmpty()) {
+            return true
+        }
+
+        // B2B2C組織に所属している場合（旧システム）
         if (!b2b2cOrgId.isNullOrEmpty()) {
             return true
         }

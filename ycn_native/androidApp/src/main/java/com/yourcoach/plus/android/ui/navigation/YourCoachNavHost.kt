@@ -58,6 +58,7 @@ import com.yourcoach.plus.android.ui.screens.settings.MealSlotSettingsScreen
 import com.yourcoach.plus.android.ui.screens.settings.LegalWebViewScreen
 import com.yourcoach.plus.android.ui.screens.settings.LegalDocumentType
 import com.yourcoach.plus.android.ui.screens.settings.FeedbackScreen
+import com.yourcoach.plus.android.ui.screens.settings.HelpScreen
 import com.yourcoach.plus.android.ui.screens.subscription.SubscriptionScreen
 import com.yourcoach.plus.android.ui.screens.notification.NotificationSettingsScreen
 import com.yourcoach.plus.android.ui.screens.badges.BadgesScreen
@@ -323,13 +324,10 @@ fun YourCoachNavHost() {
                         navController.navigate(Screen.MealSlotSettings.route)
                     },
                     onNavigateToHelp = {
-                        // TODO: ヘルプ画面
+                        navController.navigate(Screen.Help.route)
                     },
                     onNavigateToFeedback = {
                         navController.navigate(Screen.Feedback.route)
-                    },
-                    onNavigateToAbout = {
-                        navController.navigate(Screen.About.route)
                     },
                     onNavigateToTerms = {
                         navController.navigate(Screen.Terms.route)
@@ -510,6 +508,12 @@ fun YourCoachNavHost() {
             // Feedback
             composable(Screen.Feedback.route) {
                 FeedbackScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Help.route) {
+                HelpScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

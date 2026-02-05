@@ -78,7 +78,6 @@ fun SettingsScreen(
     onNavigateToTemplates: () -> Unit = {},
     onNavigateToMealSlots: () -> Unit = {},
     onNavigateToHelp: () -> Unit = {},
-    onNavigateToAbout: () -> Unit = {},
     onNavigateToTerms: () -> Unit = {},
     onNavigateToPrivacy: () -> Unit = {},
     onNavigateToFeedback: () -> Unit = {},
@@ -410,11 +409,8 @@ fun SettingsScreen(
                         appVersion = uiState.appVersion,
                         onNavigateToHelp = onNavigateToHelp,
                         onNavigateToFeedback = onNavigateToFeedback,
-                        onNavigateToAbout = onNavigateToAbout,
                         onNavigateToTerms = onNavigateToTerms,
-                        onNavigateToPrivacy = onNavigateToPrivacy,
-                        onAddFreeCredits = { viewModel.addFreeCredits() },
-                        isAddingCredits = uiState.isAddingCredits
+                        onNavigateToPrivacy = onNavigateToPrivacy
                     )
                 }
             }
@@ -1207,12 +1203,11 @@ private fun OtherSettingsTab(
     appVersion: String,
     onNavigateToHelp: () -> Unit,
     onNavigateToFeedback: () -> Unit,
-    onNavigateToAbout: () -> Unit,
     onNavigateToTerms: () -> Unit,
-    onNavigateToPrivacy: () -> Unit,
-    onAddFreeCredits: () -> Unit = {},
-    isAddingCredits: Boolean = false
+    onNavigateToPrivacy: () -> Unit
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -1263,58 +1258,14 @@ private fun OtherSettingsTab(
                     icon = Icons.Default.Info,
                     title = "アプリについて",
                     subtitle = "バージョン $appVersion",
-                    onClick = onNavigateToAbout
+                    onClick = {
+                        val intent = android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            Uri.parse("https://your-coach-plus.web.app/home.html")
+                        )
+                        context.startActivity(intent)
+                    }
                 )
-            }
-        }
-
-        // デバッグ用（後日削除予定）
-        item {
-            SectionHeader("デバッグ")
-        }
-
-        item {
-            SettingsCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isAddingCredits, onClick = onAddFreeCredits)
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            tint = AccentOrange,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = "無料クレジット+100",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = AccentOrange
-                            )
-                            Text(
-                                text = "テスト用（後日削除）",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    if (isAddingCredits) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = AccentOrange
-                        )
-                    }
-                }
             }
         }
 
@@ -1616,12 +1567,6 @@ private fun ProfileAccountSection(
                                     }
                                 }
                             }
-                            Text(
-                                text = "法人契約のある所属名を入力してください",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 40.dp, top = 4.dp)
-                            )
                         }
 
                         // メッセージ表示

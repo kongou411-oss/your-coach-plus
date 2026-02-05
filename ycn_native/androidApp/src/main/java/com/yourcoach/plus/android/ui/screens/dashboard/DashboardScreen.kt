@@ -170,6 +170,14 @@ fun DashboardScreen(
         }
     }
 
+    // クエスト生成エラー表示
+    LaunchedEffect(uiState.questGenerationError) {
+        uiState.questGenerationError?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearQuestGenerationError()
+        }
+    }
+
     // ボトムバー状態を更新
     val expProgress = uiState.user?.profile?.calculateExpProgress()
     LaunchedEffect(
@@ -414,7 +422,7 @@ fun DashboardScreen(
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = "「明日の準備」でクエストを生成してください",
+                                            text = "「明日の指示書」でクエストを生成してください",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                         )
@@ -2236,7 +2244,7 @@ private fun DirectiveSectionWithAnalysis(
                 isExecuting = isExecuting
             )
 
-            // 明日の準備ボタン（クエスト生成）
+            // 明日の指示書ボタン（クエスト生成）
             Spacer(modifier = Modifier.height(12.dp))
 
             Surface(

@@ -90,9 +90,7 @@ fun SubscriptionScreen(
                 // ヘッダーカード
                 item {
                     PremiumHeaderCard(
-                        isPremium = uiState.isPremium,
-                        freeTrialDaysRemaining = uiState.freeTrialStatus.daysRemaining,
-                        isInTrial = uiState.freeTrialStatus.isInTrial
+                        isPremium = uiState.isPremium
                     )
                 }
 
@@ -135,12 +133,12 @@ fun SubscriptionScreen(
                     }
                 }
 
-                // クレジットパック（Premium or トライアル中のみ表示）
-                if (uiState.isPremium || uiState.freeTrialStatus.isInTrial) {
+                // クレジットパック（全ユーザーに表示）
+                if (uiState.connectionState == BillingConnectionState.CONNECTED) {
                     item {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "追加クレジット",
+                            text = "クレジット追加購入",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -153,6 +151,14 @@ fun SubscriptionScreen(
 
                     val creditProducts = uiState.products.filter {
                         it.type == ProductType.INAPP
+                    }.sortedByDescending { product ->
+                        // 300 → 150 → 50 の順
+                        when {
+                            product.productId.contains("300") -> 300
+                            product.productId.contains("150") -> 150
+                            product.productId.contains("50") -> 50
+                            else -> 0
+                        }
                     }
                     items(creditProducts) { product ->
                         CreditProductCard(
@@ -166,8 +172,8 @@ fun SubscriptionScreen(
                         )
                     }
 
-                    // トライアル中ユーザーへのPremium促進（Premiumユーザーには表示しない）
-                    if (uiState.freeTrialStatus.isInTrial && !uiState.isPremium) {
+                    // 非Premiumユーザーへのサブスク促進
+                    if (!uiState.isPremium) {
                         item {
                             PremiumPromotionCard()
                         }
@@ -294,9 +300,7 @@ fun SubscriptionScreen(
  */
 @Composable
 private fun PremiumHeaderCard(
-    isPremium: Boolean,
-    freeTrialDaysRemaining: Int,
-    isInTrial: Boolean
+    isPremium: Boolean
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -359,25 +363,6 @@ private fun PremiumHeaderCard(
                     text = "すべての機能をご利用いただけます",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else if (isInTrial) {
-                Text(
-                    text = "無料トライアル中",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "残り ${freeTrialDaysRemaining}日",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-                Text(
-                    text = "トライアル終了後もプレミアム機能をご利用いただくには\nサブスクリプションへの登録が必要です",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
                 )
             } else {
                 Text(
@@ -729,8 +714,8 @@ private fun CreditProductCard(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            // バッジ
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // バッジ（上部に表示）
             badge?.let {
                 val badgeColor = if (creditCount == 300) {
                     Brush.linearGradient(listOf(Color(0xFFFF8C00), Color(0xFFFF4500)))
@@ -740,8 +725,7 @@ private fun CreditProductCard(
 
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 8.dp, end = 8.dp)
+                        .padding(start = 12.dp, top = 8.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(badgeColor)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -758,7 +742,7 @@ private fun CreditProductCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = if (badge != null) 8.dp else 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -887,13 +871,13 @@ private fun CreditInfoCard() {
 
             Column {
                 Text(
-                    text = "クレジット追加購入について",
+                    text = "クレジットについて",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "100回を超える分析が必要な場合、追加でクレジットを購入できます。\n購入したクレジットに有効期限はありません。",
+                    text = "分析、クエスト生成、写真解析、教科書購入に消費します。\n購入したクレジットに有効期限はありません。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

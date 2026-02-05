@@ -57,7 +57,7 @@ data class ProfileSetupState(
     val bodyFatPercentage: String = "15",
     val targetWeight: String = "70",
     // Step 2: 目標・活動レベル
-    val activityLevel: ActivityLevel = ActivityLevel.MODERATE,
+    val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
     val calorieAdjustment: Int = 0,
     val mealsPerDay: Int = 5,
@@ -618,20 +618,14 @@ private fun Step2GoalsActivity(state: ProfileSetupState, viewModel: ProfileSetup
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Text("目標と活動レベル", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
-        Text("活動レベル", fontWeight = FontWeight.Medium)
-        val activityLevels = listOf(
-            ActivityLevel.SEDENTARY to "ほぼ運動しない",
-            ActivityLevel.LIGHT to "週1-2回",
-            ActivityLevel.MODERATE to "週3-4回",
-            ActivityLevel.ACTIVE to "週5-6回",
-            ActivityLevel.VERY_ACTIVE to "毎日激しく"
-        )
+        Text("日常活動（運動以外）", fontWeight = FontWeight.Medium)
+        Text("※運動日はルーティン設定に応じて自動で追加されます", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            activityLevels.forEach { (level, label) ->
+            ActivityLevel.entries.forEach { level ->
                 SelectableCard(
                     selected = state.activityLevel == level,
                     onClick = { viewModel.updateActivityLevel(level) },
-                    label = label
+                    label = level.displayName
                 )
             }
         }

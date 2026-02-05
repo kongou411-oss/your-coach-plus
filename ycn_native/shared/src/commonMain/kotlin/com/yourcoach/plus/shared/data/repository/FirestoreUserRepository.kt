@@ -64,7 +64,8 @@ class FirestoreUserRepository : UserRepository {
      */
     override suspend fun getUser(userId: String): Result<User?> {
         return try {
-            val snapshot = usersCollection.document(userId).get()
+            // サーバーから直接取得（キャッシュの古いデータを避けるため）
+            val snapshot = usersCollection.document(userId).get(dev.gitlive.firebase.firestore.Source.SERVER)
             if (!snapshot.exists) {
                 return Result.success(null)
             }
@@ -398,6 +399,16 @@ class FirestoreUserRepository : UserRepository {
         val experience = get<Long?>("experience")?.toInt() ?: 0
         val profileWithExp = profile?.copy(experience = experience)
 
+        // デバッグ: Firestoreからの生データを確認
+        val rawOrgName = get<String?>("organizationName")
+        val rawB2b2cOrgId = get<String?>("b2b2cOrgId")
+        val rawIsPremium = get<Boolean?>("isPremium")
+        println("=== FirestoreUserRepository.toUser DEBUG ===")
+        println("  userId=$userId")
+        println("  rawOrgName=$rawOrgName")
+        println("  rawB2b2cOrgId=$rawB2b2cOrgId")
+        println("  rawIsPremium=$rawIsPremium")
+
         return User(
             uid = userId,
             email = get<String?>("email") ?: "",
@@ -411,7 +422,8 @@ class FirestoreUserRepository : UserRepository {
             lastLoginAt = get<Long?>("lastLoginAt") ?: 0,
             lastLoginBonusDate = get<String?>("lastLoginBonusDate"),
             b2b2cOrgId = get<String?>("b2b2cOrgId"),
-            b2b2cOrgName = get<String?>("b2b2cOrgName")
+            b2b2cOrgName = get<String?>("b2b2cOrgName"),
+            organizationName = rawOrgName
         )
     }
 

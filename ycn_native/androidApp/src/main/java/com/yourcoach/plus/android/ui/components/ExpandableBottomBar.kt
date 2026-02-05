@@ -350,7 +350,7 @@ private fun ActionButtonsSection(
             }
         }
 
-        // 明日の準備ボタン
+        // 明日の指示書ボタン
         if (onGenerateQuestClick != null) {
             Button(
                 onClick = onGenerateQuestClick,
@@ -375,7 +375,7 @@ private fun ActionButtonsSection(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = "明日の準備",
+                        text = "明日の指示書",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
