@@ -53,6 +53,8 @@ import com.yourcoach.plus.shared.domain.repository.RoutineRepository
 import com.yourcoach.plus.shared.domain.repository.CustomFoodRepository
 import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
 import com.yourcoach.plus.shared.domain.service.GeminiService
+import com.yourcoach.plus.shared.domain.usecase.MealUseCase
+import com.yourcoach.plus.shared.domain.usecase.WorkoutUseCase
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -63,7 +65,6 @@ import org.koin.dsl.module
 val appModule = module {
     // Services
     single<GeminiService> { FirebaseGeminiService() }
-    single { FirebaseGeminiService() }
     single { FirebaseStorageService(androidContext()) }
 
     // Repositories
@@ -73,7 +74,6 @@ val appModule = module {
     single<WorkoutRepository> { FirestoreWorkoutRepository() }
     single<ScoreRepository> { FirestoreScoreRepository() }
     single<AnalysisRepository> { FirestoreAnalysisRepository() }
-    single { FirestoreAnalysisRepository() }
     single<BillingRepository> { GooglePlayBillingRepository(androidContext()) }
     single<BadgeRepository> { FirestoreBadgeRepository() }
     single<ConditionRepository> { FirestoreConditionRepository() }
@@ -83,6 +83,10 @@ val appModule = module {
     single<CustomExerciseRepository> { FirestoreCustomExerciseRepository() }
     single<PgBaseRepository> { FirestorePgBaseRepository(get()) }
     single<ComyRepository> { FirestoreComyRepository() }
+
+    // UseCases
+    single { MealUseCase(get()) }
+    single { WorkoutUseCase(get()) }
 
     // ViewModels
     viewModel { AuthViewModel(get(), get()) }
