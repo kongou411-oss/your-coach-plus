@@ -104,14 +104,34 @@ class SettingsViewModel(
                 Log.d("SettingsVM", "loadUserInfo: userId = $userId")
                 if (userId != null) {
                     val result = userRepository.getUser(userId)
-                    result.onSuccess { user ->
+                    result.onSuccess { loadedUser ->
+                        // GitLive Firebase SDKのバグ回避: Native Firebase SDKでorganizationNameを取得
+                        var user = loadedUser
+                        if (user != null && user.organizationName == null) {
+                            try {
+                                val nativeOrgName = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                    val task = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                        .collection("users")
+                                        .document(userId)
+                                        .get()
+                                    val doc = com.google.android.gms.tasks.Tasks.await(task)
+                                    doc.getString("organizationName")
+                                }
+                                if (nativeOrgName != null) {
+                                    user = user.copy(organizationName = nativeOrgName)
+                                }
+                            } catch (e: Exception) {
+                                Log.e("SettingsVM", "Native Firebase check failed: ${e.message}")
+                            }
+                        }
+
                         _uiState.update {
                             it.copy(
                                 user = user,
-                                isPremium = user?.isPremium ?: false,
+                                isPremium = (user?.isPremium ?: false) || (user?.hasCorporatePremium ?: false),
                                 freeCredits = user?.freeCredits ?: 0,
                                 paidCredits = user?.paidCredits ?: 0,
-                                organizationName = user?.b2b2cOrgName,
+                                organizationName = user?.organizationName ?: user?.b2b2cOrgName,
                                 isLoading = false
                             )
                         }
@@ -456,6 +476,7 @@ class SettingsViewModel(
                         }
                     }
                     .addOnFailureListener { e ->
+                        android.util.Log.e("SettingsVM", "validateOrganizationName FAILED: ${e.message}")
                         val errorMessage = when {
                             e.message?.contains("not-found") == true -> "この所属名は登録されていません"
                             e.message?.contains("permission-denied") == true -> "この所属は現在無効です"

@@ -450,8 +450,29 @@ class DashboardViewModel(
                     val todayRoutineDeferred = async { routineRepository.getRoutineForDate(userId, date).getOrNull() }
                     val restDayDeferred = async { scoreRepository.getRestDayStatus(userId, date).getOrDefault(false) }
 
+                    var loadedUser = userDeferred.await()
+
+                    // GitLive Firebase SDKのバグ回避: Native Firebase SDKでorganizationNameを取得
+                    if (loadedUser != null && loadedUser.organizationName == null) {
+                        try {
+                            val nativeOrgName = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val task = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                    .collection("users")
+                                    .document(userId)
+                                    .get()
+                                val doc = com.google.android.gms.tasks.Tasks.await(task)
+                                doc.getString("organizationName")
+                            }
+                            if (nativeOrgName != null) {
+                                loadedUser = loadedUser.copy(organizationName = nativeOrgName)
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardVM", "Native Firebase check failed: ${e.message}")
+                        }
+                    }
+
                     DashboardDataBundle(
-                        user = userDeferred.await(),
+                        user = loadedUser,
                         meals = mealsDeferred.await(),
                         workouts = workoutsDeferred.await(),
                         score = scoreDeferred.await(),
@@ -2798,6 +2819,12 @@ class DashboardViewModel(
     fun generateQuest() {
         val userId = currentUserId ?: return
         val user = _uiState.value.user ?: return
+
+        // プレミアム会員チェック（isPremium または 所属名で判定）
+        if (user.isPremium != true && !user.hasCorporatePremium) {
+            _uiState.update { it.copy(questGenerationError = "クエスト生成はプレミアム会員限定機能です") }
+            return
+        }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isGeneratingQuest = true, questGenerationError = null) }

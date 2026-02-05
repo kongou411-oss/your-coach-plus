@@ -5,6 +5,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.google.firebase.FirebaseApp
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.yourcoach.plus.android.di.appModule
 import com.yourcoach.plus.shared.di.platformModule
 import com.yourcoach.plus.shared.di.sharedModule
@@ -20,6 +22,20 @@ class YourCoachApp : Application() {
 
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
+
+        // Initialize Firebase App Check
+        val firebaseAppCheck = FirebaseAppCheck.getInstance()
+        if (BuildConfig.DEBUG) {
+            // Debug build: use debug provider
+            firebaseAppCheck.installAppCheckProviderFactory(
+                com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory.getInstance()
+            )
+        } else {
+            // Release build: use Play Integrity
+            firebaseAppCheck.installAppCheckProviderFactory(
+                PlayIntegrityAppCheckProviderFactory.getInstance()
+            )
+        }
 
         // Initialize Koin DI
         startKoin {

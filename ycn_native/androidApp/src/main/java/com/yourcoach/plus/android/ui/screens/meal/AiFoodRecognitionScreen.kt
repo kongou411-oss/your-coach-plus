@@ -150,7 +150,8 @@ data class AiFoodRecognitionUiState(
     val saveComplete: Boolean = false,
     val selectedMealNumber: Int = 1, // 1食目、2食目...
     val mealsPerDay: Int = 5,        // 設定の食事回数
-    val recordedMealsToday: Int = 0  // 今日の記録済み食事数
+    val recordedMealsToday: Int = 0, // 今日の記録済み食事数
+    val isPremiumRequired: Boolean = false // プレミアム会員限定
 )
 
 /**
@@ -176,10 +177,47 @@ class AiFoodRecognitionViewModel(
     private var userCustomFoods: List<CustomFood> = emptyList()
 
     init {
+        // プレミアムチェック
+        checkPremiumStatus()
         // 食事設定を自動取得
         loadMealSettings()
         // カスタム食品を読み込み
         loadCustomFoods()
+    }
+
+    /**
+     * プレミアム状態をチェック
+     */
+    private fun checkPremiumStatus() {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            userRepository.getUser(userId)
+                .onSuccess { loadedUser ->
+                    // GitLive Firebase SDKのバグ回避: Native Firebase SDKでorganizationNameを取得
+                    var user = loadedUser
+                    if (user != null && user.organizationName == null) {
+                        try {
+                            val nativeOrgName = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val task = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                    .collection("users")
+                                    .document(userId)
+                                    .get()
+                                val doc = com.google.android.gms.tasks.Tasks.await(task)
+                                doc.getString("organizationName")
+                            }
+                            if (nativeOrgName != null) {
+                                user = user.copy(organizationName = nativeOrgName)
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("AiFoodRecognitionVM", "Native Firebase check failed: ${e.message}")
+                        }
+                    }
+
+                    if (user?.isPremium != true && user?.hasCorporatePremium != true) {
+                        _uiState.update { it.copy(isPremiumRequired = true) }
+                    }
+                }
+        }
     }
 
     /**
@@ -1174,6 +1212,10 @@ fun AiFoodRecognitionScreen(
                 .padding(paddingValues)
         ) {
             when {
+                uiState.isPremiumRequired -> {
+                    // プレミアム会員限定
+                    PremiumRequiredContent(onNavigateBack = onNavigateBack)
+                }
                 !uiState.hasCameraPermission -> {
                     // 権限がない場合
                     PermissionDeniedContent(
@@ -1211,6 +1253,55 @@ fun AiFoodRecognitionScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * プレミアム会員限定コンテンツ
+ */
+@Composable
+private fun PremiumRequiredContent(
+    onNavigateBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Lock,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = Color(0xFFFFD700)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "プレミアム会員限定",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "写真解析機能はプレミアム会員限定です\n設定からプレミアムプランにアップグレードしてください",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(
+            onClick = onNavigateBack,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("戻る")
         }
     }
 }

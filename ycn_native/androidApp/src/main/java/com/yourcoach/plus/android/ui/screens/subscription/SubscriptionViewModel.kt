@@ -80,19 +80,37 @@ class SubscriptionViewModel(
         // 無料トライアルステータスをチェック
         val trialStatus = PremiumService.checkFreeTrialStatus(registrationDate)
 
-        // Premium判定
-        val usageDays = if (trialStatus.isInTrial) trialStatus.daysRemaining else 8 // トライアル外なら8日以上
-        val isPremium = PremiumService.isPremiumUser(
-            subscriptionStatus = subscriptionStatus,
-            usageDays = usageDays
-        )
+        // GitLive Firebase SDKのバグ回避: Native Firebase SDKでorganizationNameを取得
+        viewModelScope.launch {
+            var organizationName: String? = null
+            try {
+                organizationName = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val task = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(userId)
+                        .get()
+                    val doc = com.google.android.gms.tasks.Tasks.await(task)
+                    doc.getString("organizationName")
+                }
+            } catch (e: Exception) {
+                Log.e("SubscriptionVM", "Native Firebase check failed: ${e.message}")
+            }
 
-        _uiState.update {
-            it.copy(
-                freeTrialStatus = trialStatus,
-                isPremium = isPremium,
-                currentPlan = if (isPremium) SubscriptionPlan.PREMIUM else SubscriptionPlan.FREE
+            // Premium判定
+            val usageDays = if (trialStatus.isInTrial) trialStatus.daysRemaining else 8 // トライアル外なら8日以上
+            val isPremium = PremiumService.isPremiumUser(
+                subscriptionStatus = subscriptionStatus,
+                usageDays = usageDays,
+                organizationName = organizationName
             )
+
+            _uiState.update {
+                it.copy(
+                    freeTrialStatus = trialStatus,
+                    isPremium = isPremium,
+                    currentPlan = if (isPremium) SubscriptionPlan.PREMIUM else SubscriptionPlan.FREE
+                )
+            }
         }
     }
 
