@@ -29,6 +29,8 @@ import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import com.yourcoach.plus.shared.domain.repository.ScoreRepository
 import com.yourcoach.plus.shared.util.DateUtil
+import com.yourcoach.plus.shared.domain.model.DetailedNutrition
+import com.yourcoach.plus.shared.domain.usecase.NutritionCalculator
 import com.yourcoach.plus.shared.data.database.BodymakingFoodDatabase
 import com.yourcoach.plus.shared.data.database.FoodDatabase
 import com.yourcoach.plus.shared.data.database.FoodItem
@@ -472,7 +474,12 @@ class DashboardViewModel(
 
                 // 詳細栄養素を計算（proteinCoefficient >= 2.0 でボディメイカー判定）
                 val isBodymaker = (user?.profile?.proteinCoefficient ?: 2.3f) >= 2.0f
-                val detailedNutrition = calculateDetailedNutrition(meals, isBodymaker, targetCarbs)
+                val profile = user?.profile
+                val weight = profile?.weight ?: 70f
+                val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
+                val lbm = weight * (1 - bodyFatPercentage / 100f)
+                val mealsPerDay = profile?.mealsPerDay ?: 5
+                val detailedNutrition = NutritionCalculator.calculate(meals, isBodymaker, lbm, mealsPerDay)
 
                 // タイムライン情報を計算（ルーティン連動）
                 val timelineInfo = calculateTimelineInfo(user, meals, todayRoutine)
@@ -946,265 +953,6 @@ class DashboardViewModel(
     }
 
     /**
-     * 詳細栄養素を計算（完全版: MCT、食物繊維スコア、全13ビタミン、全13ミネラル対応）
-     */
-    private fun calculateDetailedNutrition(meals: List<Meal>, isBodymaker: Boolean, targetCarbs: Float): DetailedNutrition {
-        // LBMを取得（GL上限計算用）
-        val profile = _uiState.value.user?.profile
-        val weight = profile?.weight ?: 70f
-        val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
-        val lbm = weight * (1 - bodyFatPercentage / 100f)
-
-        // GL上限（LBMベース）- 筋肉量が多いほどグリコーゲン貯蔵能力が高い
-        // 一般: LBM × 2、ボディメイカー: LBM × 3
-        val glCoefficient = if (isBodymaker) 3f else 2f
-        val glLimit = (lbm * glCoefficient).coerceAtLeast(80f)  // 最低80
-
-        // 1食あたりの絶対GL上限（体脂肪蓄積リスクの警告値）
-        val mealAbsoluteGLLimit = if (isBodymaker) 70f else 40f
-
-        if (meals.isEmpty()) {
-            return DetailedNutrition(glLimit = glLimit, glLabel = "未記録")
-        }
-
-        var totalProtein = 0f
-        var weightedDiaas = 0f
-        var saturatedFat = 0f
-        var mediumChainFat = 0f  // MCT
-        var monounsaturatedFat = 0f
-        var polyunsaturatedFat = 0f
-        var totalGL = 0f
-        var highGICarbs = 0f            // GI66以上の炭水化物
-        var lowGICarbs = 0f             // GI66未満の炭水化物
-        var totalFiber = 0f
-        var totalSolubleFiber = 0f      // 水溶性食物繊維
-        var totalInsolubleFiber = 0f    // 不溶性食物繊維
-        var totalCarbs = 0f
-        val vitamins = mutableMapOf<String, Float>()
-        val minerals = mutableMapOf<String, Float>()
-
-        // 全13種類のビタミン目標値 (日本人の食事摂取基準、ボディメイカーは3倍)
-        val vitaminMultiplier = if (isBodymaker) 3f else 1f
-        val vitaminTargets = mapOf(
-            "vitaminA" to 900f * vitaminMultiplier,       // μg
-            "vitaminD" to 20f * vitaminMultiplier,        // μg
-            "vitaminE" to 6.5f * vitaminMultiplier,       // mg
-            "vitaminK" to 150f * vitaminMultiplier,       // μg
-            "vitaminB1" to 1.4f * vitaminMultiplier,      // mg
-            "vitaminB2" to 1.6f * vitaminMultiplier,      // mg
-            "niacin" to 15f * vitaminMultiplier,          // mg (B3)
-            "pantothenicAcid" to 5f * vitaminMultiplier,  // mg (B5)
-            "vitaminB6" to 1.4f * vitaminMultiplier,      // mg
-            "biotin" to 50f * vitaminMultiplier,          // μg (B7)
-            "folicAcid" to 240f * vitaminMultiplier,      // μg (B9)
-            "vitaminB12" to 2.4f * vitaminMultiplier,     // μg
-            "vitaminC" to 100f * vitaminMultiplier        // mg
-        )
-
-        // 全13種類のミネラル目標値
-        // ナトリウム: 一般は推奨3g、ボディメイカーは推奨10g（発汗による損失を考慮）
-        val sodiumTarget = if (isBodymaker) 10000f else 3000f
-        val mineralTargets = mapOf(
-            "calcium" to 800f * vitaminMultiplier,        // mg
-            "iron" to 7.5f * vitaminMultiplier,           // mg
-            "magnesium" to 370f * vitaminMultiplier,      // mg
-            "phosphorus" to 1000f * vitaminMultiplier,    // mg
-            "potassium" to 3000f * vitaminMultiplier,     // mg
-            "sodium" to sodiumTarget,                     // mg (ボディメイカー10g、一般3g)
-            "zinc" to 11f * vitaminMultiplier,            // mg
-            "copper" to 0.9f * vitaminMultiplier,         // mg
-            "manganese" to 4f * vitaminMultiplier,        // mg
-            "selenium" to 30f * vitaminMultiplier,        // μg
-            "iodine" to 130f * vitaminMultiplier,         // μg
-            "chromium" to 35f * vitaminMultiplier,        // μg
-            "molybdenum" to 30f * vitaminMultiplier       // μg
-        )
-
-        meals.forEach { meal ->
-            meal.items.forEach { item ->
-                // MealItemの値は既に実際の量に対してスケール済み
-                // （AddMealScreen等でratioを適用済み）
-                // よってここではratioを再適用しない
-
-                val protein = item.protein
-                totalProtein += protein
-
-                // DIAAS（タンパク質量で重み付け）
-                if (item.diaas > 0 && protein > 0) {
-                    weightedDiaas += item.diaas * protein
-                }
-
-                // 脂肪酸（4種類: 飽和・MCT・一価・多価）
-                saturatedFat += item.saturatedFat
-                mediumChainFat += item.mediumChainFat  // MCT追加
-                monounsaturatedFat += item.monounsaturatedFat
-                polyunsaturatedFat += item.polyunsaturatedFat
-
-                // 糖質・食物繊維
-                totalCarbs += item.carbs
-                totalFiber += item.fiber
-                totalSolubleFiber += item.solubleFiber
-                totalInsolubleFiber += item.insolubleFiber
-
-                // GL値計算 (GI × 炭水化物g / 100) とGI内訳
-                val carbs = item.carbs
-                if (item.gi > 0 && carbs > 0) {
-                    totalGL += (item.gi * carbs) / 100f
-                    // GI値内訳（66以上/未満で分類）
-                    if (item.gi >= 66) {
-                        highGICarbs += carbs
-                    } else {
-                        lowGICarbs += carbs
-                    }
-                } else if (carbs > 0) {
-                    // GI値不明の場合は低GIとして扱う
-                    lowGICarbs += carbs
-                }
-
-                // ビタミン（値は既にスケール済み）
-                item.vitamins.forEach { (key, value) ->
-                    vitamins[key] = (vitamins[key] ?: 0f) + value
-                }
-
-                // ミネラル（値は既にスケール済み）
-                item.minerals.forEach { (key, value) ->
-                    minerals[key] = (minerals[key] ?: 0f) + value
-                }
-            }
-        }
-
-        // 平均DIAAS
-        val averageDiaas = if (totalProtein > 0) weightedDiaas / totalProtein else 0f
-
-        // 脂肪酸スコア計算（4種類対応）
-        val totalFat = saturatedFat + mediumChainFat + monounsaturatedFat + polyunsaturatedFat
-        val (fattyAcidScore, fattyAcidRating, fattyAcidLabel) = if (totalFat > 0) {
-            val saturatedPercent = (saturatedFat / totalFat) * 100
-            val monounsaturatedPercent = (monounsaturatedFat / totalFat) * 100
-
-            // 理想: 飽和30%, 中鎖5%, 一価40%, 多価25%
-            when {
-                (saturatedPercent >= 40 || saturatedPercent < 20 ||
-                 monounsaturatedPercent >= 50 || monounsaturatedPercent < 30) ->
-                    Triple(2, "★★☆☆☆", "要改善")
-                (saturatedPercent >= 35 || saturatedPercent < 25 ||
-                 monounsaturatedPercent >= 45 || monounsaturatedPercent < 35) ->
-                    Triple(4, "★★★★☆", "良好")
-                else -> Triple(5, "★★★★★", "優秀")
-            }
-        } else Triple(0, "-", "-")
-
-        // 食物繊維スコア計算
-        val carbFiberRatio = if (totalFiber > 0) totalCarbs / totalFiber else 0f
-        val (fiberScore, fiberRating, fiberLabel) = if (totalCarbs + totalFiber > 0) {
-            val fiberPercent = (totalFiber / (totalCarbs + totalFiber)) * 100
-            when {
-                fiberPercent < 5 -> Triple(2, "★★☆☆☆", "要改善")
-                fiberPercent < 10 -> Triple(4, "★★★★☆", "良好")
-                else -> Triple(5, "★★★★★", "優秀")
-            }
-        } else Triple(0, "-", "-")
-
-        // ビタミン充足率（全13種類）
-        val vitaminScores = vitaminTargets.mapValues { (key, target) ->
-            val actual = vitamins[key] ?: 0f
-            if (target > 0) actual / target else 0f
-        }
-
-        // ミネラル充足率（全13種類）
-        val mineralScores = mineralTargets.mapValues { (key, target) ->
-            val actual = minerals[key] ?: 0f
-            if (target > 0) actual / target else 0f
-        }
-
-        // GLスコア計算 (1-5)
-        val glRatio = if (glLimit > 0) totalGL / glLimit else 0f
-        val (glScore, glLabel) = when {
-            glRatio <= 0.6f -> 5 to "優秀"
-            glRatio <= 0.8f -> 4 to "良好"
-            glRatio <= 1.0f -> 3 to "普通"
-            glRatio <= 1.25f -> 2 to "やや超過"
-            else -> 1 to "要改善"
-        }
-
-        // GI値内訳の計算（パーセント）
-        val totalGICarbs = highGICarbs + lowGICarbs
-        val highGIPercent = if (totalGICarbs > 0) (highGICarbs / totalGICarbs) * 100f else 0f
-        val lowGIPercent = if (totalGICarbs > 0) (lowGICarbs / totalGICarbs) * 100f else 0f
-
-        // GL補正要因の計算（元プロジェクトに準拠）
-        val glModifiers = mutableListOf<Pair<String, Float>>()
-
-        // タンパク質補正（段階的：0g→0%, 10g→5%, 20g以上→10%）
-        val proteinReduction = kotlin.math.min(10f, (totalProtein / 20f) * 10f)
-        if (proteinReduction > 0) {
-            glModifiers.add("タンパク質(${totalProtein.toInt()}g)" to -proteinReduction)
-        }
-
-        // 脂質補正（段階的：0g→0%, 5g→3%, 10g以上→5%）
-        val fatReduction = kotlin.math.min(5f, (totalFat / 10f) * 5f)
-        if (fatReduction > 0) {
-            glModifiers.add("脂質(${totalFat.toInt()}g)" to -fatReduction)
-        }
-
-        // 食物繊維補正（段階的：0g→0%, 5g→5%, 10g以上→10%）
-        val fiberReduction = kotlin.math.min(10f, (totalFiber / 10f) * 10f)
-        if (fiberReduction > 0) {
-            glModifiers.add("食物繊維(${totalFiber.toInt()}g)" to -fiberReduction)
-        }
-
-        // 補正後GL値
-        val totalReduction = proteinReduction + fatReduction + fiberReduction
-        val adjustedGL = totalGL * (1f - totalReduction / 100f)
-
-        // 血糖管理評価（補正後GL値に基づく）
-        val (bloodSugarRating, bloodSugarLabel) = when {
-            adjustedGL < glLimit * 0.5f -> "A+" to "優秀"
-            adjustedGL < glLimit * 0.7f -> "A" to "良好"
-            adjustedGL < glLimit * 0.85f -> "B" to "普通"
-            adjustedGL < glLimit -> "C" to "やや高め"
-            else -> "D" to "要改善"
-        }
-
-        // 想定食事回数と1食あたりのGL上限
-        val mealsPerDay = _uiState.value.user?.profile?.mealsPerDay ?: 5
-        val mealGLLimit = glLimit / mealsPerDay
-
-        return DetailedNutrition(
-            averageDiaas = averageDiaas,
-            saturatedFat = saturatedFat,
-            mediumChainFat = mediumChainFat,
-            monounsaturatedFat = monounsaturatedFat,
-            polyunsaturatedFat = polyunsaturatedFat,
-            fattyAcidScore = fattyAcidScore,
-            fattyAcidRating = fattyAcidRating,
-            fattyAcidLabel = fattyAcidLabel,
-            vitaminScores = vitaminScores,
-            mineralScores = mineralScores,
-            totalGL = totalGL,
-            glLimit = glLimit,
-            glScore = glScore,
-            glLabel = glLabel,
-            adjustedGL = adjustedGL,
-            bloodSugarRating = bloodSugarRating,
-            bloodSugarLabel = bloodSugarLabel,
-            highGIPercent = highGIPercent,
-            lowGIPercent = lowGIPercent,
-            glModifiers = glModifiers,
-            mealsPerDay = mealsPerDay,
-            mealGLLimit = mealGLLimit,
-            mealAbsoluteGLLimit = mealAbsoluteGLLimit,
-            totalFiber = totalFiber,
-            totalSolubleFiber = totalSolubleFiber,
-            totalInsolubleFiber = totalInsolubleFiber,
-            carbFiberRatio = carbFiberRatio,
-            fiberScore = fiberScore,
-            fiberRating = fiberRating,
-            fiberLabel = fiberLabel
-        )
-    }
-
-    /**
      * 食事を削除
      */
     fun deleteMeal(meal: Meal) {
@@ -1217,8 +965,12 @@ class DashboardViewModel(
                     val updatedMeals = _uiState.value.meals.filter { it.id != meal.id }
                     val user = _uiState.value.user
                     val isBodymaker = (user?.profile?.proteinCoefficient ?: 2.3f) >= 2.0f
-                    val targetCarbs = _uiState.value.targetCarbs
-                    val detailedNutrition = calculateDetailedNutrition(updatedMeals, isBodymaker, targetCarbs)
+                    val profile = user?.profile
+                    val weight = profile?.weight ?: 70f
+                    val bodyFatPercentage = profile?.bodyFatPercentage ?: 20f
+                    val lbm = weight * (1 - bodyFatPercentage / 100f)
+                    val mealsPerDay = profile?.mealsPerDay ?: 5
+                    val detailedNutrition = NutritionCalculator.calculate(updatedMeals, isBodymaker, lbm, mealsPerDay)
 
                     _uiState.update { state ->
                         state.copy(
@@ -3695,42 +3447,6 @@ private data class NutritionTargets(
     val protein: Float,
     val carbs: Float,
     val fat: Float
-)
-
-/**
- * 詳細栄養素データ（完全版）
- */
-private data class DetailedNutrition(
-    val averageDiaas: Float = 0f,
-    val saturatedFat: Float = 0f,
-    val mediumChainFat: Float = 0f,         // MCT
-    val monounsaturatedFat: Float = 0f,
-    val polyunsaturatedFat: Float = 0f,
-    val fattyAcidScore: Int = 0,
-    val fattyAcidRating: String = "-",
-    val fattyAcidLabel: String = "-",
-    val vitaminScores: Map<String, Float> = emptyMap(),
-    val mineralScores: Map<String, Float> = emptyMap(),
-    val totalGL: Float = 0f,
-    val glLimit: Float = 120f,
-    val glScore: Int = 0,
-    val glLabel: String = "-",
-    val adjustedGL: Float = 0f,
-    val bloodSugarRating: String = "-",
-    val bloodSugarLabel: String = "-",
-    val highGIPercent: Float = 0f,
-    val lowGIPercent: Float = 0f,
-    val glModifiers: List<Pair<String, Float>> = emptyList(),
-    val mealsPerDay: Int = 5,
-    val mealGLLimit: Float = 24f,           // 1食あたりの動的GL上限
-    val mealAbsoluteGLLimit: Float = 40f,   // 1食あたりの絶対GL上限
-    val totalFiber: Float = 0f,
-    val totalSolubleFiber: Float = 0f,      // 水溶性食物繊維
-    val totalInsolubleFiber: Float = 0f,    // 不溶性食物繊維
-    val carbFiberRatio: Float = 0f,
-    val fiberScore: Int = 0,
-    val fiberRating: String = "-",
-    val fiberLabel: String = "-"
 )
 
 /**
