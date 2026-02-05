@@ -197,21 +197,30 @@ def analyze_with_gemini(model: GenerativeModel, website_text: str) -> dict:
         return {"rank": "B", "reason": f"解析エラー: {str(e)}", "features": [], "phone": ""}
 
 
-def save_to_csv(data: list, filename: str):
-    """結果をCSVに保存（上書きモード）"""
-    fieldnames = [
-        "rank", "name", "address", "phone", "website",
-        "reason", "features", "rating", "scraped_at"
-    ]
+def save_to_excel(data: list, filename: str):
+    """結果をExcelに保存（listcsvディレクトリ）"""
+    import pandas as pd
 
-    with open(filename, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
+    # listcsvディレクトリに保存
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, "listcsv")
+    os.makedirs(output_dir, exist_ok=True)
 
-        for item in data:
-            writer.writerow(item)
+    filepath = os.path.join(output_dir, filename)
 
-    print(f"\n[保存完了] {filename} ({len(data)}件追加)")
+    # DataFrameに変換
+    df = pd.DataFrame(data)
+
+    # 列順を指定
+    columns = ["rank", "name", "address", "phone", "website",
+               "reason", "features", "rating", "scraped_at"]
+    df = df[columns]
+
+    # Excel保存
+    df.to_excel(filepath, index=False, sheet_name="営業リスト")
+
+    print(f"\n[保存完了] {filepath} ({len(data)}件)")
+    return filepath
 
 
 def main():
@@ -275,9 +284,9 @@ def main():
     rank_order = {"S": 0, "A": 1, "B": 2, "C": 3}
     all_results.sort(key=lambda x: rank_order.get(x["rank"], 9))
 
-    # CSV保存
-    output_file = f"gym_list_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    save_to_csv(all_results, output_file)
+    # Excel保存
+    output_file = f"gym_list_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    save_to_excel(all_results, output_file)
 
     # サマリー表示
     print("\n" + "=" * 60)

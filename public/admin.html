@@ -295,6 +295,9 @@
             <button id="tab-pgbase" onclick="switchTab('pgbase')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 📚 PGBASE記事
             </button>
+            <button id="tab-gymhunter" onclick="switchTab('gymhunter')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                🎯 営業リスト
+            </button>
         </div>
 
         <!-- 所属名管理セクション -->
@@ -746,7 +749,64 @@
                 </div>
             </div>
         </div><!-- PGBASE記事管理セクション終了 -->
+
+        <!-- 営業リスト（Gym Hunter）セクション -->
+        <div id="gymhunter-section" style="display:none;">
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>📤 Excelファイルをドロップ</h2>
+                </div>
+                <div class="section-content">
+                    <div id="drop-zone" style="border: 3px dashed #ccc; border-radius: 12px; padding: 60px; text-align: center; cursor: pointer; transition: all 0.3s;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
+                        <p style="font-size: 18px; color: #666;">Gym Hunterで生成した<br><strong>.xlsx ファイル</strong>をここにドロップ</p>
+                        <p style="font-size: 14px; color: #999; margin-top: 8px;">またはクリックしてファイル選択</p>
+                        <input type="file" id="file-input" accept=".xlsx,.xls" style="display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- フィルター -->
+            <div class="section mb-6" id="filter-section" style="display:none;">
+                <div class="section-content">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="filterByRank('all')" class="filter-btn px-4 py-2 rounded-lg bg-gray-800 text-white">全て</button>
+                        <button onclick="filterByRank('S')" class="filter-btn px-4 py-2 rounded-lg bg-green-500 text-white">🔥 S ランク</button>
+                        <button onclick="filterByRank('A')" class="filter-btn px-4 py-2 rounded-lg bg-blue-500 text-white">⭐ A ランク</button>
+                        <button onclick="filterByRank('B')" class="filter-btn px-4 py-2 rounded-lg bg-gray-400 text-white">📋 B ランク</button>
+                        <button onclick="filterByRank('C')" class="filter-btn px-4 py-2 rounded-lg bg-red-400 text-white">❌ C ランク</button>
+                        <span id="gym-count" class="ml-4 py-2 text-gray-600"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- リスト表示 -->
+            <div class="section" id="list-section" style="display:none;">
+                <div class="section-header">
+                    <h2>📋 営業リスト</h2>
+                </div>
+                <div class="section-content" style="overflow-x: auto;">
+                    <table id="gym-table" class="min-w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="px-4 py-3 text-left">ランク</th>
+                                <th class="px-4 py-3 text-left">状態</th>
+                                <th class="px-4 py-3 text-left">店名</th>
+                                <th class="px-4 py-3 text-left">電話</th>
+                                <th class="px-4 py-3 text-left">判定理由</th>
+                                <th class="px-4 py-3 text-left">評価</th>
+                                <th class="px-4 py-3 text-left">HP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gym-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div><!-- 営業リストセクション終了 -->
     </div>
+
+    <!-- SheetJS (Excel読み込み用) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -793,7 +853,7 @@
 
         // タブ切り替え
         function switchTab(tab) {
-            const sections = ['affiliation', 'users', 'comy', 'analytics', 'pgbase'];
+            const sections = ['affiliation', 'users', 'comy', 'analytics', 'pgbase', 'gymhunter'];
             const activeClass = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
             const inactiveClass = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
 
@@ -810,6 +870,7 @@
             if (tab === 'comy') loadCommunityPosts();
             if (tab === 'analytics') loadAnalytics();
             if (tab === 'pgbase') loadPgBaseArticles();
+            if (tab === 'gymhunter') initGymHunter();
         }
 
         // ログアウト
@@ -1997,6 +2058,323 @@
         function clearPgBaseInput() {
             document.getElementById('pgbase-json-input').value = '';
             document.getElementById('pgbase-seed-result').innerHTML = '';
+        }
+
+        // ===== Gym Hunter 営業リスト機能 =====
+        let gymData = [];
+        let gymHunterInitialized = false;
+        const GYMS_COLLECTION = 'gymLeads';
+
+        // ジムIDを生成（店名+住所のハッシュ）
+        function generateGymId(name, address) {
+            const str = `${name || ''}_${address || ''}`.toLowerCase().replace(/\s+/g, '');
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return 'gym_' + Math.abs(hash).toString(36);
+        }
+
+        // Firestoreからジムリストを読み込み
+        async function loadGymsFromFirestore() {
+            try {
+                const snapshot = await db.collection(GYMS_COLLECTION).orderBy('createdAt', 'desc').get();
+                gymData = [];
+                snapshot.forEach(doc => {
+                    gymData.push({ id: doc.id, ...doc.data() });
+                });
+                return gymData;
+            } catch (err) {
+                console.error('Firestore読み込みエラー:', err);
+                return [];
+            }
+        }
+
+        // Firestoreにジムを保存（重複チェック付き）
+        async function saveGymsToFirestore(gyms) {
+            const batch = db.batch();
+            let newCount = 0;
+            let skipCount = 0;
+
+            for (const gym of gyms) {
+                const gymId = generateGymId(gym.name, gym.address);
+                const docRef = db.collection(GYMS_COLLECTION).doc(gymId);
+
+                // 既存チェック
+                const existing = await docRef.get();
+                if (existing.exists) {
+                    skipCount++;
+                    continue;
+                }
+
+                // 新規追加
+                batch.set(docRef, {
+                    name: gym.name || '',
+                    address: gym.address || '',
+                    phone: gym.phone || '',
+                    website: gym.website || '',
+                    rank: gym.rank || 'B',
+                    reason: gym.reason || '',
+                    features: gym.features || '',
+                    rating: gym.rating || null,
+                    status: '',
+                    scrapedAt: gym.scraped_at || null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                newCount++;
+            }
+
+            if (newCount > 0) {
+                await batch.commit();
+            }
+
+            return { newCount, skipCount };
+        }
+
+        // ジムの状態をFirestoreで更新
+        async function updateGymStatusInFirestore(gymId, status) {
+            try {
+                await db.collection(GYMS_COLLECTION).doc(gymId).update({
+                    status: status,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (err) {
+                console.error('状態更新エラー:', err);
+            }
+        }
+
+        async function initGymHunter() {
+            if (gymHunterInitialized) return;
+            gymHunterInitialized = true;
+
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+
+            // ドラッグ&ドロップ
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#667eea';
+                dropZone.style.background = '#f0f4ff';
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.background = 'white';
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.background = 'white';
+                const file = e.dataTransfer.files[0];
+                if (file) loadExcelFile(file);
+            });
+
+            // クリックでファイル選択
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) loadExcelFile(file);
+            });
+
+            // 既存データをFirestoreから読み込み
+            showGymLoading(true);
+            gymData = await loadGymsFromFirestore();
+            showGymLoading(false);
+
+            if (gymData.length > 0) {
+                displayGymList(gymData);
+                document.getElementById('filter-section').style.display = 'block';
+                document.getElementById('list-section').style.display = 'block';
+                updateGymCount(gymData.length);
+            }
+        }
+
+        function showGymLoading(show) {
+            const dropZone = document.getElementById('drop-zone');
+            if (show) {
+                dropZone.innerHTML = '<p class="text-gray-500">読み込み中...</p>';
+            } else {
+                dropZone.innerHTML = `
+                    <p class="text-gray-500 mb-2">Excelファイルをドラッグ&ドロップ</p>
+                    <p class="text-gray-400 text-sm">または クリックして選択</p>
+                `;
+            }
+        }
+
+        async function loadExcelFile(file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const excelData = XLSX.utils.sheet_to_json(sheet);
+
+                    // Firestoreに保存（重複チェック付き）
+                    showGymLoading(true);
+                    const result = await saveGymsToFirestore(excelData);
+
+                    // 最新データを再読み込み
+                    gymData = await loadGymsFromFirestore();
+                    showGymLoading(false);
+
+                    displayGymList(gymData);
+                    document.getElementById('filter-section').style.display = 'block';
+                    document.getElementById('list-section').style.display = 'block';
+                    updateGymCount(gymData.length);
+
+                    // 結果を通知
+                    alert(`インポート完了\n新規追加: ${result.newCount}件\nスキップ（重複）: ${result.skipCount}件`);
+                } catch (err) {
+                    alert('ファイル読み込みエラー: ' + err.message);
+                    showGymLoading(false);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayGymList(data) {
+            const tbody = document.getElementById('gym-tbody');
+            tbody.innerHTML = '';
+
+            data.forEach((row, idx) => {
+                const rank = row.rank || 'B';
+                const rankStyle = getRankStyle(rank);
+                const reason = row.reason || '';
+                const shortReason = reason.substring(0, 60);
+                const hasMore = reason.length > 60;
+                const gymId = row.id || '';
+                const status = row.status || '';
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50 gym-row';
+                tr.dataset.rank = rank;
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3">
+                        <span class="px-3 py-1 rounded-full text-white font-bold ${rankStyle.bg}">${rank}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        ${renderStatusSelect(gymId, status, idx)}
+                    </td>
+                    <td class="px-4 py-3 font-medium">${escapeHtml(row.name || '')}</td>
+                    <td class="px-4 py-3">
+                        ${row.phone ? `<a href="tel:${row.phone}" class="text-blue-600 hover:underline">${escapeHtml(row.phone)}</a>` : '-'}
+                    </td>
+                    <td class="px-4 py-3 text-gray-600 text-xs" style="max-width: 350px;">
+                        <span id="reason-short-${idx}">${escapeHtml(shortReason)}${hasMore ? '...' : ''}</span>
+                        <span id="reason-full-${idx}" style="display:none;">${escapeHtml(reason)}</span>
+                        ${hasMore ? `<button onclick="toggleReason(${idx})" id="reason-btn-${idx}" class="ml-2 text-blue-500 hover:underline text-xs">▼ 展開</button>` : ''}
+                    </td>
+                    <td class="px-4 py-3">${row.rating || '-'}</td>
+                    <td class="px-4 py-3">
+                        ${row.website ? `<a href="${escapeHtml(row.website)}" target="_blank" class="text-blue-600 hover:underline">HP</a>` : '-'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getRankStyle(rank) {
+            const styles = {
+                'S': { bg: 'bg-green-500' },
+                'A': { bg: 'bg-blue-500' },
+                'B': { bg: 'bg-gray-400' },
+                'C': { bg: 'bg-red-400' }
+            };
+            return styles[rank] || styles['B'];
+        }
+
+        // 状態管理
+        const STATUS_OPTIONS = [
+            { value: '', label: '未対応', color: 'bg-gray-200 text-gray-600' },
+            { value: 'called', label: '架電済', color: 'bg-yellow-100 text-yellow-700' },
+            { value: 'negotiating', label: '商談中', color: 'bg-blue-100 text-blue-700' },
+            { value: 'closed', label: '成約', color: 'bg-green-100 text-green-700' },
+            { value: 'rejected', label: '見送り', color: 'bg-red-100 text-red-700' }
+        ];
+
+        function renderStatusSelect(gymId, currentStatus, idx) {
+            const options = STATUS_OPTIONS.map(opt =>
+                `<option value="${opt.value}" ${currentStatus === opt.value ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
+            return `<select onchange="updateStatus('${gymId}', this.value, ${idx})"
+                           id="status-${idx}"
+                           class="text-xs px-2 py-1 rounded border ${getStatusColor(currentStatus)}">
+                        ${options}
+                    </select>`;
+        }
+
+        function getStatusColor(status) {
+            const opt = STATUS_OPTIONS.find(o => o.value === status);
+            return opt ? opt.color : 'bg-gray-200 text-gray-600';
+        }
+
+        async function updateStatus(gymId, status, idx) {
+            // UIを即座に更新
+            const select = document.getElementById(`status-${idx}`);
+            select.className = `text-xs px-2 py-1 rounded border ${getStatusColor(status)}`;
+
+            // ローカルデータも更新
+            const gym = gymData.find(g => g.id === gymId);
+            if (gym) gym.status = status;
+
+            // Firestoreに保存
+            await updateGymStatusInFirestore(gymId, status);
+        }
+
+        function filterByRank(rank) {
+            const rows = document.querySelectorAll('.gym-row');
+            let count = 0;
+
+            rows.forEach(row => {
+                if (rank === 'all' || row.dataset.rank === rank) {
+                    row.style.display = '';
+                    count++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            updateGymCount(count);
+
+            // ボタンのアクティブ状態
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.style.opacity = '0.6';
+            });
+            event.target.style.opacity = '1';
+        }
+
+        function updateGymCount(count) {
+            document.getElementById('gym-count').textContent = `表示: ${count}件`;
+        }
+
+        function toggleReason(idx) {
+            const short = document.getElementById(`reason-short-${idx}`);
+            const full = document.getElementById(`reason-full-${idx}`);
+            const btn = document.getElementById(`reason-btn-${idx}`);
+
+            if (full.style.display === 'none') {
+                short.style.display = 'none';
+                full.style.display = 'inline';
+                btn.textContent = '▲ 閉じる';
+            } else {
+                short.style.display = 'inline';
+                full.style.display = 'none';
+                btn.textContent = '▼ 展開';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
         }
 
     </script>
