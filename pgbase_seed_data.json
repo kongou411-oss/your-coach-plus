@@ -1,0 +1,44 @@
+{
+  "articles": [
+    {
+      "id": "protein_001",
+      "title": "プロテイン科学と実践",
+      "summary": "筋タンパク質合成を最大化する科学的摂取戦略。タンパク質の必要量、最適なタイミング、ホエイ・カゼイン・ソイの使い分けを解説。",
+      "category": "PROTEIN",
+      "readingTime": 20,
+      "isPremium": false,
+      "order": 1,
+      "contentUrl": "https://your-coach-plus.web.app/module/Nutrition/macro/protein_textbook_new.html"
+    },
+    {
+      "id": "carbs_001",
+      "title": "炭水化物の教科書",
+      "summary": "GI値コントロールとタイミング戦略。炭水化物を敵ではなく味方にする科学的アプローチを解説。",
+      "category": "CARBS",
+      "readingTime": 10,
+      "isPremium": false,
+      "order": 2,
+      "contentUrl": "https://your-coach-plus.web.app/module/Nutrition/macro/carb_textbook_new.html"
+    },
+    {
+      "id": "fat_001",
+      "title": "脂質科学とオメガバランス",
+      "summary": "炎症抑制とパフォーマンス最大化のための脂質戦略。オメガ3・オメガ6のバランス、EPA・DHAの重要性を科学的に解説。",
+      "category": "FAT",
+      "readingTime": 25,
+      "isPremium": false,
+      "order": 3,
+      "contentUrl": "https://your-coach-plus.web.app/module/Nutrition/macro/fat_textbook_new.html"
+    },
+    {
+      "id": "mindset_001",
+      "title": "メンタルの教科書",
+      "summary": "モチベーション非依存の自動行動システム構築法。トップアスリートの思考法と24-42日間のマインドプログラミングを解説。",
+      "category": "MINDSET",
+      "readingTime": 12,
+      "isPremium": true,
+      "order": 4,
+      "contentUrl": "https://your-coach-plus.web.app/module/mental_textbook_new.html"
+    }
+  ]
+}

@@ -284,6 +284,7 @@ class FirestorePgBaseRepository(
             title = data["title"] as? String ?: "",
             summary = data["summary"] as? String ?: "",
             content = data["content"] as? String ?: "",
+            contentUrl = data["contentUrl"] as? String ?: "",
             category = category,
             readingTime = (data["readingTime"] as? Number)?.toInt() ?: 5,
             isPremium = data["isPremium"] as? Boolean ?: false,

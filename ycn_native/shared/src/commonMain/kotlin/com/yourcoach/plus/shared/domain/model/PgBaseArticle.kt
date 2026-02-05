@@ -25,7 +25,8 @@ data class PgBaseArticle(
     val id: String = "",
     val title: String = "",
     val summary: String = "",
-    val content: String = "",           // 記事本文（Markdown）
+    val content: String = "",           // 記事本文（Markdown）- 後方互換性のため残す
+    val contentUrl: String = "",        // 記事HTML URL（優先）
     val category: PgBaseCategory = PgBaseCategory.NUTRITION,
     val readingTime: Int = 5,           // 読了予想時間（分）
     val isPremium: Boolean = false,     // プレミアム記事かどうか

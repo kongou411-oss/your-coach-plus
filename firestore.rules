@@ -16,9 +16,9 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // 管理者かどうか（UIDベース）
+    // 管理者かどうか（メールアドレスベース）
     function isAdmin() {
-      return isAuthenticated() && request.auth.uid == 'jipZEwO1TPfSdm55qypEmPYwOA02';
+      return isAuthenticated() && request.auth.token.email == 'official@your-coach-plus.com';
     }
 
     // ============================================

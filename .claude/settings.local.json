@@ -128,7 +128,22 @@
       "Bash(firebase functions:delete:*)",
       "Bash(curl:*)",
       "Bash(du:*)",
-      "Bash(git -C \"C:/Users/yourc/ycn_re\" status --short)"
+      "Bash(git -C \"C:/Users/yourc/ycn_re\" status --short)",
+      "Bash(npm run seed:pgbase:*)",
+      "Bash(gcloud auth application-default login:*)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" devices)",
+      "Bash(\"$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe\" devices)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" install -r \"C:/Users/yourc/ycn_re/ycn_native/androidApp/build/outputs/apk/debug/androidApp-debug.apk\")",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" logcat -c)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" logcat -s ArticleDetailSheet:D FirestorePgBase:D)",
+      "Bash(ADB=\"$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe\")",
+      "Bash(\"$ADB\" logcat -c)",
+      "Bash(timeout 20 \"$ADB\" logcat:*)",
+      "Bash(\"$HOME/AppData/Local/Android/Sdk/platform-tools/adb.exe\" install -r \"C:/Users/yourc/ycn_re/ycn_native/androidApp/build/outputs/apk/debug/androidApp-debug.apk\")",
+      "Bash(done)",
+      "Bash(magick:*)",
+      "Bash(convert:*)",
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []
