@@ -164,9 +164,7 @@ class FirebaseAuthRepository : AuthRepository {
      * 現在のユーザーIDを取得
      */
     override fun getCurrentUserId(): String? {
-        val uid = auth.currentUser?.uid
-        Log.d("FirebaseAuthRepo", "getCurrentUserId: currentUser=${auth.currentUser}, uid=$uid")
-        return uid
+        return auth.currentUser?.uid
     }
 
     /**
@@ -180,30 +178,18 @@ class FirebaseAuthRepository : AuthRepository {
      * アカウント削除
      */
     override suspend fun deleteAccount(): Result<Unit> {
-        Log.d("FirebaseAuthRepo", "deleteAccount called")
-        Log.d("FirebaseAuthRepo", "auth instance: $auth")
-        Log.d("FirebaseAuthRepo", "auth.currentUser: ${auth.currentUser}")
-        Log.d("FirebaseAuthRepo", "auth.currentUser?.uid: ${auth.currentUser?.uid}")
-
         return try {
             val user = auth.currentUser
-            if (user == null) {
-                Log.e("FirebaseAuthRepo", "currentUser is NULL in deleteAccount!")
-                return Result.failure(AppError.AuthenticationError("ログインしていません"))
-            }
+                ?: return Result.failure(AppError.AuthenticationError("ログインしていません"))
 
-            Log.d("FirebaseAuthRepo", "Calling user.delete()...")
             user.delete().await()
-            Log.d("FirebaseAuthRepo", "user.delete() SUCCESS")
             Result.success(Unit)
         } catch (e: FirebaseAuthRecentLoginRequiredException) {
-            Log.d("FirebaseAuthRepo", "FirebaseAuthRecentLoginRequiredException caught")
             Result.failure(AppError.RecentLoginRequired())
         } catch (e: Exception) {
             Log.e("FirebaseAuthRepo", "Exception in deleteAccount: ${e.message}", e)
             if (e.message?.contains("REQUIRES_RECENT_LOGIN") == true ||
                 e.message?.contains("requires-recent-login") == true) {
-                Log.d("FirebaseAuthRepo", "Detected REQUIRES_RECENT_LOGIN in message")
                 Result.failure(AppError.RecentLoginRequired())
             } else {
                 Result.failure(mapFirebaseAuthError(e))
@@ -215,42 +201,21 @@ class FirebaseAuthRepository : AuthRepository {
      * Googleで再認証してアカウント削除
      */
     suspend fun reauthenticateWithGoogleAndDelete(idToken: String): Result<Unit> {
-        Log.d("FirebaseAuthRepo", "reauthenticateWithGoogleAndDelete called")
-        Log.d("FirebaseAuthRepo", "idToken length: ${idToken.length}")
-        Log.d("FirebaseAuthRepo", "currentUser before reauth: ${auth.currentUser?.uid}")
-        Log.d("FirebaseAuthRepo", "currentUser email: ${auth.currentUser?.email}")
-
         return try {
             val currentUser = auth.currentUser
-            if (currentUser == null) {
-                Log.e("FirebaseAuthRepo", "currentUser is NULL before reauthenticate!")
-                return Result.failure(AppError.AuthenticationError("ログインしていません（currentUser is null）"))
-            }
+                ?: return Result.failure(AppError.AuthenticationError("ログインしていません（currentUser is null）"))
 
-            Log.d("FirebaseAuthRepo", "Creating Google credential...")
             val credential = GoogleAuthProvider.getCredential(idToken, null)
-
-            Log.d("FirebaseAuthRepo", "Calling reauthenticate...")
             currentUser.reauthenticate(credential).await()
-            Log.d("FirebaseAuthRepo", "Reauthenticate SUCCESS")
-
-            Log.d("FirebaseAuthRepo", "currentUser after reauth: ${auth.currentUser?.uid}")
 
             // 再認証成功後に削除
             val userAfterReauth = auth.currentUser
-            if (userAfterReauth == null) {
-                Log.e("FirebaseAuthRepo", "currentUser is NULL after reauthenticate!")
-                return Result.failure(AppError.AuthenticationError("再認証後にログイン状態が失われました"))
-            }
+                ?: return Result.failure(AppError.AuthenticationError("再認証後にログイン状態が失われました"))
 
-            Log.d("FirebaseAuthRepo", "Calling delete...")
             userAfterReauth.delete().await()
-            Log.d("FirebaseAuthRepo", "Delete SUCCESS")
-
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("FirebaseAuthRepo", "Error in reauthenticateWithGoogleAndDelete", e)
-            Log.e("FirebaseAuthRepo", "Error message: ${e.message}")
+            Log.e("FirebaseAuthRepo", "Error in reauthenticateWithGoogleAndDelete: ${e.message}", e)
             Result.failure(mapFirebaseAuthError(e))
         }
     }

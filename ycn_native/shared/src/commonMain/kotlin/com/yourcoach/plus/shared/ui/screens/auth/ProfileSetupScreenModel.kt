@@ -2,11 +2,12 @@ package com.yourcoach.plus.shared.ui.screens.auth
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.yourcoach.plus.shared.domain.model.ActivityLevel
-import com.yourcoach.plus.shared.domain.model.FitnessGoal
-import com.yourcoach.plus.shared.domain.model.Gender
-import com.yourcoach.plus.shared.domain.model.UserProfile
+import com.yourcoach.plus.shared.domain.model.*
+import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.RoutineRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,34 +15,62 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
+ * デフォルトのルーティン日数（7日間・休養日2日含む）
+ * Android版と同じ: Day 3, Day 7 が休養日
+ */
+val DEFAULT_ROUTINE_DAYS = listOf(
+    RoutineDay(id = "1", dayNumber = 1, name = "Day 1", splitType = "胸", isRestDay = false),
+    RoutineDay(id = "2", dayNumber = 2, name = "Day 2", splitType = "背中", isRestDay = false),
+    RoutineDay(id = "3", dayNumber = 3, name = "Day 3", splitType = "休み", isRestDay = true),
+    RoutineDay(id = "4", dayNumber = 4, name = "Day 4", splitType = "肩", isRestDay = false),
+    RoutineDay(id = "5", dayNumber = 5, name = "Day 5", splitType = "腕", isRestDay = false),
+    RoutineDay(id = "6", dayNumber = 6, name = "Day 6", splitType = "脚", isRestDay = false),
+    RoutineDay(id = "7", dayNumber = 7, name = "Day 7", splitType = "休み", isRestDay = true)
+)
+
+/**
  * プロフィール設定の状態
  */
 data class ProfileSetupState(
+    // ステップ管理
     val currentStep: Int = 0,
-    val totalSteps: Int = 4,
-    // Step 0: 基本情報
+    val totalSteps: Int = 4, // 0:イントロ, 1:プロフィール, 2:ルーティン, 3:食事スロット
+
+    // ========== プロフィールデータ ==========
     val nickname: String = "",
-    val age: String = "25",
+    val age: String = "",
     val gender: Gender = Gender.MALE,
-    val style: String = "一般",
-    // Step 1: 体組成
-    val height: String = "170",
-    val weight: String = "70",
-    val bodyFatPercentage: String = "15",
-    val targetWeight: String = "70",
-    // Step 2: 目標・活動レベル
+    val height: String = "",
+    val weight: String = "",
+    val bodyFatPercentage: String = "",
+    val targetWeight: String = "",
     val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
-    val calorieAdjustment: Int = 0,
     val mealsPerDay: Int = 5,
-    // PFCバランス
     val proteinRatio: Int = 30,
     val fatRatio: Int = 25,
     val carbRatio: Int = 45,
-    // Step 3: 理想目標
-    val idealWeight: String = "70",
-    val idealBodyFatPercentage: String = "15",
-    // UI状態
+    val calorieAdjustment: Int = 0,
+    val budgetTier: Int = 2, // 1=節約, 2=標準
+
+    // ========== ルーティンデータ ==========
+    val routineDays: List<RoutineDay> = DEFAULT_ROUTINE_DAYS,
+
+    // ========== 食事スロットデータ ==========
+    val wakeUpTime: String = "07:00",
+    val sleepTime: String = "23:00",
+    val trainingTime: String? = "17:00",
+    val trainingAfterMeal: Int? = 3,
+    val trainingDuration: Int = 120,
+    val trainingStyle: TrainingStyle = TrainingStyle.PUMP,
+    val mealSlotConfig: MealSlotConfig = MealSlotConfig.createDefault(5),
+
+    // ========== 計算値 ==========
+    val bmr: Float? = null,
+    val tdee: Float? = null,
+    val targetCalories: Int? = null,
+
+    // ========== UI状態 ==========
     val isLoading: Boolean = false,
     val error: String? = null,
     val validationError: String? = null
@@ -49,14 +78,46 @@ data class ProfileSetupState(
 
 /**
  * プロフィール設定ScreenModel (Voyager)
+ * Android版OnboardingScreenと同等の機能を提供
  */
 class ProfileSetupScreenModel(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val routineRepository: RoutineRepository,
+    private val authRepository: AuthRepository
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(ProfileSetupState())
     val state: StateFlow<ProfileSetupState> = _state.asStateFlow()
 
+    // iOS対応: コルーチン例外ハンドラー（NULLクラッシュ防止）
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        println("ProfileSetupScreenModel: Coroutine exception: ${throwable.message}")
+        _state.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+    }
+
+    /**
+     * 初期化は遅延実行（画面表示後にLaunchedEffectで呼ぶ）
+     * iOS対応: Firebase呼び出しを完全にキャッチ
+     */
+    fun initializeNickname() {
+        if (_state.value.nickname.isNotEmpty()) return // 既に設定済み
+
+        // iOSでのクラッシュ防止: 例外ハンドラー付きで非同期実行
+        screenModelScope.launch(exceptionHandler) {
+            try {
+                val currentUser = authRepository.getCurrentUser()
+                val initialNickname = currentUser?.email?.substringBefore("@") ?: ""
+                if (initialNickname.isNotEmpty()) {
+                    _state.update { it.copy(nickname = initialNickname) }
+                }
+            } catch (e: Throwable) {
+                // 初期化エラーは無視（ニックネームは空のまま）
+                println("ProfileSetupScreenModel: initializeNickname error: ${e.message}")
+            }
+        }
+    }
+
+    // ========== プロフィール更新 ==========
     fun updateNickname(value: String) = _state.update { it.copy(nickname = value, validationError = null) }
     fun updateAge(value: String) = _state.update { it.copy(age = value, validationError = null) }
 
@@ -69,24 +130,36 @@ class ProfileSetupScreenModel(
         _state.update {
             it.copy(
                 gender = value,
-                height = defaults.first,
-                weight = defaults.second,
-                bodyFatPercentage = defaults.third,
-                targetWeight = defaults.second,
-                idealWeight = defaults.second,
-                idealBodyFatPercentage = defaults.third,
+                height = if (it.height.isBlank()) defaults.first else it.height,
+                weight = if (it.weight.isBlank()) defaults.second else it.weight,
+                bodyFatPercentage = if (it.bodyFatPercentage.isBlank()) defaults.third else it.bodyFatPercentage,
                 validationError = null
             )
         }
+        recalculateTDEE()
     }
 
-    fun updateStyle(value: String) = _state.update { it.copy(style = value, validationError = null) }
-    fun updateHeight(value: String) = _state.update { it.copy(height = value, validationError = null) }
-    fun updateWeight(value: String) = _state.update { it.copy(weight = value, validationError = null) }
-    fun updateBodyFatPercentage(value: String) = _state.update { it.copy(bodyFatPercentage = value, validationError = null) }
+    fun updateHeight(value: String) {
+        _state.update { it.copy(height = value, validationError = null) }
+        recalculateTDEE()
+    }
+
+    fun updateWeight(value: String) {
+        _state.update { it.copy(weight = value, validationError = null) }
+        recalculateTDEE()
+    }
+
+    fun updateBodyFatPercentage(value: String) {
+        _state.update { it.copy(bodyFatPercentage = value, validationError = null) }
+        recalculateTDEE()
+    }
+
     fun updateTargetWeight(value: String) = _state.update { it.copy(targetWeight = value, validationError = null) }
-    fun updateActivityLevel(value: ActivityLevel) = _state.update { it.copy(activityLevel = value, validationError = null) }
-    fun updateMealsPerDay(value: Int) = _state.update { it.copy(mealsPerDay = value) }
+
+    fun updateActivityLevel(value: ActivityLevel) {
+        _state.update { it.copy(activityLevel = value, validationError = null) }
+        recalculateTDEE()
+    }
 
     fun updateGoal(value: FitnessGoal) {
         val adjustment = when (value) {
@@ -95,23 +168,178 @@ class ProfileSetupScreenModel(
             else -> 0
         }
         _state.update { it.copy(goal = value, calorieAdjustment = adjustment, validationError = null) }
+        recalculateTDEE()
     }
 
-    fun updateCalorieAdjustment(value: Int) = _state.update { it.copy(calorieAdjustment = value) }
+    fun updateMealsPerDay(value: Int) {
+        _state.update {
+            it.copy(
+                mealsPerDay = value,
+                mealSlotConfig = MealSlotConfig.createDefault(value)
+            )
+        }
+    }
+
+    fun updateCalorieAdjustment(value: Int) {
+        _state.update { it.copy(calorieAdjustment = value) }
+        recalculateTDEE()
+    }
 
     fun updateProteinRatio(value: Int) {
-        val remaining = 100 - value - _state.value.fatRatio
-        _state.update { it.copy(proteinRatio = value, carbRatio = remaining.coerceIn(15, 60)) }
+        val s = _state.value
+        val diff = value - s.proteinRatio
+        val newCarbRatio = (s.carbRatio - diff / 2).coerceIn(10, 60)
+        val newFatRatio = (s.fatRatio - diff + diff / 2).coerceIn(10, 50)
+        _state.update { it.copy(proteinRatio = value, fatRatio = newFatRatio, carbRatio = newCarbRatio) }
     }
 
     fun updateFatRatio(value: Int) {
-        val remaining = 100 - _state.value.proteinRatio - value
-        _state.update { it.copy(fatRatio = value, carbRatio = remaining.coerceIn(15, 60)) }
+        val s = _state.value
+        val diff = value - s.fatRatio
+        val newCarbRatio = (s.carbRatio - diff).coerceIn(10, 60)
+        _state.update { it.copy(fatRatio = value, carbRatio = newCarbRatio) }
     }
 
-    fun updateIdealWeight(value: String) = _state.update { it.copy(idealWeight = value, validationError = null) }
-    fun updateIdealBodyFatPercentage(value: String) = _state.update { it.copy(idealBodyFatPercentage = value, validationError = null) }
+    fun updateCarbRatio(value: Int) {
+        val s = _state.value
+        val diff = value - s.carbRatio
+        val newProteinRatio = (s.proteinRatio - diff).coerceIn(10, 50)
+        _state.update { it.copy(carbRatio = value, proteinRatio = newProteinRatio) }
+    }
 
+    fun updateBudgetTier(value: Int) = _state.update { it.copy(budgetTier = value) }
+
+    // ========== ルーティン更新 ==========
+    fun updateRoutineDays(days: List<RoutineDay>) = _state.update { it.copy(routineDays = days) }
+
+    fun addRoutineDay() {
+        val s = _state.value
+        if (s.routineDays.size < 10) {
+            val nextDayNumber = s.routineDays.size + 1
+            val newDay = RoutineDay(
+                id = nextDayNumber.toString(),
+                dayNumber = nextDayNumber,
+                name = "Day $nextDayNumber",
+                splitType = "",
+                isRestDay = false
+            )
+            _state.update { it.copy(routineDays = it.routineDays + newDay) }
+        }
+    }
+
+    fun removeRoutineDay(dayNumber: Int) {
+        val s = _state.value
+        if (s.routineDays.size > 2 && dayNumber > 2) {
+            val newDays = s.routineDays
+                .filter { it.dayNumber != dayNumber }
+                .mapIndexed { i, d -> d.copy(id = (i + 1).toString(), dayNumber = i + 1, name = "Day ${i + 1}") }
+            _state.update { it.copy(routineDays = newDays) }
+        }
+    }
+
+    fun moveRoutineDayUp(index: Int) {
+        val s = _state.value
+        if (index > 0) {
+            val newDays = s.routineDays.toMutableList()
+            val temp = newDays.removeAt(index)
+            newDays.add(index - 1, temp)
+            _state.update {
+                it.copy(routineDays = newDays.mapIndexed { i, d ->
+                    d.copy(id = (i + 1).toString(), dayNumber = i + 1, name = "Day ${i + 1}")
+                })
+            }
+        }
+    }
+
+    fun moveRoutineDayDown(index: Int) {
+        val s = _state.value
+        if (index < s.routineDays.size - 1) {
+            val newDays = s.routineDays.toMutableList()
+            val temp = newDays.removeAt(index)
+            newDays.add(index + 1, temp)
+            _state.update {
+                it.copy(routineDays = newDays.mapIndexed { i, d ->
+                    d.copy(id = (i + 1).toString(), dayNumber = i + 1, name = "Day ${i + 1}")
+                })
+            }
+        }
+    }
+
+    fun updateRoutineDaySplitType(dayNumber: Int, splitType: String) {
+        _state.update { s ->
+            s.copy(routineDays = s.routineDays.map {
+                if (it.dayNumber == dayNumber) it.copy(splitType = splitType, isRestDay = false) else it
+            })
+        }
+    }
+
+    fun updateRoutineDayRestDay(dayNumber: Int, isRestDay: Boolean) {
+        _state.update { s ->
+            s.copy(routineDays = s.routineDays.map {
+                if (it.dayNumber == dayNumber) it.copy(isRestDay = isRestDay, splitType = if (isRestDay) "休み" else it.splitType) else it
+            })
+        }
+    }
+
+    // ========== 食事スロット更新 ==========
+    fun updateWakeUpTime(value: String) = _state.update { it.copy(wakeUpTime = value) }
+    fun updateSleepTime(value: String) = _state.update { it.copy(sleepTime = value) }
+    fun updateTrainingTime(value: String?) = _state.update { it.copy(trainingTime = value) }
+    fun updateTrainingAfterMeal(value: Int?) = _state.update { it.copy(trainingAfterMeal = value) }
+    fun updateTrainingDuration(value: Int) = _state.update { it.copy(trainingDuration = value) }
+    fun updateTrainingStyle(value: TrainingStyle) = _state.update { it.copy(trainingStyle = value) }
+    fun updateMealSlotConfig(value: MealSlotConfig) = _state.update { it.copy(mealSlotConfig = value) }
+
+    fun generateTimeline() {
+        val s = _state.value
+        val newConfig = MealSlotConfig.createTimelineRoutine(
+            mealsPerDay = s.mealsPerDay,
+            trainingAfterMeal = s.trainingAfterMeal
+        )
+        _state.update { it.copy(mealSlotConfig = newConfig) }
+    }
+
+    fun updateSlotFoodChoice(slotNumber: Int, choice: FoodChoice) {
+        val s = _state.value
+        val updatedSlots = s.mealSlotConfig.slots.map {
+            if (it.slotNumber == slotNumber) it.copy(defaultFoodChoice = choice) else it
+        }
+        _state.update { it.copy(mealSlotConfig = s.mealSlotConfig.copy(slots = updatedSlots)) }
+    }
+
+    // ========== TDEE計算 ==========
+    private fun recalculateTDEE() {
+        val s = _state.value
+        val w = s.weight.toFloatOrNull() ?: return
+        val h = s.height.toFloatOrNull() ?: return
+        val bf = s.bodyFatPercentage.toFloatOrNull()
+        val a = s.age.toIntOrNull()
+
+        // Katch-McArdle式（体脂肪率がある場合）は年齢不要
+        // Mifflin-St Jeor式は年齢が必要
+        val bmr = if (bf != null && bf > 0 && bf < 100) {
+            // Katch-McArdle式: LBMベース
+            val lbm = w * (1 - bf / 100)
+            370 + 21.6f * lbm
+        } else if (a != null) {
+            // Mifflin-St Jeor式: 年齢が必要
+            when (s.gender) {
+                Gender.MALE -> 10 * w + 6.25f * h - 5 * a + 5
+                Gender.FEMALE -> 10 * w + 6.25f * h - 5 * a - 161
+                Gender.OTHER -> 10 * w + 6.25f * h - 5 * a - 78
+            }
+        } else {
+            // 年齢も体脂肪率もない場合は計算できない
+            return
+        }
+
+        val tdee = bmr * s.activityLevel.multiplier
+        val targetCalories = (tdee + s.calorieAdjustment).toInt()
+
+        _state.update { it.copy(bmr = bmr, tdee = tdee, targetCalories = targetCalories) }
+    }
+
+    // ========== ステップナビゲーション ==========
     fun nextStep(): Boolean {
         if (!validateCurrentStep()) return false
         if (_state.value.currentStep < _state.value.totalSteps - 1) {
@@ -129,31 +357,20 @@ class ProfileSetupScreenModel(
     private fun validateCurrentStep(): Boolean {
         val s = _state.value
         when (s.currentStep) {
-            0 -> {
-                if (s.nickname.isBlank()) {
-                    _state.update { it.copy(validationError = "ニックネームを入力してください") }
-                    return false
-                }
-                val age = s.age.toIntOrNull()
-                if (age == null || age < 10 || age > 120) {
-                    _state.update { it.copy(validationError = "年齢は10〜120歳で入力してください") }
-                    return false
-                }
-            }
-            1 -> {
+            1 -> { // プロフィールステップ
                 val height = s.height.toFloatOrNull()
                 if (height == null || height < 100 || height > 250) {
-                    _state.update { it.copy(validationError = "身長は100〜250cmで入力してください") }
+                    _state.update { it.copy(validationError = "身長を入力してください") }
                     return false
                 }
                 val weight = s.weight.toFloatOrNull()
                 if (weight == null || weight < 30 || weight > 300) {
-                    _state.update { it.copy(validationError = "体重は30〜300kgで入力してください") }
+                    _state.update { it.copy(validationError = "体重を入力してください") }
                     return false
                 }
                 val bf = s.bodyFatPercentage.toFloatOrNull()
                 if (bf == null || bf < 3 || bf > 50) {
-                    _state.update { it.copy(validationError = "体脂肪率は3〜50%で入力してください") }
+                    _state.update { it.copy(validationError = "体脂肪率を入力してください") }
                     return false
                 }
             }
@@ -161,74 +378,114 @@ class ProfileSetupScreenModel(
         return true
     }
 
-    fun saveProfile(userId: String, onComplete: () -> Unit) {
-        if (!validateCurrentStep()) return
+    // ========== 保存処理 ==========
+    fun saveAllAndComplete(userId: String, onComplete: () -> Unit) {
+        // "official" ニックネームは official@your-coach-plus.com のみ許可
+        val s = _state.value
+        val currentEmail = authRepository.getCurrentUser()?.email
+        if (s.nickname.lowercase() == "official" && currentEmail != "official@your-coach-plus.com") {
+            _state.update { it.copy(error = "「official」は予約されたニックネームです") }
+            return
+        }
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val s = _state.value
+                // PFC計算
+                val calcTargetProtein = s.targetCalories?.let { cal -> (cal * s.proteinRatio / 100f / 4f) }
+                val calcTargetFat = s.targetCalories?.let { cal -> (cal * s.fatRatio / 100f / 9f) }
+                val calcTargetCarbs = s.targetCalories?.let { cal -> (cal * s.carbRatio / 100f / 4f) }
 
-                // 一時的なプロファイルを作成してTDEE計算
-                val tempProfile = UserProfile(
-                    age = s.age.toIntOrNull() ?: 25,
-                    gender = s.gender,
-                    height = s.height.toFloatOrNull() ?: 170f,
-                    weight = s.weight.toFloatOrNull() ?: 70f,
-                    activityLevel = s.activityLevel
-                )
-                val tdee = tempProfile.calculateTDEE()
-                val targetCalories = tdee?.let { (it + s.calorieAdjustment).toInt() }
-
-                // PFC比率からグラム数を計算
-                val calcTargetProtein = targetCalories?.let { cal ->
-                    (cal * s.proteinRatio / 100f / 4f)
-                }
-                val calcTargetFat = targetCalories?.let { cal ->
-                    (cal * s.fatRatio / 100f / 9f)
-                }
-                val calcTargetCarbs = targetCalories?.let { cal ->
-                    (cal * s.carbRatio / 100f / 4f)
-                }
-
+                // プロフィール保存
                 val profile = UserProfile(
-                    nickname = s.nickname,
-                    age = s.age.toIntOrNull() ?: 25,
+                    nickname = s.nickname.takeIf { it.isNotBlank() },
                     gender = s.gender,
-                    style = s.style,
-                    height = s.height.toFloatOrNull() ?: 170f,
-                    weight = s.weight.toFloatOrNull() ?: 70f,
-                    bodyFatPercentage = s.bodyFatPercentage.toFloatOrNull() ?: 15f,
+                    age = s.age.toIntOrNull(),
+                    height = s.height.toFloatOrNull(),
+                    weight = s.weight.toFloatOrNull(),
+                    bodyFatPercentage = s.bodyFatPercentage.toFloatOrNull(),
                     targetWeight = s.targetWeight.toFloatOrNull(),
                     activityLevel = s.activityLevel,
                     goal = s.goal,
-                    targetCalories = targetCalories,
+                    targetCalories = s.targetCalories,
                     targetProtein = calcTargetProtein,
                     targetFat = calcTargetFat,
                     targetCarbs = calcTargetCarbs,
-                    calorieAdjustment = s.calorieAdjustment,
-                    mealsPerDay = s.mealsPerDay,
                     proteinRatioPercent = s.proteinRatio,
                     fatRatioPercent = s.fatRatio,
                     carbRatioPercent = s.carbRatio,
-                    idealWeight = s.idealWeight.toFloatOrNull(),
-                    idealBodyFatPercentage = s.idealBodyFatPercentage.toFloatOrNull(),
+                    mealsPerDay = s.mealsPerDay,
+                    calorieAdjustment = s.calorieAdjustment,
+                    budgetTier = s.budgetTier,
+                    wakeUpTime = s.wakeUpTime,
+                    sleepTime = s.sleepTime,
+                    trainingTime = s.trainingTime,
+                    trainingAfterMeal = s.trainingAfterMeal,
+                    trainingDuration = s.trainingDuration,
+                    trainingStyle = s.trainingStyle,
+                    mealSlotConfig = s.mealSlotConfig,
                     onboardingCompleted = true
                 )
 
+                // プロフィール保存（エラーをキャッチ）
+                try {
+                    userRepository.updateProfile(userId, profile)
+                } catch (profileError: Throwable) {
+                    println("Profile save error: ${profileError.message}")
+                    throw Exception("プロフィール保存エラー: ${profileError.message ?: "不明なエラー"}")
+                }
+
+                // ルーティン保存（エラーをキャッチ）
+                try {
+                    val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                    val pattern = RoutinePattern(
+                        userId = userId,
+                        name = "${s.routineDays.size}日間分割",
+                        description = s.routineDays.map { if (it.isRestDay) "休" else it.splitType.take(1).ifEmpty { "?" } }.joinToString("→"),
+                        days = s.routineDays,
+                        isActive = true,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+                    routineRepository.savePattern(userId, pattern).getOrThrow()
+                } catch (routineError: Throwable) {
+                    println("Routine save error: ${routineError.message}")
+                    // ルーティン保存失敗でもプロフィールは保存済みなので続行
+                }
+
+                _state.update { it.copy(isLoading = false) }
+                onComplete()
+            } catch (e: Throwable) {
+                val errorMessage = when {
+                    e.message == null -> "ネットワークエラーが発生しました"
+                    e.message?.contains("network", ignoreCase = true) == true ||
+                    e.message?.contains("connection", ignoreCase = true) == true ||
+                    e.message?.contains("internet", ignoreCase = true) == true ->
+                        "ネットワーク接続を確認してください"
+                    e.message?.contains("permission", ignoreCase = true) == true ->
+                        "権限エラーが発生しました。再ログインしてください"
+                    else -> "保存に失敗しました: ${e.message}"
+                }
+                _state.update { it.copy(isLoading = false, error = errorMessage) }
+            }
+        }
+    }
+
+    fun skipOnboarding(userId: String, onComplete: () -> Unit) {
+        screenModelScope.launch(exceptionHandler) {
+            try {
+                val profile = UserProfile(onboardingCompleted = true)
                 userRepository.updateProfile(userId, profile)
-                    .onSuccess {
-                        _state.update { it.copy(isLoading = false) }
-                        onComplete()
-                    }
-                    .onFailure { e ->
-                        _state.update { it.copy(isLoading = false, error = e.message ?: "プロフィールの保存に失敗しました") }
-                    }
-            } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message ?: "プロフィールの保存に失敗しました") }
+                onComplete()
+            } catch (_: Exception) {
+                onComplete()
             }
         }
     }
 
     fun clearError() = _state.update { it.copy(error = null, validationError = null) }
+
+    // 後方互換性のため
+    @Deprecated("Use saveAllAndComplete instead", ReplaceWith("saveAllAndComplete(userId, onComplete)"))
+    fun saveProfile(userId: String, onComplete: () -> Unit) = saveAllAndComplete(userId, onComplete)
 }

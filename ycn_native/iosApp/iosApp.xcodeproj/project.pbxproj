@@ -12,6 +12,12 @@
 		2152FB042600AC8F00CF470E /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2152FB032600AC8F00CF470E /* iOSApp.swift */; };
 		7555FF83242A565900829871 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7555FF82242A565900829871 /* ContentView.swift */; };
 		9788091D817474FDD963C456 /* Pods_iosApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3917B6B101E81B95238F187 /* Pods_iosApp.framework */; };
+		AEC72E0D2F359C3E000D2F80 /* AppleSignInBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC72E0C2F359C3E000D2F80 /* AppleSignInBridge.swift */; };
+		AEC72E0F2F359C4F000D2F80 /* GoogleSignInBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC72E0E2F359C4F000D2F80 /* GoogleSignInBridge.swift */; };
+		AEC72E112F359C60000D2F80 /* FCMBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC72E102F359C60000D2F80 /* FCMBridge.swift */; };
+		AEC72E132F359C70000D2F80 /* StoreKit2Bridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC72E122F359C70000D2F80 /* StoreKit2Bridge.swift */; };
+		AEC72E172F359C90000D2F80 /* CameraBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC72E162F359C90000D2F80 /* CameraBridge.swift */; };
+		AEC72E192F359CA0000D2F80 /* CameraPreviewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC72E182F359CA0000D2F80 /* CameraPreviewManager.swift */; };
 		GOOGLESERVICE001 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = GOOGLESERVICE002 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
@@ -25,6 +31,13 @@
 		7555FF82242A565900829871 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7555FF8C242A565B00829871 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A3917B6B101E81B95238F187 /* Pods_iosApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_iosApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		AEC72E0C2F359C3E000D2F80 /* AppleSignInBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInBridge.swift; sourceTree = "<group>"; };
+		AEC72E0E2F359C4F000D2F80 /* GoogleSignInBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSignInBridge.swift; sourceTree = "<group>"; };
+		AEC72E102F359C60000D2F80 /* FCMBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FCMBridge.swift; sourceTree = "<group>"; };
+		AEC72E122F359C70000D2F80 /* StoreKit2Bridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKit2Bridge.swift; sourceTree = "<group>"; };
+		AEC72E162F359C90000D2F80 /* CameraBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraBridge.swift; sourceTree = "<group>"; };
+		AEC72E182F359CA0000D2F80 /* CameraPreviewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreviewManager.swift; sourceTree = "<group>"; };
+		AEC72E142F359D53000D2F80 /* iosApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
 		GOOGLESERVICE002 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -77,6 +90,13 @@
 		7555FF7D242A565900829871 /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
+				AEC72E142F359D53000D2F80 /* iosApp.entitlements */,
+				AEC72E0E2F359C4F000D2F80 /* GoogleSignInBridge.swift */,
+				AEC72E0C2F359C3E000D2F80 /* AppleSignInBridge.swift */,
+				AEC72E102F359C60000D2F80 /* FCMBridge.swift */,
+				AEC72E122F359C70000D2F80 /* StoreKit2Bridge.swift */,
+				AEC72E162F359C90000D2F80 /* CameraBridge.swift */,
+				AEC72E182F359CA0000D2F80 /* CameraPreviewManager.swift */,
 				2152FB032600AC8F00CF470E /* iOSApp.swift */,
 				7555FF82242A565900829871 /* ContentView.swift */,
 				058557BA273AAA24004C7B11 /* Assets.xcassets */,
@@ -93,7 +113,6 @@
 				40BEFCE5FCC73124909BB367 /* Pods-iosApp.debug.xcconfig */,
 				29BA741D032FDD1A3862383C /* Pods-iosApp.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -233,6 +252,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AEC72E0D2F359C3E000D2F80 /* AppleSignInBridge.swift in Sources */,
+				AEC72E0F2F359C4F000D2F80 /* GoogleSignInBridge.swift in Sources */,
+				AEC72E112F359C60000D2F80 /* FCMBridge.swift in Sources */,
+				AEC72E132F359C70000D2F80 /* StoreKit2Bridge.swift in Sources */,
+				AEC72E172F359C90000D2F80 /* CameraBridge.swift in Sources */,
+				AEC72E192F359CA0000D2F80 /* CameraPreviewManager.swift in Sources */,
 				2152FB042600AC8F00CF470E /* iOSApp.swift in Sources */,
 				7555FF83242A565900829871 /* ContentView.swift in Sources */,
 			);
@@ -362,6 +387,7 @@
 			baseConfigurationReference = 40BEFCE5FCC73124909BB367 /* Pods-iosApp.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = XXJV52U35P;
@@ -383,7 +409,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.yourcoach.plus;
 				PRODUCT_NAME = YourCoachPlus;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -392,6 +418,7 @@
 			baseConfigurationReference = 29BA741D032FDD1A3862383C /* Pods-iosApp.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = XXJV52U35P;
@@ -413,7 +440,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.yourcoach.plus;
 				PRODUCT_NAME = YourCoachPlus;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

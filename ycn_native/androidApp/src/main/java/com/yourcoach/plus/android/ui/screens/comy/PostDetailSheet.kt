@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,9 +64,11 @@ fun PostDetailSheet(
     comments: List<ComyComment>,
     isLiked: Boolean,
     isLoading: Boolean,
+    isOwnPost: Boolean = false,
     onDismiss: () -> Unit,
     onLikeClick: () -> Unit,
-    onAddComment: (String) -> Unit
+    onAddComment: (String) -> Unit,
+    onDeleteClick: () -> Unit = {}
 ) {
     var commentText by remember { mutableStateOf("") }
 
@@ -84,7 +87,9 @@ fun PostDetailSheet(
             PostDetailContent(
                 post = post,
                 isLiked = isLiked,
-                onLikeClick = onLikeClick
+                isOwnPost = isOwnPost,
+                onLikeClick = onLikeClick,
+                onDeleteClick = onDeleteClick
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -183,7 +188,9 @@ fun PostDetailSheet(
 private fun PostDetailContent(
     post: ComyPost,
     isLiked: Boolean,
-    onLikeClick: () -> Unit
+    isOwnPost: Boolean,
+    onLikeClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // ヘッダー（著者情報）
@@ -222,20 +229,36 @@ private fun PostDetailContent(
                 }
             }
 
-            // カテゴリタグ
-            Box(
-                modifier = Modifier
-                    .background(
-                        AccentOrange.copy(alpha = 0.1f),
-                        RoundedCornerShape(4.dp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // カテゴリタグ
+                Box(
+                    modifier = Modifier
+                        .background(
+                            AccentOrange.copy(alpha = 0.1f),
+                            RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "${post.category.emoji} ${post.category.displayName}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AccentOrange
                     )
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = "${post.category.emoji} ${post.category.displayName}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AccentOrange
-                )
+                }
+                if (isOwnPost) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "削除",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
         }
 
@@ -304,13 +327,17 @@ private fun PostDetailContent(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.ChatBubbleOutline,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier.size(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChatBubbleOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 Text(
                     text = "${post.commentCount}",
                     style = MaterialTheme.typography.bodyMedium,

@@ -5443,11 +5443,15 @@ exports.generateQuest = onCall({
     } else {
       paidCredits -= 1;
     }
+    // クレジット消費 + 経験値付与（10XP）
+    const currentExp = userData.experience || 0;
+    const newExp = currentExp + 10;
     await db.collection("users").doc(userId).update({
       freeCredits: freeCredits,
       paidCredits: paidCredits,
+      experience: newExp,
     });
-    console.log(`[Quest] Credit consumed. Remaining: ${freeCredits + paidCredits}`);
+    console.log(`[Quest] Credit consumed. Remaining: ${freeCredits + paidCredits}. XP: ${currentExp} → ${newExp}`);
 
     return {
       success: true,

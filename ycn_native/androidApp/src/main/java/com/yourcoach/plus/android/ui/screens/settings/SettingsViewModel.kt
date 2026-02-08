@@ -101,7 +101,6 @@ class SettingsViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val userId = authRepository.getCurrentUserId()
-                Log.d("SettingsVM", "loadUserInfo: userId = $userId")
                 if (userId != null) {
                     val result = userRepository.getUser(userId)
                     result.onSuccess { loadedUser ->
@@ -162,7 +161,16 @@ class SettingsViewModel(
      */
     fun toggleNotifications(enabled: Boolean) {
         _uiState.update { it.copy(notificationsEnabled = enabled) }
-        // TODO: 通知設定をFirestoreに保存
+        val userId = authRepository.getCurrentUserId() ?: return
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(userId)
+            .collection("settings")
+            .document("notifications")
+            .set(mapOf("enabled" to enabled))
+            .addOnFailureListener { e ->
+                Log.e("SettingsVM", "Failed to save notification settings: ${e.message}")
+            }
     }
 
     /**
@@ -224,27 +232,18 @@ class SettingsViewModel(
      * アカウント削除
      */
     fun deleteAccount() {
-        Log.d("SettingsVM", "deleteAccount() called")
         viewModelScope.launch {
             _uiState.update { it.copy(isDeletingAccount = true, needsReauthentication = false) }
             try {
                 val userId = authRepository.getCurrentUserId()
-                Log.d("SettingsVM", "deleteAccount: userId = $userId")
 
                 if (userId != null) {
-                    // 1. まずFirebase Authアカウント削除を試みる
-                    Log.d("SettingsVM", "Attempting to delete Firebase Auth account...")
                     val deleteAuthResult = authRepository.deleteAccount()
-                    Log.d("SettingsVM", "deleteAuthResult: ${deleteAuthResult.isSuccess}")
 
                     if (deleteAuthResult.isFailure) {
                         val error = deleteAuthResult.exceptionOrNull()
-                        Log.d("SettingsVM", "Delete failed, error type: ${error?.javaClass?.simpleName}")
-                        Log.d("SettingsVM", "Is RecentLoginRequired: ${error is AppError.RecentLoginRequired}")
 
                         if (error is AppError.RecentLoginRequired) {
-                            // 再認証が必要 - userIdを保存
-                            Log.d("SettingsVM", "Setting needsReauthentication=true, pendingDeleteUserId=$userId")
                             _uiState.update {
                                 it.copy(
                                     isDeletingAccount = false,
@@ -257,8 +256,6 @@ class SettingsViewModel(
                         throw error ?: Exception("アカウント削除に失敗しました")
                     }
 
-                    // 2. アカウント削除成功後、Firestoreのユーザーデータを削除
-                    Log.d("SettingsVM", "Deleting Firestore data...")
                     userRepository.deleteUserData(userId)
 
                     _uiState.update {
@@ -268,9 +265,7 @@ class SettingsViewModel(
                             pendingDeleteUserId = null
                         )
                     }
-                    Log.d("SettingsVM", "Account deleted successfully!")
                 } else {
-                    Log.e("SettingsVM", "userId is NULL in deleteAccount!")
                     _uiState.update {
                         it.copy(
                             isDeletingAccount = false,
@@ -295,22 +290,13 @@ class SettingsViewModel(
      * Googleで再認証してアカウント削除
      */
     fun reauthenticateAndDelete(idToken: String) {
-        Log.d("SettingsVM", "reauthenticateAndDelete called")
-        Log.d("SettingsVM", "idToken length: ${idToken.length}")
-        Log.d("SettingsVM", "pendingDeleteUserId: ${_uiState.value.pendingDeleteUserId}")
-
         viewModelScope.launch {
             _uiState.update { it.copy(isDeletingAccount = true, needsReauthentication = false) }
             try {
-                // 保存されたuserIdを使用（または現在のuserIdを取得）
                 val currentUserId = authRepository.getCurrentUserId()
-                Log.d("SettingsVM", "currentUserId from authRepo: $currentUserId")
-
                 val userId = _uiState.value.pendingDeleteUserId ?: currentUserId
-                Log.d("SettingsVM", "Using userId: $userId")
 
                 if (userId == null) {
-                    Log.e("SettingsVM", "userId is NULL!")
                     _uiState.update {
                         it.copy(
                             isDeletingAccount = false,
@@ -321,28 +307,17 @@ class SettingsViewModel(
                     return@launch
                 }
 
-                // FirebaseAuthRepositoryをキャストして再認証メソッドを呼び出す
                 val firebaseAuthRepo = authRepository as? FirebaseAuthRepository
-                if (firebaseAuthRepo == null) {
-                    Log.e("SettingsVM", "Failed to cast authRepository to FirebaseAuthRepository")
-                    throw Exception("認証リポジトリが不正です")
-                }
+                    ?: throw Exception("認証リポジトリが不正です")
 
-                Log.d("SettingsVM", "Calling reauthenticateWithGoogleAndDelete...")
-                // 再認証してアカウント削除
                 val result = firebaseAuthRepo.reauthenticateWithGoogleAndDelete(idToken)
-                Log.d("SettingsVM", "reauthenticateWithGoogleAndDelete result: ${result.isSuccess}")
 
                 if (result.isFailure) {
                     val error = result.exceptionOrNull()
-                    Log.e("SettingsVM", "reauthenticateWithGoogleAndDelete failed: ${error?.message}")
                     throw error ?: Exception("アカウント削除に失敗しました")
                 }
 
-                Log.d("SettingsVM", "Deleting user data from Firestore...")
-                // Firestoreのユーザーデータを削除
                 userRepository.deleteUserData(userId)
-                Log.d("SettingsVM", "User data deleted")
 
                 _uiState.update {
                     it.copy(
@@ -351,7 +326,6 @@ class SettingsViewModel(
                         pendingDeleteUserId = null
                     )
                 }
-                Log.d("SettingsVM", "Account deletion complete!")
             } catch (e: Exception) {
                 Log.e("SettingsVM", "Error in reauthenticateAndDelete", e)
                 _uiState.update {
@@ -705,8 +679,6 @@ class SettingsViewModel(
             try {
                 // 専用プロンプトでミクロ栄養素を推定（クレジット消費込み）
                 val prompt = buildNutritionAnalysisPrompt(food)
-                Log.d("SettingsVM", "Analyzing nutrition for: ${food.name}, userId: $userId")
-                Log.d("SettingsVM", "Calling sendMessageWithCredit...")
                 val response = geminiService.sendMessageWithCredit(
                     userId = userId,
                     message = prompt,
@@ -714,16 +686,10 @@ class SettingsViewModel(
                     userProfile = null,
                     model = "gemini-2.5-flash"
                 )
-                Log.d("SettingsVM", "Response: success=${response.success}, error=${response.error}, textLength=${response.text?.length}")
-
                 if (response.success && response.text != null) {
-                    Log.d("SettingsVM", "Parsing nutrition response...")
                     val nutrients = parseNutritionResponse(response.text!!)
-                    Log.d("SettingsVM", "Parsed nutrients: ${nutrients != null}")
 
                     if (nutrients != null) {
-                        // Firestoreに保存
-                        Log.d("SettingsVM", "Saving analyzed nutrients to Firestore...")
                         saveAnalyzedNutrients(userId, foodId, nutrients)
 
                         _uiState.update {
@@ -738,7 +704,6 @@ class SettingsViewModel(
                         loadCustomFoods()
                         loadUserInfo()
                     } else {
-                        Log.e("SettingsVM", "Failed to parse nutrients")
                         _uiState.update {
                             it.copy(
                                 isAnalyzingNutrition = false,
@@ -748,7 +713,6 @@ class SettingsViewModel(
                         }
                     }
                 } else {
-                    Log.e("SettingsVM", "API call failed: ${response.error}")
                     _uiState.update {
                         it.copy(
                             isAnalyzingNutrition = false,
@@ -831,10 +795,7 @@ class SettingsViewModel(
      */
     private fun parseNutritionResponse(responseText: String): Map<String, Any>? {
         return try {
-            Log.d("SettingsVM", "Raw AI response: $responseText")
-            // JSON部分を抽出
             val jsonString = extractJson(responseText)
-            Log.d("SettingsVM", "Extracted JSON: $jsonString")
             val json = JSONObject(jsonString)
 
             mapOf(

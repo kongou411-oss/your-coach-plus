@@ -3,10 +3,12 @@ package com.yourcoach.plus.shared.ui.screens.notification
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.notification.PushNotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
@@ -24,10 +26,10 @@ data class NotificationItem(
  * Notification tab types
  */
 enum class NotificationTab(val label: String) {
-    MEAL("Meal"),
-    WORKOUT("Workout"),
-    ANALYSIS("Analysis"),
-    CUSTOM("Custom")
+    MEAL("食事"),
+    WORKOUT("運動"),
+    ANALYSIS("分析"),
+    CUSTOM("カスタム")
 }
 
 /**
@@ -70,11 +72,17 @@ interface NotificationSettingsRepository {
  */
 class NotificationSettingsScreenModel(
     private val authRepository: AuthRepository,
+    private val pushNotificationHelper: PushNotificationHelper,
     private val notificationRepository: NotificationSettingsRepository? = null
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(NotificationSettingsUiState())
     val uiState: StateFlow<NotificationSettingsUiState> = _uiState.asStateFlow()
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        println("NotificationSettingsScreenModel: ${throwable.message}")
+        _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+    }
 
     private val userId: String?
         get() = authRepository.getCurrentUserId()
@@ -87,15 +95,34 @@ class NotificationSettingsScreenModel(
      * Check notification permission
      */
     fun checkNotificationPermission() {
-        val hasPermission = notificationRepository?.checkNotificationPermission() ?: false
-        _uiState.update { it.copy(hasNotificationPermission = hasPermission) }
+        screenModelScope.launch(exceptionHandler) {
+            val hasPermission = pushNotificationHelper.isPermissionGranted()
+            _uiState.update { it.copy(hasNotificationPermission = hasPermission) }
+        }
+    }
+
+    /**
+     * Request notification permission
+     */
+    fun requestNotificationPermission() {
+        screenModelScope.launch(exceptionHandler) {
+            val result = pushNotificationHelper.requestPermission()
+            result.onSuccess { granted ->
+                _uiState.update { it.copy(hasNotificationPermission = granted) }
+                if (granted) {
+                    pushNotificationHelper.saveTokenToFirestore()
+                }
+            }.onFailure {
+                _uiState.update { it.copy(error = "通知の許可に失敗しました") }
+            }
+        }
     }
 
     /**
      * Register FCM token
      */
     fun registerFcmToken() {
-        notificationRepository?.registerFcmToken()
+        pushNotificationHelper.saveTokenToFirestore()
     }
 
     /**
@@ -104,9 +131,9 @@ class NotificationSettingsScreenModel(
     fun selectTab(tab: NotificationTab) {
         // Set default values when switching tabs
         val (defaultTitle, defaultBody) = when (tab) {
-            NotificationTab.MEAL -> "Time to eat" to "Don't forget to log your meal!"
-            NotificationTab.WORKOUT -> "Time to workout" to "Let's start today's training!"
-            NotificationTab.ANALYSIS -> "Time for reflection" to "Check today's nutrition with AI analysis"
+            NotificationTab.MEAL -> "食事の時間です" to "食事を記録しましょう！"
+            NotificationTab.WORKOUT -> "運動の時間です" to "今日のトレーニングを始めましょう！"
+            NotificationTab.ANALYSIS -> "振り返りの時間です" to "AIで今日の栄養を分析しましょう"
             NotificationTab.CUSTOM -> "" to ""
         }
 
@@ -150,7 +177,7 @@ class NotificationSettingsScreenModel(
      * Load settings
      */
     private fun loadSettings() {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true) }
 
             try {
@@ -200,19 +227,19 @@ class NotificationSettingsScreenModel(
         val state = _uiState.value
 
         if (state.newTitle.isBlank()) {
-            _uiState.update { it.copy(error = "Please enter a title") }
+            _uiState.update { it.copy(error = "タイトルを入力してください") }
             return
         }
         if (state.newBody.isBlank()) {
-            _uiState.update { it.copy(error = "Please enter a message") }
+            _uiState.update { it.copy(error = "メッセージを入力してください") }
             return
         }
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isSaving = true) }
 
             try {
-                val uid = userId ?: throw Exception("Not logged in")
+                val uid = userId ?: throw Exception("ログインしていません")
 
                 val newItem = NotificationItem(
                     id = Clock.System.now().toEpochMilliseconds().toString(),
@@ -241,22 +268,22 @@ class NotificationSettingsScreenModel(
                         NotificationTab.MEAL -> it.copy(
                             mealNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification set for ${state.newTime}"
+                            successMessage = "${state.newTime}に通知を設定しました"
                         )
                         NotificationTab.WORKOUT -> it.copy(
                             workoutNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification set for ${state.newTime}"
+                            successMessage = "${state.newTime}に通知を設定しました"
                         )
                         NotificationTab.ANALYSIS -> it.copy(
                             analysisNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification set for ${state.newTime}"
+                            successMessage = "${state.newTime}に通知を設定しました"
                         )
                         NotificationTab.CUSTOM -> it.copy(
                             customNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification set for ${state.newTime}"
+                            successMessage = "${state.newTime}に通知を設定しました"
                         )
                     }
                 }
@@ -267,7 +294,7 @@ class NotificationSettingsScreenModel(
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = "Failed to set notification: ${e.message}",
+                        error = "通知の設定に失敗しました: ${e.message}",
                         isSaving = false
                     )
                 }
@@ -281,11 +308,11 @@ class NotificationSettingsScreenModel(
     fun removeNotification(item: NotificationItem) {
         val state = _uiState.value
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isSaving = true) }
 
             try {
-                val uid = userId ?: throw Exception("Not logged in")
+                val uid = userId ?: throw Exception("ログインしていません")
 
                 // Update local state
                 val updatedList = when (state.selectedTab) {
@@ -304,29 +331,29 @@ class NotificationSettingsScreenModel(
                         NotificationTab.MEAL -> it.copy(
                             mealNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification removed"
+                            successMessage = "通知を削除しました"
                         )
                         NotificationTab.WORKOUT -> it.copy(
                             workoutNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification removed"
+                            successMessage = "通知を削除しました"
                         )
                         NotificationTab.ANALYSIS -> it.copy(
                             analysisNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification removed"
+                            successMessage = "通知を削除しました"
                         )
                         NotificationTab.CUSTOM -> it.copy(
                             customNotifications = updatedList,
                             isSaving = false,
-                            successMessage = "Notification removed"
+                            successMessage = "通知を削除しました"
                         )
                     }
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = "Failed to remove notification: ${e.message}",
+                        error = "通知の削除に失敗しました: ${e.message}",
                         isSaving = false
                     )
                 }

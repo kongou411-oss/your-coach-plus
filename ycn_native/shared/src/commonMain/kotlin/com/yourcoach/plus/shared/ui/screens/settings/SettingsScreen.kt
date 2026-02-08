@@ -33,6 +33,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.CustomFood
 import com.yourcoach.plus.shared.ui.theme.*
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 /**
@@ -42,10 +43,10 @@ enum class SettingsTab(
     val label: String,
     val icon: ImageVector
 ) {
-    BASIC("Basic", Icons.Default.Person),
-    FEATURES("Features", Icons.Default.Tune),
-    DATA("Data", Icons.Default.Storage),
-    OTHER("Other", Icons.Default.MoreHoriz)
+    BASIC("基本", Icons.Default.Person),
+    FEATURES("機能", Icons.Default.Tune),
+    DATA("データ", Icons.Default.Storage),
+    OTHER("その他", Icons.Default.MoreHoriz)
 }
 
 /**
@@ -121,8 +122,8 @@ class SettingsScreen(
         if (showLogoutDialog) {
             AlertDialog(
                 onDismissRequest = { showLogoutDialog = false },
-                title = { Text("Logout") },
-                text = { Text("Are you sure you want to logout?") },
+                title = { Text("ログアウト") },
+                text = { Text("ログアウトしますか？") },
                 confirmButton = {
                     TextButton(
                         onClick = {
@@ -130,12 +131,12 @@ class SettingsScreen(
                             screenModel.logout()
                         }
                     ) {
-                        Text("Logout", color = Color.Red)
+                        Text("ログアウト", color = Color.Red)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showLogoutDialog = false }) {
-                        Text("Cancel")
+                        Text("キャンセル")
                     }
                 }
             )
@@ -149,13 +150,13 @@ class SettingsScreen(
                         showDeleteAccountDialog = false
                     }
                 },
-                title = { Text("Delete Account") },
+                title = { Text("アカウント削除") },
                 text = {
                     Column {
-                        Text("Are you sure you want to delete your account?")
+                        Text("アカウントを削除しますか？")
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "This action cannot be undone. All data (meal records, workout records, analysis history, etc.) will be permanently deleted.",
+                            "この操作は取り消せません。すべてのデータ（食事記録、運動記録、分析履歴など）が完全に削除されます。",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -174,7 +175,7 @@ class SettingsScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Delete", color = Color.Red)
+                            Text("削除", color = Color.Red)
                         }
                     }
                 },
@@ -183,7 +184,7 @@ class SettingsScreen(
                         onClick = { showDeleteAccountDialog = false },
                         enabled = !uiState.isDeletingAccount
                     ) {
-                        Text("Cancel")
+                        Text("キャンセル")
                     }
                 }
             )
@@ -209,6 +210,11 @@ class SettingsScreen(
                     isPremium = uiState.isPremium,
                     isUploadingPhoto = uiState.isUploadingPhoto,
                     organizationName = uiState.organizationName,
+                    isValidatingOrganization = uiState.isValidatingOrganization,
+                    organizationMessage = uiState.organizationMessage,
+                    onValidateOrganization = screenModel::validateOrganization,
+                    onLeaveOrganization = screenModel::leaveOrganization,
+                    onClearOrganizationMessage = screenModel::clearOrganizationMessage,
                     onLogout = { showLogoutDialog = true },
                     onDeleteAccount = { showDeleteAccountDialog = true },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -273,7 +279,8 @@ class SettingsScreen(
                             onUpdateCustomFood = { id, name, cal, p, c, f, fiber ->
                                 screenModel.updateCustomFood(id, name, cal, p, c, f, fiber)
                             },
-                            onDeleteCustomFood = { screenModel.deleteCustomFood(it) }
+                            onDeleteCustomFood = { screenModel.deleteCustomFood(it) },
+                            onAnalyzeNutrition = { screenModel.analyzeCustomFoodNutrition(it) }
                         )
                         SettingsTab.OTHER -> OtherSettingsTab(
                             appVersion = uiState.appVersion,
@@ -311,31 +318,31 @@ private fun BasicSettingsTab(
             SettingsCard {
                 SettingsRow(
                     icon = Icons.Default.Person,
-                    title = "Profile Settings",
-                    subtitle = "Edit height, weight, goals",
+                    title = "プロフィール設定",
+                    subtitle = "身長・体重・目標の編集",
                     onClick = onNavigateToProfile
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.Notifications,
-                    title = "Notification Settings",
-                    subtitle = "Manage reminders and notifications",
+                    title = "通知設定",
+                    subtitle = "リマインダーと通知の管理",
                     onClick = onNavigateToNotifications
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.EmojiEvents,
-                    title = "Achievements & Badges",
-                    subtitle = "View your achievements",
+                    title = "実績とバッジ",
+                    subtitle = "獲得した実績を確認",
                     onClick = onNavigateToBadges
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.Star,
-                    title = "Premium",
-                    subtitle = if (isPremium) "Premium Member" else "Upgrade features",
+                    title = "プレミアム",
+                    subtitle = if (isPremium) "プレミアム会員" else "機能をアップグレード",
                     onClick = onNavigateToPremium,
-                    badge = if (!isPremium) "Upgrade" else null,
+                    badge = if (!isPremium) "アップグレード" else null,
                     badgeColor = AccentOrange
                 )
             }
@@ -361,29 +368,29 @@ private fun FeaturesSettingsTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            SectionHeader("Routine & Templates")
+            SectionHeader("ルーティン・テンプレート")
         }
 
         item {
             SettingsCard {
                 SettingsRow(
                     icon = Icons.Default.Repeat,
-                    title = "Routine Settings",
-                    subtitle = "Set training splits by day",
+                    title = "ルーティン設定",
+                    subtitle = "曜日別トレーニング分割を設定",
                     onClick = onNavigateToRoutine
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.BookmarkAdd,
-                    title = "Template Management",
-                    subtitle = "Edit meal and workout templates",
+                    title = "テンプレート管理",
+                    subtitle = "食事・運動テンプレートの編集",
                     onClick = onNavigateToTemplates
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.Schedule,
-                    title = "Meal Slot Settings",
-                    subtitle = "Configure fixed/AI/routine-linked slots",
+                    title = "食事スロット設定",
+                    subtitle = "固定/AI/ルーティン連動スロットを設定",
                     onClick = onNavigateToMealSlots
                 )
             }
@@ -404,7 +411,8 @@ private fun DataSettingsTab(
     isAnalyzingNutrition: Boolean,
     analyzingFoodId: String?,
     onUpdateCustomFood: (String, String, Int, Float, Float, Float, Float) -> Unit,
-    onDeleteCustomFood: (String) -> Unit
+    onDeleteCustomFood: (String) -> Unit,
+    onAnalyzeNutrition: (String) -> Unit
 ) {
     var showCustomFoodsDialog by remember { mutableStateOf(false) }
     var editingFood by remember { mutableStateOf<CustomFood?>(null) }
@@ -427,7 +435,9 @@ private fun DataSettingsTab(
     }
 
     // Edit dialog
-    editingFood?.let { food ->
+    editingFood?.let { editFood ->
+        // customFoodsリストから最新データを参照（解析後の更新を反映）
+        val food = customFoods.find { it.id == editFood.id } ?: editFood
         CustomFoodEditDialog(
             food = food,
             totalCredits = totalCredits,
@@ -435,6 +445,9 @@ private fun DataSettingsTab(
             onSave = { name, cal, p, c, f, fiber ->
                 onUpdateCustomFood(food.id, name, cal, p, c, f, fiber)
                 editingFood = null
+            },
+            onAnalyze = {
+                onAnalyzeNutrition(food.id)
             },
             onDismiss = { editingFood = null }
         )
@@ -444,8 +457,8 @@ private fun DataSettingsTab(
     deletingFood?.let { food ->
         AlertDialog(
             onDismissRequest = { deletingFood = null },
-            title = { Text("Delete Confirmation") },
-            text = { Text("Delete \"${food.name}\"?") },
+            title = { Text("削除確認") },
+            text = { Text("「${food.name}」を削除しますか？") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -453,12 +466,12 @@ private fun DataSettingsTab(
                         deletingFood = null
                     }
                 ) {
-                    Text("Delete", color = Color.Red)
+                    Text("削除", color = Color.Red)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { deletingFood = null }) {
-                    Text("Cancel")
+                    Text("キャンセル")
                 }
             }
         )
@@ -471,15 +484,15 @@ private fun DataSettingsTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            SectionHeader("Custom Foods")
+            SectionHeader("カスタム食品")
         }
 
         item {
             SettingsCard {
                 SettingsRow(
                     icon = Icons.Default.Restaurant,
-                    title = "Manage Custom Foods",
-                    subtitle = if (customFoods.isEmpty()) "No registrations" else "${customFoods.size} registered",
+                    title = "カスタム食品を管理",
+                    subtitle = if (customFoods.isEmpty()) "登録なし" else "${customFoods.size}件登録済み",
                     onClick = { showCustomFoodsDialog = true }
                 )
             }
@@ -503,7 +516,7 @@ private fun CustomFoodsListDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Custom Foods", fontWeight = FontWeight.Bold)
+            Text("カスタム食品", fontWeight = FontWeight.Bold)
         },
         text = {
             if (isLoading) {
@@ -531,18 +544,18 @@ private fun CustomFoodsListDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "No custom foods",
+                            "カスタム食品がありません",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Foods not in the database will be",
+                            "データベースにない食品は",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "automatically saved when recorded",
+                            "記録時に自動保存されます",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -568,7 +581,7 @@ private fun CustomFoodsListDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text("閉じる")
             }
         }
     )
@@ -611,7 +624,7 @@ private fun CustomFoodItem(
                     if (food.isAiAnalyzed) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Micro analyzed",
+                            contentDescription = "栄養解析済み",
                             tint = AccentGreen,
                             modifier = Modifier.size(14.dp)
                         )
@@ -644,7 +657,7 @@ private fun CustomFoodItem(
                 }
                 if (food.usageCount > 0) {
                     Text(
-                        text = "Used ${food.usageCount} times",
+                        text = "${food.usageCount}回使用",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -658,7 +671,7 @@ private fun CustomFoodItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit",
+                        contentDescription = "編集",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
@@ -669,7 +682,7 @@ private fun CustomFoodItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = "削除",
                         tint = Color.Red,
                         modifier = Modifier.size(20.dp)
                     )
@@ -688,6 +701,7 @@ private fun CustomFoodEditDialog(
     totalCredits: Int,
     isAnalyzing: Boolean,
     onSave: (String, Int, Float, Float, Float, Float) -> Unit,
+    onAnalyze: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf(food.name) }
@@ -696,17 +710,18 @@ private fun CustomFoodEditDialog(
     var carbs by remember { mutableStateOf(food.carbs.toString()) }
     var fat by remember { mutableStateOf(food.fat.toString()) }
     var fiber by remember { mutableStateOf(food.fiber.toString()) }
+    var showMicroNutrients by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = { if (!isAnalyzing) onDismiss() },
-        title = { Text("Edit Custom Food", fontWeight = FontWeight.Bold) },
+        title = { Text("カスタム食品を編集", fontWeight = FontWeight.Bold) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    "Nutrition per 100g",
+                    "100gあたりの栄養素",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -714,7 +729,7 @@ private fun CustomFoodEditDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Food Name") },
+                    label = { Text("食品名") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -722,7 +737,7 @@ private fun CustomFoodEditDialog(
                 OutlinedTextField(
                     value = calories,
                     onValueChange = { calories = it.filter { c -> c.isDigit() } },
-                    label = { Text("Calories (kcal)") },
+                    label = { Text("カロリー (kcal)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -756,10 +771,128 @@ private fun CustomFoodEditDialog(
                 OutlinedTextField(
                     value = fiber,
                     onValueChange = { fiber = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("Fiber (g)") },
+                    label = { Text("食物繊維 (g)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // ミクロ栄養素セクション
+                Text(
+                    "ミクロ栄養素（ビタミン・ミネラル）",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (food.isAiAnalyzed) {
+                    // 解析済み表示
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = AccentGreen.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = AccentGreen,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    "AI解析済み",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AccentGreen
+                                )
+                                Text(
+                                    "ビタミン13種・ミネラル13種を取得済み",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    // ミクロ栄養素の詳細表示トグル
+                    TextButton(
+                        onClick = { showMicroNutrients = !showMicroNutrients },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (showMicroNutrients) "詳細を閉じる" else "詳細を表示")
+                        Icon(
+                            if (showMicroNutrients) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null
+                        )
+                    }
+
+                    if (showMicroNutrients) {
+                        MicroNutrientsDisplay(food)
+                    }
+                } else {
+                    // 未解析 - AI解析ボタン
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "ミクロ栄養素: 未取得",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Button(
+                                onClick = onAnalyze,
+                                enabled = !isAnalyzing && totalCredits >= 1,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AccentOrange
+                                )
+                            ) {
+                                if (isAnalyzing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("解析中...")
+                                } else {
+                                    Icon(
+                                        Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("ミクロ取得 (1クレジット)")
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "残りクレジット: $totalCredits",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (totalCredits >= 1) MaterialTheme.colorScheme.onSurfaceVariant else Color.Red
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -776,12 +909,12 @@ private fun CustomFoodEditDialog(
                 },
                 enabled = name.isNotBlank() && !isAnalyzing
             ) {
-                Text("Save")
+                Text("保存")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isAnalyzing) {
-                Text("Cancel")
+                Text("キャンセル")
             }
         }
     )
@@ -806,51 +939,84 @@ private fun OtherSettingsTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            SectionHeader("Support")
+            SectionHeader("サポート")
         }
 
         item {
             SettingsCard {
                 SettingsRow(
                     icon = Icons.AutoMirrored.Filled.Help,
-                    title = "Help",
-                    subtitle = "User Guide",
+                    title = "ヘルプ",
+                    subtitle = "使い方ガイド",
                     onClick = onNavigateToHelp
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.Feedback,
-                    title = "Feedback",
-                    subtitle = "Share your thoughts",
+                    title = "フィードバック",
+                    subtitle = "ご意見をお聞かせください",
                     onClick = onNavigateToFeedback
                 )
             }
         }
 
         item {
-            SectionHeader("Legal Information")
+            SectionHeader("法的情報")
         }
 
         item {
             SettingsCard {
                 SettingsRow(
                     icon = Icons.Default.Description,
-                    title = "Terms of Service",
+                    title = "利用規約",
                     onClick = onNavigateToTerms
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.Lock,
-                    title = "Privacy Policy",
+                    title = "プライバシーポリシー",
                     onClick = onNavigateToPrivacy
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.Info,
-                    title = "About",
-                    subtitle = "Version $appVersion",
+                    title = "このアプリについて",
+                    subtitle = "バージョン $appVersion",
                     onClick = onNavigateToAbout
                 )
+            }
+        }
+
+        item {
+            SectionHeader("栄養評価の参考文献")
+        }
+
+        item {
+            SettingsCard {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "本アプリの栄養評価は以下の文献・基準に基づいています：",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "• 厚生労働省「日本人の食事摂取基準（2020年版）」",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "• FAO「Dietary protein quality evaluation in human nutrition」(DIAAS)",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "• Harvard T.H. Chan School of Public Health - Glycemic Index/Load",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "• WHO「Healthy diet」Guidelines",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
 
@@ -870,11 +1036,18 @@ private fun ProfileAccountSection(
     isPremium: Boolean,
     isUploadingPhoto: Boolean,
     organizationName: String?,
+    isValidatingOrganization: Boolean,
+    organizationMessage: String?,
+    onValidateOrganization: (String) -> Unit,
+    onLeaveOrganization: () -> Unit,
+    onClearOrganizationMessage: () -> Unit,
     onLogout: () -> Unit,
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    var organizationInput by remember { mutableStateOf("") }
+    var showLeaveConfirmDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -952,7 +1125,7 @@ private fun ProfileAccountSection(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (isExpanded) "Tap to close" else "Account settings",
+                        text = if (isExpanded) "タップして閉じる" else "アカウント設定",
                         style = MaterialTheme.typography.labelSmall,
                         color = Primary
                     )
@@ -987,7 +1160,7 @@ private fun ProfileAccountSection(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "User ID",
+                                    text = "ユーザーID",
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text(
@@ -998,7 +1171,7 @@ private fun ProfileAccountSection(
                             }
                             Icon(
                                 imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Copy",
+                                contentDescription = "コピー",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -1007,13 +1180,12 @@ private fun ProfileAccountSection(
                     }
 
                     // Organization
-                    if (organizationName != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.Business,
                                 contentDescription = null,
@@ -1021,22 +1193,97 @@ private fun ProfileAccountSection(
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(
-                                    text = organizationName,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Primary
+                            Text(
+                                text = "所属（法人プラン）",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        if (organizationName != null) {
+                            // 既に所属している場合
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 40.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = organizationName,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Primary
+                                    )
+                                    Text(
+                                        text = "法人プラン適用中",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AccentGreen
+                                    )
+                                }
+                                TextButton(
+                                    onClick = { showLeaveConfirmDialog = true }
+                                ) {
+                                    Text("解除", color = Color(0xFFEF5350))
+                                }
+                            }
+                        } else {
+                            // 所属未登録の場合
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 40.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = organizationInput,
+                                    onValueChange = { organizationInput = it },
+                                    placeholder = { Text("所属名を入力", style = MaterialTheme.typography.bodySmall) },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium,
+                                    enabled = !isValidatingOrganization
                                 )
-                                Text(
-                                    text = "Corporate plan active",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AccentGreen
-                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        onValidateOrganization(organizationInput)
+                                    },
+                                    enabled = organizationInput.isNotBlank() && !isValidatingOrganization,
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    if (isValidatingOrganization) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    } else {
+                                        Text("登録", style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
                             }
                         }
-                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+
+                        // メッセージ表示
+                        organizationMessage?.let { message ->
+                            val isSuccess = message.contains("登録しました") || message.contains("解除しました") || message.contains("登録済み")
+                            Text(
+                                text = message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isSuccess) AccentGreen else Color(0xFFEF5350),
+                                modifier = Modifier.padding(start = 40.dp, top = 8.dp)
+                            )
+                            LaunchedEffect(message) {
+                                kotlinx.coroutines.delay(3000)
+                                onClearOrganizationMessage()
+                            }
+                        }
                     }
+
+                    HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
 
                     // Logout
                     Row(
@@ -1054,7 +1301,7 @@ private fun ProfileAccountSection(
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(
-                            text = "Logout",
+                            text = "ログアウト",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFFEF5350)
                         )
@@ -1079,12 +1326,12 @@ private fun ProfileAccountSection(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = "Delete Account",
+                                text = "アカウント削除",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color(0xFFEF5350)
                             )
                             Text(
-                                text = "All data will be deleted",
+                                text = "すべてのデータが削除されます",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1093,6 +1340,32 @@ private fun ProfileAccountSection(
                 }
             }
         }
+    }
+
+    // 所属解除確認ダイアログ
+    if (showLeaveConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showLeaveConfirmDialog = false },
+            title = { Text("所属を解除") },
+            text = {
+                Text("${organizationName ?: ""}の所属を解除しますか？\nPremium機能が利用できなくなります。")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLeaveConfirmDialog = false
+                        onLeaveOrganization()
+                    }
+                ) {
+                    Text("解除", color = Color(0xFFEF5350))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveConfirmDialog = false }) {
+                    Text("キャンセル")
+                }
+            }
+        )
     }
 }
 
@@ -1201,5 +1474,179 @@ private fun SettingsRow(
                 )
             }
         }
+    }
+}
+
+/** Format float to 1 decimal place (KMP-compatible) */
+private fun formatF1(value: Float): String {
+    val rounded = (value * 10).roundToInt() / 10.0
+    val s = rounded.toString()
+    return if ('.' in s) {
+        val parts = s.split('.')
+        "${parts[0]}.${parts[1].take(1)}"
+    } else "$s.0"
+}
+
+/** Format float to 2 decimal places (KMP-compatible) */
+private fun formatF2(value: Float): String {
+    val rounded = (value * 100).roundToInt() / 100.0
+    val s = rounded.toString()
+    return if ('.' in s) {
+        val parts = s.split('.')
+        "${parts[0]}.${parts[1].padEnd(2, '0').take(2)}"
+    } else "$s.00"
+}
+
+/**
+ * ミクロ栄養素の詳細表示
+ */
+@Composable
+private fun MicroNutrientsDisplay(food: CustomFood) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // 品質指標
+        Text(
+            "品質指標",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("GI値", "${food.gi}")
+                NutrientRow("DIAAS", formatF2(food.diaas))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("糖質", "${formatF1(food.sugar)}g")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // 食物繊維詳細
+        Text(
+            "食物繊維",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("総量", "${formatF1(food.fiber)}g")
+                NutrientRow("水溶性", "${formatF1(food.solubleFiber)}g")
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("不溶性", "${formatF1(food.insolubleFiber)}g")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // 脂肪酸
+        Text(
+            "脂肪酸",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("飽和", "${formatF1(food.saturatedFat)}g")
+                NutrientRow("一価不飽和", "${formatF1(food.monounsaturatedFat)}g")
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("多価不飽和", "${formatF1(food.polyunsaturatedFat)}g")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // ビタミン
+        Text(
+            "ビタミン",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("A", "${food.vitaminA.toInt()}μg")
+                NutrientRow("B1", "${formatF2(food.vitaminB1)}mg")
+                NutrientRow("B2", "${formatF2(food.vitaminB2)}mg")
+                NutrientRow("B6", "${formatF2(food.vitaminB6)}mg")
+                NutrientRow("B12", "${formatF1(food.vitaminB12)}μg")
+                NutrientRow("C", "${food.vitaminC.toInt()}mg")
+                NutrientRow("D", "${formatF1(food.vitaminD)}μg")
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("E", "${formatF1(food.vitaminE)}mg")
+                NutrientRow("K", "${food.vitaminK.toInt()}μg")
+                NutrientRow("ナイアシン", "${formatF1(food.niacin)}mg")
+                NutrientRow("パントテン酸", "${formatF2(food.pantothenicAcid)}mg")
+                NutrientRow("ビオチン", "${formatF1(food.biotin)}μg")
+                NutrientRow("葉酸", "${food.folicAcid.toInt()}μg")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // ミネラル
+        Text(
+            "ミネラル",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("ナトリウム", "${food.sodium.toInt()}mg")
+                NutrientRow("カリウム", "${food.potassium.toInt()}mg")
+                NutrientRow("カルシウム", "${food.calcium.toInt()}mg")
+                NutrientRow("マグネシウム", "${food.magnesium.toInt()}mg")
+                NutrientRow("リン", "${food.phosphorus.toInt()}mg")
+                NutrientRow("鉄", "${formatF1(food.iron)}mg")
+                NutrientRow("亜鉛", "${formatF1(food.zinc)}mg")
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                NutrientRow("銅", "${formatF2(food.copper)}mg")
+                NutrientRow("マンガン", "${formatF2(food.manganese)}mg")
+                NutrientRow("ヨウ素", "${food.iodine.toInt()}μg")
+                NutrientRow("セレン", "${food.selenium.toInt()}μg")
+                NutrientRow("クロム", "${food.chromium.toInt()}μg")
+                NutrientRow("モリブデン", "${food.molybdenum.toInt()}μg")
+            }
+        }
+    }
+}
+
+@Composable
+private fun NutrientRow(name: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 1.dp, horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            name,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium
+        )
     }
 }

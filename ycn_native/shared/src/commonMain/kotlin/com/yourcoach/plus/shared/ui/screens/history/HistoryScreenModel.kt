@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
 
@@ -157,6 +158,11 @@ class HistoryScreenModel(
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        println("HistoryScreenModel: Coroutine exception: ${throwable.message}")
+        _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+    }
+
     private val userId: String?
         get() = authRepository.getCurrentUserId()
 
@@ -168,7 +174,7 @@ class HistoryScreenModel(
      * Load data
      */
     fun loadData() {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 loadSelectedDateData()
@@ -352,7 +358,7 @@ class HistoryScreenModel(
         if (date == _uiState.value.selectedDate) return
 
         _uiState.update { it.copy(selectedDate = date) }
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             loadSelectedDateData()
         }
     }
@@ -364,7 +370,7 @@ class HistoryScreenModel(
         if (yearMonth == _uiState.value.currentYearMonth) return
 
         _uiState.update { it.copy(currentYearMonth = yearMonth) }
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             loadRecordedDates()
         }
     }

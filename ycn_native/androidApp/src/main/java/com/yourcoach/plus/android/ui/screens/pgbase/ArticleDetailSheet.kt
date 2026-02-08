@@ -250,14 +250,22 @@ private fun ArticleWebView(
                     isVerticalScrollBarEnabled = true
                     isHorizontalScrollBarEnabled = false
                     isNestedScrollingEnabled = true
-                    // BottomSheetのスクロールを奪わないようにする
+                    // BottomSheetのスクロールを奪わないようにする（全祖先ビューに伝播）
                     setOnTouchListener { v, event ->
                         when (event.action) {
                             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-                                v.parent?.requestDisallowInterceptTouchEvent(true)
+                                var parent = v.parent
+                                while (parent != null) {
+                                    parent.requestDisallowInterceptTouchEvent(true)
+                                    parent = parent.parent
+                                }
                             }
                             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                                v.parent?.requestDisallowInterceptTouchEvent(false)
+                                var parent = v.parent
+                                while (parent != null) {
+                                    parent.requestDisallowInterceptTouchEvent(false)
+                                    parent = parent.parent
+                                }
                             }
                         }
                         false

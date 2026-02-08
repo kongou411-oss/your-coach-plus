@@ -17,16 +17,19 @@ import java.util.UUID
 /**
  * Google Sign-In コンテキスト (Android)
  */
-actual class GoogleSignInContext(val activity: Activity)
+class GoogleSignInContext(val activity: Activity)
+
+/**
+ * グローバルなActivity取得関数
+ * Android側から設定される
+ */
+var googleCurrentActivityProvider: (() -> Activity?)? = null
 
 /**
  * Google Sign-In ヘルパー (Android実装)
  * Credential Manager APIを使用
  */
-actual class GoogleSignInHelper(
-    private val context: GoogleSignInContext
-) {
-    private val credentialManager = CredentialManager.create(context.activity)
+actual class GoogleSignInHelper actual constructor() {
 
     companion object {
         // Firebase Console > Authentication > Sign-in method > Google > Web client ID
@@ -38,6 +41,11 @@ actual class GoogleSignInHelper(
      * @return Google ID Token
      */
     actual suspend fun signIn(): Result<String> {
+        val activity = googleCurrentActivityProvider?.invoke()
+            ?: return Result.failure(AppError.NotImplemented("Google Sign-Inが初期化されていません"))
+
+        val credentialManager = CredentialManager.create(activity)
+
         return try {
             // Nonceを生成（リプレイ攻撃対策）
             val nonce = generateNonce()
@@ -58,13 +66,13 @@ actual class GoogleSignInHelper(
             // Credentialを取得
             val response = credentialManager.getCredential(
                 request = request,
-                context = context.activity
+                context = activity
             )
 
             // レスポンスからID Tokenを抽出
             handleSignInResponse(response)
         } catch (e: GetCredentialCancellationException) {
-            Result.failure(AppError.AuthenticationError("ログインがキャンセルされました"))
+            Result.failure(AppError.Cancelled("ログインがキャンセルされました"))
         } catch (e: NoCredentialException) {
             Result.failure(AppError.AuthenticationError("利用可能なGoogleアカウントがありません"))
         } catch (e: GetCredentialException) {

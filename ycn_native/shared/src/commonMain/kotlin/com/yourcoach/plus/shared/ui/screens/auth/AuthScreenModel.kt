@@ -2,9 +2,12 @@ package com.yourcoach.plus.shared.ui.screens.auth
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.yourcoach.plus.shared.auth.isAppleSignInAvailable
+import com.yourcoach.plus.shared.auth.signInToFirebaseWithApple
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.util.AppError
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +42,12 @@ class AuthScreenModel(
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    // iOS対応: コルーチン例外ハンドラー（NULLクラッシュ防止）
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        println("AuthScreenModel: Coroutine exception: ${throwable.message}")
+        _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+    }
 
     init {
         checkCurrentUser()
@@ -93,7 +102,7 @@ class AuthScreenModel(
     fun signInWithEmail(onSuccess: () -> Unit) {
         if (!validateInput()) return
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val result = authRepository.signInWithEmail(
@@ -140,7 +149,7 @@ class AuthScreenModel(
      * Googleでログイン（IDトークンを受け取る）
      */
     fun signInWithGoogleToken(idToken: String, onSuccess: () -> Unit) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val authResult = authRepository.signInWithGoogle(idToken)
@@ -174,13 +183,116 @@ class AuthScreenModel(
                     onSuccess()
                 },
                 onFailure = { error ->
+                    val message = when (error) {
+                        is AppError.Cancelled -> null // キャンセルはエラー表示しない
+                        is AppError.NetworkError -> "ネットワークエラーが発生しました"
+                        is AppError.AuthenticationError -> error.message ?: "Googleログインに失敗しました"
+                        else -> error.message ?: "Googleログインに失敗しました"
+                    }
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = error.message ?: "Googleログインに失敗しました"
+                            error = message
                         )
                     }
                 }
+            )
+        }
+    }
+
+    /**
+     * Appleでログイン（IDトークンとnonceを受け取る）
+     * iOSではネイティブFirebase SDKを直接使用（GitLiveのバグ回避）
+     */
+    fun signInWithAppleToken(idToken: String, nonce: String, fullName: String? = null, onSuccess: () -> Unit) {
+        screenModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            // iOSではネイティブFirebase SDKを直接使用
+            if (isAppleSignInAvailable()) {
+                val directAuthResult = signInToFirebaseWithApple(idToken, nonce, fullName)
+
+                directAuthResult.fold(
+                    onSuccess = { uid ->
+                        // 既存ユーザーかチェック
+                        val existingUser = userRepository.getUser(uid).getOrNull()
+                        val isNew = existingUser == null
+
+                        // 新規ユーザーの場合、Firestoreにドキュメント作成
+                        if (isNew) {
+                            userRepository.createUser(
+                                userId = uid,
+                                email = "", // Apple Sign-Inではemailがnullになることがあるため空文字
+                                displayName = fullName
+                            )
+                        }
+
+                        val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
+
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                isLoggedIn = true,
+                                isNewUser = isNew,
+                                userId = uid,
+                                needsOnboarding = needsOnboarding
+                            )
+                        }
+                        onSuccess()
+                    },
+                    onFailure = { error ->
+                        handleAppleSignInError(error)
+                    }
+                )
+            } else {
+                // Android (should not reach here as Apple Sign-In is hidden on Android)
+                val authResult = authRepository.signInWithApple(idToken, nonce)
+
+                authResult.fold(
+                    onSuccess = { user ->
+                        val existingUser = userRepository.getUser(user.uid).getOrNull()
+                        val isNew = existingUser == null
+
+                        if (isNew) {
+                            userRepository.createUser(
+                                userId = user.uid,
+                                email = user.email,
+                                displayName = user.displayName
+                            )
+                        }
+
+                        val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
+
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                isLoggedIn = true,
+                                isNewUser = isNew,
+                                userId = user.uid,
+                                needsOnboarding = needsOnboarding
+                            )
+                        }
+                        onSuccess()
+                    },
+                    onFailure = { error ->
+                        handleAppleSignInError(error)
+                    }
+                )
+            }
+        }
+    }
+
+    private fun handleAppleSignInError(error: Throwable) {
+        val message = when (error) {
+            is AppError.Cancelled -> null // キャンセルはエラー表示しない
+            is AppError.NetworkError -> "ネットワークエラーが発生しました"
+            is AppError.AuthenticationError -> error.message ?: "Appleログインに失敗しました"
+            else -> error.message ?: "Appleログインに失敗しました"
+        }
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                error = message
             )
         }
     }
@@ -191,7 +303,7 @@ class AuthScreenModel(
     fun signUpWithEmail(onSuccess: () -> Unit) {
         if (!validateInput(isSignUp = true)) return
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val result = authRepository.signUpWithEmail(
@@ -246,7 +358,7 @@ class AuthScreenModel(
             return
         }
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val result = authRepository.sendPasswordResetEmail(email)
@@ -273,6 +385,13 @@ class AuthScreenModel(
      */
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    /**
+     * エラーを設定
+     */
+    fun setError(message: String?) {
+        _uiState.update { it.copy(error = message, isLoading = false) }
     }
 
     /**

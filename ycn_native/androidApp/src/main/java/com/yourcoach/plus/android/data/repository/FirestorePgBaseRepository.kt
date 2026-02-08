@@ -255,6 +255,31 @@ class FirestorePgBaseRepository(
     }
 
     /**
+     * 読了済み・購入済み記事IDを1クエリで同時監視（パフォーマンス最適化）
+     */
+    override fun observeUserProgressIds(userId: String): Flow<Pair<Set<String>, Set<String>>> = callbackFlow {
+        val listener = userProgressCollection(userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestorePgBase", "observeUserProgressIds error", error)
+                    trySend(Pair(emptySet(), emptySet()))
+                    return@addSnapshotListener
+                }
+
+                val completedIds = mutableSetOf<String>()
+                val purchasedIds = mutableSetOf<String>()
+                snapshot?.documents?.forEach { doc ->
+                    val isCompleted = doc.getBoolean("isCompleted") ?: false
+                    val isPurchased = doc.getBoolean("isPurchased") ?: false
+                    if (isCompleted) completedIds.add(doc.id)
+                    if (isPurchased) purchasedIds.add(doc.id)
+                }
+                trySend(Pair(completedIds.toSet(), purchasedIds.toSet()))
+            }
+        awaitClose { listener.remove() }
+    }
+
+    /**
      * 記事にアクセスできるかどうかを確認
      */
     override suspend fun canAccessArticle(userId: String, articleId: String, isPremium: Boolean): Boolean {

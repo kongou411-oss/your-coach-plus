@@ -59,8 +59,8 @@ class PgBaseViewModel(
     private var purchasedArticleIds: Set<String> = emptySet()
 
     init {
+        _uiState.update { it.copy(isLoading = true) }
         observeData()
-        loadArticles()
     }
 
     /**
@@ -79,18 +79,18 @@ class PgBaseViewModel(
         }
 
         viewModelScope.launch {
-            // 記事、完了状態、購入状態を組み合わせて監視
+            // 記事と進捗を2クエリで監視（3→2に最適化）
             combine(
                 pgBaseRepository.observeArticles(),
-                pgBaseRepository.observeCompletedArticleIds(userId),
-                pgBaseRepository.observePurchasedArticleIds(userId)
-            ) { articles, completedIds, purchasedIds ->
+                pgBaseRepository.observeUserProgressIds(userId)
+            ) { articles, (completedIds, purchasedIds) ->
                 Triple(articles, completedIds, purchasedIds)
             }.collectLatest { (articles, completedIds, purchasedIds) ->
                 allArticles = articles
                 completedArticleIds = completedIds
                 purchasedArticleIds = purchasedIds
                 updateArticleList()
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }

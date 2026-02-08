@@ -44,7 +44,8 @@ data class ComyUiState(
     val isActionLoading: Boolean = false,
     // 現在のユーザー情報
     val currentUserName: String = "",
-    val currentUserPhotoUrl: String? = null
+    val currentUserPhotoUrl: String? = null,
+    val currentUserId: String = ""
 )
 
 /**
@@ -65,6 +66,7 @@ class ComyViewModel(
     private var likedPostIds: Set<String> = emptySet()
 
     init {
+        _uiState.update { it.copy(currentUserId = authRepository.getCurrentUserId() ?: "") }
         observeData()
         loadPosts()
         loadCurrentUser()
@@ -75,6 +77,7 @@ class ComyViewModel(
      */
     private fun loadCurrentUser() {
         val userId = authRepository.getCurrentUserId() ?: return
+        _uiState.update { it.copy(currentUserId = userId) }
         viewModelScope.launch {
             userRepository.observeUser(userId).collectLatest { user ->
                 _uiState.update {
@@ -95,6 +98,7 @@ class ComyViewModel(
      */
     private fun observeData() {
         val userId = authRepository.getCurrentUserId() ?: return
+        _uiState.update { it.copy(currentUserId = userId) }
 
         viewModelScope.launch {
             // 投稿といいね状態を組み合わせて監視
@@ -415,6 +419,43 @@ class ComyViewModel(
                 _uiState.update {
                     it.copy(
                         error = e.message ?: "コメントの追加に失敗しました",
+                        isActionLoading = false
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * 投稿を削除（自分の投稿のみ）
+     */
+    fun deletePost(postId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isActionLoading = true) }
+            try {
+                val result = comyRepository.deletePost(postId)
+                if (result.isFailure) {
+                    _uiState.update {
+                        it.copy(
+                            error = result.exceptionOrNull()?.message ?: "投稿の削除に失敗しました",
+                            isActionLoading = false
+                        )
+                    }
+                    return@launch
+                }
+
+                _uiState.update {
+                    it.copy(
+                        isPostDetailVisible = false,
+                        selectedPost = null,
+                        isActionLoading = false
+                    )
+                }
+                loadPosts()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        error = e.message ?: "投稿の削除に失敗しました",
                         isActionLoading = false
                     )
                 }

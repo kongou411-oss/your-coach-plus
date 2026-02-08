@@ -14,14 +14,15 @@ data class UnifiedTimelineItem(
     val type: TimelineItemType,
     val timeMinutes: Int,              // 0:00からの分数
     val timeString: String,            // "17:30"
-    val title: String,                 // "トレ前" or "背中トレ"
-    val subtitle: String?,             // "切り餅 2個 + ホエイ"
+    val title: String,                 // "食事1" or "背中トレ"
+    val subtitle: String?,             // "鶏むね肉（皮なし）+ 白米"
     val status: TimelineItemStatus,    // COMPLETED, CURRENT, UPCOMING
     val isTrainingRelated: Boolean = false,
     val actionItems: List<DirectiveActionItem>? = null, // クエストの場合
     val linkedMeal: Meal? = null,      // 実際の食事記録（記録済みの場合）
     val linkedWorkout: Workout? = null, // 実際の運動記録（記録済みの場合）
-    val slotInfo: TimelineSlotInfo? = null // 元のスロット情報
+    val slotInfo: TimelineSlotInfo? = null, // 元のスロット情報
+    val directiveItemIndex: Int? = null // 指示書アイテムのインデックス（完了トグル用）
 ) {
     val isRecorded: Boolean get() = linkedMeal != null || linkedWorkout != null
     val isQuest: Boolean get() = slotInfo != null && !isRecorded

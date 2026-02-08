@@ -1,11 +1,11 @@
 package com.yourcoach.plus.shared.auth
 
 import androidx.compose.runtime.Composable
-import com.yourcoach.plus.shared.util.AppError
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Google Sign-In ボタンハンドラー (iOS実装)
- * TODO: Google Sign-In SDK for iOSを統合後に実装
  */
 @Composable
 actual fun GoogleSignInButtonHandler(
@@ -13,14 +13,15 @@ actual fun GoogleSignInButtonHandler(
     enabled: Boolean,
     content: @Composable (onClick: () -> Unit) -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+
     content {
         if (enabled) {
-            // iOS版は現在未実装
-            onSignInResult(
-                Result.failure(
-                    AppError.NotImplemented("iOS版のGoogle Sign-Inは現在準備中です。メールアドレスでログインしてください。")
-                )
-            )
+            scope.launch {
+                val helper = GoogleSignInHelper()
+                val result = helper.signIn()
+                onSignInResult(result)
+            }
         }
     }
 }

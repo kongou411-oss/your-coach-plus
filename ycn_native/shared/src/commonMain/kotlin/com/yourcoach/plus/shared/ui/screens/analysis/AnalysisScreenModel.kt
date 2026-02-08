@@ -2,6 +2,7 @@ package com.yourcoach.plus.shared.ui.screens.analysis
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.yourcoach.plus.shared.data.database.BodymakingFoodDatabase
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.*
 import com.yourcoach.plus.shared.domain.service.GeminiService
@@ -10,7 +11,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlin.math.roundToInt
 
 /**
  * Analysis tab
@@ -41,7 +51,18 @@ data class AnalysisUiState(
     val workouts: List<Workout> = emptyList(),
     val userProfile: UserProfile? = null,
     val condition: Condition? = null,
-    val isRestDay: Boolean = false
+    val isRestDay: Boolean = false,
+    // 微量栄養素（micro+）
+    val averageDiaas: Float = 0f,
+    val fattyAcidScore: Int = 0,
+    val fattyAcidLabel: String = "-",
+    val totalFiber: Float = 0f,
+    val fiberTarget: Float = 25f,
+    val totalGL: Float = 0f,
+    val vitaminAvg: Float = 0f,
+    val mineralAvg: Float = 0f,
+    // Level
+    val levelUpMessage: String? = null
 ) {
     val totalCredits: Int get() = creditInfo?.totalCredits ?: 0
 }
@@ -57,11 +78,18 @@ class AnalysisScreenModel(
     private val conditionRepository: ConditionRepository? = null,
     private val scoreRepository: ScoreRepository? = null,
     private val geminiService: GeminiService? = null,
-    private val analysisRepository: AnalysisRepository? = null
+    private val analysisRepository: AnalysisRepository? = null,
+    private val directiveRepository: DirectiveRepository? = null,
+    private val badgeRepository: BadgeRepository? = null
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(AnalysisUiState())
     val uiState: StateFlow<AnalysisUiState> = _uiState.asStateFlow()
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        println("AnalysisScreenModel: Coroutine exception: ${throwable.message}")
+        _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+    }
 
     init {
         loadAllData()
@@ -71,12 +99,12 @@ class AnalysisScreenModel(
      * Load all data
      */
     private fun loadAllData() {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true) }
 
             val userId = authRepository.getCurrentUserId()
             if (userId == null) {
-                _uiState.update { it.copy(isLoading = false, error = "Not logged in") }
+                _uiState.update { it.copy(isLoading = false, error = "ログインしていません") }
                 return@launch
             }
 
@@ -121,6 +149,26 @@ class AnalysisScreenModel(
                     _uiState.update { it.copy(isRestDay = isRestDay) }
                 }
 
+            // 微量栄養素を計算
+            val currentMeals = _uiState.value.meals
+            if (currentMeals.isNotEmpty()) {
+                val detailedNutrition = calculateDetailedNutrition(currentMeals)
+                val vitaminAvg = if (detailedNutrition.vitaminScores.isNotEmpty())
+                    detailedNutrition.vitaminScores.values.average().toFloat() * 100 else 0f
+                val mineralAvg = if (detailedNutrition.mineralScores.isNotEmpty())
+                    detailedNutrition.mineralScores.values.average().toFloat() * 100 else 0f
+
+                _uiState.update { it.copy(
+                    averageDiaas = detailedNutrition.averageDiaas,
+                    fattyAcidScore = detailedNutrition.fattyAcidScore,
+                    fattyAcidLabel = detailedNutrition.fattyAcidLabel,
+                    totalFiber = detailedNutrition.totalFiber,
+                    totalGL = detailedNutrition.totalGL,
+                    vitaminAvg = vitaminAvg,
+                    mineralAvg = mineralAvg
+                ) }
+            }
+
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -129,13 +177,13 @@ class AnalysisScreenModel(
      * Load credit info
      */
     private fun loadCreditInfo(userId: String) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             analysisRepository?.getCreditInfo(userId)
                 ?.onSuccess { info ->
                     _uiState.update { it.copy(creditInfo = info) }
                 }
                 ?.onFailure { e ->
-                    _uiState.update { it.copy(error = "Failed to load credit info") }
+                    _uiState.update { it.copy(error = "クレジット情報の取得に失敗しました") }
                 }
         }
     }
@@ -148,13 +196,16 @@ class AnalysisScreenModel(
         val state = _uiState.value
         val creditInfo = state.creditInfo
 
+        // 二重呼び出し防止
+        if (state.isAnalyzing) return
+
         // Credit check
         if (creditInfo == null || creditInfo.totalCredits <= 0) {
-            _uiState.update { it.copy(error = "Insufficient credits for analysis") }
+            _uiState.update { it.copy(error = "クレジットが不足しています") }
             return
         }
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isAnalyzing = true, aiAnalysis = null, error = null) }
 
             try {
@@ -181,6 +232,7 @@ class AnalysisScreenModel(
                     score = effectiveScore,
                     meals = state.meals,
                     workouts = state.workouts,
+                    condition = state.condition,
                     isRestDay = state.isRestDay
                 )
 
@@ -193,9 +245,10 @@ class AnalysisScreenModel(
                 )
 
                 if (response?.success == true && response.text != null) {
+                    val analysisText = formatAnalysisResult(response.text)
                     _uiState.update {
                         it.copy(
-                            aiAnalysis = response.text,
+                            aiAnalysis = analysisText,
                             isAnalyzing = false,
                             creditInfo = it.creditInfo?.copy(
                                 totalCredits = response.remainingCredits ?: it.creditInfo.totalCredits
@@ -204,11 +257,20 @@ class AnalysisScreenModel(
                     }
 
                     // Auto-save report
-                    autoSaveReport(userId, response.text)
+                    autoSaveReport(userId, analysisText)
+
+                    // XP付与 (+10 XP)
+                    grantExperience(userId)
+
+                    // バッジ統計更新
+                    updateBadgeStats()
+
+                    // 指示書（クエスト）を抽出・保存
+                    extractAndSaveDirective(userId, analysisText)
                 } else {
                     _uiState.update {
                         it.copy(
-                            error = response?.error ?: "Analysis failed",
+                            error = response?.error ?: "分析に失敗しました",
                             isAnalyzing = false
                         )
                     }
@@ -216,12 +278,133 @@ class AnalysisScreenModel(
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = e.message ?: "Analysis failed",
+                        error = e.message ?: "分析に失敗しました",
                         isAnalyzing = false
                     )
                 }
             }
         }
+    }
+
+    /**
+     * XP付与: 分析実行で+10 XP、レベルアップで+1クレジット
+     */
+    private fun grantExperience(userId: String) {
+        screenModelScope.launch(exceptionHandler) {
+            try {
+                userRepository.addExperience(userId, UserProfile.XP_PER_ACTION)
+                    .onSuccess { (newExp, leveledUp) ->
+                        if (leveledUp) {
+                            val profile = _uiState.value.userProfile
+                            val newLevel = profile?.copy(experience = newExp)?.calculateLevel() ?: 1
+                            _uiState.update {
+                                it.copy(levelUpMessage = "レベル${newLevel}に上がりました！ 無料クレジット+1")
+                            }
+                        }
+                    }
+            } catch (e: Exception) {
+                // XP付与失敗は分析結果に影響しないので無視
+            }
+        }
+    }
+
+    /**
+     * バッジ統計更新
+     */
+    private fun updateBadgeStats() {
+        screenModelScope.launch(exceptionHandler) {
+            try {
+                badgeRepository?.updateBadgeStats("analysis_completed")
+                badgeRepository?.checkAndAwardBadges()
+            } catch (e: Exception) {
+                // バッジ更新失敗は無視
+            }
+        }
+    }
+
+    /**
+     * AI応答から指示書（クエスト）を抽出して翌日分として保存
+     */
+    private fun extractAndSaveDirective(userId: String, analysisText: String) {
+        screenModelScope.launch(exceptionHandler) {
+            try {
+                val bulletPoints = extractDirectiveBulletPoints(analysisText)
+                if (bulletPoints.isEmpty()) return@launch
+
+                val tomorrowDate = DateUtil.nextDay(DateUtil.todayString())
+                val message = bulletPoints.joinToString("\n") { "- $it" }
+
+                val directive = Directive(
+                    userId = userId,
+                    date = tomorrowDate,
+                    message = message,
+                    type = DirectiveType.MEAL,
+                    completed = false,
+                    createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                )
+
+                directiveRepository?.saveDirective(directive)
+            } catch (e: Exception) {
+                // 指示書保存失敗は分析結果に影響しないので無視
+            }
+        }
+    }
+
+    /**
+     * AI応答テキストから指示書のポイントを抽出
+     * Android版と同じパターンマッチング
+     */
+    private fun extractDirectiveBulletPoints(text: String): List<String> {
+        // パターン1: [結論]...[根拠] 形式
+        val conclusionPattern1 = Regex("""\[結論\](.*?)\[根拠\]""", RegexOption.DOT_MATCHES_ALL)
+        val match1 = conclusionPattern1.find(text)
+        if (match1 != null) {
+            return extractBullets(match1.groupValues[1])
+        }
+
+        // パターン1b: **結論**...**根拠** 形式
+        val conclusionPattern1b = Regex("""\*\*結論\*\*(.*?)\*\*根拠\*\*""", RegexOption.DOT_MATCHES_ALL)
+        val match1b = conclusionPattern1b.find(text)
+        if (match1b != null) {
+            return extractBullets(match1b.groupValues[1])
+        }
+
+        // パターン2: 【食事N】【運動】【睡眠】形式
+        val structuredPattern = Regex("""【(食事\d?|運動|睡眠|サプリ)】\s*(.+?)(?=【|$)""", RegexOption.DOT_MATCHES_ALL)
+        val structuredMatches = structuredPattern.findAll(text).toList()
+        if (structuredMatches.isNotEmpty()) {
+            return structuredMatches.flatMap { match ->
+                extractBullets(match.groupValues[2])
+            }
+        }
+
+        // パターン3: "明日の指示" / "アドバイス" セクション
+        val advicePattern = Regex("""(?:明日の(?:指示|アドバイス)|4\.\s*(?:明日|アドバイス))(.*?)(?=\n\n|\z)""", RegexOption.DOT_MATCHES_ALL)
+        val adviceMatch = advicePattern.find(text)
+        if (adviceMatch != null) {
+            return extractBullets(adviceMatch.groupValues[1])
+        }
+
+        return emptyList()
+    }
+
+    /**
+     * テキストから箇条書きポイントを抽出
+     */
+    private fun extractBullets(text: String): List<String> {
+        val bulletPattern = Regex("""^[-・•]\s*(.+)$""", RegexOption.MULTILINE)
+        val bullets = bulletPattern.findAll(text)
+            .map { it.groupValues[1].trim() }
+            .filter { it.isNotEmpty() }
+            .toList()
+
+        if (bullets.isNotEmpty()) return bullets
+
+        // 箇条書きがない場合、行単位で分割
+        return text.lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("[") && !it.startsWith("*") }
+            .take(5)
     }
 
     /**
@@ -269,52 +452,269 @@ class AnalysisScreenModel(
     }
 
     /**
-     * Build analysis prompt
+     * 分析プロンプト構築（Cloud Functions generateAnalysisPrompt と完全一致）
      */
     private fun buildAnalysisPrompt(
         profile: UserProfile?,
         score: DailyScore,
         meals: List<Meal>,
         workouts: List<Workout>,
+        condition: Condition?,
         isRestDay: Boolean
     ): String {
-        return buildString {
-            appendLine("Please analyze today's nutrition and fitness data and provide feedback.")
-            appendLine()
-            appendLine("=== User Profile ===")
-            appendLine("Goal: ${profile?.goal?.name ?: "MAINTAIN"}")
-            appendLine("Target Calories: ${profile?.targetCalories ?: 2000}")
-            appendLine("Target Protein: ${profile?.targetProtein ?: 120}g")
-            appendLine("Target Fat: ${profile?.targetFat ?: 60}g")
-            appendLine("Target Carbs: ${profile?.targetCarbs ?: 250}g")
-            appendLine()
-            appendLine("=== Today's Results ===")
-            appendLine("Calories: ${score.totalCalories.toInt()} kcal")
-            appendLine("Protein: ${score.totalProtein.toInt()}g")
-            appendLine("Fat: ${score.totalFat.toInt()}g")
-            appendLine("Carbs: ${score.totalCarbs.toInt()}g")
-            appendLine()
-            appendLine("=== Meals ===")
-            meals.forEach { meal ->
-                appendLine("- ${meal.name ?: meal.type.name}: ${meal.totalCalories}kcal")
+        val state = _uiState.value
+        val targetCalories = profile?.targetCalories ?: 2000
+        val targetProtein = profile?.targetProtein ?: 120f
+        val targetFat = profile?.targetFat ?: 60f
+        val targetCarbs = profile?.targetCarbs ?: 250f
+
+        // 目標名と評価コンテキスト
+        val goalKey = profile?.goal?.name ?: "MAINTAIN"
+        val goalName = when (goalKey) {
+            "LOSE_WEIGHT" -> "減量"
+            "MAINTAIN" -> "メンテナンス"
+            "GAIN_MUSCLE" -> "筋肉増加・バルクアップ"
+            "IMPROVE_HEALTH" -> "健康改善"
+            else -> "メンテナンス"
+        }
+        val goalContext = when (goalKey) {
+            "LOSE_WEIGHT" -> "※ 減量中＝カロリー超過に厳しく、不足に寛容。"
+            "GAIN_MUSCLE" -> "※ バルクアップ中＝カロリー不足に厳しく、超過に寛容。"
+            "MAINTAIN" -> "※ メンテナンス中＝過不足なくバランス重視。"
+            "IMPROVE_HEALTH" -> "※ 健康改善中＝ミクロ+指標を特に重視。"
+            else -> ""
+        }
+
+        // 食事情報
+        val mealsText = if (meals.isNotEmpty()) {
+            meals.mapIndexed { i, meal ->
+                val name = meal.name ?: "食事${i + 1}"
+                val items = meal.items.joinToString(", ") { "${it.name}${it.amount.toDouble().roundToInt()}${it.unit}" }
+                "- $name: $items"
+            }.joinToString("\n")
+        } else ""
+
+        // 運動情報
+        val workoutsText = if (workouts.isNotEmpty()) {
+            workouts.map { w ->
+                val typeName = when (w.type.name) {
+                    "STRENGTH" -> "筋トレ"
+                    "CARDIO" -> "有酸素"
+                    "FLEXIBILITY" -> "ストレッチ"
+                    "SPORTS" -> "スポーツ"
+                    "DAILY_ACTIVITY" -> "日常活動"
+                    else -> w.type.name
+                }
+                val exercises = w.exercises.joinToString(", ") { ex ->
+                    val details = listOfNotNull(
+                        if ((ex.sets ?: 0) > 0) "${ex.sets}セット" else null,
+                        if ((ex.reps ?: 0) > 0) "${ex.reps}回" else null,
+                        if ((ex.weight ?: 0f) > 0f) "${ex.weight}kg" else null,
+                        if ((ex.duration ?: 0) > 0) "${ex.duration}分" else null
+                    ).joinToString("×")
+                    "${ex.name}$details"
+                }
+                "- $typeName: $exercises（${w.totalDuration}分）"
+            }.joinToString("\n")
+        } else ""
+
+        // ミクロ+セクション
+        val micro = state
+        val diaasStr = if (micro.averageDiaas > 0) {
+            val rounded = (micro.averageDiaas * 100).roundToInt() / 100.0
+            "$rounded"
+        } else "未計測"
+        val fiberStr = "${(micro.totalFiber * 10).roundToInt() / 10.0}"
+        val lbmWeight = profile?.weight ?: 70f
+        val lbmBodyFat = profile?.bodyFatPercentage ?: 20f
+        val lbm = lbmWeight * (1 - lbmBodyFat / 100f)
+        val lbmStr = "${(lbm * 10).roundToInt() / 10.0}"
+
+        val microSection = """
+## 今日の実績（ミクロ+ 品質指標）
+- DIAAS（タンパク質品質）: ${diaasStr}（基準: 1.0以上で良質）
+- 脂肪酸バランス: ${micro.fattyAcidLabel}（スコア: ${micro.fattyAcidScore}/5）
+- 食物繊維: ${fiberStr}g（目標: ${micro.fiberTarget.toDouble().roundToInt()}g）
+- GL値（血糖負荷）: ${micro.totalGL.toDouble().roundToInt()}（基準: 100以下で低負荷）
+- ビタミン充足率: ${micro.vitaminAvg.toDouble().roundToInt()}%
+- ミネラル充足率: ${micro.mineralAvg.toDouble().roundToInt()}%"""
+
+        // LBM予測セクション
+        val calorieDiff = score.totalCalories - targetCalories
+        val predictionText = when {
+            calorieDiff > 200 -> {
+                val muscleRatio = if (workouts.isNotEmpty()) 0.3f else 0.1f
+                val muscleGain = (calorieDiff * muscleRatio / 7700f * 1000).toInt()
+                val fatGain = (calorieDiff * (1 - muscleRatio) / 7700f * 1000).toInt()
+                "理論上、筋肉が約${muscleGain}g、体脂肪が約${fatGain}g増加するペースです。${if (goalKey == "LOSE_WEIGHT") "減量中のため脂肪増加に注意。" else ""}"
             }
-            appendLine()
-            appendLine("=== Workouts ===")
-            if (isRestDay) {
-                appendLine("Rest day")
-            } else if (workouts.isEmpty()) {
-                appendLine("No workouts recorded")
-            } else {
-                workouts.forEach { workout ->
-                    appendLine("- ${workout.name ?: workout.type.name}: ${workout.totalDuration}min, ${workout.totalCaloriesBurned}kcal burned")
+            calorieDiff < -200 -> {
+                val proteinRatio = score.totalProtein / (lbm * 2f)
+                val muscleRatio = if (proteinRatio >= 0.9f) 0.05f else 0.2f
+                val fatLoss = (-calorieDiff * (1 - muscleRatio) / 7700f * 1000).toInt()
+                val muscleLoss = (-calorieDiff * muscleRatio / 7700f * 1000).toInt()
+                "理論上、体脂肪が約${fatLoss}g減少するペースです。${if (muscleLoss > 10) "筋肉も約${muscleLoss}g減少の恐れ。タンパク質摂取を増やしましょう。" else "タンパク質は十分で筋肉維持できています。"}"
+            }
+            else -> "カロリー収支はほぼ均衡しており、体組成は安定しています。"
+        }
+        val lbmSection = """
+## 今日の理論上の身体変化予測
+$predictionText
+※ この予測値に基づき、現在のペースが良いか悪いかを判断材料にすること。"""
+
+        // 達成率計算
+        val calPercent = ((score.totalCalories / targetCalories.toFloat()) * 100).roundToInt()
+        val pPercent = ((score.totalProtein / targetProtein) * 100).roundToInt()
+        val fPercent = ((score.totalFat / targetFat) * 100).roundToInt()
+        val cPercent = ((score.totalCarbs / targetCarbs) * 100).roundToInt()
+
+        // 食物繊維目標の60%
+        val fiberThreshold = (micro.fiberTarget * 0.6f).roundToInt()
+
+        return """あなたはボディメイク専門のハイレベルなパーソナルトレーナーです。
+ユーザーの本日の食事・運動記録、および詳細な栄養品質データ（ミクロ+）を分析し、JSON形式でフィードバックを提供してください。
+
+## トーンとマナー
+- ユーザーのモチベーションを維持する、励ましと共感のある口調。
+- 専門的かつ具体的。
+- 目的（減量/増量）に合わせたアドバイスを行うこと。
+
+## ユーザープロファイル
+- 目的: $goalName
+  $goalContext
+- 性別: ${profile?.gender?.name ?: "不明"}
+- 年齢: ${profile?.age ?: "不明"}歳
+- 体重: ${profile?.weight ?: "不明"}kg（目標: ${profile?.targetWeight ?: "不明"}kg）
+- LBM（除脂肪体重）: ${lbmStr}kg
+${if (isRestDay) "- 本日は休養日（無理な運動は提案せず、回復を優先するコメントをすること）" else "- 本日はトレーニング推奨日"}
+$lbmSection
+
+## 今日の目標（マクロ）
+- カロリー: ${targetCalories}kcal
+- P（タンパク質）: ${targetProtein.roundToInt()}g
+- F（脂質）: ${targetFat.roundToInt()}g
+- C（炭水化物）: ${targetCarbs.roundToInt()}g
+
+## 今日の実績（マクロ）
+- カロリー: ${score.totalCalories.roundToInt()}kcal（達成率: ${calPercent}%）
+- P: ${score.totalProtein.roundToInt()}g（達成率: ${pPercent}%）
+- F: ${score.totalFat.roundToInt()}g（達成率: ${fPercent}%）
+- C: ${score.totalCarbs.roundToInt()}g（達成率: ${cPercent}%）
+$microSection
+
+## 入力データ
+【食事記録】
+${mealsText.ifEmpty { "記録なし（記録をつけるとより正確なアドバイスができます）" }}
+
+【運動記録】
+${workoutsText.ifEmpty { "記録なし" }}
+
+## 評価ロジック（厳格モード）
+
+### ステップ1: マクロ評価（ベースランク）
+上から順に判定し、最初に該当したランクを採用:
+- **S**: 全マクロが目標の 95%〜105% 以内（完璧）
+- **A**: 全マクロが目標の 90%〜110% 以内
+- **B**: 全マクロが目標の 80%〜120% 以内
+- **C**: いずれかが目標の 70%〜130% 以内（Bの範囲外）
+- **D**: いずれかが目標の 60%未満 または 140%超
+
+※ ただし、減量中でカロリー/脂質が目標より低い場合、またはバルクアップ中で目標より高い場合は、評価を1ランク上げてもよい（柔軟な評価）。
+
+### ステップ2: ミクロ+によるランク調整（重要）
+以下の「質の悪い」条件に該当する場合、ベースランクから**1段階ダウン**させてください（例: A → B）:
+1. DIAASが 0.75未満（タンパク質の質が低い）
+2. 食物繊維が目標の60%未満（${fiberThreshold}g未満、腸内環境悪化のリスク）
+3. GL値が 120超（血糖値スパイクのリスク）
+4. 脂肪酸スコアが 2以下（悪い脂質バランス）
+
+### ステップ3: アドバイスの生成
+- 数値だけでなく、【食事記録】にある**具体的なメニュー名**を挙げて原因を指摘すること（例：「昼食のラーメンが脂質超過の原因です」）。
+- 【運動記録】の内容を踏まえ、消費カロリーとのバランスに言及すること。
+- ミクロ+指標が高ければそこも褒める。
+
+## 出力形式（JSON Schema）
+{
+  "daily_summary": {
+    "grade": "S/A/B/C/D",
+    "grade_adjustment_reason": "ランクダウンした場合の理由（例：PFCは完璧ですが、食物繊維不足のため1ランク下げています）。調整なしの場合は「なし」",
+    "comment": "50文字以内の総評（LBM変化予測にも触れると良い）"
+  },
+  "good_points": [
+    "良かった点（具体的な行動や数値を褒める）",
+    "良かった点2"
+  ],
+  "improvement_points": [
+    {
+      "point": "改善点（例：脂質が目標を20gオーバーしています）",
+      "suggestion": "具体的な改善案（例：夕食のドレッシングをノンオイルに変えましょう）"
+    }
+  ],
+  "advice": "明日に向けた具体的かつ前向きなアドバイス（質と量の両面から・100文字以内）"
+}
+
+Output valid JSON only. Do not include markdown formatting or code blocks."""
+    }
+
+    /**
+     * JSON形式の分析結果を表示用テキストに変換（Android版 formatAnalysisResult と同一）
+     */
+    private fun formatAnalysisResult(rawText: String): String {
+        try {
+            // ```json ... ``` のコードブロックを除去
+            val jsonStr = rawText
+                .replace(Regex("```json\\s*"), "")
+                .replace(Regex("```\\s*"), "")
+                .trim()
+
+            val json = Json { ignoreUnknownKeys = true }
+            val root = json.parseToJsonElement(jsonStr).jsonObject
+
+            return buildString {
+                // 今日の総括
+                val summary = root["daily_summary"]?.jsonObject
+                if (summary != null) {
+                    appendLine("## 今日の総括")
+                    appendLine("評価: ${summary["grade"]?.jsonPrimitive?.contentOrNull ?: "-"}")
+                    appendLine(summary["comment"]?.jsonPrimitive?.contentOrNull ?: "")
+                    appendLine()
+                }
+
+                // 良かった点
+                val goodPoints = root["good_points"]?.jsonArray
+                if (goodPoints != null && goodPoints.size > 0) {
+                    appendLine("## 良かった点")
+                    goodPoints.forEach { point ->
+                        appendLine("- ${point.jsonPrimitive.contentOrNull ?: ""}")
+                    }
+                    appendLine()
+                }
+
+                // 改善ポイント
+                val improvements = root["improvement_points"]?.jsonArray
+                if (improvements != null && improvements.size > 0) {
+                    appendLine("## 改善ポイント")
+                    improvements.forEach { item ->
+                        val imp = item.jsonObject
+                        val point = imp["point"]?.jsonPrimitive?.contentOrNull ?: ""
+                        val suggestion = imp["suggestion"]?.jsonPrimitive?.contentOrNull ?: ""
+                        appendLine("- $point: $suggestion")
+                    }
+                    appendLine()
+                }
+
+                // 明日へのアドバイス
+                val advice = root["advice"]?.jsonPrimitive?.contentOrNull
+                if (!advice.isNullOrBlank()) {
+                    appendLine("---")
+                    appendLine()
+                    appendLine("## 明日に向けて")
+                    appendLine(advice)
                 }
             }
-            appendLine()
-            appendLine("Please provide:")
-            appendLine("1. Overall evaluation (grade: S/A/B/C/D)")
-            appendLine("2. Good points (2-3 items)")
-            appendLine("3. Areas for improvement (2-3 items with suggestions)")
-            appendLine("4. Advice for tomorrow")
+        } catch (e: Exception) {
+            // JSONパース失敗時は元テキストをそのまま返す
+            return rawText
         }
     }
 
@@ -322,11 +722,11 @@ class AnalysisScreenModel(
      * Auto-save report
      */
     private fun autoSaveReport(userId: String, analysisText: String) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             try {
                 val today = DateUtil.todayString()
                 val report = AnalysisReport(
-                    title = "$today Analysis",
+                    title = "${today} 分析レポート",
                     content = analysisText,
                     conversationHistory = emptyList(),
                     periodStart = today,
@@ -357,11 +757,11 @@ class AnalysisScreenModel(
 
         // Credit check
         if (state.creditInfo == null || state.creditInfo.totalCredits <= 0) {
-            _uiState.update { it.copy(error = "Insufficient credits") }
+            _uiState.update { it.copy(error = "クレジットが不足しています") }
             return
         }
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             // Add user's question to history
             val newHistory = state.conversationHistory + ConversationEntry(
                 type = "user",
@@ -376,16 +776,25 @@ class AnalysisScreenModel(
             }
 
             try {
-                val contextPrompt = buildString {
-                    appendLine("Please answer the following question about the analysis report.")
-                    appendLine()
-                    state.aiAnalysis?.let {
-                        appendLine("=== Analysis Report ===")
-                        appendLine(it)
+                // 指示書変更検出
+                val isDirectiveModification = question.contains(
+                    Regex("変更|変えて|代わり|別の|違う|嫌|苦手|できない|アレルギー|好み")
+                )
+
+                val contextPrompt = if (isDirectiveModification) {
+                    buildDirectiveModificationPrompt(state, question)
+                } else {
+                    buildString {
+                        appendLine("以下のAI分析レポートについての質問に答えてください。")
                         appendLine()
+                        state.aiAnalysis?.let {
+                            appendLine("【分析レポート】")
+                            appendLine(it)
+                            appendLine()
+                        }
+                        appendLine("【ユーザーの要望】")
+                        appendLine(question)
                     }
-                    appendLine("=== User's Question ===")
-                    appendLine(question)
                 }
 
                 val response = geminiService?.sendMessageWithCredit(
@@ -409,10 +818,15 @@ class AnalysisScreenModel(
                             )
                         )
                     }
+
+                    // 指示書変更検出時: 修正指示書を抽出・保存
+                    if (isDirectiveModification) {
+                        extractAndUpdateDirective(userId, response.text)
+                    }
                 } else {
                     _uiState.update {
                         it.copy(
-                            error = response?.error ?: "Failed to get response",
+                            error = response?.error ?: "回答の取得に失敗しました",
                             isQaLoading = false
                         )
                     }
@@ -420,7 +834,7 @@ class AnalysisScreenModel(
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = e.message ?: "Failed to send question",
+                        error = e.message ?: "質問の送信に失敗しました",
                         isQaLoading = false
                     )
                 }
@@ -443,7 +857,7 @@ class AnalysisScreenModel(
         val state = _uiState.value
         val aiAnalysis = state.aiAnalysis ?: return
 
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             val today = DateUtil.todayString()
             val report = AnalysisReport(
                 title = title,
@@ -470,7 +884,7 @@ class AnalysisScreenModel(
      */
     fun loadSavedReports() {
         val userId = authRepository.getCurrentUserId() ?: return
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true) }
             analysisRepository?.getReports(userId)
                 ?.onSuccess { reports ->
@@ -510,7 +924,7 @@ class AnalysisScreenModel(
      */
     fun deleteReport(reportId: String) {
         val userId = authRepository.getCurrentUserId() ?: return
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             analysisRepository?.deleteReport(userId, reportId)
                 ?.onSuccess {
                     loadSavedReports()
@@ -552,5 +966,244 @@ class AnalysisScreenModel(
      */
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    /**
+     * Clear level up message
+     */
+    fun clearLevelUpMessage() {
+        _uiState.update { it.copy(levelUpMessage = null) }
+    }
+
+    /**
+     * 指示書変更リクエスト用プロンプト構築
+     */
+    private fun buildDirectiveModificationPrompt(state: AnalysisUiState, question: String): String {
+        val profile = state.userProfile
+        return buildString {
+            appendLine("以下の分析レポートの指示書を、ユーザーの要望に合わせて修正してください。")
+            appendLine()
+            appendLine("【重要ルール】")
+            appendLine("- 修正後の指示書を必ず出力する")
+            appendLine("- 形式: [修正後の指示書] で始め、箇条書きで出力")
+            appendLine("- アスタリスク(*)は使用しない")
+            appendLine("- 各項目は【食事N】【運動】【睡眠】で始める")
+            appendLine("- 食材変更時は同等のPFC量を維持する")
+            appendLine("- ユーザーが指定した食材は使用可")
+            appendLine("- NG食材は絶対に使用禁止")
+            appendLine()
+
+            // NG食材
+            val ngFoods = mutableListOf<String>()
+            profile?.ngFoods?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.let {
+                ngFoods.addAll(it)
+            }
+            if (ngFoods.isNotEmpty()) {
+                appendLine("【NG食材（絶対使用禁止）】${ngFoods.joinToString(", ")}")
+                appendLine()
+            }
+
+            // 代替食材候補
+            val alternativesInfo = buildAlternativesInfo(profile)
+            if (alternativesInfo.isNotEmpty()) {
+                appendLine("【利用可能な代替食材（PFC/100g）】")
+                appendLine(alternativesInfo)
+                appendLine()
+            }
+
+            // 現在の分析レポート
+            state.aiAnalysis?.let {
+                appendLine("【分析レポート】")
+                appendLine(it)
+                appendLine()
+            }
+
+            appendLine("【ユーザーの要望】")
+            appendLine(question)
+        }
+    }
+
+    /**
+     * 代替食材候補情報を構築（BodymakingFoodDatabase連携）
+     */
+    private fun buildAlternativesInfo(profile: UserProfile?): String = buildString {
+        appendLine("【ミニマリスト代替候補】")
+        appendLine("以下の固定メンバーから選択してください：")
+        appendLine()
+        appendLine("タンパク質:")
+        appendLine("- 鶏むね肉（常備）")
+        appendLine("- 全卵（常備）")
+        if ((profile?.budgetTier ?: 2) >= 2) {
+            appendLine("- 牛赤身肉（脚/背中の日）")
+            appendLine("- 鮭 or サバ缶（オフ日）")
+        }
+        appendLine()
+        appendLine("炭水化物:")
+        val mainCarb = BodymakingFoodDatabase.getCarbForGoal(profile?.goal)
+        appendLine("- ${mainCarb.displayName}（メイン）")
+        appendLine("- 切り餅（トレ前後）")
+        appendLine()
+        appendLine("※ 上記以外の食材はミニマリストリストに含まれません")
+    }
+
+    /**
+     * AI応答から修正指示書を抽出してFirestoreに保存
+     */
+    private fun extractAndUpdateDirective(userId: String, responseText: String) {
+        screenModelScope.launch(exceptionHandler) {
+            try {
+                // パターン1: [修正後の指示書] セクション抽出
+                val modifiedPattern = Regex("""\[修正後の指示書\]\s*([\s\S]*?)(?:\[|$)""")
+                var bulletPoints = modifiedPattern.find(responseText)?.let {
+                    Regex("""^[-・]\s*(.+)$""", RegexOption.MULTILINE)
+                        .findAll(it.groupValues[1].trim())
+                        .map { m -> m.groupValues[1].trim() }
+                        .filter { s -> s.isNotEmpty() }
+                        .toList()
+                } ?: emptyList()
+
+                // パターン2: 【食事N】【運動】【睡眠】行の直接抽出
+                if (bulletPoints.isEmpty()) {
+                    bulletPoints = Regex("""[-・]\s*(【(?:食事\d+|運動|睡眠)】[^\n]+)""")
+                        .findAll(responseText)
+                        .map { it.groupValues[1].trim() }
+                        .toList()
+                }
+
+                if (bulletPoints.isNotEmpty()) {
+                    val tomorrow = DateUtil.nextDay(DateUtil.todayString())
+                    val filteredPoints = bulletPoints.filter { it.startsWith("【") }
+                    val message = (if (filteredPoints.isNotEmpty()) filteredPoints else bulletPoints)
+                        .joinToString("\n") { "- $it" }
+                    val directive = Directive(
+                        userId = userId,
+                        date = tomorrow,
+                        message = message,
+                        type = DirectiveType.MEAL,
+                        completed = false,
+                        createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                    )
+                    directiveRepository?.saveDirective(directive)
+                }
+            } catch (e: Exception) {
+                // 指示書抽出・保存失敗はQ&A結果に影響しないので無視
+            }
+        }
+    }
+
+    /**
+     * 詳細栄養素を計算（DashboardScreenModelと同じロジック）
+     */
+    private fun calculateDetailedNutrition(meals: List<Meal>): DetailedNutrition {
+        if (meals.isEmpty()) {
+            return DetailedNutrition()
+        }
+
+        var totalProtein = 0f
+        var weightedDiaas = 0f
+        var saturatedFat = 0f
+        var monounsaturatedFat = 0f
+        var polyunsaturatedFat = 0f
+        var totalGL = 0f
+        var totalFiber = 0f
+        var totalCarbs = 0f
+        val vitamins = mutableMapOf<String, Float>()
+        val minerals = mutableMapOf<String, Float>()
+
+        meals.forEach { meal ->
+            meal.items.forEach { item ->
+                totalProtein += item.protein
+                if (item.diaas > 0 && item.protein > 0) {
+                    weightedDiaas += item.diaas * item.protein
+                }
+                saturatedFat += item.saturatedFat
+                monounsaturatedFat += item.monounsaturatedFat
+                polyunsaturatedFat += item.polyunsaturatedFat
+                totalCarbs += item.carbs
+                totalFiber += item.fiber
+                if (item.gi > 0 && item.carbs > 0) {
+                    totalGL += (item.gi * item.carbs) / 100f
+                }
+                item.vitamins.forEach { (key, value) ->
+                    vitamins[key] = (vitamins[key] ?: 0f) + value
+                }
+                item.minerals.forEach { (key, value) ->
+                    minerals[key] = (minerals[key] ?: 0f) + value
+                }
+            }
+        }
+
+        val averageDiaas = if (totalProtein > 0) weightedDiaas / totalProtein else 0f
+
+        // 脂肪酸スコア
+        val totalFat = saturatedFat + monounsaturatedFat + polyunsaturatedFat
+        val (fattyAcidScore, fattyAcidRating, fattyAcidLabel) = if (totalFat > 0) {
+            val saturatedPercent = (saturatedFat / totalFat) * 100
+            val monounsaturatedPercent = (monounsaturatedFat / totalFat) * 100
+            when {
+                saturatedPercent >= 40 || monounsaturatedPercent < 30 -> Triple(2, "★★☆☆☆", "要改善")
+                saturatedPercent >= 35 || monounsaturatedPercent < 35 -> Triple(4, "★★★★☆", "良好")
+                else -> Triple(5, "★★★★★", "優秀")
+            }
+        } else Triple(0, "-", "-")
+
+        // 食物繊維スコア
+        val (fiberScore, fiberRating, fiberLabel) = if (totalCarbs + totalFiber > 0) {
+            val fiberPercent = (totalFiber / (totalCarbs + totalFiber)) * 100
+            when {
+                fiberPercent < 5 -> Triple(2, "★★☆☆☆", "要改善")
+                fiberPercent < 10 -> Triple(4, "★★★★☆", "良好")
+                else -> Triple(5, "★★★★★", "優秀")
+            }
+        } else Triple(0, "-", "-")
+
+        // GL
+        val glLimit = 120f
+        val glRatio = if (glLimit > 0) totalGL / glLimit else 0f
+        val (glScore, glLabel) = when {
+            glRatio <= 0.6f -> 5 to "優秀"
+            glRatio <= 0.8f -> 4 to "良好"
+            glRatio <= 1.0f -> 3 to "普通"
+            else -> 2 to "要改善"
+        }
+
+        // ビタミン・ミネラル充足率
+        val vitaminTargets = mapOf(
+            "vitaminA" to 900f, "vitaminD" to 20f, "vitaminE" to 6.5f,
+            "vitaminB1" to 1.4f, "vitaminB2" to 1.6f, "vitaminC" to 100f
+        )
+        val mineralTargets = mapOf(
+            "calcium" to 800f, "iron" to 7.5f, "magnesium" to 370f,
+            "zinc" to 11f, "potassium" to 3000f
+        )
+
+        val vitaminScores = vitaminTargets.mapValues { (key, target) ->
+            val actual = vitamins[key] ?: 0f
+            if (target > 0) actual / target else 0f
+        }
+        val mineralScores = mineralTargets.mapValues { (key, target) ->
+            val actual = minerals[key] ?: 0f
+            if (target > 0) actual / target else 0f
+        }
+
+        return DetailedNutrition(
+            averageDiaas = averageDiaas,
+            saturatedFat = saturatedFat,
+            monounsaturatedFat = monounsaturatedFat,
+            polyunsaturatedFat = polyunsaturatedFat,
+            fattyAcidScore = fattyAcidScore,
+            fattyAcidRating = fattyAcidRating,
+            fattyAcidLabel = fattyAcidLabel,
+            vitaminScores = vitaminScores,
+            mineralScores = mineralScores,
+            totalGL = totalGL,
+            glLimit = glLimit,
+            glScore = glScore,
+            glLabel = glLabel,
+            totalFiber = totalFiber,
+            fiberScore = fiberScore,
+            fiberRating = fiberRating,
+            fiberLabel = fiberLabel
+        )
     }
 }

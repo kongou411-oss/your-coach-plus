@@ -18,7 +18,15 @@ import kotlinx.datetime.*
  */
 class FirestoreWorkoutRepository : WorkoutRepository {
 
-    private val firestore: FirebaseFirestore = Firebase.firestore
+    // iOS対応: lazy初期化でFirebaseアクセスを遅延
+    private val firestore: FirebaseFirestore by lazy {
+        try {
+            Firebase.firestore
+        } catch (e: Throwable) {
+            println("FirestoreWorkoutRepository: Firebase.firestore initialization failed: ${e.message}")
+            throw e
+        }
+    }
 
     private fun workoutsCollection(userId: String) =
         firestore.collection("users").document(userId).collection("workouts")
@@ -457,7 +465,13 @@ class FirestoreWorkoutRepository : WorkoutRepository {
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toWorkout(): Workout? {
         if (!exists) return null
 
-        val exercisesList = get<List<Map<String, Any?>>?>("exercises") ?: emptyList()
+        // iOS対応: List<Map<String, Any?>>の取得はシリアライズエラーになる可能性があるためtry-catch
+        val exercisesList = try {
+            get<List<Map<String, Any?>>?>("exercises") ?: emptyList()
+        } catch (e: Throwable) {
+            println("FirestoreWorkoutRepository: Could not parse exercises: ${e.message}")
+            emptyList()
+        }
         return Workout(
             id = id,
             userId = get<String?>("userId") ?: "",
@@ -512,7 +526,13 @@ class FirestoreWorkoutRepository : WorkoutRepository {
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toTemplate(): WorkoutTemplate? {
         if (!exists) return null
 
-        val exercisesList = get<List<Map<String, Any?>>?>("exercises") ?: emptyList()
+        // iOS対応: List<Map<String, Any?>>の取得はシリアライズエラーになる可能性があるためtry-catch
+        val exercisesList = try {
+            get<List<Map<String, Any?>>?>("exercises") ?: emptyList()
+        } catch (e: Throwable) {
+            println("FirestoreWorkoutRepository: Could not parse template exercises: ${e.message}")
+            emptyList()
+        }
         return WorkoutTemplate(
             id = id,
             userId = get<String?>("userId") ?: "",

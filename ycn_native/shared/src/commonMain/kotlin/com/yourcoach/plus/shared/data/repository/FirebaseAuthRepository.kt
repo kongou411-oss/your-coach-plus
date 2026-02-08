@@ -7,6 +7,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.auth.GoogleAuthProvider
+import dev.gitlive.firebase.auth.OAuthProvider
 import dev.gitlive.firebase.auth.auth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -16,7 +17,15 @@ import kotlinx.coroutines.flow.map
  */
 class FirebaseAuthRepository : AuthRepository {
 
-    private val auth: FirebaseAuth = Firebase.auth
+    // iOS対応: lazy初期化でFirebaseアクセスを遅延
+    private val auth: FirebaseAuth by lazy {
+        try {
+            Firebase.auth
+        } catch (e: Throwable) {
+            println("FirebaseAuthRepository: Firebase.auth initialization failed: ${e.message}")
+            throw e
+        }
+    }
 
     /**
      * 現在のユーザーを監視
@@ -51,6 +60,22 @@ class FirebaseAuthRepository : AuthRepository {
     override suspend fun signInWithGoogle(idToken: String): Result<User> {
         return try {
             val credential = GoogleAuthProvider.credential(idToken, null)
+            val result = auth.signInWithCredential(credential)
+            val firebaseUser = result.user
+                ?: return Result.failure(AppError.AuthenticationError("ユーザー情報を取得できませんでした"))
+
+            Result.success(firebaseUser.toUser())
+        } catch (e: Exception) {
+            Result.failure(mapFirebaseAuthError(e))
+        }
+    }
+
+    /**
+     * Appleでサインイン
+     */
+    override suspend fun signInWithApple(idToken: String, nonce: String): Result<User> {
+        return try {
+            val credential = OAuthProvider.credential("apple.com", idToken, nonce)
             val result = auth.signInWithCredential(credential)
             val firebaseUser = result.user
                 ?: return Result.failure(AppError.AuthenticationError("ユーザー情報を取得できませんでした"))
@@ -115,23 +140,41 @@ class FirebaseAuthRepository : AuthRepository {
 
     /**
      * 現在のユーザーを取得（同期）
+     * iOS対応: Firebase初期化前のアクセスを防御
      */
     override fun getCurrentUser(): User? {
-        return auth.currentUser?.toUser()
+        return try {
+            auth.currentUser?.toUser()
+        } catch (e: Throwable) {
+            println("FirebaseAuthRepository: getCurrentUser error: ${e.message}")
+            null
+        }
     }
 
     /**
      * 現在のユーザーIDを取得
+     * iOS対応: Firebase初期化前のアクセスを防御
      */
     override fun getCurrentUserId(): String? {
-        return auth.currentUser?.uid
+        return try {
+            auth.currentUser?.uid
+        } catch (e: Throwable) {
+            println("FirebaseAuthRepository: getCurrentUserId error: ${e.message}")
+            null
+        }
     }
 
     /**
      * メール認証済みか確認
+     * iOS対応: Firebase初期化前のアクセスを防御
      */
     override fun isEmailVerified(): Boolean {
-        return auth.currentUser?.isEmailVerified ?: false
+        return try {
+            auth.currentUser?.isEmailVerified ?: false
+        } catch (e: Throwable) {
+            println("FirebaseAuthRepository: isEmailVerified error: ${e.message}")
+            false
+        }
     }
 
     /**
@@ -204,6 +247,17 @@ class FirebaseAuthRepository : AuthRepository {
             message.contains("WEAK_PASSWORD") -> AppError.ValidationError("パスワードが弱すぎます")
             message.contains("NETWORK") -> AppError.NetworkError("ネットワークエラーが発生しました", e)
             message.contains("TOO_MANY_REQUESTS") -> AppError.AuthenticationError("試行回数が多すぎます。しばらく待ってから再試行してください")
+            // Apple Sign-In関連エラー
+            message.contains("Unable to parse") || message.contains("17004") ->
+                AppError.AuthenticationError("認証トークンの処理に失敗しました。再度お試しください")
+            message.contains("INVALID_CREDENTIAL") || message.contains("17020") ->
+                AppError.AuthenticationError("認証情報が無効です。再度ログインしてください")
+            message.contains("CREDENTIAL_ALREADY_IN_USE") ->
+                AppError.AuthenticationError("このアカウントは既に別のユーザーに紐づけられています")
+            message.contains("OPERATION_NOT_ALLOWED") || message.contains("17006") ->
+                AppError.AuthenticationError("この認証方法は現在利用できません")
+            message.contains("MISSING_OR_INVALID_NONCE") || message.contains("17058") ->
+                AppError.AuthenticationError("認証セッションが無効です。再度お試しください")
             else -> AppError.AuthenticationError(e.message ?: "認証エラーが発生しました")
         }
     }

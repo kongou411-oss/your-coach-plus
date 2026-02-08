@@ -28,6 +28,11 @@ interface AuthRepository {
     suspend fun signInWithGoogle(idToken: String): Result<User>
 
     /**
+     * Appleでサインイン
+     */
+    suspend fun signInWithApple(idToken: String, nonce: String): Result<User>
+
+    /**
      * メールとパスワードでアカウント作成
      */
     suspend fun signUpWithEmail(email: String, password: String): Result<User>

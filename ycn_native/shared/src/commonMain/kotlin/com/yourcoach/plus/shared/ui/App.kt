@@ -13,8 +13,9 @@ import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.ui.screens.auth.LoginScreen
 import com.yourcoach.plus.shared.ui.screens.auth.ProfileSetupScreen
-import com.yourcoach.plus.shared.ui.screens.dashboard.DashboardScreen
+import com.yourcoach.plus.shared.ui.screens.main.MainScreen
 import com.yourcoach.plus.shared.ui.theme.YourCoachTheme
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -45,23 +46,43 @@ private fun AppContent() {
     var isLoading by remember { mutableStateOf(true) }
     var initialScreen by remember { mutableStateOf<cafe.adriel.voyager.core.screen.Screen?>(null) }
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            val currentUser = authRepository.getCurrentUser()
+    // iOS対応: コルーチン例外ハンドラー（NULLクラッシュ防止）
+    val exceptionHandler = remember {
+        CoroutineExceptionHandler { _, throwable ->
+            println("YourCoachApp: Unhandled coroutine exception: ${throwable.message}")
+            initialScreen = LoginScreen()
+            isLoading = false
+        }
+    }
 
-            initialScreen = if (currentUser == null) {
-                // 未ログイン → LoginScreen
-                LoginScreen()
-            } else {
-                // ログイン済み → オンボーディング状態をチェック
-                val user = userRepository.getUser(currentUser.uid).getOrNull()
-                if (user?.profile?.onboardingCompleted == true) {
-                    // オンボーディング完了 → DashboardScreen
-                    DashboardScreen()
+    LaunchedEffect(Unit) {
+        scope.launch(exceptionHandler) {
+            try {
+                val currentUser = authRepository.getCurrentUser()
+
+                initialScreen = if (currentUser == null) {
+                    // 未ログイン → LoginScreen
+                    LoginScreen()
                 } else {
-                    // オンボーディング未完了 → ProfileSetupScreen
-                    ProfileSetupScreen(currentUser.uid)
+                    // ログイン済み → オンボーディング状態をチェック
+                    val user = try {
+                        userRepository.getUser(currentUser.uid).getOrNull()
+                    } catch (e: Throwable) {
+                        println("YourCoachApp: Failed to get user: ${e.message}")
+                        null
+                    }
+                    if (user?.profile?.onboardingCompleted == true) {
+                        // オンボーディング完了 → MainScreen (ボトムナビ付き)
+                        MainScreen()
+                    } else {
+                        // オンボーディング未完了 → ProfileSetupScreen
+                        ProfileSetupScreen(currentUser.uid)
+                    }
                 }
+            } catch (e: Throwable) {
+                // Firebase初期化エラー等 → LoginScreenへ
+                println("YourCoachApp: Error during startup: ${e.message}")
+                initialScreen = LoginScreen()
             }
             isLoading = false
         }

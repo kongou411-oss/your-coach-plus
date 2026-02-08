@@ -158,4 +158,17 @@ object DateUtil {
             null
         }
     }
+
+    /**
+     * 今日の日付文字列を取得（getTodayDateString()のエイリアス）
+     */
+    fun getTodayDateString(): String = todayString()
+
+    /**
+     * 日付に日数を加算
+     */
+    fun addDays(dateString: String, days: Int): String {
+        val date = LocalDate.parse(dateString)
+        return date.plus(days, DateTimeUnit.DAY).toString()
+    }
 }

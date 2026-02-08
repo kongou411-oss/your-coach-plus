@@ -65,6 +65,7 @@ import com.yourcoach.plus.android.ui.screens.badges.BadgesScreen
 import com.yourcoach.plus.android.ui.screens.workout.AddWorkoutScreen
 import com.yourcoach.plus.android.ui.screens.workout.WorkoutRecorderScreen
 import com.yourcoach.plus.android.ui.screens.workout.WorkoutRecorderViewModel
+import com.google.firebase.auth.FirebaseAuth
 import org.koin.androidx.compose.koinViewModel
 import com.yourcoach.plus.android.ui.screens.auth.OnboardingScreen
 
@@ -129,6 +130,10 @@ fun YourCoachNavHost() {
         Screen.Settings.route
     )
 
+    // 認証状態に応じてstartDestinationを決定
+    val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
+    val startDestination = if (isLoggedIn) Screen.Dashboard.route else Screen.Login.route
+
     // ボトムバーの共有状態（DashboardScreenから更新）
     var bottomBarState by remember { mutableStateOf(BottomBarState()) }
 
@@ -175,7 +180,7 @@ fun YourCoachNavHost() {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Login.route, // TODO: 認証状態に応じて変更
+            startDestination = startDestination,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
@@ -345,10 +350,9 @@ fun YourCoachNavHost() {
 
             // Profile Settings
             composable(Screen.ProfileSettings.route) {
-                // TODO: SettingsViewModel から userId と profile を取得
                 ProfileSettingsScreen(
-                    userId = "", // TODO: 認証状態から取得
-                    initialProfile = null, // TODO: ユーザー情報から取得
+                    userId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
+                    initialProfile = null,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
@@ -444,9 +448,9 @@ fun YourCoachNavHost() {
             // Subscription/Premium screens
             composable(Screen.Premium.route) {
                 SubscriptionScreen(
-                    userId = "", // TODO: 認証状態から取得
-                    registrationDate = null, // TODO: ユーザー情報から取得
-                    subscriptionStatus = null, // TODO: ユーザー情報から取得
+                    userId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
+                    registrationDate = null,
+                    subscriptionStatus = null,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToTerms = { navController.navigate(Screen.Terms.route) },
                     onNavigateToPrivacy = { navController.navigate(Screen.Privacy.route) }

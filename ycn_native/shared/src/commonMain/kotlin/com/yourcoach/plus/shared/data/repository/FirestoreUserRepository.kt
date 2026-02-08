@@ -4,6 +4,8 @@ import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.util.AppError
 import com.yourcoach.plus.shared.util.DateUtil
+import com.yourcoach.plus.shared.util.invokeCloudFunction
+import com.yourcoach.plus.shared.util.getProfileMap
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.FirebaseFirestore
@@ -20,8 +22,8 @@ class FirestoreUserRepository : UserRepository {
         const val INITIAL_CREDITS = 14 // 新規ユーザーの初期クレジット
     }
 
-    private val firestore: FirebaseFirestore = Firebase.firestore
-    private val usersCollection = firestore.collection("users")
+    private val firestore: FirebaseFirestore by lazy { Firebase.firestore }
+    private val usersCollection by lazy { firestore.collection("users") }
 
     /**
      * 新規ユーザーを作成（初期クレジット14付与）
@@ -312,27 +314,18 @@ class FirestoreUserRepository : UserRepository {
     }
 
     /**
-     * 経験値を追加（レベルアップ時は無料クレジット+1）
-     * Note: KMP版ではCloud Functionsの呼び出しは別途実装が必要
+     * 経験値を追加（Cloud Functions経由 - Android版と同一）
      */
     override suspend fun addExperience(userId: String, amount: Int): Result<Pair<Int, Boolean>> {
         return try {
-            val snapshot = usersCollection.document(userId).get()
-            val currentExp = snapshot.get<Long?>("experience")?.toInt() ?: 0
-            val newExp = currentExp + amount
+            val result = invokeCloudFunction(
+                region = "asia-northeast2",
+                functionName = "addExperience",
+                data = mapOf("expPoints" to amount)
+            )
 
-            // レベル計算
-            val oldLevel = calculateLevel(currentExp)
-            val newLevel = calculateLevel(newExp)
-            val leveledUp = newLevel > oldLevel
-
-            usersCollection.document(userId).update(mapOf("experience" to newExp))
-
-            // レベルアップ時は無料クレジット+1
-            if (leveledUp) {
-                val currentFreeCredits = snapshot.get<Long?>("freeCredits")?.toInt() ?: INITIAL_CREDITS
-                usersCollection.document(userId).update(mapOf("freeCredits" to currentFreeCredits + 1))
-            }
+            val newExp = (result["experience"] as? Number)?.toInt() ?: 0
+            val leveledUp = result["leveledUp"] as? Boolean ?: false
 
             Result.success(Pair(newExp, leveledUp))
         } catch (e: Exception) {
@@ -341,56 +334,33 @@ class FirestoreUserRepository : UserRepository {
     }
 
     /**
-     * ログインボーナスをチェック・付与（1日1回10XP）
+     * ログインボーナスをチェック・付与（Cloud Functions経由 - Android版と同一）
      */
     override suspend fun checkAndGrantLoginBonus(userId: String): Result<Boolean> {
         return try {
-            val today = DateUtil.todayString()
-            val snapshot = usersCollection.document(userId).get()
-            val lastLoginBonusDate = snapshot.get<String?>("lastLoginBonusDate")
+            val result = invokeCloudFunction(
+                region = "asia-northeast2",
+                functionName = "grantLoginBonus",
+                data = emptyMap()
+            )
 
-            if (lastLoginBonusDate == today) {
-                return Result.success(false)
-            }
-
-            // 経験値を追加
-            val expResult = addExperience(userId, UserProfile.XP_PER_ACTION)
-            if (expResult.isFailure) {
-                return Result.failure(expResult.exceptionOrNull()!!)
-            }
-
-            // 最終ログインボーナス日を更新
-            usersCollection.document(userId).update(mapOf("lastLoginBonusDate" to today))
-
-            Result.success(true)
+            val granted = result["granted"] as? Boolean ?: false
+            Result.success(granted)
         } catch (e: Exception) {
             Result.failure(AppError.NetworkError("ログインボーナスの確認に失敗しました", e))
         }
     }
 
     /**
-     * レベル計算
-     * 累進式: Lv2=100, Lv3=250, Lv4=450...
-     */
-    private fun calculateLevel(experience: Int): Int {
-        var level = 1
-        while (level < UserProfile.MAX_LEVEL && getRequiredExpForLevel(level + 1) <= experience) {
-            level++
-        }
-        return level
-    }
-
-    private fun getRequiredExpForLevel(level: Int): Int {
-        if (level <= 1) return 0
-        return 25 * (level - 1) * (level + 2)
-    }
-
-    /**
      * DocumentSnapshotをUserに変換
      */
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toUser(userId: String): User {
-        val profileMap = get<Map<String, Any?>?>("profile")
-        val profile = profileMap?.let { parseUserProfile(it) }
+        // iOS対応: プラットフォーム固有のプロファイルパーサーを使用
+        val profile = try {
+            getProfileMap()?.let { parseUserProfile(it) }
+        } catch (e: Throwable) {
+            null
+        }
 
         val freeCredits = get<Long?>("freeCredits")?.toInt()
             ?: get<Long?>("credits")?.toInt()
@@ -398,16 +368,6 @@ class FirestoreUserRepository : UserRepository {
         val paidCredits = get<Long?>("paidCredits")?.toInt() ?: 0
         val experience = get<Long?>("experience")?.toInt() ?: 0
         val profileWithExp = profile?.copy(experience = experience)
-
-        // デバッグ: Firestoreからの生データを確認
-        val rawOrgName = get<String?>("organizationName")
-        val rawB2b2cOrgId = get<String?>("b2b2cOrgId")
-        val rawIsPremium = get<Boolean?>("isPremium")
-        println("=== FirestoreUserRepository.toUser DEBUG ===")
-        println("  userId=$userId")
-        println("  rawOrgName=$rawOrgName")
-        println("  rawB2b2cOrgId=$rawB2b2cOrgId")
-        println("  rawIsPremium=$rawIsPremium")
 
         return User(
             uid = userId,
@@ -423,7 +383,7 @@ class FirestoreUserRepository : UserRepository {
             lastLoginBonusDate = get<String?>("lastLoginBonusDate"),
             b2b2cOrgId = get<String?>("b2b2cOrgId"),
             b2b2cOrgName = get<String?>("b2b2cOrgName"),
-            organizationName = rawOrgName
+            organizationName = get<String?>("organizationName")
         )
     }
 

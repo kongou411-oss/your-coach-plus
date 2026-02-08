@@ -41,7 +41,7 @@ import com.yourcoach.plus.shared.domain.repository.UserCreditInfo
 import com.yourcoach.plus.shared.ui.theme.*
 
 /**
- * AI Analysis Screen (Compose Multiplatform)
+ * AI分析画面 (Compose Multiplatform)
  */
 class AnalysisScreen : Screen {
 
@@ -65,10 +65,10 @@ class AnalysisScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("AI Analysis") },
+                    title = { Text("AI分析") },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "戻る")
                         }
                     },
                     actions = {
@@ -85,7 +85,7 @@ class AnalysisScreen : Screen {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Cr:",
+                                    text = "Cr:",  // クレジット略称
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -129,12 +129,12 @@ class AnalysisScreen : Screen {
                     Tab(
                         selected = uiState.activeTab == AnalysisTab.ANALYSIS,
                         onClick = { screenModel.switchTab(AnalysisTab.ANALYSIS) },
-                        text = { Text("Analysis") }
+                        text = { Text("分析") }
                     )
                     Tab(
                         selected = uiState.activeTab == AnalysisTab.HISTORY,
                         onClick = { screenModel.switchTab(AnalysisTab.HISTORY) },
-                        text = { Text("History") }
+                        text = { Text("履歴") }
                     )
                 }
 
@@ -210,7 +210,7 @@ private fun AnalysisContent(
                             CircularProgressIndicator(color = Primary)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Loading data...",
+                                text = "データ読み込み中...",
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
@@ -250,7 +250,7 @@ private fun AnalysisContent(
                             CircularProgressIndicator(color = Primary)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "AI is analyzing...",
+                                text = "AIが分析中...",
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
@@ -298,7 +298,7 @@ private fun AnalysisContent(
                                 strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Generating response...")
+                            Text("回答を生成中...")
                         }
                     }
                 }
@@ -330,9 +330,9 @@ private fun GenerateAnalysisCard(
     val effectiveHasWorkouts = hasWorkouts || isRestDay
     val hasAllData = hasMeals && effectiveHasWorkouts && hasCondition
     val missingData = mutableListOf<String>()
-    if (!hasMeals) missingData.add("Meals")
-    if (!effectiveHasWorkouts) missingData.add("Workouts")
-    if (!hasCondition) missingData.add("Condition")
+    if (!hasMeals) missingData.add("食事")
+    if (!effectiveHasWorkouts) missingData.add("運動")
+    if (!hasCondition) missingData.add("コンディション")
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -355,13 +355,13 @@ private fun GenerateAnalysisCard(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "AI Analysis",
+                text = "AI分析",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "AI will analyze today's meal and workout records\nand provide improvement points and advice",
+                text = "今日の食事・運動記録をAIが分析し\n改善点とアドバイスを提供します",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -389,13 +389,13 @@ private fun GenerateAnalysisCard(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "Recommended: Analyze after completing all records",
+                                text = "すべての記録を完了してからの分析がおすすめです",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFE65100)
                             )
                             Text(
-                                text = "Missing: ${missingData.joinToString(", ")}",
+                                text = "未記録: ${missingData.joinToString("、")}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color(0xFFFF9800)
                             )
@@ -418,7 +418,7 @@ private fun GenerateAnalysisCard(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Credit Balance:",
+                        text = "クレジット残高:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -432,7 +432,7 @@ private fun GenerateAnalysisCard(
                             color = if (credit.freeCredits > 0) Primary else Color.Gray
                         )
                         Text(
-                            text = "Free",
+                            text = "無料",
                             style = MaterialTheme.typography.labelSmall,
                             color = Primary
                         )
@@ -452,7 +452,7 @@ private fun GenerateAnalysisCard(
                             color = if (credit.paidCredits > 0) AccentOrange else Color.Gray
                         )
                         Text(
-                            text = "Paid",
+                            text = "有料",
                             style = MaterialTheme.typography.labelSmall,
                             color = AccentOrange
                         )
@@ -471,18 +471,18 @@ private fun GenerateAnalysisCard(
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Generate Analysis (1 Credit)")
+                Text("分析を生成（1クレジット）")
             }
             if ((creditInfo?.totalCredits ?: 0) <= 0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Insufficient credits",
+                    text = "クレジットが不足しています",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "You can purchase credits from settings",
+                    text = "設定からクレジットを購入できます",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -514,7 +514,7 @@ private fun AnalysisResultCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Analysis Result",
+                    text = "分析結果",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -522,14 +522,14 @@ private fun AnalysisResultCard(
                     IconButton(onClick = onSave) {
                         Icon(
                             Icons.Default.Save,
-                            contentDescription = "Save",
+                            contentDescription = "保存",
                             tint = Primary
                         )
                     }
                     IconButton(onClick = onClear) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = "閉じる",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -595,7 +595,7 @@ private fun QuestionInputBar(
                 value = question,
                 onValueChange = onQuestionChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Enter question...") },
+                placeholder = { Text("質問を入力...") },
                 singleLine = true,
                 enabled = enabled,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -609,7 +609,7 @@ private fun QuestionInputBar(
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send",
+                    contentDescription = "送信",
                     tint = if (enabled && question.isNotBlank()) Primary else Color.Gray
                 )
             }
@@ -646,7 +646,7 @@ private fun HistoryContent(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "No saved reports",
+                    text = "保存されたレポートはありません",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -708,7 +708,7 @@ private fun ReportCard(
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete",
+                        contentDescription = "削除",
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -738,12 +738,12 @@ private fun SaveReportDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Save Report") },
+        title = { Text("レポートを保存") },
         text = {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Title") },
+                label = { Text("タイトル") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -753,19 +753,19 @@ private fun SaveReportDialog(
                 onClick = { onSave(title) },
                 enabled = title.isNotBlank()
             ) {
-                Text("Save")
+                Text("保存")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("キャンセル")
             }
         }
     )
 }
 
 /**
- * Profile settings confirmation section (collapsible)
+ * プロフィール設定確認セクション（折りたたみ式）
  */
 @Composable
 private fun ProfileSettingsSection(
@@ -802,14 +802,14 @@ private fun ProfileSettingsSection(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Settings Used for Analysis",
+                        text = "分析に使用した設定",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium
                     )
                 }
                 Icon(
                     if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    contentDescription = if (isExpanded) "閉じる" else "開く",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -828,34 +828,34 @@ private fun ProfileSettingsSection(
                 ) {
                     // Goal
                     val goalText = when (userProfile?.goal) {
-                        FitnessGoal.LOSE_WEIGHT -> "Weight Loss"
-                        FitnessGoal.MAINTAIN -> "Maintain / Recomp"
-                        FitnessGoal.GAIN_MUSCLE -> "Muscle Gain"
-                        null -> "Not Set"
+                        FitnessGoal.LOSE_WEIGHT -> "減量"
+                        FitnessGoal.MAINTAIN -> "維持 / リコンプ"
+                        FitnessGoal.GAIN_MUSCLE -> "増量"
+                        null -> "未設定"
                     }
-                    SettingRow("Goal", goalText)
+                    SettingRow("目標", goalText)
 
                     // Target macros
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Text(
-                        text = "Target Macros",
+                        text = "目標マクロ",
                         style = MaterialTheme.typography.labelMedium,
                         color = Primary,
                         fontWeight = FontWeight.Bold
                     )
-                    SettingRow("Calories", "${userProfile?.targetCalories ?: 2000} kcal")
+                    SettingRow("カロリー", "${userProfile?.targetCalories ?: 2000} kcal")
 
                     // Protein + LBM coefficient
                     val targetP = userProfile?.targetProtein ?: 120f
-                    SettingRow("Protein", "${targetP.toInt()} g")
+                    SettingRow("タンパク質", "${targetP.toInt()} g")
 
-                    SettingRow("Fat", "${userProfile?.targetFat?.toInt() ?: 60} g")
-                    SettingRow("Carbs", "${userProfile?.targetCarbs?.toInt() ?: 250} g")
+                    SettingRow("脂質", "${userProfile?.targetFat?.toInt() ?: 60} g")
+                    SettingRow("炭水化物", "${userProfile?.targetCarbs?.toInt() ?: 250} g")
 
                     // Actual results (from score or meal data)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Text(
-                        text = "Today's Results",
+                        text = "本日の実績",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color(0xFF22C55E),
                         fontWeight = FontWeight.Bold
@@ -864,22 +864,22 @@ private fun ProfileSettingsSection(
                     val actualP = score?.totalProtein ?: meals.sumOf { it.totalProtein.toDouble() }.toFloat()
                     val actualF = score?.totalFat ?: meals.sumOf { it.totalFat.toDouble() }.toFloat()
                     val actualC = score?.totalCarbs ?: meals.sumOf { it.totalCarbs.toDouble() }.toFloat()
-                    SettingRow("Calories", "${actualCal.toInt()} kcal")
-                    SettingRow("Protein", "${actualP.toInt()} g")
-                    SettingRow("Fat", "${actualF.toInt()} g")
-                    SettingRow("Carbs", "${actualC.toInt()} g")
+                    SettingRow("カロリー", "${actualCal.toInt()} kcal")
+                    SettingRow("タンパク質", "${actualP.toInt()} g")
+                    SettingRow("脂質", "${actualF.toInt()} g")
+                    SettingRow("炭水化物", "${actualC.toInt()} g")
 
                     // Meal settings
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Text(
-                        text = "Meal Settings",
+                        text = "食事設定",
                         style = MaterialTheme.typography.labelMedium,
                         color = Primary,
                         fontWeight = FontWeight.Bold
                     )
-                    SettingRow("Meals per Day", "${userProfile?.mealsPerDay ?: 3}")
+                    SettingRow("食事回数", "${userProfile?.mealsPerDay ?: 3}回")
                     userProfile?.trainingAfterMeal?.let { meal ->
-                        SettingRow("Training", "After meal $meal")
+                        SettingRow("トレーニング", "食事${meal}の後")
                     }
 
                     // Meal slot configuration
@@ -887,17 +887,17 @@ private fun ProfileSettingsSection(
                         if (slots.isNotEmpty()) {
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             Text(
-                                text = "Slot Settings (for Quest generation)",
+                                text = "スロット設定（クエスト生成用）",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = Primary,
                                 fontWeight = FontWeight.Bold
                             )
                             slots.forEach { slot ->
                                 val choiceText = when (slot.defaultFoodChoice) {
-                                    FoodChoice.KITCHEN -> "Home cooking"
-                                    FoodChoice.STORE -> "Takeout / Dining out"
+                                    FoodChoice.KITCHEN -> "自炊"
+                                    FoodChoice.STORE -> "外食・テイクアウト"
                                 }
-                                SettingRow("Meal ${slot.slotNumber}", choiceText)
+                                SettingRow("食事${slot.slotNumber}", choiceText)
                             }
                         }
                     }
@@ -906,17 +906,17 @@ private fun ProfileSettingsSection(
                     if (userProfile?.trainingAfterMeal != null) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text(
-                            text = "Pre/Post Workout PFC",
+                            text = "トレ前後PFC",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color(0xFFFF9600),
                             fontWeight = FontWeight.Bold
                         )
                         SettingRow(
-                            "Pre-workout",
+                            "トレ前",
                             "P${userProfile.preWorkoutProtein}g F${userProfile.preWorkoutFat}g C${userProfile.preWorkoutCarbs}g"
                         )
                         SettingRow(
-                            "Post-workout",
+                            "トレ後",
                             "P${userProfile.postWorkoutProtein}g F${userProfile.postWorkoutFat}g C${userProfile.postWorkoutCarbs}g"
                         )
                     }
@@ -924,23 +924,23 @@ private fun ProfileSettingsSection(
                     // Budget & Cooking
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Text(
-                        text = "AI Learning Settings",
+                        text = "AI学習設定",
                         style = MaterialTheme.typography.labelMedium,
                         color = Primary,
                         fontWeight = FontWeight.Bold
                     )
                     val budgetText = when (userProfile?.budgetTier) {
-                        1 -> "Budget-focused"
-                        2 -> "Standard"
-                        3 -> "Flexible"
-                        else -> "Standard"
+                        1 -> "節約"
+                        2 -> "標準"
+                        3 -> "ゆとり"
+                        else -> "標準"
                     }
-                    SettingRow("Budget", budgetText)
+                    SettingRow("食費予算", budgetText)
                     userProfile?.favoriteFoods?.takeIf { it.isNotBlank() }?.let {
-                        SettingRow("Favorites", it)
+                        SettingRow("好きな食べ物", it)
                     }
                     userProfile?.ngFoods?.takeIf { it.isNotBlank() }?.let {
-                        SettingRow("Avoid", it)
+                        SettingRow("NG食材", it)
                     }
                 }
             }

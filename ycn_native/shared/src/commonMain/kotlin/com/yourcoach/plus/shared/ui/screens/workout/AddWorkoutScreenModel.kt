@@ -4,8 +4,10 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import com.yourcoach.plus.shared.util.DateUtil
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,199 +15,270 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * 運動追加画面の状態
+ * 運動追加画面の状態 (Android WorkoutUiState と完全一致)
  */
 data class AddWorkoutUiState(
     val isLoading: Boolean = false,
-    val isSaving: Boolean = false,
     val error: String? = null,
-    val saveSuccess: Boolean = false,
-    val selectedDate: String = DateUtil.todayString(),
-    // 運動情報
-    val workoutName: String = "",
     val workoutType: WorkoutType = WorkoutType.STRENGTH,
+    val exercises: List<Exercise> = emptyList(),
     val intensity: WorkoutIntensity = WorkoutIntensity.MODERATE,
-    val exercises: List<ExerciseInput> = listOf(ExerciseInput()),
-    val totalDuration: String = "60",
-    val note: String = ""
+    val note: String = "",
+    val templates: List<WorkoutTemplate> = emptyList(),
+    val showTemplates: Boolean = false,
+    val isSaving: Boolean = false,
+    val saveSuccess: Boolean = false,
+    // 合計値
+    val totalDuration: Int = 0,
+    val totalCaloriesBurned: Int = 0,
+    // カスタム運動
+    val customExercises: List<CustomExercise> = emptyList(),
+    // 日付
+    val selectedDate: String = DateUtil.todayString()
 )
 
 /**
- * エクササイズ入力用データクラス
- */
-data class ExerciseInput(
-    val name: String = "",
-    val category: ExerciseCategory = ExerciseCategory.CHEST,
-    val sets: String = "3",
-    val reps: String = "10",
-    val weight: String = "",
-    val duration: String = "",
-    val caloriesBurned: String = "0"
-) {
-    fun toExercise(): Exercise? {
-        if (name.isBlank()) return null
-        return Exercise(
-            name = name,
-            category = category,
-            sets = sets.toIntOrNull(),
-            reps = reps.toIntOrNull(),
-            weight = weight.toFloatOrNull(),
-            duration = duration.toIntOrNull(),
-            caloriesBurned = caloriesBurned.toIntOrNull() ?: 0,
-            mainSets = sets.toIntOrNull() ?: 0,
-            totalVolume = calculateVolume()
-        )
-    }
-
-    private fun calculateVolume(): Int {
-        val w = weight.toFloatOrNull() ?: return 0
-        val s = sets.toIntOrNull() ?: return 0
-        val r = reps.toIntOrNull() ?: return 0
-        return (w * s * r).toInt()
-    }
-}
-
-/**
- * 運動追加画面のScreenModel
+ * 運動追加画面のScreenModel (Android WorkoutViewModel と完全一致)
  */
 class AddWorkoutScreenModel(
     private val authRepository: AuthRepository,
     private val workoutRepository: WorkoutRepository,
+    private val customExerciseRepository: CustomExerciseRepository,
     private val initialDate: String
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(AddWorkoutUiState(selectedDate = initialDate))
     val uiState: StateFlow<AddWorkoutUiState> = _uiState.asStateFlow()
 
-    /**
-     * 運動名を更新
-     */
-    fun updateWorkoutName(name: String) {
-        _uiState.update { it.copy(workoutName = name) }
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        println("AddWorkoutScreenModel: ${throwable.message}")
+        _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+    }
+
+    // キャッシュされたuserId
+    private var cachedUserId: String? = null
+
+    init {
+        loadTemplates()
+        loadCustomExercises()
+    }
+
+    private fun loadTemplates() {
+        screenModelScope.launch(exceptionHandler) {
+            val uid = authRepository.getCurrentUserId() ?: return@launch
+            cachedUserId = uid
+            workoutRepository.getWorkoutTemplates(uid)
+                .onSuccess { templates ->
+                    _uiState.update { it.copy(templates = templates) }
+                }
+        }
     }
 
     /**
-     * 運動タイプを更新
+     * カスタム運動を読み込む
      */
-    fun updateWorkoutType(type: WorkoutType) {
+    private fun loadCustomExercises() {
+        screenModelScope.launch(exceptionHandler) {
+            val uid = authRepository.getCurrentUserId() ?: return@launch
+            cachedUserId = uid
+            customExerciseRepository.getCustomExercises(uid)
+                .onSuccess { exercises ->
+                    _uiState.update { it.copy(customExercises = exercises) }
+                }
+        }
+    }
+
+    /**
+     * カスタム運動を保存
+     */
+    fun saveCustomExercise(
+        name: String,
+        category: ExerciseCategory,
+        defaultSets: Int? = null,
+        defaultReps: Int? = null,
+        defaultWeight: Float? = null,
+        defaultDuration: Int? = null
+    ) {
+        val uid = cachedUserId ?: return
+
+        screenModelScope.launch(exceptionHandler) {
+            // 既に同名のカスタム運動が存在するかチェック
+            val existing = customExerciseRepository.getCustomExerciseByName(uid, name).getOrNull()
+            if (existing != null) {
+                // 既存の場合は使用回数を増やす
+                customExerciseRepository.incrementUsage(uid, existing.id)
+            } else {
+                // 新規作成
+                val customExercise = CustomExercise(
+                    id = "",
+                    userId = uid,
+                    name = name,
+                    category = category,
+                    defaultSets = defaultSets,
+                    defaultReps = defaultReps,
+                    defaultWeight = defaultWeight,
+                    defaultDuration = defaultDuration,
+                    createdAt = DateUtil.currentTimestamp()
+                )
+                customExerciseRepository.saveCustomExercise(customExercise)
+            }
+            // 再読み込み
+            loadCustomExercises()
+        }
+    }
+
+    /**
+     * 運動を検索（カスタム運動のみ - 内蔵DBはAddWorkoutScreenで直接使用）
+     */
+    fun searchCustomExercises(query: String): List<CustomExercise> {
+        return _uiState.value.customExercises
+            .filter { it.name.contains(query, ignoreCase = true) }
+    }
+
+    /**
+     * カスタム運動リストを取得
+     */
+    fun getCustomExercises(): List<CustomExercise> {
+        return _uiState.value.customExercises
+    }
+
+    fun setWorkoutType(type: WorkoutType) {
         _uiState.update { it.copy(workoutType = type) }
     }
 
-    /**
-     * 強度を更新
-     */
-    fun updateIntensity(intensity: WorkoutIntensity) {
+    fun setIntensity(intensity: WorkoutIntensity) {
         _uiState.update { it.copy(intensity = intensity) }
     }
 
-    /**
-     * 合計時間を更新
-     */
-    fun updateTotalDuration(duration: String) {
-        _uiState.update { it.copy(totalDuration = duration) }
+    fun addExercise(exercise: Exercise) {
+        _uiState.update { state ->
+            val newExercises = state.exercises + exercise
+            state.copy(
+                exercises = newExercises,
+                totalDuration = newExercises.sumOf { it.duration ?: 0 },
+                totalCaloriesBurned = newExercises.sumOf { it.caloriesBurned }
+            )
+        }
     }
 
-    /**
-     * メモを更新
-     */
+    fun removeExercise(index: Int) {
+        _uiState.update { state ->
+            val newExercises = state.exercises.toMutableList().apply { removeAt(index) }
+            state.copy(
+                exercises = newExercises,
+                totalDuration = newExercises.sumOf { it.duration ?: 0 },
+                totalCaloriesBurned = newExercises.sumOf { it.caloriesBurned }
+            )
+        }
+    }
+
+    fun updateExercise(index: Int, exercise: Exercise) {
+        _uiState.update { state ->
+            val newExercises = state.exercises.toMutableList().apply { set(index, exercise) }
+            state.copy(
+                exercises = newExercises,
+                totalDuration = newExercises.sumOf { it.duration ?: 0 },
+                totalCaloriesBurned = newExercises.sumOf { it.caloriesBurned }
+            )
+        }
+    }
+
     fun updateNote(note: String) {
         _uiState.update { it.copy(note = note) }
     }
 
-    /**
-     * エクササイズを更新
-     */
-    fun updateExercise(index: Int, exercise: ExerciseInput) {
+    fun toggleTemplates() {
+        _uiState.update { it.copy(showTemplates = !it.showTemplates) }
+    }
+
+    fun applyTemplate(template: WorkoutTemplate) {
         _uiState.update { state ->
-            val newExercises = state.exercises.toMutableList()
-            if (index < newExercises.size) {
-                newExercises[index] = exercise
-            }
-            state.copy(exercises = newExercises)
+            state.copy(
+                workoutType = template.type,
+                exercises = template.exercises,
+                totalDuration = template.estimatedDuration,
+                totalCaloriesBurned = template.estimatedCalories,
+                showTemplates = false
+            )
         }
     }
 
-    /**
-     * エクササイズを追加
-     */
-    fun addExercise() {
-        _uiState.update { state ->
-            state.copy(exercises = state.exercises + ExerciseInput())
-        }
-    }
-
-    /**
-     * エクササイズを削除
-     */
-    fun removeExercise(index: Int) {
-        _uiState.update { state ->
-            if (state.exercises.size > 1) {
-                val newExercises = state.exercises.toMutableList()
-                newExercises.removeAt(index)
-                state.copy(exercises = newExercises)
-            } else {
-                state
-            }
-        }
-    }
-
-    /**
-     * 運動を保存
-     */
     fun saveWorkout() {
         val state = _uiState.value
-        val exercises = state.exercises.mapNotNull { it.toExercise() }
 
-        if (exercises.isEmpty()) {
-            _uiState.update { it.copy(error = "エクササイズを1つ以上追加してください") }
+        if (state.exercises.isEmpty()) {
+            _uiState.update { it.copy(error = "運動を追加してください") }
             return
         }
 
-        _uiState.update { it.copy(isSaving = true, error = null) }
+        screenModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isSaving = true) }
 
-        screenModelScope.launch {
             try {
-                val userId = authRepository.getCurrentUserId()
-                if (userId == null) {
-                    _uiState.update { it.copy(isSaving = false, error = "ログインしていません") }
+                val uid = authRepository.getCurrentUserId()
+                if (uid == null) {
+                    _uiState.update { it.copy(isSaving = false, error = "ログインが必要です") }
                     return@launch
                 }
 
-                val totalDuration = state.totalDuration.toIntOrNull() ?: 60
-                val totalCaloriesBurned = exercises.sumOf { it.caloriesBurned }
-
                 val workout = Workout(
                     id = "",
-                    userId = userId,
-                    name = state.workoutName.ifBlank { null },
+                    userId = uid,
                     type = state.workoutType,
-                    exercises = exercises,
-                    totalDuration = totalDuration,
-                    totalCaloriesBurned = totalCaloriesBurned,
+                    exercises = state.exercises,
+                    totalDuration = state.totalDuration,
+                    totalCaloriesBurned = state.totalCaloriesBurned,
                     intensity = state.intensity,
-                    note = state.note.ifBlank { null },
-                    timestamp = DateUtil.dateStringToTimestamp(state.selectedDate),
+                    note = state.note.takeIf { it.isNotBlank() },
+                    timestamp = DateUtil.currentTimestamp(),
                     createdAt = DateUtil.currentTimestamp()
                 )
 
-                val result = workoutRepository.addWorkout(workout)
-                result.fold(
-                    onSuccess = {
+                workoutRepository.addWorkout(workout)
+                    .onSuccess {
                         _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
-                    },
-                    onFailure = { e ->
-                        _uiState.update { it.copy(isSaving = false, error = e.message) }
                     }
-                )
+                    .onFailure { e ->
+                        _uiState.update {
+                            it.copy(
+                                isSaving = false,
+                                error = e.message ?: "保存に失敗しました"
+                            )
+                        }
+                    }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSaving = false, error = e.message) }
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        error = e.message ?: "保存に失敗しました"
+                    )
+                }
             }
         }
     }
 
-    /**
-     * エラーをクリア
-     */
+    fun saveAsTemplate(name: String) {
+        val uid = cachedUserId ?: return
+
+        screenModelScope.launch(exceptionHandler) {
+            val state = _uiState.value
+            val template = WorkoutTemplate(
+                id = "",
+                userId = uid,
+                name = name,
+                type = state.workoutType,
+                exercises = state.exercises,
+                estimatedDuration = state.totalDuration,
+                estimatedCalories = state.totalCaloriesBurned,
+                createdAt = DateUtil.currentTimestamp()
+            )
+            workoutRepository.saveWorkoutTemplate(template)
+                .onSuccess {
+                    loadTemplates()
+                }
+        }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }

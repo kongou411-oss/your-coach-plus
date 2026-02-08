@@ -22,7 +22,9 @@ actual fun GoogleSignInButtonHandler(
     content {
         if (enabled && activity != null) {
             scope.launch {
-                val googleSignInHelper = GoogleSignInHelper(GoogleSignInContext(activity))
+                // グローバルプロバイダーを設定
+                googleCurrentActivityProvider = { activity }
+                val googleSignInHelper = GoogleSignInHelper()
                 val result = googleSignInHelper.signIn()
                 onSignInResult(result)
             }

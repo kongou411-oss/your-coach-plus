@@ -21,7 +21,15 @@ import kotlinx.datetime.*
  */
 class FirestoreMealRepository : MealRepository {
 
-    private val firestore: FirebaseFirestore = Firebase.firestore
+    // iOS対応: lazy初期化でFirebaseアクセスを遅延
+    private val firestore: FirebaseFirestore by lazy {
+        try {
+            Firebase.firestore
+        } catch (e: Throwable) {
+            println("FirestoreMealRepository: Firebase.firestore initialization failed: ${e.message}")
+            throw e
+        }
+    }
 
     private fun mealsCollection(userId: String) =
         firestore.collection("users").document(userId).collection("meals")
@@ -266,11 +274,16 @@ class FirestoreMealRepository : MealRepository {
         "category" to item.category
     )
 
-    @Suppress("UNCHECKED_CAST")
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toMeal(): Meal? {
         if (!exists) return null
 
-        val itemsList = get<List<Map<String, Any?>>?>("items") ?: emptyList()
+        // @Serializable MealItemを直接使用（Map<String, Any?>はKotlin/Nativeで動作しないため）
+        val items = try {
+            get<List<MealItem>>("items")
+        } catch (e: Throwable) {
+            println("FirestoreMealRepository: Could not parse items: ${e.message}")
+            emptyList()
+        }
         return Meal(
             id = id,
             userId = get<String?>("userId") ?: "",
@@ -279,7 +292,7 @@ class FirestoreMealRepository : MealRepository {
                 try { MealType.valueOf(it) } catch (e: Exception) { MealType.BREAKFAST }
             } ?: MealType.BREAKFAST,
             time = get<String?>("time"),
-            items = itemsList.map { mapToItem(it) },
+            items = items,
             totalCalories = get<Long?>("totalCalories")?.toInt() ?: 0,
             totalProtein = get<Double?>("totalProtein")?.toFloat() ?: 0f,
             totalCarbs = get<Double?>("totalCarbs")?.toFloat() ?: 0f,
@@ -335,16 +348,21 @@ class FirestoreMealRepository : MealRepository {
         "createdAt" to template.createdAt
     )
 
-    @Suppress("UNCHECKED_CAST")
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toTemplate(): MealTemplate? {
         if (!exists) return null
 
-        val itemsList = get<List<Map<String, Any?>>?>("items") ?: emptyList()
+        // @Serializable MealItemを直接使用（Map<String, Any?>はKotlin/Nativeで動作しないため）
+        val items = try {
+            get<List<MealItem>>("items")
+        } catch (e: Throwable) {
+            println("FirestoreMealRepository: Could not parse template items: ${e.message}")
+            emptyList()
+        }
         return MealTemplate(
             id = id,
             userId = get<String?>("userId") ?: "",
             name = get<String?>("name") ?: "",
-            items = itemsList.map { mapToItem(it) },
+            items = items,
             totalCalories = get<Long?>("totalCalories")?.toInt() ?: 0,
             totalProtein = get<Double?>("totalProtein")?.toFloat() ?: 0f,
             totalCarbs = get<Double?>("totalCarbs")?.toFloat() ?: 0f,

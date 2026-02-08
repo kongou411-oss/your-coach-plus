@@ -27,8 +27,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.yourcoach.plus.shared.auth.AppleSignInButtonHandler
 import com.yourcoach.plus.shared.auth.GoogleSignInButtonHandler
-import com.yourcoach.plus.shared.ui.screens.dashboard.DashboardScreen
+import com.yourcoach.plus.shared.auth.isAppleSignInAvailable
+import com.yourcoach.plus.shared.ui.screens.main.MainScreen
 import com.yourcoach.plus.shared.ui.theme.Primary
 
 /**
@@ -246,7 +248,19 @@ class LoginScreen : Screen {
                                     handleLoginSuccess(navigator, state.userId, state.needsOnboarding)
                                 }
                             },
-                            onFailure = { /* エラーはSnackbarで表示 */ }
+                            onFailure = { error ->
+                                // キャンセル以外のエラーを日本語で表示
+                                if (error !is com.yourcoach.plus.shared.util.AppError.Cancelled) {
+                                    val message = when {
+                                        error.message?.contains("初期化されていません") == true ->
+                                            "Google Sign-Inの初期化に失敗しました"
+                                        error.message?.contains("ViewController") == true ->
+                                            "画面の読み込みに失敗しました。再度お試しください"
+                                        else -> error.message ?: "Googleログインに失敗しました"
+                                    }
+                                    screenModel.setError(message)
+                                }
+                            }
                         )
                     },
                     enabled = !uiState.isLoading
@@ -284,6 +298,61 @@ class LoginScreen : Screen {
                     }
                 }
 
+                // Apple Sign-In (iOS only)
+                if (isAppleSignInAvailable()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    AppleSignInButtonHandler(
+                        onSignInResult = { result ->
+                            result.fold(
+                                onSuccess = { appleResult ->
+                                    screenModel.signInWithAppleToken(
+                                        idToken = appleResult.idToken,
+                                        nonce = appleResult.nonce,
+                                        fullName = appleResult.fullName
+                                    ) {
+                                        val state = screenModel.uiState.value
+                                        handleLoginSuccess(navigator, state.userId, state.needsOnboarding)
+                                    }
+                                },
+                                onFailure = { error ->
+                                    // キャンセル以外のエラーを日本語で表示
+                                    if (error !is com.yourcoach.plus.shared.util.AppError.Cancelled) {
+                                        val message = when {
+                                            error.message?.contains("初期化されていません") == true ->
+                                                "Apple Sign-Inの初期化に失敗しました"
+                                            error.message?.contains("ViewController") == true ->
+                                                "画面の読み込みに失敗しました。再度お試しください"
+                                            else -> error.message ?: "Appleログインに失敗しました"
+                                        }
+                                        screenModel.setError(message)
+                                    }
+                                }
+                            )
+                        },
+                        enabled = !uiState.isLoading
+                    ) { onClick ->
+                        Button(
+                            onClick = onClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            enabled = !uiState.isLoading,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Black,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = " Appleでログイン",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.weight(1f))
 
                 // サインアップへのリンク
@@ -317,7 +386,7 @@ class LoginScreen : Screen {
         if (needsOnboarding && userId != null) {
             navigator.replace(ProfileSetupScreen(userId))
         } else {
-            navigator.replace(DashboardScreen())
+            navigator.replace(MainScreen())
         }
     }
 }

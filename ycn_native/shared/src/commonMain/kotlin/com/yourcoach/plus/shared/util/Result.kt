@@ -44,6 +44,9 @@ fun <T> Result<T>.errorMessage(): String? {
  * アプリケーション固有のエラークラス
  */
 sealed class AppError(message: String, cause: Throwable? = null) : Exception(message, cause) {
+    // キャンセル
+    class Cancelled(message: String = "操作がキャンセルされました") : AppError(message)
+
     // 認証エラー
     class AuthenticationError(message: String = "認証に失敗しました") : AppError(message)
     class InvalidCredentials(message: String = "メールアドレスまたはパスワードが正しくありません") : AppError(message)
@@ -64,6 +67,7 @@ sealed class AppError(message: String, cause: Throwable? = null) : Exception(mes
     // 課金エラー
     class InsufficientCredits(message: String = "クレジットが不足しています") : AppError(message)
     class PurchaseFailed(message: String = "購入に失敗しました", cause: Throwable? = null) : AppError(message, cause)
+    class BillingError(message: String = "課金処理に失敗しました") : AppError(message)
 
     // データベースエラー
     class DatabaseError(message: String = "データベースエラーが発生しました", cause: Throwable? = null) : AppError(message, cause)

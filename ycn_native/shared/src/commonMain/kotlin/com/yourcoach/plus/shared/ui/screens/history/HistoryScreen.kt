@@ -99,8 +99,8 @@ class HistoryScreen : Screen {
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = when (tab) {
-                                            HistoryTab.CALENDAR -> "Calendar"
-                                            HistoryTab.GRAPH -> "Graph"
+                                            HistoryTab.CALENDAR -> "カレンダー"
+                                            HistoryTab.GRAPH -> "グラフ"
                                         }
                                     )
                                 }
@@ -191,11 +191,11 @@ private fun MealDetailSheet(meal: Meal) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = when (meal.type) {
-                        MealType.BREAKFAST -> "Breakfast"
-                        MealType.LUNCH -> "Lunch"
-                        MealType.DINNER -> "Dinner"
-                        MealType.SNACK -> "Snack"
-                        MealType.SUPPLEMENT -> "Supplement"
+                        MealType.BREAKFAST -> "朝食"
+                        MealType.LUNCH -> "昼食"
+                        MealType.DINNER -> "夕食"
+                        MealType.SNACK -> "間食"
+                        MealType.SUPPLEMENT -> "サプリ"
                     },
                     style = MaterialTheme.typography.headlineSmall
                 )
@@ -203,11 +203,11 @@ private fun MealDetailSheet(meal: Meal) {
                 Column {
                     Text(
                         text = meal.name?.takeIf { it.isNotBlank() } ?: when (meal.type) {
-                            MealType.BREAKFAST -> "Breakfast"
-                            MealType.LUNCH -> "Lunch"
-                            MealType.DINNER -> "Dinner"
-                            MealType.SNACK -> "Snack"
-                            MealType.SUPPLEMENT -> "Supplement"
+                            MealType.BREAKFAST -> "朝食"
+                            MealType.LUNCH -> "昼食"
+                            MealType.DINNER -> "夕食"
+                            MealType.SNACK -> "間食"
+                            MealType.SUPPLEMENT -> "サプリ"
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
@@ -273,7 +273,7 @@ private fun MealDetailSheet(meal: Meal) {
             }
         } else {
             Text(
-                text = "No food data",
+                text = "食品データなし",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -315,11 +315,11 @@ private fun WorkoutDetailSheet(workout: Workout) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = when (workout.type) {
-                        WorkoutType.STRENGTH -> "Strength"
-                        WorkoutType.CARDIO -> "Cardio"
-                        WorkoutType.FLEXIBILITY -> "Flexibility"
-                        WorkoutType.SPORTS -> "Sports"
-                        WorkoutType.DAILY_ACTIVITY -> "Daily Activity"
+                        WorkoutType.STRENGTH -> "筋トレ"
+                        WorkoutType.CARDIO -> "有酸素運動"
+                        WorkoutType.FLEXIBILITY -> "ストレッチ"
+                        WorkoutType.SPORTS -> "スポーツ"
+                        WorkoutType.DAILY_ACTIVITY -> "日常活動"
                     },
                     style = MaterialTheme.typography.headlineSmall
                 )
@@ -327,17 +327,17 @@ private fun WorkoutDetailSheet(workout: Workout) {
                 Column {
                     Text(
                         text = workout.name ?: when (workout.type) {
-                            WorkoutType.STRENGTH -> "Strength Training"
-                            WorkoutType.CARDIO -> "Cardio"
-                            WorkoutType.FLEXIBILITY -> "Stretching"
-                            WorkoutType.SPORTS -> "Sports"
-                            WorkoutType.DAILY_ACTIVITY -> "Daily Activity"
+                            WorkoutType.STRENGTH -> "筋トレ"
+                            WorkoutType.CARDIO -> "有酸素運動"
+                            WorkoutType.FLEXIBILITY -> "ストレッチ"
+                            WorkoutType.SPORTS -> "スポーツ"
+                            WorkoutType.DAILY_ACTIVITY -> "日常活動"
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${workout.totalDuration} min",
+                        text = "${workout.totalDuration}分",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -351,7 +351,7 @@ private fun WorkoutDetailSheet(workout: Workout) {
                     color = ScoreExercise
                 )
                 Text(
-                    text = "burned",
+                    text = "消費",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -389,17 +389,17 @@ private fun WorkoutDetailSheet(workout: Workout) {
                     }
                     // Exercise details (sets x reps or duration)
                     val detail = buildString {
-                        exercise.sets?.let { append("${it} sets") }
+                        exercise.sets?.let { append("${it}セット") }
                         exercise.reps?.let {
                             if (isNotEmpty()) append(" x ")
-                            append("${it} reps")
+                            append("${it}回")
                         }
                         exercise.weight?.let {
                             if (isNotEmpty()) append(" ")
                             append("@ ${it.toInt()}kg")
                         }
                         exercise.duration?.let {
-                            if (isEmpty()) append("${it} min")
+                            if (isEmpty()) append("${it}分")
                         }
                     }
                     Text(
@@ -411,7 +411,7 @@ private fun WorkoutDetailSheet(workout: Workout) {
             }
         } else {
             Text(
-                text = "No exercise data",
+                text = "種目データなし",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -501,7 +501,7 @@ private fun CalendarView(
             item {
                 SectionHeader(
                     icon = Icons.Default.Restaurant,
-                    title = "Meals",
+                    title = "食事",
                     color = Primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -518,7 +518,7 @@ private fun CalendarView(
                 Spacer(modifier = Modifier.height(8.dp))
                 SectionHeader(
                     icon = Icons.AutoMirrored.Filled.DirectionsRun,
-                    title = "Workouts",
+                    title = "運動",
                     color = AccentOrange
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -562,7 +562,7 @@ private fun MonthHeader(
         IconButton(onClick = onPreviousMonth) {
             Icon(
                 imageVector = Icons.Default.ChevronLeft,
-                contentDescription = "Previous month"
+                contentDescription = "前月"
             )
         }
 
@@ -578,7 +578,7 @@ private fun MonthHeader(
         ) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Next month",
+                contentDescription = "翌月",
                 tint = if (isCurrentMonth) Color.Gray else MaterialTheme.colorScheme.onSurface
             )
         }
@@ -600,7 +600,7 @@ private fun CalendarGrid(
     val daysInMonth = currentMonth.lengthOfMonth()
 
     // Weekday headers
-    val weekDays = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val weekDays = listOf("日", "月", "火", "水", "木", "金", "土")
 
     Column {
         // Weekday header
@@ -789,17 +789,17 @@ private fun MealCard(
                     Column {
                         Text(
                             text = meal.name?.takeIf { it.isNotBlank() } ?: when (meal.type) {
-                                MealType.BREAKFAST -> "Breakfast"
-                                MealType.LUNCH -> "Lunch"
-                                MealType.DINNER -> "Dinner"
-                                MealType.SNACK -> "Snack"
-                                MealType.SUPPLEMENT -> "Supplement"
+                                MealType.BREAKFAST -> "朝食"
+                                MealType.LUNCH -> "昼食"
+                                MealType.DINNER -> "夕食"
+                                MealType.SNACK -> "間食"
+                                MealType.SUPPLEMENT -> "サプリ"
                             },
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "${meal.items.size} items",
+                            text = "${meal.items.size}品",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -913,17 +913,17 @@ private fun WorkoutCard(
                     Column {
                         Text(
                             text = when (workout.type) {
-                                WorkoutType.STRENGTH -> "Strength Training"
-                                WorkoutType.CARDIO -> "Cardio"
-                                WorkoutType.FLEXIBILITY -> "Stretching"
-                                WorkoutType.SPORTS -> "Sports"
-                                WorkoutType.DAILY_ACTIVITY -> "Daily Activity"
+                                WorkoutType.STRENGTH -> "筋トレ"
+                                WorkoutType.CARDIO -> "有酸素運動"
+                                WorkoutType.FLEXIBILITY -> "ストレッチ"
+                                WorkoutType.SPORTS -> "スポーツ"
+                                WorkoutType.DAILY_ACTIVITY -> "日常活動"
                             },
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "${workout.exercises.size} exercises / ${workout.totalDuration} min",
+                            text = "${workout.exercises.size}種目 / ${workout.totalDuration}分",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -938,7 +938,7 @@ private fun WorkoutCard(
                         color = ScoreExercise
                     )
                     Text(
-                        text = "burned",
+                        text = "消費",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -986,7 +986,7 @@ private fun EmptyRecordMessage() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No records for this day",
+                text = "この日の記録はありません",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1062,11 +1062,11 @@ private fun GraphView(
                         Text(
                             text = when (type) {
                                 GraphType.LBM -> "LBM"
-                                GraphType.WEIGHT -> "Weight"
-                                GraphType.CALORIES -> "Calories"
-                                GraphType.NUTRITION -> "Nutrition"
-                                GraphType.EXERCISE -> "Exercise"
-                                GraphType.CONDITION -> "Condition"
+                                GraphType.WEIGHT -> "体重"
+                                GraphType.CALORIES -> "カロリー"
+                                GraphType.NUTRITION -> "栄養素"
+                                GraphType.EXERCISE -> "運動"
+                                GraphType.CONDITION -> "体調"
                             },
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -1105,12 +1105,12 @@ private fun GraphView(
                 ) {
                     Text(
                         text = when (selectedType) {
-                            GraphType.LBM -> "LBM Trend (Past 7 Days)"
-                            GraphType.WEIGHT -> "Weight Trend (Past 7 Days)"
-                            GraphType.CALORIES -> "Calorie Intake (Past 7 Days)"
-                            GraphType.NUTRITION -> "Nutrition Balance (Past 7 Days)"
-                            GraphType.EXERCISE -> "Calories Burned (Past 7 Days)"
-                            GraphType.CONDITION -> "Condition Score (Past 7 Days)"
+                            GraphType.LBM -> "LBM推移（過去7日間）"
+                            GraphType.WEIGHT -> "体重推移（過去7日間）"
+                            GraphType.CALORIES -> "摂取カロリー（過去7日間）"
+                            GraphType.NUTRITION -> "栄養素バランス（過去7日間）"
+                            GraphType.EXERCISE -> "消費カロリー（過去7日間）"
+                            GraphType.CONDITION -> "体調スコア（過去7日間）"
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
@@ -1178,21 +1178,21 @@ private fun GraphView(
 
                 // Legend
                 when (selectedType) {
-                    GraphType.LBM -> LegendItem(color = ScoreProtein, label = "LBM - Lean Body Mass (kg)")
-                    GraphType.WEIGHT -> LegendItem(color = ScoreWater, label = "Weight (kg)")
-                    GraphType.CALORIES -> LegendItem(color = ScoreCalories, label = "Calorie Intake (kcal)")
+                    GraphType.LBM -> LegendItem(color = ScoreProtein, label = "LBM - 除脂肪体重 (kg)")
+                    GraphType.WEIGHT -> LegendItem(color = ScoreWater, label = "体重 (kg)")
+                    GraphType.CALORIES -> LegendItem(color = ScoreCalories, label = "摂取カロリー (kcal)")
                     GraphType.NUTRITION -> {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            LegendItem(color = ScoreProtein, label = "Protein")
-                            LegendItem(color = ScoreFat, label = "Fat")
-                            LegendItem(color = ScoreCarbs, label = "Carbs")
+                            LegendItem(color = ScoreProtein, label = "タンパク質")
+                            LegendItem(color = ScoreFat, label = "脂質")
+                            LegendItem(color = ScoreCarbs, label = "炭水化物")
                         }
                     }
-                    GraphType.EXERCISE -> LegendItem(color = ScoreExercise, label = "Calories Burned (kcal)")
-                    GraphType.CONDITION -> LegendItem(color = Primary, label = "Condition Score (0-100)")
+                    GraphType.EXERCISE -> LegendItem(color = ScoreExercise, label = "消費カロリー (kcal)")
+                    GraphType.CONDITION -> LegendItem(color = Primary, label = "体調スコア (0-100)")
                 }
             }
         }
@@ -1213,27 +1213,27 @@ private fun TrendBadge(trend: Trend, graphType: GraphType, fitnessGoal: FitnessG
     val (text, color) = when (trend) {
         Trend.UP -> {
             when (graphType) {
-                GraphType.LBM -> Pair("Up", goodColor)
+                GraphType.LBM -> Pair("上昇↑", goodColor)
                 GraphType.WEIGHT -> when (fitnessGoal) {
-                    FitnessGoal.LOSE_WEIGHT -> Pair("Up", badColor)
-                    FitnessGoal.GAIN_MUSCLE -> Pair("Up", goodColor)
-                    FitnessGoal.MAINTAIN -> Pair("Up", neutralColor)
+                    FitnessGoal.LOSE_WEIGHT -> Pair("上昇↑", badColor)
+                    FitnessGoal.GAIN_MUSCLE -> Pair("上昇↑", goodColor)
+                    FitnessGoal.MAINTAIN -> Pair("上昇↑", neutralColor)
                 }
-                else -> Pair("Up", goodColor)
+                else -> Pair("上昇↑", goodColor)
             }
         }
         Trend.DOWN -> {
             when (graphType) {
-                GraphType.LBM -> Pair("Down", badColor)
+                GraphType.LBM -> Pair("下降↓", badColor)
                 GraphType.WEIGHT -> when (fitnessGoal) {
-                    FitnessGoal.LOSE_WEIGHT -> Pair("Down", goodColor)
-                    FitnessGoal.GAIN_MUSCLE -> Pair("Down", badColor)
-                    FitnessGoal.MAINTAIN -> Pair("Down", neutralColor)
+                    FitnessGoal.LOSE_WEIGHT -> Pair("下降↓", goodColor)
+                    FitnessGoal.GAIN_MUSCLE -> Pair("下降↓", badColor)
+                    FitnessGoal.MAINTAIN -> Pair("下降↓", neutralColor)
                 }
-                else -> Pair("Down", badColor)
+                else -> Pair("下降↓", badColor)
             }
         }
-        Trend.FLAT -> Pair("Flat", neutralColor)
+        Trend.FLAT -> Pair("横ばい→", neutralColor)
     }
 
     Row(
@@ -1543,7 +1543,7 @@ private fun EmptyChartMessage(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No data available",
+                text = "データがありません",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

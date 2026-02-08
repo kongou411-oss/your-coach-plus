@@ -54,6 +54,11 @@ interface PgBaseRepository {
      */
     fun observeCompletedArticleIds(userId: String): Flow<Set<String>>
 
+    /**
+     * 読了済み・購入済み記事IDを1クエリで同時監視（パフォーマンス最適化）
+     */
+    fun observeUserProgressIds(userId: String): Flow<Pair<Set<String>, Set<String>>>
+
     // ===== プレミアム記事 =====
 
     /**

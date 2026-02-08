@@ -2,35 +2,41 @@ package com.yourcoach.plus.shared.ui.screens.auth
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.yourcoach.plus.shared.domain.model.ActivityLevel
-import com.yourcoach.plus.shared.domain.model.FitnessGoal
-import com.yourcoach.plus.shared.domain.model.Gender
-import com.yourcoach.plus.shared.ui.screens.dashboard.DashboardScreen
+import com.yourcoach.plus.shared.domain.model.*
+import com.yourcoach.plus.shared.ui.screens.main.MainScreen
 import com.yourcoach.plus.shared.ui.theme.*
 import kotlin.math.round
 
@@ -47,7 +53,16 @@ private fun formatOneDecimal(value: Float): String {
 }
 
 /**
+ * 2桁ゼロ埋めフォーマット（KMP対応）
+ */
+private fun formatTwoDigits(value: Int): String {
+    return if (value < 10) "0$value" else value.toString()
+}
+
+/**
  * プロフィール設定画面 (Compose Multiplatform)
+ * Android版OnboardingScreenと同等の機能
+ * 4ステップ: イントロ → プロフィール → ルーティン → 食事スロット
  */
 data class ProfileSetupScreen(val userId: String) : Screen {
 
@@ -59,6 +74,13 @@ data class ProfileSetupScreen(val userId: String) : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val snackbarHostState = remember { SnackbarHostState() }
 
+        // 初回表示時にニックネームを初期化（遅延実行で安全に）
+        LaunchedEffect(Unit) {
+            // 少し遅延を入れてFirebase初期化を待つ
+            kotlinx.coroutines.delay(100)
+            screenModel.initializeNickname()
+        }
+
         LaunchedEffect(state.error) {
             state.error?.let {
                 snackbarHostState.showSnackbar(it)
@@ -67,40 +89,67 @@ data class ProfileSetupScreen(val userId: String) : Screen {
         }
 
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            topBar = {
-                TopAppBar(
-                    title = { Text("プロフィール設定") },
-                    navigationIcon = {
-                        if (state.currentStep > 0) {
-                            IconButton(onClick = { screenModel.previousStep() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る")
-                            }
-                        }
-                    }
-                )
-            }
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { paddingValues ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // プログレスインジケーター
-                LinearProgressIndicator(
-                    progress = { (state.currentStep + 1).toFloat() / state.totalSteps },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp),
-                    color = Primary
-                )
-
-                // ステップインジケーター
-                StepIndicator(
-                    currentStep = state.currentStep,
-                    totalSteps = state.totalSteps,
-                    modifier = Modifier.padding(16.dp)
-                )
+                // ヘッダー（ステップ1以降）
+                if (state.currentStep > 0) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { screenModel.previousStep() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る")
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = when (state.currentStep) {
+                                1 -> "プロフィール設定"
+                                2 -> "ルーティン設定"
+                                3 -> "食事スロット設定"
+                                else -> ""
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "${state.currentStep} / ${state.totalSteps - 1}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { state.currentStep.toFloat() / (state.totalSteps - 1) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        color = Primary,
+                        trackColor = Primary.copy(alpha = 0.2f)
+                    )
+                } else {
+                    // イントロ画面のスキップボタン
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        TextButton(onClick = {
+                            screenModel.skipOnboarding(userId) {
+                                navigator.replace(MainScreen())
+                            }
+                        }) {
+                            Text("スキップ", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
 
                 // バリデーションエラー
                 AnimatedVisibility(visible = state.validationError != null) {
@@ -122,31 +171,27 @@ data class ProfileSetupScreen(val userId: String) : Screen {
                 }
 
                 // コンテンツ
-                Box(
+                AnimatedContent(
+                    targetState = state.currentStep,
                     modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
-                ) {
-                    AnimatedContent(
-                        targetState = state.currentStep,
-                        transitionSpec = {
-                            if (targetState > initialState) {
-                                slideInHorizontally { it } + fadeIn() togetherWith
+                        .fillMaxWidth()
+                        .weight(1f),
+                    transitionSpec = {
+                        if (targetState > initialState) {
+                            slideInHorizontally { it } + fadeIn() togetherWith
                                     slideOutHorizontally { -it } + fadeOut()
-                            } else {
-                                slideInHorizontally { -it } + fadeIn() togetherWith
+                        } else {
+                            slideInHorizontally { -it } + fadeIn() togetherWith
                                     slideOutHorizontally { it } + fadeOut()
-                            }
-                        },
-                        label = "step"
-                    ) { step ->
-                        when (step) {
-                            0 -> Step0BasicInfo(state, screenModel)
-                            1 -> Step1BodyComposition(state, screenModel)
-                            2 -> Step2GoalsActivity(state, screenModel)
-                            3 -> Step3IdealGoals(state, screenModel)
                         }
+                    },
+                    label = "onboarding_content"
+                ) { step ->
+                    when (step) {
+                        0 -> IntroStep()
+                        1 -> ProfileStep(state, screenModel)
+                        2 -> RoutineStep(state, screenModel)
+                        3 -> MealSlotStep(state, screenModel, snackbarHostState)
                     }
                 }
 
@@ -154,10 +199,10 @@ data class ProfileSetupScreen(val userId: String) : Screen {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (state.currentStep > 0) {
+                    if (state.currentStep > 0 && state.currentStep < state.totalSteps - 1) {
                         OutlinedButton(
                             onClick = { screenModel.previousStep() },
                             modifier = Modifier
@@ -165,28 +210,33 @@ data class ProfileSetupScreen(val userId: String) : Screen {
                                 .height(56.dp),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text("戻る")
                         }
                     }
 
+                    // ステップ1のバリデーション
+                    val isStep1Valid = state.currentStep != 1 || (
+                            state.height.toFloatOrNull() != null &&
+                            state.weight.toFloatOrNull() != null &&
+                            state.bodyFatPercentage.toFloatOrNull() != null
+                    )
+
                     Button(
                         onClick = {
                             if (state.currentStep == state.totalSteps - 1) {
-                                screenModel.saveProfile(userId) {
-                                    navigator.replace(DashboardScreen())
+                                screenModel.saveAllAndComplete(userId) {
+                                    navigator.replace(MainScreen())
                                 }
                             } else {
                                 screenModel.nextStep()
                             }
                         },
                         modifier = Modifier
-                            .weight(if (state.currentStep > 0) 1f else 2f)
+                            .weight(if (state.currentStep > 0 && state.currentStep < state.totalSteps - 1) 1f else 2f)
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                        enabled = !state.isLoading
+                        enabled = !state.isLoading && isStep1Valid
                     ) {
                         if (state.isLoading) {
                             CircularProgressIndicator(
@@ -196,12 +246,1173 @@ data class ProfileSetupScreen(val userId: String) : Screen {
                             )
                         } else {
                             Text(
-                                if (state.currentStep == state.totalSteps - 1) "完了" else "次へ",
+                                text = when (state.currentStep) {
+                                    0 -> "設定を始める"
+                                    state.totalSteps - 1 -> "完了"
+                                    else -> "次へ"
+                                },
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-                            if (state.currentStep < state.totalSteps - 1) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ========== ステップ0: イントロ ==========
+@Composable
+private fun IntroStep() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // ロゴアイコン
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .background(Primary.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.FitnessCenter,
+                contentDescription = null,
+                modifier = Modifier.size(60.dp),
+                tint = Primary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Your Coach+ へようこそ",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "あなたに最適なカラダ管理のために\nプロフィールを設定しましょう",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            FeatureItem(Icons.Default.Restaurant, "写真解析で簡単記録")
+            FeatureItem(Icons.AutoMirrored.Filled.DirectionsRun, "運動をトラッキング")
+            FeatureItem(Icons.Default.Psychology, "AIがパーソナライズ分析")
+            FeatureItem(Icons.Default.LocalFireDepartment, "クエスト実行で迷わず継続")
+        }
+    }
+}
+
+@Composable
+private fun FeatureItem(icon: ImageVector, text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+// ========== ステップ1: プロフィール設定 ==========
+@Composable
+private fun ProfileStep(state: ProfileSetupState, screenModel: ProfileSetupScreenModel) {
+    val focusManager = LocalFocusManager.current
+
+    // キーボードを閉じるためのBox（LazyColumnの外側）
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { focusManager.clearFocus() }
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+        // 基本情報
+        item {
+            SectionCard(title = "基本情報", icon = Icons.Default.Person) {
+                OutlinedTextField(
+                    value = state.nickname,
+                    onValueChange = screenModel::updateNickname,
+                    label = { Text("ニックネーム") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = state.age,
+                    onValueChange = screenModel::updateAge,
+                    label = { Text("年齢") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    shape = RoundedCornerShape(12.dp),
+                    suffix = { Text("歳") }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "身体的性別",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(Gender.MALE, Gender.FEMALE).forEach { g ->
+                        FilterChip(
+                            onClick = { screenModel.updateGender(g) },
+                            label = {
+                                Text(
+                                    when (g) {
+                                        Gender.MALE -> "男性"
+                                        Gender.FEMALE -> "女性"
+                                        else -> ""
+                                    }
+                                )
+                            },
+                            selected = state.gender == g,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 体組成
+        item {
+            SectionCard(title = "体組成", icon = Icons.Default.MonitorWeight) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = state.height,
+                        onValueChange = screenModel::updateHeight,
+                        label = { Text("身長 *") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        shape = RoundedCornerShape(12.dp),
+                        suffix = { Text("cm") },
+                        isError = state.height.isBlank(),
+                        supportingText = if (state.height.isBlank()) {
+                            { Text("必須", color = MaterialTheme.colorScheme.error) }
+                        } else null
+                    )
+                    OutlinedTextField(
+                        value = state.weight,
+                        onValueChange = screenModel::updateWeight,
+                        label = { Text("体重 *") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        shape = RoundedCornerShape(12.dp),
+                        suffix = { Text("kg") },
+                        isError = state.weight.isBlank(),
+                        supportingText = if (state.weight.isBlank()) {
+                            { Text("必須", color = MaterialTheme.colorScheme.error) }
+                        } else null
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = state.bodyFatPercentage,
+                        onValueChange = screenModel::updateBodyFatPercentage,
+                        label = { Text("体脂肪率 *") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        shape = RoundedCornerShape(12.dp),
+                        suffix = { Text("%") },
+                        isError = state.bodyFatPercentage.isBlank(),
+                        supportingText = if (state.bodyFatPercentage.isBlank()) {
+                            { Text("必須", color = MaterialTheme.colorScheme.error) }
+                        } else null
+                    )
+                    OutlinedTextField(
+                        value = state.targetWeight,
+                        onValueChange = screenModel::updateTargetWeight,
+                        label = { Text("目標体重") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        shape = RoundedCornerShape(12.dp),
+                        suffix = { Text("kg") }
+                    )
+                }
+
+                // 体脂肪率の目安ガイド
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "体脂肪率の目安",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("男性", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                Text("10-14%: アスリート", style = MaterialTheme.typography.labelSmall)
+                                Text("15-19%: フィットネス", style = MaterialTheme.typography.labelSmall)
+                                Text("20-24%: 標準", style = MaterialTheme.typography.labelSmall)
+                                Text("25%+: 軽肥満〜", style = MaterialTheme.typography.labelSmall)
+                            }
+                            Column {
+                                Text("女性", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                Text("14-20%: アスリート", style = MaterialTheme.typography.labelSmall)
+                                Text("21-24%: フィットネス", style = MaterialTheme.typography.labelSmall)
+                                Text("25-31%: 標準", style = MaterialTheme.typography.labelSmall)
+                                Text("32%+: 軽肥満〜", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+
+                // BMR/TDEE表示
+                if (state.bmr != null && state.tdee != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "${state.bmr!!.toInt()}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Primary
+                                )
+                                Text("BMR (kcal)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "${state.tdee!!.toInt()}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Secondary
+                                )
+                                Text("TDEE (kcal)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 目標・活動レベル
+        item {
+            SectionCard(title = "目標・活動レベル", icon = Icons.Default.Flag) {
+                Text(
+                    text = "フィットネス目標",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        onClick = { screenModel.updateGoal(FitnessGoal.LOSE_WEIGHT) },
+                        label = { Text("ダイエット") },
+                        selected = state.goal == FitnessGoal.LOSE_WEIGHT,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    FilterChip(
+                        onClick = { screenModel.updateGoal(FitnessGoal.MAINTAIN) },
+                        label = { Text("メンテナンス・リコンプ") },
+                        selected = state.goal == FitnessGoal.MAINTAIN,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    FilterChip(
+                        onClick = { screenModel.updateGoal(FitnessGoal.GAIN_MUSCLE) },
+                        label = { Text("バルクアップ") },
+                        selected = state.goal == FitnessGoal.GAIN_MUSCLE,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 食事回数
+                Text(
+                    text = "1日の食事回数",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    (2..8).forEach { count ->
+                        FilterChip(
+                            onClick = { screenModel.updateMealsPerDay(count) },
+                            label = { Text("$count") },
+                            selected = state.mealsPerDay == count,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 日常活動レベル
+                Text(
+                    text = "日常活動（運動以外）",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ActivityLevel.entries.forEach { level ->
+                        FilterChip(
+                            onClick = { screenModel.updateActivityLevel(level) },
+                            label = { Text(level.displayName) },
+                            selected = state.activityLevel == level,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+                Text(
+                    text = "※ 運動の消費カロリーはルーティンから自動加算されます",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // カロリー調整
+                Text(
+                    text = "カロリー調整: ${if (state.calorieAdjustment >= 0) "+" else ""}${state.calorieAdjustment} kcal",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = state.calorieAdjustment.toFloat(),
+                    onValueChange = { screenModel.updateCalorieAdjustment(it.toInt()) },
+                    valueRange = -500f..500f,
+                    steps = 19,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("-500", style = MaterialTheme.typography.labelSmall)
+                    Text("0", style = MaterialTheme.typography.labelSmall)
+                    Text("+500", style = MaterialTheme.typography.labelSmall)
+                }
+
+                state.targetCalories?.let { cal ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = AccentOrange.copy(alpha = 0.1f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "$cal",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentOrange
+                            )
+                            Text("目標カロリー (kcal/日)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+
+        // PFCバランス
+        item {
+            SectionCard(title = "PFCバランス", icon = Icons.Default.PieChart) {
+                // P
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("P", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ScoreProtein, modifier = Modifier.width(24.dp))
+                    Slider(
+                        value = state.proteinRatio.toFloat(),
+                        onValueChange = { screenModel.updateProteinRatio(it.toInt()) },
+                        valueRange = 10f..50f,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("${state.proteinRatio}%", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(48.dp))
+                }
+
+                // F
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("F", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ScoreFat, modifier = Modifier.width(24.dp))
+                    Slider(
+                        value = state.fatRatio.toFloat(),
+                        onValueChange = { screenModel.updateFatRatio(it.toInt()) },
+                        valueRange = 10f..50f,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("${state.fatRatio}%", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(48.dp))
+                }
+
+                // C
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("C", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ScoreCarbs, modifier = Modifier.width(24.dp))
+                    Slider(
+                        value = state.carbRatio.toFloat(),
+                        onValueChange = { screenModel.updateCarbRatio(it.toInt()) },
+                        valueRange = 10f..60f,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("${state.carbRatio}%", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(48.dp))
+                }
+
+                val total = state.proteinRatio + state.fatRatio + state.carbRatio
+                Text(
+                    text = "合計: $total% ${if (total != 100) "(100%に調整してください)" else "✓"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (total == 100) Color.Green else Color.Red,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                state.targetCalories?.let { cal ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        val proteinGrams = (cal * state.proteinRatio / 100 / 4)
+                        val fatGrams = (cal * state.fatRatio / 100 / 9)
+                        val carbGrams = (cal * state.carbRatio / 100 / 4)
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("${proteinGrams}g", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ScoreProtein)
+                            Text("タンパク質", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("${fatGrams}g", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ScoreFat)
+                            Text("脂質", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("${carbGrams}g", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = ScoreCarbs)
+                            Text("炭水化物", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+        }
+
+        // 食費設定
+        item {
+            SectionCard(title = "食費設定", icon = Icons.Default.Payments) {
+                Text(
+                    text = "食費予算",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(1 to "節約", 2 to "標準").forEach { (tier, label) ->
+                        FilterChip(
+                            onClick = { screenModel.updateBudgetTier(tier) },
+                            label = { Text(label) },
+                            selected = state.budgetTier == tier,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Text(
+                    text = when (state.budgetTier) {
+                        1 -> "鶏むね肉中心（コスパ重視）"
+                        else -> "部位に合わせた食材（牛赤身, サバ, 鮭など）"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(80.dp)) }
+        }
+    }
+}
+
+// ========== ステップ2: ルーティン設定 ==========
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RoutineStep(state: ProfileSetupState, screenModel: ProfileSetupScreenModel) {
+    val splitTypes = listOf(
+        "胸", "背中", "肩", "腕", "脚", "腹筋・体幹",
+        "上半身", "下半身", "全身",
+        "プッシュ", "プル",
+        "胸・三頭", "背中・二頭", "肩・腕"
+    )
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // ヘルプカード
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = Primary, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "部位別ルーティンで、迷わず継続できる仕組みへ\nまずはデフォルトで",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Primary
+                    )
+                }
+            }
+        }
+
+        // Day一覧
+        itemsIndexed(state.routineDays) { index, day ->
+            var expanded by remember { mutableStateOf(false) }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (day.isRestDay) ScoreSleep.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // 並び替えボタン
+                            Column {
+                                IconButton(
+                                    onClick = { screenModel.moveRoutineDayUp(index) },
+                                    enabled = index > 0,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.KeyboardArrowUp,
+                                        contentDescription = "上へ",
+                                        tint = if (index > 0) Primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { screenModel.moveRoutineDayDown(index) },
+                                    enabled = index < state.routineDays.size - 1,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "下へ",
+                                        tint = if (index < state.routineDays.size - 1) Primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Text(
+                                text = "Day ${day.dayNumber}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (day.isRestDay) ScoreSleep else Primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            // 休養日チェックボックス
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { screenModel.updateRoutineDayRestDay(day.dayNumber, !day.isRestDay) }
+                                    .padding(4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = day.isRestDay,
+                                    onCheckedChange = { screenModel.updateRoutineDayRestDay(day.dayNumber, it) },
+                                    colors = CheckboxDefaults.colors(checkedColor = ScoreSleep)
+                                )
+                                Text(
+                                    text = "休養日",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (day.isRestDay) ScoreSleep else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // 削除ボタン
+                        if (state.routineDays.size > 2 && day.dayNumber > 2) {
+                            IconButton(onClick = { screenModel.removeRoutineDay(day.dayNumber) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "削除", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+
+                    // 分類選択（休養日でない場合）
+                    if (!day.isRestDay) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = day.splitType.ifEmpty { "分類を選択" },
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("分類") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
+                                colors = OutlinedTextFieldDefaults.colors()
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainer)
+                            ) {
+                                splitTypes.forEach { type ->
+                                    DropdownMenuItem(
+                                        text = { Text(type, color = MaterialTheme.colorScheme.onSurface) },
+                                        onClick = {
+                                            screenModel.updateRoutineDaySplitType(day.dayNumber, type)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Day追加ボタン
+        if (state.routineDays.size < 10) {
+            item {
+                OutlinedButton(
+                    onClick = { screenModel.addRoutineDay() },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Day追加")
+                }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+// ========== ステップ3: 食事スロット設定 ==========
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MealSlotStep(
+    state: ProfileSetupState,
+    screenModel: ProfileSetupScreenModel,
+    snackbarHostState: SnackbarHostState
+) {
+    val scope = rememberCoroutineScope()
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // タイムライン設定
+        item {
+            SectionCard(title = "タイムライン設定", icon = Icons.Default.Schedule) {
+                Text(
+                    text = "起床・就寝・トレーニング時刻を設定すると、食事の推奨タイミングが自動生成されます",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 起床時刻
+                TimePickerRow(
+                    label = "起床",
+                    time = state.wakeUpTime,
+                    onTimeChange = { screenModel.updateWakeUpTime(it) }
+                )
+
+                // 就寝時刻
+                TimePickerRow(
+                    label = "就寝",
+                    time = state.sleepTime,
+                    onTimeChange = { screenModel.updateSleepTime(it) }
+                )
+
+                // トレーニング時刻
+                TimePickerRow(
+                    label = "トレーニング",
+                    time = state.trainingTime ?: "未設定",
+                    onTimeChange = { screenModel.updateTrainingTime(it.takeIf { t -> t != "未設定" }) },
+                    canClear = state.trainingTime != null,
+                    onClear = { screenModel.updateTrainingTime(null) }
+                )
+
+                if (state.trainingTime != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // トレ前の食事番号
+                    Text(
+                        text = "トレ前食事",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        (1..state.mealsPerDay).forEach { mealNum ->
+                            FilterChip(
+                                selected = state.trainingAfterMeal == mealNum,
+                                onClick = {
+                                    screenModel.updateTrainingAfterMeal(if (state.trainingAfterMeal == mealNum) null else mealNum)
+                                },
+                                label = { Text("$mealNum") }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // トレーニング所要時間
+                    Text(
+                        text = "トレーニング時間",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(60 to "1h", 90 to "1.5h", 120 to "2h", 150 to "2.5h", 180 to "3h").forEach { (minutes, label) ->
+                            FilterChip(
+                                selected = state.trainingDuration == minutes,
+                                onClick = { screenModel.updateTrainingDuration(minutes) },
+                                label = { Text(label) }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // トレーニングスタイル
+                    Text(
+                        text = "トレーニングスタイル",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TrainingStyle.entries.forEach { style ->
+                            FilterChip(
+                                selected = state.trainingStyle == style,
+                                onClick = { screenModel.updateTrainingStyle(style) },
+                                label = {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(style.displayName)
+                                        Text(
+                                            text = "${style.repsPerSet}回/セット",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // タイムライン自動生成ボタン
+                Button(
+                    onClick = {
+                        screenModel.generateTimeline()
+                        scope.launch {
+                            snackbarHostState.showSnackbar("タイムラインを生成しました")
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                ) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("タイムラインを自動生成")
+                }
+            }
+        }
+
+        // 食事スロット一覧
+        item {
+            Text(
+                text = "食事設定（${state.mealsPerDay}食）",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        items(state.mealSlotConfig.slots.sortedBy { it.slotNumber }.size) { index ->
+            val slot = state.mealSlotConfig.slots.sortedBy { it.slotNumber }[index]
+            MealSlotCard(
+                slot = slot,
+                onFoodChoiceChange = { choice ->
+                    screenModel.updateSlotFoodChoice(slot.slotNumber, choice)
+                }
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+// ========== 共通コンポーネント ==========
+
+@Composable
+private fun SectionCard(
+    title: String,
+    icon: ImageVector,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(icon, contentDescription = null, tint = Primary, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun TimePickerRow(
+    label: String,
+    time: String,
+    onTimeChange: (String) -> Unit,
+    canClear: Boolean = false,
+    onClear: (() -> Unit)? = null
+) {
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { showTimePicker = true }
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = time,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = Primary
+            )
+            if (canClear && onClear != null) {
+                IconButton(
+                    onClick = onClear,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "クリア", modifier = Modifier.size(16.dp))
+                }
+            }
+        }
+    }
+
+    if (showTimePicker) {
+        SimpleTimePickerDialog(
+            initialTime = if (time == "未設定") "18:00" else time,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { newTime ->
+                onTimeChange(newTime)
+                showTimePicker = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun SimpleTimePickerDialog(
+    initialTime: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    val parts = initialTime.split(":")
+    var hour by remember { mutableStateOf(parts.getOrNull(0)?.toIntOrNull() ?: 12) }
+    var minute by remember { mutableStateOf(parts.getOrNull(1)?.toIntOrNull() ?: 0) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("時刻を選択") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    // 時
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(onClick = { hour = (hour + 1) % 24 }) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "時を増やす")
+                        }
+                        Text(
+                            text = formatTwoDigits(hour),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(onClick = { hour = if (hour == 0) 23 else hour - 1 }) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "時を減らす")
+                        }
+                    }
+
+                    Text(
+                        text = ":",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    // 分
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(onClick = { minute = (minute + 5) % 60 }) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "分を増やす")
+                        }
+                        Text(
+                            text = formatTwoDigits(minute),
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(onClick = { minute = if (minute < 5) 55 else minute - 5 }) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "分を減らす")
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val time = "${formatTwoDigits(hour)}:${formatTwoDigits(minute)}"
+                    onConfirm(time)
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("キャンセル")
+            }
+        }
+    )
+}
+
+@Composable
+private fun MealSlotCard(
+    slot: MealSlot,
+    onFoodChoiceChange: (FoodChoice) -> Unit
+) {
+    var showFoodChoiceMenu by remember { mutableStateOf(false) }
+    val foodChoiceColor = when (slot.defaultFoodChoice) {
+        FoodChoice.KITCHEN -> ScoreProtein
+        FoodChoice.STORE -> ScoreGL
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Restaurant,
+                contentDescription = null,
+                tint = ScoreCarbs,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = slot.getDisplayName(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box {
+                        Surface(
+                            color = foodChoiceColor.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.clickable { showFoodChoiceMenu = true }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = when (slot.defaultFoodChoice) {
+                                        FoodChoice.KITCHEN -> "自炊"
+                                        FoodChoice.STORE -> "中食"
+                                    },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = foodChoiceColor,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Icon(
+                                    Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    tint = foodChoiceColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                        DropdownMenu(
+                            expanded = showFoodChoiceMenu,
+                            onDismissRequest = { showFoodChoiceMenu = false }
+                        ) {
+                            FoodChoice.entries.forEach { choice ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = choice.displayName,
+                                            color = when (choice) {
+                                                FoodChoice.KITCHEN -> ScoreProtein
+                                                FoodChoice.STORE -> ScoreGL
+                                            }
+                                        )
+                                    },
+                                    onClick = {
+                                        onFoodChoiceChange(choice)
+                                        showFoodChoiceMenu = false
+                                    }
+                                )
                             }
                         }
                     }
@@ -211,451 +1422,25 @@ data class ProfileSetupScreen(val userId: String) : Screen {
     }
 }
 
-@Composable
-private fun StepIndicator(currentStep: Int, totalSteps: Int, modifier: Modifier = Modifier) {
-    val stepNames = listOf("基本情報", "体組成", "目標", "理想")
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        stepNames.forEachIndexed { index, name ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            if (index <= currentStep) Primary else Primary.copy(alpha = 0.2f),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (index < currentStep) {
-                        Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    } else {
-                        Text(
-                            "${index + 1}",
-                            color = if (index <= currentStep) Color.White else Primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (index <= currentStep) Primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
+// 旧メソッドの後方互換性（updateStyleはもう使わないがコンパイルエラー回避）
+private fun ProfileSetupScreenModel.updateStyle(style: String) {
+    // no-op
 }
 
-// Step 0: 基本情報
-@Composable
-private fun Step0BasicInfo(state: ProfileSetupState, screenModel: ProfileSetupScreenModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Text("基本情報を入力", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("あなたに最適なアドバイスを提供するために必要な情報です", color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-        OutlinedTextField(
-            value = state.nickname,
-            onValueChange = screenModel::updateNickname,
-            label = { Text("ニックネーム") },
-            placeholder = { Text("アプリ内での表示名") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        OutlinedTextField(
-            value = state.age,
-            onValueChange = screenModel::updateAge,
-            label = { Text("年齢") },
-            suffix = { Text("歳") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Text("性別", fontWeight = FontWeight.Medium)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Gender.entries.forEach { gender ->
-                val label = when (gender) {
-                    Gender.MALE -> "男性"
-                    Gender.FEMALE -> "女性"
-                    Gender.OTHER -> "その他"
-                }
-                FilterChip(
-                    selected = state.gender == gender,
-                    onClick = { screenModel.updateGender(gender) },
-                    label = { Text(label) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Primary,
-                        selectedLabelColor = Color.White
-                    )
-                )
-            }
-        }
-
-        Text("トレーニングスタイル", fontWeight = FontWeight.Medium)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf("一般" to "健康的な生活を目指す方", "ボディメイカー" to "本格的に体を鍛える方").forEach { (style, desc) ->
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { screenModel.updateStyle(style) }
-                        .then(
-                            if (state.style == style) Modifier.border(2.dp, Primary, RoundedCornerShape(12.dp))
-                            else Modifier
-                        ),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (state.style == style) Primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(style, fontWeight = FontWeight.Bold, color = if (state.style == style) Primary else MaterialTheme.colorScheme.onSurface)
-                        Text(desc, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                    }
-                }
-            }
-        }
-    }
+private fun ProfileSetupScreenModel.updateIdealWeight(value: String) {
+    // no-op - 新UIでは使用しない
 }
 
-// Step 1: 体組成
-@Composable
-private fun Step1BodyComposition(state: ProfileSetupState, screenModel: ProfileSetupScreenModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Text("現在の体組成", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("正確な栄養目標を計算するために必要です", color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-        OutlinedTextField(
-            value = state.height,
-            onValueChange = screenModel::updateHeight,
-            label = { Text("身長") },
-            suffix = { Text("cm") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedTextField(
-                value = state.weight,
-                onValueChange = screenModel::updateWeight,
-                label = { Text("現在体重") },
-                suffix = { Text("kg") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            OutlinedTextField(
-                value = state.targetWeight,
-                onValueChange = screenModel::updateTargetWeight,
-                label = { Text("目標体重") },
-                suffix = { Text("kg") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
-            )
-        }
-
-        OutlinedTextField(
-            value = state.bodyFatPercentage,
-            onValueChange = screenModel::updateBodyFatPercentage,
-            label = { Text("体脂肪率") },
-            suffix = { Text("%") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        // LBM計算表示
-        val weight = state.weight.toFloatOrNull() ?: 0f
-        val bf = state.bodyFatPercentage.toFloatOrNull() ?: 0f
-        if (weight > 0 && bf > 0) {
-            val lbm = weight * (1 - bf / 100)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text("除脂肪体重（LBM）", style = MaterialTheme.typography.labelMedium)
-                        Text("筋肉・骨・内臓の重さ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Text("${formatOneDecimal(lbm)} kg", fontWeight = FontWeight.Bold, color = Primary)
-                }
-            }
-        }
-    }
+private fun ProfileSetupScreenModel.updateIdealBodyFatPercentage(value: String) {
+    // no-op - 新UIでは使用しない
 }
 
-// Step 2: 目標・活動レベル
-@Composable
-private fun Step2GoalsActivity(state: ProfileSetupState, screenModel: ProfileSetupScreenModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Text("目標と活動レベル", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-
-        Text("活動レベル", fontWeight = FontWeight.Medium)
-        val activityLevels = listOf(
-            ActivityLevel.DESK_WORK to "デスクワーク",
-            ActivityLevel.STANDING_WORK to "立ち仕事",
-            ActivityLevel.PHYSICAL_LABOR to "肉体労働"
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            activityLevels.forEach { (level, _) ->
-                SelectableCard(
-                    selected = state.activityLevel == level,
-                    onClick = { screenModel.updateActivityLevel(level) },
-                    label = level.displayName
-                )
-            }
-        }
-        Text(
-            text = "※ 運動の消費カロリーはルーティンから自動加算",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text("目的", fontWeight = FontWeight.Medium)
-        val goals = listOf(
-            FitnessGoal.LOSE_WEIGHT to Pair("ダイエット", "-300 kcal/日"),
-            FitnessGoal.MAINTAIN to Pair("健康維持", "±0 kcal/日"),
-            FitnessGoal.GAIN_MUSCLE to Pair("バルクアップ", "+300 kcal/日")
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            goals.forEach { (goal, info) ->
-                SelectableCard(
-                    selected = state.goal == goal,
-                    onClick = { screenModel.updateGoal(goal) },
-                    label = info.first,
-                    subtitle = info.second
-                )
-            }
-        }
-
-        // 1日の食事回数
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("1日の食事回数", fontWeight = FontWeight.Medium)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            (2..8).forEach { count ->
-                FilterChip(
-                    onClick = { screenModel.updateMealsPerDay(count) },
-                    label = { Text("$count") },
-                    selected = state.mealsPerDay == count,
-                    modifier = Modifier.weight(1f),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Primary,
-                        selectedLabelColor = Color.White
-                    )
-                )
-            }
-        }
-
-        // PFCバランス
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("PFCバランス", fontWeight = FontWeight.Medium)
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            PfcIndicator("P", state.proteinRatio, ScoreProtein)
-            PfcIndicator("F", state.fatRatio, ScoreFat)
-            PfcIndicator("C", state.carbRatio, ScoreCarbs)
-        }
-
-        Text("タンパク質: ${state.proteinRatio}%", style = MaterialTheme.typography.labelMedium)
-        Slider(
-            value = state.proteinRatio.toFloat(),
-            onValueChange = { screenModel.updateProteinRatio(it.toInt()) },
-            valueRange = 15f..50f,
-            colors = SliderDefaults.colors(thumbColor = ScoreProtein, activeTrackColor = ScoreProtein)
-        )
-
-        Text("脂質: ${state.fatRatio}%", style = MaterialTheme.typography.labelMedium)
-        Slider(
-            value = state.fatRatio.toFloat(),
-            onValueChange = { screenModel.updateFatRatio(it.toInt()) },
-            valueRange = 15f..40f,
-            colors = SliderDefaults.colors(thumbColor = ScoreFat, activeTrackColor = ScoreFat)
-        )
-    }
-}
-
-// Step 3: 理想目標
-@Composable
-private fun Step3IdealGoals(state: ProfileSetupState, screenModel: ProfileSetupScreenModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Text("理想の目標", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Text("達成したい理想の体型を設定しましょう", color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-        OutlinedTextField(
-            value = state.idealWeight,
-            onValueChange = screenModel::updateIdealWeight,
-            label = { Text("理想の体重") },
-            suffix = { Text("kg") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        OutlinedTextField(
-            value = state.idealBodyFatPercentage,
-            onValueChange = screenModel::updateIdealBodyFatPercentage,
-            label = { Text("理想の体脂肪率") },
-            suffix = { Text("%") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        // 現在 vs 理想の比較
-        val currentWeight = state.weight.toFloatOrNull() ?: 0f
-        val currentBf = state.bodyFatPercentage.toFloatOrNull() ?: 0f
-        val idealWeight = state.idealWeight.toFloatOrNull() ?: 0f
-        val idealBf = state.idealBodyFatPercentage.toFloatOrNull() ?: 0f
-
-        if (currentWeight > 0 && idealWeight > 0) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = AccentGreen.copy(alpha = 0.1f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("目標達成に向けて", fontWeight = FontWeight.Bold, color = AccentGreen)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text("体重変化", style = MaterialTheme.typography.labelSmall)
-                            val diff = idealWeight - currentWeight
-                            Text(
-                                "${if (diff >= 0) "+" else ""}${formatOneDecimal(diff)} kg",
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Column {
-                            Text("体脂肪率変化", style = MaterialTheme.typography.labelSmall)
-                            val diff = idealBf - currentBf
-                            Text(
-                                "${if (diff >= 0) "+" else ""}${formatOneDecimal(diff)} %",
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Column {
-                            Text("理想LBM", style = MaterialTheme.typography.labelSmall)
-                            val idealLbm = idealWeight * (1 - idealBf / 100)
-                            Text("${formatOneDecimal(idealLbm)} kg", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 準備完了メッセージ
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f))
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(Icons.Default.Celebration, null, tint = Primary, modifier = Modifier.size(48.dp))
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("準備完了！", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "「完了」を押すとダッシュボードが開きます",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SelectableCard(
-    selected: Boolean,
-    onClick: () -> Unit,
-    label: String,
-    subtitle: String? = null
+// LazyColumn items拡張（KMP対応）
+private fun <T> androidx.compose.foundation.lazy.LazyListScope.items(
+    count: Int,
+    itemContent: @Composable (index: Int) -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .then(
-                if (selected) Modifier.border(2.dp, Primary, RoundedCornerShape(12.dp))
-                else Modifier
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) Primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
-                if (subtitle != null) {
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            if (selected) {
-                Icon(Icons.Default.CheckCircle, null, tint = Primary)
-            }
-        }
-    }
-}
-
-@Composable
-private fun PfcIndicator(label: String, value: Int, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .background(color.copy(alpha = 0.2f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("$value%", fontWeight = FontWeight.Bold, color = color)
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(label, fontWeight = FontWeight.Bold, color = color)
+    items(count) { index ->
+        itemContent(index)
     }
 }

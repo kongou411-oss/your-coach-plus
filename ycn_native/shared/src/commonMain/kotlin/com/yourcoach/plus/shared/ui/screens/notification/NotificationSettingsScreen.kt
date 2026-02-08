@@ -23,7 +23,7 @@ import com.yourcoach.plus.shared.ui.theme.AccentOrange
 import com.yourcoach.plus.shared.ui.theme.Primary
 
 /**
- * Notification Settings Screen (Compose Multiplatform)
+ * 通知設定画面 (Compose Multiplatform)
  */
 class NotificationSettingsScreen : Screen {
 
@@ -35,13 +35,11 @@ class NotificationSettingsScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val snackbarHostState = remember { SnackbarHostState() }
 
-        // Initialize
         LaunchedEffect(Unit) {
             screenModel.checkNotificationPermission()
             screenModel.registerFcmToken()
         }
 
-        // Error display
         LaunchedEffect(uiState.error) {
             uiState.error?.let { error ->
                 snackbarHostState.showSnackbar(error)
@@ -49,7 +47,6 @@ class NotificationSettingsScreen : Screen {
             }
         }
 
-        // Success message display
         LaunchedEffect(uiState.successMessage) {
             uiState.successMessage?.let { message ->
                 snackbarHostState.showSnackbar(message)
@@ -60,10 +57,10 @@ class NotificationSettingsScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Notification Settings") },
+                    title = { Text("通知設定") },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "戻る")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -88,25 +85,21 @@ class NotificationSettingsScreen : Screen {
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
-                    // Permission card (shown when permission is not granted)
                     if (!uiState.hasNotificationPermission) {
                         PermissionCard(
                             onRequestPermission = {
-                                // Platform-specific permission request will be handled elsewhere
+                                screenModel.requestNotificationPermission()
                             },
                             modifier = Modifier.padding(16.dp)
                         )
                     }
 
-                    // Show tabs and content only when permission is granted
                     if (uiState.hasNotificationPermission) {
-                        // Tabs
                         NotificationTabRow(
                             selectedTab = uiState.selectedTab,
                             onTabSelected = { screenModel.selectTab(it) }
                         )
 
-                        // Tab content
                         NotificationTabContent(
                             uiState = uiState,
                             onTimeChange = { screenModel.updateNewTime(it) },
@@ -126,7 +119,7 @@ class NotificationSettingsScreen : Screen {
 }
 
 /**
- * Permission card
+ * 通知許可カード
  */
 @Composable
 private fun PermissionCard(
@@ -155,7 +148,7 @@ private fun PermissionCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Notifications Disabled",
+                    text = "通知が無効です",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onErrorContainer
@@ -165,7 +158,7 @@ private fun PermissionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Please enable notifications to receive reminders",
+                text = "リマインダーを受け取るには通知を有効にしてください",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
@@ -178,14 +171,14 @@ private fun PermissionCard(
                     containerColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Enable Notifications")
+                Text("通知を有効にする")
             }
         }
     }
 }
 
 /**
- * Notification tabs
+ * 通知タブ
  */
 @Composable
 private fun NotificationTabRow(
@@ -234,7 +227,7 @@ private fun NotificationTabRow(
 }
 
 /**
- * Tab content
+ * タブコンテンツ
  */
 @Composable
 private fun NotificationTabContent(
@@ -254,10 +247,10 @@ private fun NotificationTabContent(
     }
 
     val helpText = when (uiState.selectedTab) {
-        NotificationTab.MEAL -> "You can set multiple notifications for breakfast, lunch, dinner, etc."
-        NotificationTab.WORKOUT -> "Get daily workout reminders at your preferred time."
-        NotificationTab.ANALYSIS -> "Review your nutrition at the end of the day with AI analysis."
-        NotificationTab.CUSTOM -> "Create custom notifications with any title and message. Great for medication reminders."
+        NotificationTab.MEAL -> "朝食、昼食、夕食など、複数の通知を設定できます"
+        NotificationTab.WORKOUT -> "お好みの時間に毎日の運動リマインダーを受け取れます"
+        NotificationTab.ANALYSIS -> "1日の終わりにAI分析で栄養を振り返りましょう"
+        NotificationTab.CUSTOM -> "自由なタイトルとメッセージでカスタム通知を作成できます。お薬のリマインダーにも便利です"
     }
 
     LazyColumn(
@@ -265,16 +258,14 @@ private fun NotificationTabContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Help text
         item {
             HelpCard(text = helpText)
         }
 
-        // Registered notifications list
         if (currentList.isNotEmpty()) {
             item {
                 Text(
-                    text = "Active Notifications",
+                    text = "設定中の通知",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -289,11 +280,10 @@ private fun NotificationTabContent(
             }
         }
 
-        // New notification section
         item {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Create New Notification",
+                text = "新しい通知を作成",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -313,7 +303,6 @@ private fun NotificationTabContent(
             )
         }
 
-        // Notes
         item {
             Spacer(modifier = Modifier.height(8.dp))
             NoteCard()
@@ -326,7 +315,7 @@ private fun NotificationTabContent(
 }
 
 /**
- * Help card
+ * ヘルプカード
  */
 @Composable
 private fun HelpCard(text: String) {
@@ -360,7 +349,7 @@ private fun HelpCard(text: String) {
 }
 
 /**
- * Notification item card
+ * 通知アイテムカード
  */
 @Composable
 private fun NotificationItemCard(
@@ -424,7 +413,7 @@ private fun NotificationItemCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = "削除",
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -433,7 +422,7 @@ private fun NotificationItemCard(
 }
 
 /**
- * New notification form
+ * 新しい通知フォーム
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -450,7 +439,6 @@ private fun NewNotificationForm(
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
 
-    // Parse time
     val parts = time.split(":")
     val initialHour = parts.getOrNull(0)?.toIntOrNull() ?: 12
     val initialMinute = parts.getOrNull(1)?.toIntOrNull() ?: 0
@@ -471,34 +459,30 @@ private fun NewNotificationForm(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Title input
             OutlinedTextField(
                 value = title,
                 onValueChange = onTitleChange,
-                label = { Text(if (isCustomTab) "Title (e.g., Take medicine)" else "Title") },
+                label = { Text(if (isCustomTab) "タイトル（例：お薬を飲む）" else "タイトル") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(8.dp)
             )
 
-            // Body input
             OutlinedTextField(
                 value = body,
                 onValueChange = onBodyChange,
-                label = { Text(if (isCustomTab) "Message (e.g., Don't forget your supplements)" else "Message") },
+                label = { Text(if (isCustomTab) "メッセージ（例：サプリメントを忘れずに）" else "メッセージ") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
                 maxLines = 3,
                 shape = RoundedCornerShape(8.dp)
             )
 
-            // Time and add button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Time selection
                 OutlinedCard(
                     onClick = { showTimePicker = true },
                     modifier = Modifier.weight(1f),
@@ -533,7 +517,6 @@ private fun NewNotificationForm(
                     }
                 }
 
-                // Add button
                 Button(
                     onClick = onAdd,
                     enabled = !isLoading && title.isNotBlank() && body.isNotBlank(),
@@ -552,18 +535,17 @@ private fun NewNotificationForm(
                             contentDescription = null
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Add")
+                        Text("追加")
                     }
                 }
             }
         }
     }
 
-    // Time picker dialog
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Notification Time") },
+            title = { Text("通知時間") },
             text = {
                 TimePicker(state = timePickerState)
             },
@@ -580,7 +562,7 @@ private fun NewNotificationForm(
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Cancel")
+                    Text("キャンセル")
                 }
             }
         )
@@ -588,7 +570,7 @@ private fun NewNotificationForm(
 }
 
 /**
- * Note card
+ * 注意事項カード
  */
 @Composable
 private fun NoteCard() {
@@ -613,7 +595,7 @@ private fun NoteCard() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Notifications will arrive within a few seconds of the scheduled time. For more precise timing, please use your phone's built-in alarm feature.",
+                text = "通知は設定した時間から数秒以内に届きます。より正確な時間管理には、スマホの標準アラーム機能をご利用ください。",
                 style = MaterialTheme.typography.bodySmall,
                 color = AccentOrange
             )
