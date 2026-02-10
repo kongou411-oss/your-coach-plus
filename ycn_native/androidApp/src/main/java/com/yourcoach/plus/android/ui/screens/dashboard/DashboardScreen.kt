@@ -89,6 +89,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.yourcoach.plus.android.ui.theme.AccentOrange
 import com.yourcoach.plus.android.ui.theme.Primary
 import com.yourcoach.plus.android.ui.theme.ScoreCalories
@@ -283,6 +284,11 @@ fun DashboardScreen(
     // Micro+詳細シートの表示状態
     var showMicroSheet by remember { mutableStateOf(false) }
 
+    // ウェルカムカード（初回のみ表示）
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("your_coach_prefs", android.content.Context.MODE_PRIVATE) }
+    var showWelcomeCard by remember { mutableStateOf(!prefs.getBoolean("has_seen_welcome", false)) }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
         // bottomBarは統合ボトムバーに移動
@@ -311,6 +317,17 @@ fun DashboardScreen(
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
+
+                        // ウェルカムカード（初回のみ）
+                        if (showWelcomeCard) {
+                            WelcomeCard(
+                                onDismiss = {
+                                    showWelcomeCard = false
+                                    prefs.edit().putBoolean("has_seen_welcome", true).apply()
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
 
                         // Zone 1: HUDヘッダー（固定）
                         HudHeader(
@@ -3488,6 +3505,83 @@ private fun TimelineSlotRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = textColor.copy(alpha = 0.7f)
                 )
+            }
+        }
+    }
+}
+
+/**
+ * 初回表示用ウェルカムカード
+ * アプリの基本フロー（記録→分析→クエスト生成）を案内する
+ */
+@Composable
+private fun WelcomeCard(
+    onDismiss: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Your Coach+ の使い方",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        text = "閉じる",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val steps = listOf(
+                "食事・運動を記録する（日中）",
+                "分析を実行する（1日の終わり）",
+                "明日のクエストを生成する"
+            )
+            steps.forEachIndexed { index, step ->
+                Row(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "${index + 1}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = step,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
     }
