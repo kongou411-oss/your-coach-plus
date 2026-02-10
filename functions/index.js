@@ -5118,7 +5118,7 @@ ${hasTraining ? `- name: "${splitTypeJa}トレーニング"
 exports.generateQuest = onCall({
   region: "asia-northeast2",
   memory: "512MiB",
-  timeoutSeconds: 120,
+  timeoutSeconds: 300,
 }, async (request) => {
   const data = request.data || {};
 
@@ -5258,7 +5258,7 @@ exports.generateQuest = onCall({
         console.log(`[Quest] Attempt ${attempt}/${MAX_RETRIES}...`);
 
         // Vertex AI呼び出し（タイムアウト付き）
-        const timeoutMs = 250000; // 250秒（Cloud Functionの300秒より短く）
+        const timeoutMs = 270000; // 270秒（Cloud Functionの300秒より短く）
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error("VERTEX_AI_TIMEOUT")), timeoutMs);
         });

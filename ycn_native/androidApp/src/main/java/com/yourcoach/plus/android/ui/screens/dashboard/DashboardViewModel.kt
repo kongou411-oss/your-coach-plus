@@ -2635,9 +2635,9 @@ class DashboardViewModel(
                         else 0
                     }
                     when {
-                        offset > 0 -> "トレ後+${offset}分"
-                        offset < 0 -> "トレ前${kotlin.math.abs(offset)}分"
-                        else -> "トレ直後"
+                        offset > 0 -> "トレーニング後+${offset}分"
+                        offset < 0 -> "トレーニング前${kotlin.math.abs(offset)}分"
+                        else -> "トレーニング直後"
                     }
                 }
                 slot.relativeTime?.startsWith("sleep") == true -> {
@@ -2883,6 +2883,8 @@ class DashboardViewModel(
                 val sleepTime = profile?.sleepTime ?: "23:00"
                 val trainingDuration = profile?.trainingDuration ?: 120
 
+                val trainingStyle = profile?.trainingStyle?.name ?: "PUMP"
+
                 val data = hashMapOf(
                     "goal" to goal,
                     "budgetTier" to budgetTier,
@@ -2895,6 +2897,7 @@ class DashboardViewModel(
                     "targetCalories" to targetCalories,
                     "fiberTarget" to fiberTarget,
                     "trainingAfterMeal" to trainingAfterMeal,
+                    "trainingStyle" to trainingStyle,
                     "wakeUpTime" to wakeUpTime,
                     "trainingTime" to trainingTime,
                     "sleepTime" to sleepTime,
@@ -2907,7 +2910,7 @@ class DashboardViewModel(
 
                 functions
                     .getHttpsCallable("generateQuest")
-                    .withTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+                    .withTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
                     .call(data)
                     .addOnSuccessListener { result ->
                         viewModelScope.launch {

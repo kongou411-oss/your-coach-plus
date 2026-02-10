@@ -3455,7 +3455,7 @@ private fun TimelineSlotRow(
             // トレ前後ラベル
             if (slot.isTrainingRelated) {
                 Text(
-                    text = if (slot.relativeTimeLabel?.contains("トレ前") == true) "[トレ前]" else "[トレ後]",
+                    text = if (slot.relativeTimeLabel?.contains("トレーニング前") == true) "[トレーニング前]" else "[トレーニング後]",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = AccentOrange

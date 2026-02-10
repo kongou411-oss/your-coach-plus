@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.History
@@ -23,10 +24,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.yourcoach.plus.android.ui.components.BottomBarState
@@ -68,6 +71,9 @@ import com.yourcoach.plus.android.ui.screens.workout.WorkoutRecorderViewModel
 import com.google.firebase.auth.FirebaseAuth
 import org.koin.androidx.compose.koinViewModel
 import com.yourcoach.plus.android.ui.screens.auth.OnboardingScreen
+import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.UserRepository
+import org.koin.compose.koinInject
 
 /**
  * ボトムナビゲーションアイテムの設定
@@ -130,10 +136,6 @@ fun YourCoachNavHost() {
         Screen.Settings.route
     )
 
-    // 認証状態に応じてstartDestinationを決定
-    val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
-    val startDestination = if (isLoggedIn) Screen.Dashboard.route else Screen.Login.route
-
     // ボトムバーの共有状態（DashboardScreenから更新）
     var bottomBarState by remember { mutableStateOf(BottomBarState()) }
 
@@ -180,7 +182,7 @@ fun YourCoachNavHost() {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = startDestination,
+            startDestination = Screen.Splash.route,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
@@ -209,6 +211,39 @@ fun YourCoachNavHost() {
                 )
             }
         ) {
+            // Splash: 認証状態チェック → 適切な画面へ遷移
+            composable(Screen.Splash.route) {
+                val authRepository: AuthRepository = koinInject()
+                val userRepository: UserRepository = koinInject()
+
+                LaunchedEffect(Unit) {
+                    val currentUser = authRepository.getCurrentUser()
+                    if (currentUser == null) {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    } else {
+                        val user = userRepository.getUser(currentUser.uid).getOrNull()
+                        if (user?.profile?.onboardingCompleted == true) {
+                            navController.navigate(Screen.Dashboard.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(Screen.ProfileSetup.createRoute(currentUser.uid)) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
             // Auth screens
             composable(Screen.Login.route) {
                 LoginScreen(

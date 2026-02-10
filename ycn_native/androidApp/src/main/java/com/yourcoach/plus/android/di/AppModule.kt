@@ -96,7 +96,7 @@ val appModule = module {
     viewModel { PgBaseViewModel(get(), get(), get()) }
     viewModel { ComyViewModel(get(), get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get(), get(), get()) }
-    viewModel { AnalysisViewModel(get(), get()) }
+    viewModel { AnalysisViewModel(get<GeminiService>() as FirebaseGeminiService, get<AnalysisRepository>() as FirestoreAnalysisRepository, get<BadgeRepository>() as FirestoreBadgeRepository) }
     viewModel { MealViewModel(get(), get(), get(), get(), get()) }
     viewModel { WorkoutViewModel(get(), get()) }
     viewModel { WorkoutRecorderViewModel(get()) }

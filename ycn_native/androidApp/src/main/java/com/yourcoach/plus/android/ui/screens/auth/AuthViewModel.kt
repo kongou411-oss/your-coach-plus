@@ -123,7 +123,9 @@ class AuthViewModel(
                         is AppError.InvalidCredentials -> "メールアドレスまたはパスワードが正しくありません"
                         is AppError.NetworkError -> "ネットワークエラーが発生しました。接続を確認してください"
                         is AppError.AccountDisabled -> "このアカウントは無効化されています"
-                        else -> error.message ?: "ログインに失敗しました"
+                        is AppError.AuthenticationError -> "認証に失敗しました。再度お試しください"
+                        is AppError.ValidationError -> error.message ?: "入力内容に問題があります"
+                        else -> "ログインに失敗しました"
                     }
                     _uiState.update {
                         it.copy(
@@ -186,7 +188,7 @@ class AuthViewModel(
                                 _uiState.update {
                                     it.copy(
                                         isLoading = false,
-                                        error = error.message ?: "Googleログインに失敗しました"
+                                        error = "Googleログインに失敗しました"
                                     )
                                 }
                             }
@@ -196,7 +198,7 @@ class AuthViewModel(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = error.message ?: "Googleログインに失敗しました"
+                                error = "Googleログインに失敗しました"
                             )
                         }
                     }
@@ -205,7 +207,7 @@ class AuthViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Googleログインに失敗しました"
+                        error = "Googleログインに失敗しました"
                     )
                 }
             }
@@ -250,7 +252,7 @@ class AuthViewModel(
                     val message = when (error) {
                         is AppError.ValidationError -> error.message ?: "入力内容に問題があります"
                         is AppError.NetworkError -> "ネットワークエラーが発生しました。接続を確認してください"
-                        else -> error.message ?: "アカウント作成に失敗しました"
+                        else -> "アカウント作成に失敗しました"
                     }
                     _uiState.update {
                         it.copy(
@@ -287,7 +289,7 @@ class AuthViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = error.message ?: "メール送信に失敗しました"
+                            error = "メール送信に失敗しました"
                         )
                     }
                 }

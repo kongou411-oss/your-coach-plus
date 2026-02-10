@@ -899,17 +899,17 @@ private fun ProfileSettingsSection(
                     if (userProfile?.trainingAfterMeal != null) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text(
-                            text = "トレ前後PFC",
+                            text = "トレーニング前後PFC",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color(0xFFFF9600),
                             fontWeight = FontWeight.Bold
                         )
                         SettingRow(
-                            "トレ前",
+                            "トレーニング前",
                             "P${userProfile.preWorkoutProtein}g F${userProfile.preWorkoutFat}g C${userProfile.preWorkoutCarbs}g"
                         )
                         SettingRow(
-                            "トレ後",
+                            "トレーニング後",
                             "P${userProfile.postWorkoutProtein}g F${userProfile.postWorkoutFat}g C${userProfile.postWorkoutCarbs}g"
                         )
                     }

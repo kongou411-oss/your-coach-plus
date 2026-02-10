@@ -627,16 +627,14 @@ private fun MealSlotCard(
     onEditClick: () -> Unit,
     onFoodChoiceChange: (FoodChoice) -> Unit = {}
 ) {
-    var showFoodChoiceMenu by remember { mutableStateOf(false) }
+    // TODO: FoodChoice 非表示中 - ロジック接続時に復活
+    // var showFoodChoiceMenu by remember { mutableStateOf(false) }
+    // val foodChoiceColor = when (slot.defaultFoodChoice) { ... }
     val mode = slot.mode
     val modeColor = when (mode) {
         SlotMode.FIXED -> ScoreCarbs
         SlotMode.AI -> Primary
         SlotMode.ROUTINE_LINKED -> AccentOrange
-    }
-    val foodChoiceColor = when (slot.defaultFoodChoice) {
-        FoodChoice.KITCHEN -> ScoreProtein
-        FoodChoice.STORE -> ScoreGL
     }
 
     Card(
@@ -681,57 +679,8 @@ private fun MealSlotCard(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
-                    // 優先択（A/B/C）ラベル - タップで変更可能
-                    Box {
-                        Surface(
-                            color = foodChoiceColor.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.clickable { showFoodChoiceMenu = true }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = when (slot.defaultFoodChoice) {
-                                        FoodChoice.KITCHEN -> "自炊"
-                                        FoodChoice.STORE -> "中食"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = foodChoiceColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Icon(
-                                    Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = foodChoiceColor,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = showFoodChoiceMenu,
-                            onDismissRequest = { showFoodChoiceMenu = false }
-                        ) {
-                            FoodChoice.entries.forEach { choice ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = choice.displayName,
-                                            color = when (choice) {
-                                                FoodChoice.KITCHEN -> ScoreProtein
-                                                FoodChoice.STORE -> ScoreGL
-                                            }
-                                        )
-                                    },
-                                    onClick = {
-                                        onFoodChoiceChange(choice)
-                                        showFoodChoiceMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
+                    // TODO: FoodChoice UI 非表示中 - ロジック接続時に復活
+                    // Box { Surface(...) { ... } DropdownMenu(...) { ... } }
                     val templateNameDisplay = slot.templateName
                     if (mode == SlotMode.FIXED && templateNameDisplay != null) {
                         Text(
@@ -1247,7 +1196,7 @@ private fun TimelineSettingsSection(
             }
 
             Text(
-                text = "起床・就寝・トレーニング時刻を設定すると、食事の推奨タイミングとA/B択が自動生成されます。",
+                text = "起床・就寝・トレーニング時刻を設定すると、食事の推奨タイミングが自動生成されます。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1280,10 +1229,38 @@ private fun TimelineSettingsSection(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "トレ前食事",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    var showTrainingMealHelp by remember { mutableStateOf(false) }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "トレーニング前食事",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        IconButton(
+                            onClick = { showTrainingMealHelp = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "ヘルプ",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (showTrainingMealHelp) {
+                        AlertDialog(
+                            onDismissRequest = { showTrainingMealHelp = false },
+                            confirmButton = {
+                                TextButton(onClick = { showTrainingMealHelp = false }) {
+                                    Text("OK")
+                                }
+                            },
+                            title = { Text("トレーニング前食事") },
+                            text = { Text("何食目の後にトレーニングを行うかを選択します。\n\n例: 「3」を選択 → 3食目がトレーニング2時間前の食事として配置され、4食目がトレーニング直後に自動配置されます。\n\nタイムラインの食事タイミングとトレーニング前後の栄養配分に影響します。") }
+                        )
+                    }
                     Row(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1328,10 +1305,27 @@ private fun TimelineSettingsSection(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "トレーニングスタイル",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    var showStyleHelp by remember { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "トレーニングスタイル",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        IconButton(
+                            onClick = { showStyleHelp = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (showStyleHelp) {
+                        AlertDialog(
+                            onDismissRequest = { showStyleHelp = false },
+                            confirmButton = { TextButton(onClick = { showStyleHelp = false }) { Text("OK") } },
+                            title = { Text("トレーニングスタイル") },
+                            text = { Text("クエストで生成されるワークアウトのレップ数に反映されます。\n\nパワー - 高重量・低レップ（5回/セット）。筋力向上向け\nパンプ - 中重量・高レップ（10回/セット）。筋肥大・ボディメイク向け") }
+                        )
+                    }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {

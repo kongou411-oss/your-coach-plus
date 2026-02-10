@@ -170,7 +170,9 @@
       "Bash(\"$JAVA_HOME/bin/keytool\" -list -v -keystore yourcoach-release-key.jks -alias yourcoach-key)",
       "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -list -v -keystore \"/c/Users/yourc/ycn_re/ycn_native/androidApp/yourcoach-release-key.jks\" -alias yourcoach-key)",
       "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -list -keystore \"/c/Users/yourc/ycn_re/ycn_native/androidApp/yourcoach-release-key.jks\")",
-      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -list -v -keystore \"/c/Users/yourc/ycn_re/ycn_native/androidApp/yourcoach-release-key.jks\" -alias yourcoach)"
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -list -v -keystore \"/c/Users/yourc/ycn_re/ycn_native/androidApp/yourcoach-release-key.jks\" -alias yourcoach)",
+      "Bash(git rebase:*)",
+      "Bash(GIT_EDITOR=true git rebase:*)"
     ],
     "deny": [],
     "ask": []

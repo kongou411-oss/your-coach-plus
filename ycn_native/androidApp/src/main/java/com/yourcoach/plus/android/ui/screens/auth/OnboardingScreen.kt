@@ -710,11 +710,28 @@ private fun ProfileStep(
         // 目標・活動レベル
         item {
             SectionCard(title = "目標・活動レベル", icon = Icons.Default.Flag) {
-                Text(
-                    text = "フィットネス目標",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                var showGoalHelp by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "フィットネス目標",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    IconButton(
+                        onClick = { showGoalHelp = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (showGoalHelp) {
+                    AlertDialog(
+                        onDismissRequest = { showGoalHelp = false },
+                        confirmButton = { TextButton(onClick = { showGoalHelp = false }) { Text("OK") } },
+                        title = { Text("フィットネス目標") },
+                        text = { Text("体づくりの方向性を選択します。\n\nダイエット - 脂肪を落とし体を絞る（カロリー不足に設定）\nメンテナンス・リコンプ - 体重を維持しながら体組成を改善\nバルクアップ - 筋肉量を増やすために体重を増加（カロリー余剰に設定）\n\n選択に応じてカロリー調整の初期値が自動変更されます。") }
+                    )
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         onClick = { onGoalChange(FitnessGoal.LOSE_WEIGHT) },
@@ -786,10 +803,27 @@ private fun ProfileStep(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // カロリー調整
-                Text(
-                    text = "カロリー調整: ${if (calorieAdjustment >= 0) "+" else ""}${calorieAdjustment} kcal",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                var showCalorieHelp by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "カロリー調整: ${if (calorieAdjustment >= 0) "+" else ""}${calorieAdjustment} kcal",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    IconButton(
+                        onClick = { showCalorieHelp = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (showCalorieHelp) {
+                    AlertDialog(
+                        onDismissRequest = { showCalorieHelp = false },
+                        confirmButton = { TextButton(onClick = { showCalorieHelp = false }) { Text("OK") } },
+                        title = { Text("カロリー調整") },
+                        text = { Text("基礎代謝と活動レベルから算出された1日の消費カロリー（TDEE）に対する増減値です。\n\nマイナス → ダイエット向け（例: -300kcalで緩やかな減量）\nプラス → バルクアップ向け（例: +300kcalで筋肥大を促進）\n\nフィットネス目標を変更すると初期値が自動設定されますが、体感に合わせて微調整できます。") }
+                    )
+                }
                 Slider(
                     value = calorieAdjustment.toFloat(),
                     onValueChange = { onCalorieAdjustmentChange(it.toInt()) },
@@ -835,6 +869,29 @@ private fun ProfileStep(
         // PFCバランス
         item {
             SectionCard(title = "PFCバランス", icon = Icons.Default.PieChart) {
+                var showPfcHelp by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "栄養素の割合",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    IconButton(
+                        onClick = { showPfcHelp = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (showPfcHelp) {
+                    AlertDialog(
+                        onDismissRequest = { showPfcHelp = false },
+                        confirmButton = { TextButton(onClick = { showPfcHelp = false }) { Text("OK") } },
+                        title = { Text("PFCバランス") },
+                        text = { Text("1日の目標カロリーにおける三大栄養素の割合です。\n\nP（タンパク質）- 筋肉の合成・修復に必要\nF（脂質）- ホルモン分泌・細胞機能に必要\nC（炭水化物）- トレーニングのエネルギー源\n\nこの設定に基づいて、毎日のクエストで提案される食事内容と食材が変わります。") }
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 // P
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -940,11 +997,28 @@ private fun ProfileStep(
         // 食費設定
         item {
             SectionCard(title = "食費設定", icon = Icons.Default.Payments) {
-                Text(
-                    text = "食費予算",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                var showBudgetHelp by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "食費予算",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    IconButton(
+                        onClick = { showBudgetHelp = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (showBudgetHelp) {
+                    AlertDialog(
+                        onDismissRequest = { showBudgetHelp = false },
+                        confirmButton = { TextButton(onClick = { showBudgetHelp = false }) { Text("OK") } },
+                        title = { Text("食費予算") },
+                        text = { Text("クエストで提案される食材のグレードが変わります。\n\n節約 - 鶏むね肉・卵など低コスト食材を中心に提案\n標準 - 牛赤身・サーモンなど栄養価の高い食材も提案\n\n地域による価格差があるため、金額ではなくグレードで設定しています。") }
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1267,11 +1341,39 @@ private fun MealSlotStep(
                 if (trainingTime != null) {
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // トレ前の食事番号
-                    Text(
-                        text = "トレ前食事",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    // トレーニング前の食事番号
+                    var showTrainingMealHelp by remember { mutableStateOf(false) }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "トレーニング前食事",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        IconButton(
+                            onClick = { showTrainingMealHelp = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "ヘルプ",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (showTrainingMealHelp) {
+                        AlertDialog(
+                            onDismissRequest = { showTrainingMealHelp = false },
+                            confirmButton = {
+                                TextButton(onClick = { showTrainingMealHelp = false }) {
+                                    Text("OK")
+                                }
+                            },
+                            title = { Text("トレーニング前食事") },
+                            text = { Text("何食目の後にトレーニングを行うかを選択します。\n\n例: 「3」を選択 → 3食目がトレーニング2時間前の食事として配置され、4食目がトレーニング直後に自動配置されます。\n\nタイムラインの食事タイミングとトレーニング前後の栄養配分に影響します。") }
+                        )
+                    }
                     Row(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1310,10 +1412,27 @@ private fun MealSlotStep(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // トレーニングスタイル
-                    Text(
-                        text = "トレーニングスタイル",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    var showStyleHelp by remember { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "トレーニングスタイル",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        IconButton(
+                            onClick = { showStyleHelp = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (showStyleHelp) {
+                        AlertDialog(
+                            onDismissRequest = { showStyleHelp = false },
+                            confirmButton = { TextButton(onClick = { showStyleHelp = false }) { Text("OK") } },
+                            title = { Text("トレーニングスタイル") },
+                            text = { Text("クエストで生成されるワークアウトのレップ数に反映されます。\n\nパワー - 高重量・低レップ（5回/セット）。筋力向上向け\nパンプ - 中重量・高レップ（10回/セット）。筋肥大・ボディメイク向け") }
+                        )
+                    }
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -1544,11 +1663,12 @@ private fun MealSlotCard(
     slot: MealSlot,
     onFoodChoiceChange: (FoodChoice) -> Unit
 ) {
-    var showFoodChoiceMenu by remember { mutableStateOf(false) }
-    val foodChoiceColor = when (slot.defaultFoodChoice) {
-        FoodChoice.KITCHEN -> ScoreProtein
-        FoodChoice.STORE -> ScoreGL
-    }
+    // TODO: FoodChoice 非表示中 - ロジック接続時に復活
+    // var showFoodChoiceMenu by remember { mutableStateOf(false) }
+    // val foodChoiceColor = when (slot.defaultFoodChoice) {
+    //     FoodChoice.KITCHEN -> ScoreProtein
+    //     FoodChoice.STORE -> ScoreGL
+    // }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1575,62 +1695,20 @@ private fun MealSlotCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // 優先択（自炊/中食）
-                    Box {
-                        Surface(
-                            color = foodChoiceColor.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.clickable { showFoodChoiceMenu = true }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = when (slot.defaultFoodChoice) {
-                                        FoodChoice.KITCHEN -> "自炊"
-                                        FoodChoice.STORE -> "中食"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = foodChoiceColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Icon(
-                                    Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = foodChoiceColor,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = showFoodChoiceMenu,
-                            onDismissRequest = { showFoodChoiceMenu = false }
-                        ) {
-                            FoodChoice.entries.forEach { choice ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = choice.displayName,
-                                            color = when (choice) {
-                                                FoodChoice.KITCHEN -> ScoreProtein
-                                                FoodChoice.STORE -> ScoreGL
-                                            }
-                                        )
-                                    },
-                                    onClick = {
-                                        onFoodChoiceChange(choice)
-                                        showFoodChoiceMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+                // TODO: FoodChoice UI 非表示中 - ロジック接続時に復活
+                // Row(
+                //     verticalAlignment = Alignment.CenterVertically,
+                //     horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // ) {
+                //     Box {
+                //         Surface(
+                //             color = foodChoiceColor.copy(alpha = 0.2f),
+                //             shape = RoundedCornerShape(4.dp),
+                //             modifier = Modifier.clickable { showFoodChoiceMenu = true }
+                //         ) { ... }
+                //         DropdownMenu(...) { ... }
+                //     }
+                // }
             }
         }
     }
