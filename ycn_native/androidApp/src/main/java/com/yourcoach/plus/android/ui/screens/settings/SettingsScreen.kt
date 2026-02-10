@@ -511,7 +511,7 @@ private fun FeaturesSettingsTab(
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
                 SettingsRow(
                     icon = Icons.Default.Schedule,
-                    title = "食事スロット設定",
+                    title = "クエスト連動設定",
                     subtitle = "固定/AI提案/ルーティン連動を設定",
                     onClick = onNavigateToMealSlots
                 )

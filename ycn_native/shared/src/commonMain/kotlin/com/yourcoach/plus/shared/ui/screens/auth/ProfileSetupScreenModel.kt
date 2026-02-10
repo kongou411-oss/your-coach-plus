@@ -299,14 +299,6 @@ class ProfileSetupScreenModel(
         _state.update { it.copy(mealSlotConfig = newConfig) }
     }
 
-    fun updateSlotFoodChoice(slotNumber: Int, choice: FoodChoice) {
-        val s = _state.value
-        val updatedSlots = s.mealSlotConfig.slots.map {
-            if (it.slotNumber == slotNumber) it.copy(defaultFoodChoice = choice) else it
-        }
-        _state.update { it.copy(mealSlotConfig = s.mealSlotConfig.copy(slots = updatedSlots)) }
-    }
-
     // ========== TDEE計算 ==========
     private fun recalculateTDEE() {
         val s = _state.value

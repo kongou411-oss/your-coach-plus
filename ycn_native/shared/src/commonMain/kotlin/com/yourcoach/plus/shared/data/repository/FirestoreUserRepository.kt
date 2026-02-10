@@ -457,25 +457,10 @@ class FirestoreUserRepository : UserRepository {
         val slotsData = (configMap["slots"] as? List<*>)?.mapNotNull { slotData ->
             val slotMap = slotData as? Map<String, Any?> ?: return@mapNotNull null
             val slotNumber = (slotMap["slotNumber"] as? Number)?.toInt() ?: return@mapNotNull null
-            val mode = (slotMap["mode"] as? String)?.let {
-                try { SlotMode.valueOf(it) } catch (e: Exception) { SlotMode.AI }
-            } ?: SlotMode.AI
-            val foodChoice = (slotMap["defaultFoodChoice"] as? String)?.let { fc ->
-                when (fc) {
-                    "REAL_FOOD", "SUPPLEMENT" -> FoodChoice.KITCHEN
-                    "CONVENIENCE" -> FoodChoice.STORE
-                    else -> try { FoodChoice.valueOf(fc) } catch (e: Exception) { FoodChoice.KITCHEN }
-                }
-            } ?: FoodChoice.KITCHEN
             MealSlot(
                 slotNumber = slotNumber,
-                mode = mode,
-                templateId = slotMap["templateId"] as? String,
-                templateName = slotMap["templateName"] as? String,
-                routineLinked = slotMap["routineLinked"] as? Boolean ?: false,
                 relativeTime = slotMap["relativeTime"] as? String,
-                absoluteTime = slotMap["absoluteTime"] as? String,
-                defaultFoodChoice = foodChoice
+                absoluteTime = slotMap["absoluteTime"] as? String
             )
         } ?: emptyList()
 
@@ -484,19 +469,7 @@ class FirestoreUserRepository : UserRepository {
 
     @Suppress("UNCHECKED_CAST")
     private fun parseWorkoutSlotConfig(configMap: Map<String, Any?>): WorkoutSlotConfig {
-        val slotMap = configMap["slot"] as? Map<String, Any?>
-        val slot = slotMap?.let { sm ->
-            val mode = (sm["mode"] as? String)?.let {
-                try { SlotMode.valueOf(it) } catch (e: Exception) { SlotMode.AI }
-            } ?: SlotMode.AI
-            WorkoutSlot(
-                mode = mode,
-                templateId = sm["templateId"] as? String,
-                templateName = sm["templateName"] as? String,
-                routineLinked = sm["routineLinked"] as? Boolean ?: false
-            )
-        } ?: WorkoutSlot()
-        return WorkoutSlotConfig(slot = slot)
+        return WorkoutSlotConfig(slot = WorkoutSlot())
     }
 
     @Suppress("UNCHECKED_CAST")

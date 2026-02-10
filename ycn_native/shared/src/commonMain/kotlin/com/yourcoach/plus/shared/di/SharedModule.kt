@@ -122,7 +122,8 @@ val sharedModule = module {
             geminiService = getOrNull<GeminiService>(),
             analysisRepository = get(),
             directiveRepository = get(),
-            badgeRepository = get()
+            badgeRepository = get(),
+            routineRepository = get()
         )
     }
 

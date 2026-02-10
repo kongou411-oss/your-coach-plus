@@ -5,8 +5,10 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
+import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import com.yourcoach.plus.shared.util.DateUtil
+import com.yourcoach.plus.shared.util.MetCalorieCalculator
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +46,7 @@ class AddWorkoutScreenModel(
     private val authRepository: AuthRepository,
     private val workoutRepository: WorkoutRepository,
     private val customExerciseRepository: CustomExerciseRepository,
+    private val userRepository: UserRepository,
     private val initialDate: String
 ) : ScreenModel {
 
@@ -58,9 +61,26 @@ class AddWorkoutScreenModel(
     // キャッシュされたuserId
     private var cachedUserId: String? = null
 
+    // ユーザー体重（METデフォルト値計算用）
+    private var userBodyWeight: Float = 70f
+
     init {
         loadTemplates()
         loadCustomExercises()
+        loadUserWeight()
+    }
+
+    /**
+     * ユーザー体重をロード（MET計算用）
+     */
+    private fun loadUserWeight() {
+        screenModelScope.launch(exceptionHandler) {
+            val uid = authRepository.getCurrentUserId() ?: return@launch
+            userRepository.getUser(uid)
+                .onSuccess { user ->
+                    userBodyWeight = user?.profile?.weight ?: 70f
+                }
+        }
     }
 
     private fun loadTemplates() {
@@ -151,8 +171,20 @@ class AddWorkoutScreenModel(
     }
 
     fun addExercise(exercise: Exercise) {
+        // カロリーが0の場合、MET計算でデフォルト値を設定
+        val effectiveExercise = if (exercise.caloriesBurned == 0) {
+            val duration = exercise.duration
+                ?: MetCalorieCalculator.estimateStrengthDuration(
+                    exercise.category, exercise.sets ?: 3, exercise.reps ?: 10
+                )
+            val calories = MetCalorieCalculator.calculateCalories(
+                exercise.category, userBodyWeight, duration, _uiState.value.intensity
+            )
+            exercise.copy(caloriesBurned = calories)
+        } else exercise
+
         _uiState.update { state ->
-            val newExercises = state.exercises + exercise
+            val newExercises = state.exercises + effectiveExercise
             state.copy(
                 exercises = newExercises,
                 totalDuration = newExercises.sumOf { it.duration ?: 0 },

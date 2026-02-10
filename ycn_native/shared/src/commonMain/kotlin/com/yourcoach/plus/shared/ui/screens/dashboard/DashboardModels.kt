@@ -3,7 +3,6 @@ package com.yourcoach.plus.shared.ui.screens.dashboard
 import com.yourcoach.plus.shared.domain.model.DirectiveActionItem
 import com.yourcoach.plus.shared.domain.model.Meal
 import com.yourcoach.plus.shared.domain.model.Workout
-import com.yourcoach.plus.shared.domain.model.FoodChoice
 
 /**
  * 統合タイムラインアイテム（Pro Cockpit用）
@@ -52,7 +51,6 @@ data class TimelineSlotInfo(
     val displayName: String,
     val timeMinutes: Int,  // 0:00からの分数
     val timeString: String,  // "07:30"形式
-    val foodChoice: FoodChoice,
     val isTrainingRelated: Boolean,  // トレ前後か
     val isCompleted: Boolean = false,  // 該当食事が記録済みか
     val relativeTimeLabel: String? = null,  // "起床+30分"などの表示用

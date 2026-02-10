@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.yourcoach.plus.android.data.repository.FirestoreAnalysisRepository
 import com.yourcoach.plus.android.data.repository.FirestoreBadgeRepository
 import com.yourcoach.plus.android.data.repository.FirestoreConditionRepository
+import com.yourcoach.plus.android.data.repository.FirestoreRoutineRepository
 import com.yourcoach.plus.android.data.repository.FirestoreMealRepository
 import com.yourcoach.plus.android.data.repository.FirestoreScoreRepository
 import com.yourcoach.plus.android.data.repository.FirestoreUserRepository
@@ -100,6 +101,7 @@ class AnalysisViewModel(
     private val scoreRepository = FirestoreScoreRepository()
     private val directiveRepository = FirestoreDirectiveRepository()
     private val conditionRepository = FirestoreConditionRepository()
+    private val routineRepository = FirestoreRoutineRepository(firestore, mealRepository, workoutRepository)
 
     init {
         // FirebaseAuthから現在のユーザーIDを取得して自動初期化
@@ -366,6 +368,16 @@ class AnalysisViewModel(
                     else -> "カロリー収支はほぼ均衡しており、体組成は安定しています。"
                 }
 
+                // ルーティン情報（部位）を取得
+                var todaySplitType: String? = null
+                routineRepository.getRoutineForDate(uid, DateUtil.todayString())
+                    .onSuccess { routineDay ->
+                        todaySplitType = routineDay?.splitType
+                    }
+
+                // 消費カロリー合計
+                val totalCaloriesBurned = state.workouts.sumOf { it.totalCaloriesBurned }
+
                 // 分析リクエストデータを構築（プロンプト生成はCloud Functions側で行う）
                 val requestData = hashMapOf(
                     "userId" to uid,
@@ -422,17 +434,22 @@ class AnalysisViewModel(
                         hashMapOf(
                             "type" to workout.type.name,
                             "totalDuration" to workout.totalDuration,
+                            "totalCaloriesBurned" to workout.totalCaloriesBurned,
                             "exercises" to workout.exercises.map { ex ->
                                 hashMapOf(
                                     "name" to ex.name,
                                     "sets" to ex.sets,
                                     "reps" to ex.reps,
                                     "weight" to ex.weight,
-                                    "duration" to ex.duration
+                                    "duration" to ex.duration,
+                                    "caloriesBurned" to ex.caloriesBurned
                                 )
                             }
                         )
                     },
+                    // 部位・消費カロリー
+                    "splitType" to todaySplitType,
+                    "totalCaloriesBurned" to totalCaloriesBurned,
                     // 目標値
                     "targetCalories" to targetCalories,
                     "targetProtein" to targetProtein,
@@ -601,13 +618,14 @@ class AnalysisViewModel(
                 appendLine()
             }
 
-            // 明日へのアドバイス
-            val advice = result["advice"] as? String
-            if (!advice.isNullOrBlank()) {
+            // 明日のアクションプラン
+            val actionPlan = (result["action_plan"] as? String)
+                ?: (result["advice"] as? String)
+            if (!actionPlan.isNullOrBlank()) {
                 appendLine("---")
                 appendLine()
-                appendLine("## 明日に向けて")
-                appendLine(advice)
+                appendLine("## 明日のアクション")
+                appendLine(actionPlan)
             }
 
             // パースエラーの場合は生テキストを表示

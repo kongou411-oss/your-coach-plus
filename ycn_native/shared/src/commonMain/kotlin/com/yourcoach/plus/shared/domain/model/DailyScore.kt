@@ -30,6 +30,7 @@ data class DailyScore(
     val exerciseCountScore: Int = 0, // 種目数スコア
     val totalMinutes: Int = 0,       // 運動時間 (分)
     val exerciseCount: Int = 0,      // 運動種目数
+    val totalCaloriesBurned: Int = 0, // 運動消費カロリー (MET計算)
 
     // === コンディションスコア ===
     val conditionScore: Int = 0,     // 総合コンディションスコア

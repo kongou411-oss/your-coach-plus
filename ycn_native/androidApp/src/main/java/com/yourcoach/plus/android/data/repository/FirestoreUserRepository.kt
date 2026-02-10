@@ -230,23 +230,13 @@ class FirestoreUserRepository : UserRepository {
             val slotsData = mealSlotConfig.slots.map { slot ->
                 mapOf(
                     "slotNumber" to slot.slotNumber,
-                    "mode" to slot.mode.name,
-                    "templateId" to slot.templateId,
-                    "templateName" to slot.templateName,
-                    "routineLinked" to slot.routineLinked,
                     "relativeTime" to slot.relativeTime,
-                    "absoluteTime" to slot.absoluteTime,
-                    "defaultFoodChoice" to slot.defaultFoodChoice.name
+                    "absoluteTime" to slot.absoluteTime
                 )
             }
 
             // WorkoutSlotConfigをMapに変換
-            val workoutSlotData = mapOf(
-                "mode" to workoutSlotConfig.slot.mode.name,
-                "templateId" to workoutSlotConfig.slot.templateId,
-                "templateName" to workoutSlotConfig.slot.templateName,
-                "routineLinked" to workoutSlotConfig.slot.routineLinked
-            )
+            val workoutSlotData = emptyMap<String, Any?>()
 
             // RoutineTemplateConfigをMapに変換
             val mappingsData = routineTemplateConfig.mappings.map { mapping ->
@@ -550,26 +540,10 @@ class FirestoreUserRepository : UserRepository {
                 val slotsData = (configMap["slots"] as? List<*>)?.mapNotNull { slotData ->
                     val slotMap = slotData as? Map<*, *> ?: return@mapNotNull null
                     val slotNumber = (slotMap["slotNumber"] as? Number)?.toInt() ?: return@mapNotNull null
-                    val mode = (slotMap["mode"] as? String)?.let { m ->
-                        try { SlotMode.valueOf(m) } catch (e: Exception) { SlotMode.AI }
-                    } ?: SlotMode.AI
-                    val foodChoice = (slotMap["defaultFoodChoice"] as? String)?.let { fc ->
-                        // 旧enum値からの移行: REAL_FOOD/SUPPLEMENT→KITCHEN, CONVENIENCE→STORE
-                        when (fc) {
-                            "REAL_FOOD", "SUPPLEMENT" -> FoodChoice.KITCHEN
-                            "CONVENIENCE" -> FoodChoice.STORE
-                            else -> try { FoodChoice.valueOf(fc) } catch (e: Exception) { FoodChoice.KITCHEN }
-                        }
-                    } ?: FoodChoice.KITCHEN
                     MealSlot(
                         slotNumber = slotNumber,
-                        mode = mode,
-                        templateId = slotMap["templateId"] as? String,
-                        templateName = slotMap["templateName"] as? String,
-                        routineLinked = slotMap["routineLinked"] as? Boolean ?: false,
                         relativeTime = slotMap["relativeTime"] as? String,
-                        absoluteTime = slotMap["absoluteTime"] as? String,
-                        defaultFoodChoice = foodChoice
+                        absoluteTime = slotMap["absoluteTime"] as? String
                     )
                 } ?: emptyList()
 
@@ -578,20 +552,8 @@ class FirestoreUserRepository : UserRepository {
 
             // WorkoutSlotConfigをパース
             val workoutSlotConfigMap = it["workoutSlotConfig"] as? Map<*, *>
-            val workoutSlotConfig = workoutSlotConfigMap?.let { configMap ->
-                val slotMap = configMap["slot"] as? Map<*, *>
-                val slot = slotMap?.let { sm ->
-                    val mode = (sm["mode"] as? String)?.let { m ->
-                        try { SlotMode.valueOf(m) } catch (e: Exception) { SlotMode.AI }
-                    } ?: SlotMode.AI
-                    WorkoutSlot(
-                        mode = mode,
-                        templateId = sm["templateId"] as? String,
-                        templateName = sm["templateName"] as? String,
-                        routineLinked = sm["routineLinked"] as? Boolean ?: false
-                    )
-                } ?: WorkoutSlot()
-                WorkoutSlotConfig(slot = slot)
+            val workoutSlotConfig = workoutSlotConfigMap?.let {
+                WorkoutSlotConfig(slot = WorkoutSlot())
             }
 
             // RoutineTemplateConfigをパース

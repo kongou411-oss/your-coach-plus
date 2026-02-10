@@ -460,6 +460,7 @@ class FirestoreScoreRepository : ScoreRepository {
         "exerciseCountScore" to score.exerciseCountScore,
         "totalMinutes" to score.totalMinutes,
         "exerciseCount" to score.exerciseCount,
+        "totalCaloriesBurned" to score.totalCaloriesBurned,
         // コンディションスコア
         "conditionScore" to score.conditionScore,
         "sleepScore" to score.sleepScore,
@@ -509,6 +510,7 @@ class FirestoreScoreRepository : ScoreRepository {
             exerciseCountScore = (data["exerciseCountScore"] as? Number)?.toInt() ?: 0,
             totalMinutes = (data["totalMinutes"] as? Number)?.toInt() ?: 0,
             exerciseCount = (data["exerciseCount"] as? Number)?.toInt() ?: 0,
+            totalCaloriesBurned = (data["totalCaloriesBurned"] as? Number)?.toInt() ?: 0,
             // コンディションスコア
             conditionScore = (data["conditionScore"] as? Number)?.toInt() ?: 0,
             sleepScore = (data["sleepScore"] as? Number)?.toInt() ?: 0,

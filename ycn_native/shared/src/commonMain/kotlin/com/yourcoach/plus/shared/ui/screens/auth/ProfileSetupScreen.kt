@@ -112,7 +112,7 @@ data class ProfileSetupScreen(val userId: String) : Screen {
                             text = when (state.currentStep) {
                                 1 -> "プロフィール設定"
                                 2 -> "ルーティン設定"
-                                3 -> "食事スロット設定"
+                                3 -> "クエスト連動設定"
                                 else -> ""
                             },
                             style = MaterialTheme.typography.titleMedium,
@@ -993,7 +993,7 @@ private fun RoutineStep(state: ProfileSetupState, screenModel: ProfileSetupScree
     }
 }
 
-// ========== ステップ3: 食事スロット設定 ==========
+// ========== ステップ3: クエスト連動設定 ==========
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MealSlotStep(
@@ -1133,25 +1133,6 @@ private fun MealSlotStep(
                     Text("タイムラインを自動生成")
                 }
             }
-        }
-
-        // 食事スロット一覧
-        item {
-            Text(
-                text = "食事設定（${state.mealsPerDay}食）",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        items(state.mealSlotConfig.slots.sortedBy { it.slotNumber }.size) { index ->
-            val slot = state.mealSlotConfig.slots.sortedBy { it.slotNumber }[index]
-            MealSlotCard(
-                slot = slot,
-                onFoodChoiceChange = { choice ->
-                    screenModel.updateSlotFoodChoice(slot.slotNumber, choice)
-                }
-            )
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -1324,102 +1305,6 @@ private fun SimpleTimePickerDialog(
             }
         }
     )
-}
-
-@Composable
-private fun MealSlotCard(
-    slot: MealSlot,
-    onFoodChoiceChange: (FoodChoice) -> Unit
-) {
-    var showFoodChoiceMenu by remember { mutableStateOf(false) }
-    val foodChoiceColor = when (slot.defaultFoodChoice) {
-        FoodChoice.KITCHEN -> ScoreProtein
-        FoodChoice.STORE -> ScoreGL
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Restaurant,
-                contentDescription = null,
-                tint = ScoreCarbs,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = slot.getDisplayName(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box {
-                        Surface(
-                            color = foodChoiceColor.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(4.dp),
-                            modifier = Modifier.clickable { showFoodChoiceMenu = true }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = when (slot.defaultFoodChoice) {
-                                        FoodChoice.KITCHEN -> "自炊"
-                                        FoodChoice.STORE -> "中食"
-                                    },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = foodChoiceColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Icon(
-                                    Icons.Default.ArrowDropDown,
-                                    contentDescription = null,
-                                    tint = foodChoiceColor,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                        DropdownMenu(
-                            expanded = showFoodChoiceMenu,
-                            onDismissRequest = { showFoodChoiceMenu = false }
-                        ) {
-                            FoodChoice.entries.forEach { choice ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            text = choice.displayName,
-                                            color = when (choice) {
-                                                FoodChoice.KITCHEN -> ScoreProtein
-                                                FoodChoice.STORE -> ScoreGL
-                                            }
-                                        )
-                                    },
-                                    onClick = {
-                                        onFoodChoiceChange(choice)
-                                        showFoodChoiceMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 // 旧メソッドの後方互換性（updateStyleはもう使わないがコンパイルエラー回避）

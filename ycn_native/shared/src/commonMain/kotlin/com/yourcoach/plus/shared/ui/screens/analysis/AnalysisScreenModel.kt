@@ -61,6 +61,8 @@ data class AnalysisUiState(
     val totalGL: Float = 0f,
     val vitaminAvg: Float = 0f,
     val mineralAvg: Float = 0f,
+    // 運動部位
+    val todaySplitType: String? = null,
     // Level
     val levelUpMessage: String? = null
 ) {
@@ -80,7 +82,8 @@ class AnalysisScreenModel(
     private val geminiService: GeminiService? = null,
     private val analysisRepository: AnalysisRepository? = null,
     private val directiveRepository: DirectiveRepository? = null,
-    private val badgeRepository: BadgeRepository? = null
+    private val badgeRepository: BadgeRepository? = null,
+    private val routineRepository: RoutineRepository? = null
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(AnalysisUiState())
@@ -147,6 +150,12 @@ class AnalysisScreenModel(
             scoreRepository?.getRestDayStatus(userId, today)
                 ?.onSuccess { isRestDay ->
                     _uiState.update { it.copy(isRestDay = isRestDay) }
+                }
+
+            // Load today's routine (split type)
+            routineRepository?.getRoutineForDate(userId, today)
+                ?.onSuccess { routineDay ->
+                    _uiState.update { it.copy(todaySplitType = routineDay?.splitType) }
                 }
 
             // 微量栄養素を計算
@@ -494,7 +503,8 @@ class AnalysisScreenModel(
             }.joinToString("\n")
         } else ""
 
-        // 運動情報
+        // 運動情報（消費カロリー付き）
+        val totalCaloriesBurned = workouts.sumOf { it.totalCaloriesBurned }
         val workoutsText = if (workouts.isNotEmpty()) {
             workouts.map { w ->
                 val typeName = when (w.type.name) {
@@ -512,9 +522,9 @@ class AnalysisScreenModel(
                         if ((ex.weight ?: 0f) > 0f) "${ex.weight}kg" else null,
                         if ((ex.duration ?: 0) > 0) "${ex.duration}分" else null
                     ).joinToString("×")
-                    "${ex.name}$details"
+                    "${ex.name}$details(~${ex.caloriesBurned}kcal)"
                 }
-                "- $typeName: $exercises（${w.totalDuration}分）"
+                "- $typeName: $exercises（${w.totalDuration}分, 計${w.totalCaloriesBurned}kcal）"
             }.joinToString("\n")
         } else ""
 
@@ -571,13 +581,15 @@ $predictionText
         // 食物繊維目標の60%
         val fiberThreshold = (micro.fiberTarget * 0.6f).roundToInt()
 
-        return """あなたはボディメイク専門のハイレベルなパーソナルトレーナーです。
-ユーザーの本日の食事・運動記録、および詳細な栄養品質データ（ミクロ+）を分析し、JSON形式でフィードバックを提供してください。
+        return """あなたはボディメイク専門の、習慣化を成功させるパーソナルコーチです。
+ユーザーはアプリが提示した「食事・運動クエスト（メニュー）」を日々実行しています。
+本日の記録と詳細な栄養品質データ（ミクロ+）を分析し、PDCAサイクルを回すためのフィードバックをJSON形式で提供してください。
 
 ## トーンとマナー
-- ユーザーのモチベーションを維持する、励ましと共感のある口調。
-- 専門的かつ具体的。
-- 目的（減量/増量）に合わせたアドバイスを行うこと。
+- **最優先事項:** ユーザーが「明日もアプリを開いてメニューを実行しよう」と思えるモチベーション管理。
+- 厳しい指導よりも、行動できたこと（Do）への称賛を優先する。
+- 専門用語（DIAAS, GL値など）を使う場合は、必ず「つまりどういうことか」をわかりやすく噛み砕くこと。
+- 目的（減量/増量）に合わせ、長期的な視点でのアドバイスを行う。
 
 ## ユーザープロファイル
 - 目的: $goalName
@@ -586,16 +598,17 @@ $predictionText
 - 年齢: ${profile?.age ?: "不明"}歳
 - 体重: ${profile?.weight ?: "不明"}kg（目標: ${profile?.targetWeight ?: "不明"}kg）
 - LBM（除脂肪体重）: ${lbmStr}kg
+${if (state.todaySplitType != null) "- 本日のトレーニング部位: ${state.todaySplitType}" else ""}
 ${if (isRestDay) "- 本日は休養日（無理な運動は提案せず、回復を優先するコメントをすること）" else "- 本日はトレーニング推奨日"}
 $lbmSection
 
-## 今日の目標（マクロ）
-- カロリー: ${targetCalories}kcal
+## 今日の目標（Plan）
+- カロリー: ${targetCalories}kcal（※トレーニング消費分を含む摂取目標。運動消費を差し引かないこと）
 - P（タンパク質）: ${targetProtein.roundToInt()}g
 - F（脂質）: ${targetFat.roundToInt()}g
 - C（炭水化物）: ${targetCarbs.roundToInt()}g
 
-## 今日の実績（マクロ）
+## 今日の実績（Do）
 - カロリー: ${score.totalCalories.roundToInt()}kcal（達成率: ${calPercent}%）
 - P: ${score.totalProtein.roundToInt()}g（達成率: ${pPercent}%）
 - F: ${score.totalFat.roundToInt()}g（達成率: ${fPercent}%）
@@ -609,9 +622,14 @@ ${mealsText.ifEmpty { "記録なし（記録をつけるとより正確なアド
 【運動記録】
 ${workoutsText.ifEmpty { "記録なし" }}
 
-## 評価ロジック（厳格モード）
+【運動消費（参考）】
+- 運動消費: ${totalCaloriesBurned}kcal（MET計算）
+- ※ 目標カロリーにはトレーニング消費分が事前加算済み。摂取カロリーから運動消費を差し引いて評価しないこと。
+- ※ 評価は「摂取カロリー vs 目標カロリー」で行う。運動記録がない場合、計画した運動を実施していない可能性がある。
 
-### ステップ1: マクロ評価（ベースランク）
+## 評価ロジック（習慣化重視モード）
+
+### ステップ1: ベース評価（S/A/B/C/D）
 上から順に判定し、最初に該当したランクを採用:
 - **S**: 全マクロが目標の 95%〜105% 以内（完璧）
 - **A**: 全マクロが目標の 90%〜110% 以内
@@ -619,38 +637,40 @@ ${workoutsText.ifEmpty { "記録なし" }}
 - **C**: いずれかが目標の 70%〜130% 以内（Bの範囲外）
 - **D**: いずれかが目標の 60%未満 または 140%超
 
-※ ただし、減量中でカロリー/脂質が目標より低い場合、またはバルクアップ中で目標より高い場合は、評価を1ランク上げてもよい（柔軟な評価）。
+※ ユーザーが提示されたメニュー通りに行動した形跡がある場合は、多少の数値ズレがあってもランクを下げないこと（努力点の加味）。
+※ 減量中のカロリー不足、増量中のオーバーカロリーは許容範囲を広く取る。
 
-### ステップ2: ミクロ+によるランク調整（重要）
-以下の「質の悪い」条件に該当する場合、ベースランクから**1段階ダウン**させてください（例: A → B）:
-1. DIAASが 0.75未満（タンパク質の質が低い）
-2. 食物繊維が目標の60%未満（${fiberThreshold}g未満、腸内環境悪化のリスク）
-3. GL値が 120超（血糖値スパイクのリスク）
-4. 脂肪酸スコアが 2以下（悪い脂質バランス）
+### ステップ2: 品質補正（ミクロ視点）
+以下の基準で質が著しく低い場合は、ランクを保留評価（例: A-）とし、アドバイス欄で改善点を具体的に言及する:
+1. DIAASが 0.75未満 → つまり「タンパク質の種類が偏っている」
+2. 食物繊維が目標の60%未満（${fiberThreshold}g未満）→ つまり「野菜や穀物が足りていない」
+3. GL値が 120超 → つまり「血糖値が急上昇しやすい食事だった」
+4. 脂肪酸スコアが 2以下 → つまり「脂質の質が良くない（飽和脂肪酸が多い）」
 
-### ステップ3: アドバイスの生成
-- 数値だけでなく、【食事記録】にある**具体的なメニュー名**を挙げて原因を指摘すること（例：「昼食のラーメンが脂質超過の原因です」）。
-- 【運動記録】の内容を踏まえ、消費カロリーとのバランスに言及すること。
+### ステップ3: 原因特定とフィードバック
+- 【食事記録】にある**具体的なメニュー名**を挙げて「何が良かった/悪かった」を指摘すること。
+- 【運動記録】があれば、実施内容を褒める。記録がない場合は「計画した運動が未実施の可能性があり、目標カロリーが過剰になっている」と指摘すること。
+- 摂取カロリー vs 目標カロリーで評価する（運動消費を差し引かない）。
 - ミクロ+指標が高ければそこも褒める。
 
 ## 出力形式（JSON Schema）
 {
   "daily_summary": {
-    "grade": "S/A/B/C/D",
-    "grade_adjustment_reason": "ランクダウンした場合の理由（例：PFCは完璧ですが、食物繊維不足のため1ランク下げています）。調整なしの場合は「なし」",
+    "grade": "S/A/B/C/D（品質補正ありの場合はA-のように表記）",
+    "grade_adjustment_reason": "ランク判定の根拠（数値だけでなく、行動面も評価すること）。調整なしの場合は「なし」",
     "comment": "50文字以内の総評（LBM変化予測にも触れると良い）"
   },
   "good_points": [
-    "良かった点（具体的な行動や数値を褒める）",
+    "良かった点（メニューの遵守、栄養バランス、運動への取り組みなど具体的に褒める）",
     "良かった点2"
   ],
   "improvement_points": [
     {
-      "point": "改善点（例：脂質が目標を20gオーバーしています）",
-      "suggestion": "具体的な改善案（例：夕食のドレッシングをノンオイルに変えましょう）"
+      "point": "改善点（具体的なメニュー名を挙げて指摘）",
+      "suggestion": "具体的な改善策（例：明日のランチのドレッシングを半分にする、等）"
     }
   ],
-  "advice": "明日に向けた具体的かつ前向きなアドバイス（質と量の両面から・100文字以内）"
+  "action_plan": "明日のクエスト（食事・運動）に向けた具体的な心構えや微調整の指示。抽象論ではなく『明日はこうして』と指示する形で・100文字以内"
 }
 
 Output valid JSON only. Do not include markdown formatting or code blocks."""
@@ -703,13 +723,14 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
                     appendLine()
                 }
 
-                // 明日へのアドバイス
-                val advice = root["advice"]?.jsonPrimitive?.contentOrNull
-                if (!advice.isNullOrBlank()) {
+                // 明日のアクションプラン
+                val actionPlan = root["action_plan"]?.jsonPrimitive?.contentOrNull
+                    ?: root["advice"]?.jsonPrimitive?.contentOrNull
+                if (!actionPlan.isNullOrBlank()) {
                     appendLine("---")
                     appendLine()
-                    appendLine("## 明日に向けて")
-                    appendLine(advice)
+                    appendLine("## 明日のアクション")
+                    appendLine(actionPlan)
                 }
             }
         } catch (e: Exception) {

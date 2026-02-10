@@ -9,6 +9,7 @@ import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.*
 import com.yourcoach.plus.shared.domain.usecase.NutritionCalculator
 import com.yourcoach.plus.shared.util.DateUtil
+import com.yourcoach.plus.shared.util.MetCalorieCalculator
 import com.yourcoach.plus.shared.util.invokeCloudFunction
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.async
@@ -449,8 +450,8 @@ class DashboardScreenModel(
         val mealsPerDay = profile?.mealsPerDay ?: 5
         val trainingAfterMeal = if (isRestDay || trainingMinutes == null) null else (profile?.trainingAfterMeal ?: 3)
 
+        // Directiveがある場合のみタイムラインを構築（未生成時は空）
         if (directive != null && directive.message.isNotBlank()) {
-            // Directiveがある場合: テキストからパース（Android版 parseDirectiveToTimelineItems 相当）
             val directiveItems = parseDirectiveToTimelineItems(
                 directive = directive,
                 currentTimeMinutes = currentTimeMinutes,
@@ -460,68 +461,6 @@ class DashboardScreenModel(
                 sleepMinutes = sleepMinutes
             )
             items.addAll(directiveItems)
-        } else if (wakeUpMinutes != null && sleepMinutes != null) {
-            // Directiveがない場合: ユーザー設定からデフォルトタイムラインを生成
-            val mealSlotConfig = MealSlotConfig.createTimelineRoutine(
-                mealsPerDay = mealsPerDay,
-                trainingAfterMeal = trainingAfterMeal
-            )
-            val allSlotTimes = mealSlotConfig.calculateAllSlotTimes(wakeUpMinutes, trainingMinutes, sleepMinutes)
-            val recordedMealCount = meals.size
-
-            mealSlotConfig.slots.forEach { slot ->
-                val actualTime = allSlotTimes[slot.slotNumber] ?: return@forEach
-                val isTrainingRelated = trainingAfterMeal != null &&
-                    (slot.slotNumber == trainingAfterMeal || slot.slotNumber == trainingAfterMeal + 1)
-                val isCompleted = slot.slotNumber <= recordedMealCount
-                val isNext = !isCompleted && items.none { it.status == TimelineItemStatus.CURRENT } &&
-                    actualTime >= currentTimeMinutes - 30
-                val status = when {
-                    isCompleted -> TimelineItemStatus.COMPLETED
-                    isNext -> TimelineItemStatus.CURRENT
-                    else -> TimelineItemStatus.UPCOMING
-                }
-
-                items.add(UnifiedTimelineItem(
-                    id = "slot_${slot.slotNumber}",
-                    type = TimelineItemType.MEAL,
-                    timeMinutes = actualTime,
-                    timeString = MealSlot.minutesToTimeString(actualTime),
-                    title = slot.getDisplayName(),
-                    subtitle = null,
-                    status = status,
-                    isTrainingRelated = isTrainingRelated,
-                    slotInfo = TimelineSlotInfo(
-                        slotNumber = slot.slotNumber,
-                        displayName = slot.getDisplayName(),
-                        timeMinutes = actualTime,
-                        timeString = MealSlot.minutesToTimeString(actualTime),
-                        foodChoice = slot.defaultFoodChoice,
-                        isTrainingRelated = isTrainingRelated,
-                        isCompleted = isCompleted
-                    )
-                ))
-            }
-
-            // トレーニングをタイムラインに挿入
-            if (trainingMinutes != null) {
-                val workoutStatus = when {
-                    workouts.isNotEmpty() -> TimelineItemStatus.COMPLETED
-                    trainingMinutes <= currentTimeMinutes -> TimelineItemStatus.CURRENT
-                    else -> TimelineItemStatus.UPCOMING
-                }
-                items.add(UnifiedTimelineItem(
-                    id = "workout_routine",
-                    type = TimelineItemType.WORKOUT,
-                    timeMinutes = trainingMinutes,
-                    timeString = MealSlot.minutesToTimeString(trainingMinutes),
-                    title = "${todayRoutine?.splitType ?: ""}トレ",
-                    subtitle = null,
-                    status = workoutStatus,
-                    isTrainingRelated = true,
-                    linkedWorkout = workouts.firstOrNull()
-                ))
-            }
         }
 
         // 実際の食事記録をマージ（時刻±30分で既存スロットとマッチ）
@@ -657,7 +596,6 @@ class DashboardScreenModel(
                             displayName = title,
                             timeMinutes = timeMinutes,
                             timeString = timeStr ?: MealSlot.minutesToTimeString(timeMinutes),
-                            foodChoice = FoodChoice.KITCHEN,
                             isTrainingRelated = isTrainingRelated,
                             isCompleted = isCompleted
                         )
@@ -1358,12 +1296,21 @@ class DashboardScreenModel(
         val amount = item.amount?.toInt() ?: 10
         val unit = item.unit ?: "回"
 
+        val sets = if (unit == "セット") amount else 3
+        val reps = if (unit == "回") amount else 10
+        val splitType = _uiState.value.todayRoutine?.splitType
+        val category = MetCalorieCalculator.inferExerciseCategory(exerciseName, splitType)
+        val bodyWeight = _uiState.value.user?.profile?.weight ?: 70f
+        val duration = MetCalorieCalculator.estimateStrengthDuration(category, sets, reps)
+        val calories = MetCalorieCalculator.calculateCalories(category, bodyWeight, duration, WorkoutIntensity.MODERATE)
+        val workoutType = MetCalorieCalculator.inferWorkoutType(category)
+
         val exercise = Exercise(
             name = exerciseName,
-            category = ExerciseCategory.OTHER,
-            sets = if (unit == "セット") amount else 3,
-            reps = if (unit == "回") amount else 10,
-            caloriesBurned = 50
+            category = category,
+            sets = sets,
+            reps = reps,
+            caloriesBurned = calories
         )
 
         val selectedDate = _uiState.value.date
@@ -1374,10 +1321,10 @@ class DashboardScreenModel(
             id = "",
             userId = userId,
             name = "指示書: $exerciseName",
-            type = WorkoutType.STRENGTH,
+            type = workoutType,
             exercises = listOf(exercise),
-            totalDuration = 10,
-            totalCaloriesBurned = 50,
+            totalDuration = duration,
+            totalCaloriesBurned = calories,
             intensity = WorkoutIntensity.MODERATE,
             timestamp = targetTimestamp,
             createdAt = Clock.System.now().toEpochMilliseconds()
@@ -1401,12 +1348,21 @@ class DashboardScreenModel(
         val amount = item.amount?.toInt() ?: 10
         val unit = item.unit ?: "回"
 
+        val sets = if (unit == "セット") amount else 3
+        val reps = if (unit == "回") amount else 10
+        val splitType = _uiState.value.todayRoutine?.splitType
+        val category = MetCalorieCalculator.inferExerciseCategory(exerciseName, splitType)
+        val bodyWeight = _uiState.value.user?.profile?.weight ?: 70f
+        val duration = MetCalorieCalculator.estimateStrengthDuration(category, sets, reps)
+        val calories = MetCalorieCalculator.calculateCalories(category, bodyWeight, duration, WorkoutIntensity.MODERATE)
+        val workoutType = MetCalorieCalculator.inferWorkoutType(category)
+
         val exercise = Exercise(
             name = exerciseName,
-            category = ExerciseCategory.OTHER,
-            sets = if (unit == "セット") amount else 3,
-            reps = if (unit == "回") amount else 10,
-            caloriesBurned = 50
+            category = category,
+            sets = sets,
+            reps = reps,
+            caloriesBurned = calories
         )
 
         val selectedDate = _uiState.value.date
@@ -1416,10 +1372,10 @@ class DashboardScreenModel(
             id = "",
             userId = userId,
             name = "指示書: $exerciseName",
-            type = WorkoutType.STRENGTH,
+            type = workoutType,
             exercises = listOf(exercise),
-            totalDuration = 10,
-            totalCaloriesBurned = 50,
+            totalDuration = duration,
+            totalCaloriesBurned = calories,
             intensity = WorkoutIntensity.MODERATE,
             timestamp = targetTimestamp,
             createdAt = Clock.System.now().toEpochMilliseconds()

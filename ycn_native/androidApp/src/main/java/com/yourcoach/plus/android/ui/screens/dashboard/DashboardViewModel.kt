@@ -17,7 +17,6 @@ import com.yourcoach.plus.shared.domain.model.Workout
 import com.yourcoach.plus.shared.domain.model.RoutineDay
 import com.yourcoach.plus.shared.domain.model.MealSlot
 import com.yourcoach.plus.shared.domain.model.MealSlotConfig
-import com.yourcoach.plus.shared.domain.model.FoodChoice
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.BadgeRepository
@@ -36,6 +35,8 @@ import com.yourcoach.plus.shared.data.database.FoodDatabase
 import com.yourcoach.plus.shared.data.database.FoodItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -205,7 +206,6 @@ data class TimelineSlotInfo(
     val displayName: String,
     val timeMinutes: Int,  // 0:00からの分数
     val timeString: String,  // "07:30"形式
-    val foodChoice: FoodChoice,
     val isTrainingRelated: Boolean,  // トレ前後か
     val isCompleted: Boolean = false,  // 該当食事が記録済みか
     val relativeTimeLabel: String? = null,  // "起床+30分"などの表示用
@@ -2695,7 +2695,6 @@ class DashboardViewModel(
                 displayName = slot.getDisplayName(),
                 timeMinutes = actualTime,
                 timeString = MealSlot.minutesToTimeString(actualTime),
-                foodChoice = slot.defaultFoodChoice,
                 isTrainingRelated = isTrainingRelated,
                 isCompleted = slot.slotNumber <= recordedMealCount,
                 relativeTimeLabel = relativeLabel,
@@ -2908,63 +2907,35 @@ class DashboardViewModel(
 
                 android.util.Log.d("DashboardVM", "generateQuest: 呼び出し開始 $data")
 
-                functions
-                    .getHttpsCallable("generateQuest")
-                    .withTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
-                    .call(data)
-                    .addOnSuccessListener { result ->
-                        viewModelScope.launch {
-                            try {
-                                val response = result.data as? Map<*, *>
-                                android.util.Log.d("DashboardVM", "=== generateQuest レスポンス ===")
-                                android.util.Log.d("DashboardVM", "success: ${response?.get("success")}")
-                                android.util.Log.d("DashboardVM", "date: ${response?.get("date")}")
-                                android.util.Log.d("DashboardVM", "directiveMessage:\n${response?.get("directiveMessage")}")
+                val result = withTimeout(300_000L) {
+                    functions
+                        .getHttpsCallable("generateQuest")
+                        .withTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
+                        .call(data)
+                        .await()
+                }
 
-                                // questの詳細をログ出力
-                                val quest = response?.get("quest") as? Map<*, *>
-                                quest?.let { q ->
-                                    val meals = q["meals"] as? List<*>
-                                    android.util.Log.d("DashboardVM", "meals count: ${meals?.size}")
-                                    meals?.forEachIndexed { i, meal ->
-                                        android.util.Log.d("DashboardVM", "meal[$i]: $meal")
-                                    }
-                                    android.util.Log.d("DashboardVM", "workout: ${q["workout"]}")
-                                    android.util.Log.d("DashboardVM", "sleep: ${q["sleep"]}")
-                                }
-                                android.util.Log.d("DashboardVM", "==============================")
+                val response = result.data as? Map<*, *>
+                android.util.Log.d("DashboardVM", "=== generateQuest レスポンス ===")
+                android.util.Log.d("DashboardVM", "success: ${response?.get("success")}")
+                android.util.Log.d("DashboardVM", "directiveMessage:\n${response?.get("directiveMessage")}")
 
-                                // Cloud Functionが既にFirestoreに保存済み
-                                // クライアント側での二重保存は不要
+                _uiState.update { it.copy(isGeneratingQuest = false) }
 
-                                _uiState.update { it.copy(isGeneratingQuest = false) }
+                // クエスト生成で経験値獲得
+                grantExperience("クエスト生成")
 
-                                // クエスト生成で経験値獲得
-                                grantExperience("クエスト生成")
-
-                                // 翌日に切り替えて即時反映（Firestoreから最新データを取得）
-                                changeDate(targetDate)
-                                android.util.Log.d("DashboardVM", "generateQuest: 翌日 $targetDate に切り替え")
-                            } catch (e: Exception) {
-                                android.util.Log.e("DashboardVM", "generateQuest: 保存エラー", e)
-                                _uiState.update {
-                                    it.copy(
-                                        isGeneratingQuest = false,
-                                        questGenerationError = "クエスト保存エラー: ${e.message}"
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    .addOnFailureListener { e ->
-                        android.util.Log.e("DashboardVM", "generateQuest: Cloud Function エラー", e)
-                        _uiState.update {
-                            it.copy(
-                                isGeneratingQuest = false,
-                                questGenerationError = "クエスト生成エラー: ${e.message}"
-                            )
-                        }
-                    }
+                // 翌日に切り替えて即時反映（Firestoreから最新データを取得）
+                changeDate(targetDate)
+                android.util.Log.d("DashboardVM", "generateQuest: 翌日 $targetDate に切り替え")
+            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                android.util.Log.e("DashboardVM", "generateQuest: タイムアウト")
+                _uiState.update {
+                    it.copy(
+                        isGeneratingQuest = false,
+                        questGenerationError = "クエスト生成がタイムアウトしました。再度お試しください。"
+                    )
+                }
             } catch (e: Exception) {
                 android.util.Log.e("DashboardVM", "generateQuest: 例外発生", e)
                 _uiState.update {
@@ -3105,61 +3076,10 @@ class DashboardViewModel(
     ): List<UnifiedTimelineItem> {
         val items = mutableListOf<UnifiedTimelineItem>()
 
-        // Directiveがある場合はDirectiveからタイムラインを構築
+        // Directiveがある場合のみタイムラインを構築（未生成時は空）
         if (directive != null && directive.message.isNotBlank()) {
             val directiveItems = parseDirectiveToTimelineItems(directive, currentTimeMinutes, meals, workouts)
             items.addAll(directiveItems)
-        } else {
-            // Directiveがない場合はMealSlotConfig（timelineSlots）を使用
-            timelineSlots.forEach { slot ->
-                val isNext = !slot.isCompleted &&
-                    (items.none { it.status == TimelineItemStatus.CURRENT } &&
-                     slot.timeMinutes >= currentTimeMinutes - 30)
-
-                val status = when {
-                    slot.isCompleted -> TimelineItemStatus.COMPLETED
-                    isNext -> TimelineItemStatus.CURRENT
-                    else -> TimelineItemStatus.UPCOMING
-                }
-
-                items.add(UnifiedTimelineItem(
-                    id = "slot_${slot.slotNumber}",
-                    type = TimelineItemType.MEAL,
-                    timeMinutes = slot.timeMinutes,
-                    timeString = slot.timeString,
-                    title = slot.displayName,
-                    subtitle = slot.foodExamples.joinToString(" + "),
-                    status = status,
-                    isTrainingRelated = slot.isTrainingRelated,
-                    actionItems = null,
-                    slotInfo = slot
-                ))
-            }
-
-            // トレーニングをタイムラインに挿入（Directiveがない場合のみ）
-            if (trainingTimeMinutes != null) {
-                val todayRoutine = _uiState.value.todayRoutine
-                val workoutStatus = if (workouts.isNotEmpty()) TimelineItemStatus.COMPLETED
-                    else if (trainingTimeMinutes <= currentTimeMinutes) TimelineItemStatus.CURRENT
-                    else TimelineItemStatus.UPCOMING
-
-                val exerciseNames = todayRoutine?.workouts
-                    ?.flatMap { it.exercises }
-                    ?.take(3)
-                    ?.joinToString(" / ") { it.name }
-
-                items.add(UnifiedTimelineItem(
-                    id = "workout_routine",
-                    type = TimelineItemType.WORKOUT,
-                    timeMinutes = trainingTimeMinutes,
-                    timeString = minutesToTimeString(trainingTimeMinutes),
-                    title = "${todayRoutine?.splitType ?: ""}トレ",
-                    subtitle = exerciseNames,
-                    status = workoutStatus,
-                    isTrainingRelated = true,
-                    linkedWorkout = workouts.firstOrNull()
-                ))
-            }
         }
 
         // 実際の食事記録を時刻で挿入（常に追加）

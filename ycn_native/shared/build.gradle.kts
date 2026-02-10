@@ -83,6 +83,14 @@ kotlin {
             implementation(libs.credentials)
             implementation(libs.credentials.play.services.auth)
             implementation(libs.googleid)
+
+            // Image loading (Coil)
+            implementation(libs.coil.compose)
+
+            // Firebase (Android native APIs used in androidMain)
+            implementation("com.google.firebase:firebase-messaging-ktx:24.0.3")
+            implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
+            implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
         }
 
         iosMain.dependencies {

@@ -122,7 +122,6 @@ import com.yourcoach.plus.android.ui.components.UnifiedTimeline
 import com.yourcoach.plus.android.ui.components.BottomBarState
 import com.yourcoach.plus.android.ui.components.MicroDetailSheet
 import com.yourcoach.plus.shared.domain.model.PfcRatio
-import com.yourcoach.plus.shared.domain.model.FoodChoice
 import com.yourcoach.plus.shared.util.DateUtil
 import org.koin.androidx.compose.koinViewModel
 
@@ -3333,16 +3332,7 @@ private fun TimelineCard(
                                 fontWeight = FontWeight.Bold,
                                 color = Primary
                             )
-                            // 自炊/中食
-                            Text(
-                                text = nextMealSlot.foodChoice.displayName,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = when (nextMealSlot.foodChoice) {
-                                    FoodChoice.KITCHEN -> ScoreProtein
-                                    FoodChoice.STORE -> ScoreGL
-                                }
-                            )
-                        }
+}
                     }
                 }
             }
@@ -3480,19 +3470,6 @@ private fun TimelineSlotRow(
                 Spacer(modifier = Modifier.width(4.dp))
             }
 
-            // 自炊/中食
-            Text(
-                text = when (slot.foodChoice) {
-                    FoodChoice.KITCHEN -> "自炊"
-                    FoodChoice.STORE -> "中食"
-                },
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = when (slot.foodChoice) {
-                    FoodChoice.KITCHEN -> ScoreProtein
-                    FoodChoice.STORE -> ScoreGL
-                }
-            )
         }
 
         // 食品例（未完了の場合のみ表示）
@@ -3583,6 +3560,14 @@ private fun WelcomeCard(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "詳しくは 設定 > その他 > ヘルプ から確認できます",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            )
         }
     }
 }

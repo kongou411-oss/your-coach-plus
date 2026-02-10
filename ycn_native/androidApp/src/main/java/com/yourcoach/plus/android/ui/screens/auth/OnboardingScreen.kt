@@ -244,7 +244,7 @@ fun OnboardingScreen(
                         text = when (currentStep) {
                             1 -> "プロフィール設定"
                             2 -> "ルーティン設定"
-                            3 -> "食事スロット設定"
+                            3 -> "クエスト連動設定"
                             else -> ""
                         },
                         style = MaterialTheme.typography.titleMedium,
@@ -1281,7 +1281,7 @@ private fun RoutineStep(
     }
 }
 
-// ========== ステップ3: 食事スロット設定 ==========
+// ========== ステップ3: クエスト連動設定 ==========
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MealSlotStep(
@@ -1477,28 +1477,6 @@ private fun MealSlotStep(
             }
         }
 
-        // 食事スロット一覧
-        item {
-            Text(
-                text = "食事設定（${mealsPerDay}食）",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        items(mealSlotConfig.slots.sortedBy { it.slotNumber }.size) { index ->
-            val slot = mealSlotConfig.slots.sortedBy { it.slotNumber }[index]
-            MealSlotCard(
-                slot = slot,
-                onFoodChoiceChange = { choice ->
-                    val updatedSlots = mealSlotConfig.slots.map {
-                        if (it.slotNumber == slot.slotNumber) it.copy(defaultFoodChoice = choice) else it
-                    }
-                    onMealSlotConfigChange(mealSlotConfig.copy(slots = updatedSlots))
-                }
-            )
-        }
-
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 
@@ -1656,62 +1634,6 @@ private fun TimePickerDialog(
             }
         }
     )
-}
-
-@Composable
-private fun MealSlotCard(
-    slot: MealSlot,
-    onFoodChoiceChange: (FoodChoice) -> Unit
-) {
-    // TODO: FoodChoice 非表示中 - ロジック接続時に復活
-    // var showFoodChoiceMenu by remember { mutableStateOf(false) }
-    // val foodChoiceColor = when (slot.defaultFoodChoice) {
-    //     FoodChoice.KITCHEN -> ScoreProtein
-    //     FoodChoice.STORE -> ScoreGL
-    // }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Restaurant,
-                contentDescription = null,
-                tint = ScoreCarbs,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = slot.getDisplayName(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                // TODO: FoodChoice UI 非表示中 - ロジック接続時に復活
-                // Row(
-                //     verticalAlignment = Alignment.CenterVertically,
-                //     horizontalArrangement = Arrangement.spacedBy(8.dp)
-                // ) {
-                //     Box {
-                //         Surface(
-                //             color = foodChoiceColor.copy(alpha = 0.2f),
-                //             shape = RoundedCornerShape(4.dp),
-                //             modifier = Modifier.clickable { showFoodChoiceMenu = true }
-                //         ) { ... }
-                //         DropdownMenu(...) { ... }
-                //     }
-                // }
-            }
-        }
-    }
 }
 
 // 後方互換性のための旧シグネチャ（userId不要バージョン）

@@ -3,30 +3,15 @@ package com.yourcoach.plus.shared.domain.model
 import kotlinx.serialization.Serializable
 
 /**
- * 食事の調達スタイル（Kitchen/Store 2択）
- * トレ後プロテインはtrainingAfterMeal設定時に自動挿入されるため、選択肢には含めない
- */
-@Serializable
-enum class FoodChoice(val displayName: String, val description: String) {
-    KITCHEN("自炊", "鶏むね肉+白米など。スーパーで食材を買って調理"),
-    STORE("中食・外食", "サラダチキン+おにぎりなど。コンビニ・惣菜・外食")
-}
-
-/**
  * 食事スロット設定
  * 食事1、食事2...のように食事回数に基づく
  */
 @Serializable
 data class MealSlot(
     val slotNumber: Int,                  // 食事番号（1, 2, 3...）
-    val mode: SlotMode = SlotMode.AI,
-    val templateId: String? = null,       // 固定モード時のテンプレートID
-    val templateName: String? = null,     // 表示用テンプレート名
-    val routineLinked: Boolean = false,   // ルーティン（トレーニング部位）と連動するか
     // タイムライン設定
     val relativeTime: String? = null,     // 相対時刻（例: "wake+30", "training-120", "sleep-120"）
     val absoluteTime: String? = null,     // 絶対時刻（例: "12:00"）- relativeTimeより優先度低
-    val defaultFoodChoice: FoodChoice = FoodChoice.KITCHEN  // デフォルトのA/B/C択
 ) {
     /**
      * 表示名を取得（食事1、食事2...）
@@ -116,16 +101,6 @@ data class MealSlot(
 }
 
 /**
- * スロットモード
- */
-@Serializable
-enum class SlotMode(val displayName: String) {
-    FIXED("固定"),           // テンプレートを使用
-    AI("AI提案"),            // AIが生成
-    ROUTINE_LINKED("ルーティン連動")  // トレーニング部位に応じて変更
-}
-
-/**
  * ユーザーの食事スロット設定全体
  */
 @Serializable
@@ -165,7 +140,7 @@ data class MealSlotConfig(
          */
         fun createDefault(mealsPerDay: Int): MealSlotConfig {
             val slots = (1..mealsPerDay).map { num ->
-                MealSlot(slotNumber = num, mode = SlotMode.AI)
+                MealSlot(slotNumber = num)
             }
             return MealSlotConfig(slots = slots, mealsPerDay = mealsPerDay)
         }
@@ -177,7 +152,6 @@ data class MealSlotConfig(
          */
         fun createTimelineRoutine(mealsPerDay: Int, trainingAfterMeal: Int?): MealSlotConfig {
             val slots = (1..mealsPerDay).map { num ->
-                // 全スロットKITCHENがデフォルト（トレ後プロテインはAI分析で自動挿入）
                 val relativeTime = when {
                     // 食事1: 起床時刻
                     num == 1 -> "wake+0"
@@ -194,13 +168,10 @@ data class MealSlotConfig(
                     // その他: 前の食事から3時間後
                     else -> "meal${num - 1}+180"
                 }
-                val foodChoice = FoodChoice.KITCHEN
 
                 MealSlot(
                     slotNumber = num,
-                    mode = SlotMode.AI,
-                    relativeTime = relativeTime,
-                    defaultFoodChoice = foodChoice
+                    relativeTime = relativeTime
                 )
             }
             return MealSlotConfig(slots = slots, mealsPerDay = mealsPerDay)
@@ -208,43 +179,9 @@ data class MealSlotConfig(
     }
 
     /**
-     * 固定スロットのみ取得
-     */
-    fun getFixedSlots(): List<MealSlot> = slots.filter { it.mode == SlotMode.FIXED }
-
-    /**
-     * AI生成スロットのみ取得
-     */
-    fun getAiSlots(): List<MealSlot> = slots.filter { it.mode == SlotMode.AI }
-
-    /**
-     * ルーティン連動スロットのみ取得
-     */
-    fun getRoutineLinkedSlots(): List<MealSlot> = slots.filter { it.mode == SlotMode.ROUTINE_LINKED }
-
-    /**
      * 特定番号のスロットを取得
      */
     fun getSlot(slotNumber: Int): MealSlot? = slots.find { it.slotNumber == slotNumber }
-
-    /**
-     * スロットを更新
-     */
-    fun updateSlot(slotNumber: Int, mode: SlotMode, templateId: String? = null, templateName: String? = null): MealSlotConfig {
-        val newSlots = slots.map { slot ->
-            if (slot.slotNumber == slotNumber) {
-                slot.copy(
-                    mode = mode,
-                    templateId = if (mode == SlotMode.FIXED) templateId else null,
-                    templateName = if (mode == SlotMode.FIXED) templateName else null,
-                    routineLinked = mode == SlotMode.ROUTINE_LINKED
-                )
-            } else {
-                slot
-            }
-        }
-        return copy(slots = newSlots)
-    }
 
     /**
      * 食事回数を変更
@@ -254,7 +191,7 @@ data class MealSlotConfig(
 
         val newSlots = (1..newCount).map { num ->
             // 既存のスロット設定を保持
-            slots.find { it.slotNumber == num } ?: MealSlot(slotNumber = num, mode = SlotMode.AI)
+            slots.find { it.slotNumber == num } ?: MealSlot(slotNumber = num)
         }
         return copy(slots = newSlots, mealsPerDay = newCount)
     }
@@ -265,10 +202,7 @@ data class MealSlotConfig(
  */
 @Serializable
 data class WorkoutSlot(
-    val mode: SlotMode = SlotMode.AI,
-    val templateId: String? = null,       // 固定モード時のテンプレートID
-    val templateName: String? = null,     // 表示用テンプレート名
-    val routineLinked: Boolean = false    // ルーティン（トレーニング部位）と連動するか
+    val placeholder: Boolean = true  // data classには最低1フィールド必要
 )
 
 /**
@@ -276,22 +210,8 @@ data class WorkoutSlot(
  */
 @Serializable
 data class WorkoutSlotConfig(
-    val slot: WorkoutSlot = WorkoutSlot(mode = SlotMode.AI)
-) {
-    /**
-     * スロットを更新
-     */
-    fun updateSlot(mode: SlotMode, templateId: String? = null, templateName: String? = null): WorkoutSlotConfig {
-        return copy(
-            slot = slot.copy(
-                mode = mode,
-                templateId = if (mode == SlotMode.FIXED) templateId else null,
-                templateName = if (mode == SlotMode.FIXED) templateName else null,
-                routineLinked = mode == SlotMode.ROUTINE_LINKED
-            )
-        )
-    }
-}
+    val slot: WorkoutSlot = WorkoutSlot()
+)
 
 /**
  * ルーティン別テンプレート設定

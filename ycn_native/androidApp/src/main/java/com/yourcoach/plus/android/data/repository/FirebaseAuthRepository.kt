@@ -175,6 +175,13 @@ class FirebaseAuthRepository : AuthRepository {
     }
 
     /**
+     * Apple Sign-In (Android未対応)
+     */
+    override suspend fun signInWithApple(idToken: String, nonce: String): Result<User> {
+        return Result.failure(AppError.AuthenticationError("Apple Sign-InはAndroidでは利用できません"))
+    }
+
+    /**
      * アカウント削除
      */
     override suspend fun deleteAccount(): Result<Unit> {

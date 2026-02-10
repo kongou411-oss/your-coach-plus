@@ -19,7 +19,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,7 +40,6 @@ import com.yourcoach.plus.shared.domain.service.GeminiService
 import com.yourcoach.plus.shared.ui.screens.dashboard.DashboardScreen
 import com.yourcoach.plus.shared.ui.theme.*
 import com.yourcoach.plus.shared.util.DateUtil
-import org.jetbrains.skia.Image as SkiaImage
 import org.koin.compose.koinInject
 import org.koin.compose.getKoin
 
@@ -467,13 +465,8 @@ private fun ImageAnalysisContent(
         ) {
             // Base64からImageBitmapに変換して表示
             val imageBitmap = remember(imageBase64) {
-                try {
-                    @OptIn(kotlin.io.encoding.ExperimentalEncodingApi::class)
-                    val bytes = kotlin.io.encoding.Base64.decode(imageBase64)
-                    SkiaImage.makeFromEncoded(bytes).toComposeImageBitmap()
-                } catch (e: Exception) {
-                    null
-                }
+                // commonMainではSkia直接参照不可。プラットフォーム実装で表示する。
+                null
             }
 
             if (imageBitmap != null) {

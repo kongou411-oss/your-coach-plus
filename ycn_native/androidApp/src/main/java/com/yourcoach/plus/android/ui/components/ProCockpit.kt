@@ -476,7 +476,12 @@ fun TimelineItemCard(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 // タイトル
-                Column(modifier = Modifier.weight(1f)) {
+                var showDetailDialog by remember { mutableStateOf(false) }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { showDetailDialog = true }
+                ) {
                     Text(
                         text = item.title,
                         style = MaterialTheme.typography.bodyMedium,
@@ -498,6 +503,27 @@ fun TimelineItemCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                }
+
+                // 詳細全文ダイアログ
+                if (showDetailDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDetailDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = { showDetailDialog = false }) {
+                                Text("閉じる")
+                            }
+                        },
+                        title = { Text(item.title) },
+                        text = {
+                            if (item.subtitle != null) {
+                                Text(
+                                    text = item.subtitle,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    )
                 }
 
                 // 記録ボタン（未完了のアイテムすべてに表示）

@@ -47,7 +47,7 @@ class MealSlotSettingsScreen : Screen {
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
-                    title = { Text("食事スロット設定") },
+                    title = { Text("クエスト連動設定") },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る")
@@ -111,6 +111,12 @@ class MealSlotSettingsScreen : Screen {
                             icon = Icons.Default.Bedtime,
                             currentTime = uiState.sleepTime,
                             onTimeChanged = { screenModel.updateSleepTime(it) }
+                        )
+                        Text(
+                            text = "睡眠は8〜9時間を推奨",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 40.dp, top = 4.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         TimePickerRow(

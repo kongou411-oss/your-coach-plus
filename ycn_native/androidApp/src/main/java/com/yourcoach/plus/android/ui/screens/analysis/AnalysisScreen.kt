@@ -28,7 +28,6 @@ import androidx.compose.animation.shrinkVertically
 import com.yourcoach.plus.android.ui.theme.*
 import com.yourcoach.plus.shared.domain.model.DailyScore
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
-import com.yourcoach.plus.shared.domain.model.FoodChoice
 import com.yourcoach.plus.shared.domain.model.Meal
 import com.yourcoach.plus.shared.domain.model.UserProfile
 import com.yourcoach.plus.shared.domain.repository.AnalysisReport
@@ -873,26 +872,6 @@ private fun ProfileSettingsSection(
                     SettingRow("食事回数", "${userProfile?.mealsPerDay ?: 3} 回/日")
                     userProfile?.trainingAfterMeal?.let { meal ->
                         SettingRow("トレーニング", "食事${meal}の後")
-                    }
-
-                    // 食事スロット設定
-                    userProfile?.mealSlotConfig?.slots?.let { slots ->
-                        if (slots.isNotEmpty()) {
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                            Text(
-                                text = "スロット設定（クエスト生成用）",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                            slots.forEach { slot ->
-                                val choiceText = when (slot.defaultFoodChoice) {
-                                    FoodChoice.KITCHEN -> "自炊"
-                                    FoodChoice.STORE -> "中食・外食"
-                                }
-                                SettingRow("食事${slot.slotNumber}", choiceText)
-                            }
-                        }
                     }
 
                     // トレ前後PFC
