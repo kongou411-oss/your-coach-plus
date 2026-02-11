@@ -298,6 +298,9 @@
             <button id="tab-gymhunter" onclick="switchTab('gymhunter')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
                 🎯 営業リスト
             </button>
+            <button id="tab-customquest" onclick="switchTab('customquest')" class="px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300">
+                ⭐ カスタムクエスト
+            </button>
         </div>
 
         <!-- 所属名管理セクション -->
@@ -803,6 +806,178 @@
                 </div>
             </div>
         </div><!-- 営業リストセクション終了 -->
+
+        <!-- カスタムクエスト管理セクション -->
+        <div id="customquest-section" style="display:none;">
+            <!-- 統計 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="stat-card">
+                    <div class="stat-label">テンプレート数</div>
+                    <div class="stat-value" id="cq-template-count">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">割当済みユーザー</div>
+                    <div class="stat-value" id="cq-assigned-count">0</div>
+                </div>
+            </div>
+
+            <!-- テンプレート作成 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>📝 テンプレート作成</h2>
+                </div>
+                <div class="section-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-1">テンプレート名</label>
+                            <input type="text" id="cq-tpl-title" placeholder="例: 【減量】定番の朝食セット" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1">タイプ</label>
+                            <select id="cq-tpl-type" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2" onchange="onTemplateTypeChange()">
+                                <option value="MEAL">🍽 食事</option>
+                                <option value="WORKOUT">🏋️ 運動</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- アイテム追加UI -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-bold mb-2">アイテム追加</label>
+                        <!-- カテゴリフィルター -->
+                        <div class="flex flex-wrap gap-1 mb-2" id="cq-category-tabs">
+                            <button onclick="setFoodCategory('all')" class="cq-cat-btn cq-cat-active" data-cat="all">すべて</button>
+                            <button onclick="setFoodCategory('肉類')" class="cq-cat-btn" data-cat="肉類">🥩 肉類</button>
+                            <button onclick="setFoodCategory('魚介類')" class="cq-cat-btn" data-cat="魚介類">🐟 魚介類</button>
+                            <button onclick="setFoodCategory('卵類')" class="cq-cat-btn" data-cat="卵類">🥚 卵類</button>
+                            <button onclick="setFoodCategory('主食')" class="cq-cat-btn" data-cat="主食">🍚 主食</button>
+                            <button onclick="setFoodCategory('野菜類')" class="cq-cat-btn" data-cat="野菜類">🥦 野菜類</button>
+                            <button onclick="setFoodCategory('乳製品')" class="cq-cat-btn" data-cat="乳製品">🧀 乳製品</button>
+                            <button onclick="setFoodCategory('豆類・ナッツ')" class="cq-cat-btn" data-cat="豆類・ナッツ">🥜 豆類</button>
+                            <button onclick="setFoodCategory('果物類')" class="cq-cat-btn" data-cat="果物類">🍎 果物</button>
+                            <button onclick="setFoodCategory('サプリメント')" class="cq-cat-btn" data-cat="サプリメント">💊 サプリ</button>
+                            <button onclick="setFoodCategory('ドリンク')" class="cq-cat-btn" data-cat="ドリンク">🥤 ドリンク</button>
+                            <button onclick="setFoodCategory('調味料')" class="cq-cat-btn" data-cat="調味料">🧂 調味料</button>
+                            <button onclick="setFoodCategory('和菓子')" class="cq-cat-btn" data-cat="和菓子">🍡 和菓子</button>
+                        </div>
+                        <style>
+                            .cq-cat-btn { font-size: 11px; padding: 3px 8px; border: 1px solid #d1d5db; border-radius: 9999px; background: white; cursor: pointer; transition: all 0.15s; }
+                            .cq-cat-btn:hover { background: #fef9c3; border-color: #facc15; }
+                            .cq-cat-active { background: #fef08a !important; border-color: #eab308 !important; font-weight: 600; }
+                        </style>
+                        <div class="flex gap-2 items-end">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1" id="cq-tpl-item-label">食品名</label>
+                                <div class="relative">
+                                    <input type="text" id="cq-tpl-food-search" placeholder="食品名で検索..."
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                        oninput="filterFoodList()" onfocus="showFoodDropdown()" autocomplete="off">
+                                    <div id="cq-food-dropdown" class="absolute z-50 w-full bg-white border-2 border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto hidden shadow-lg"></div>
+                                </div>
+                            </div>
+                            <div style="width: 100px;">
+                                <label class="block text-xs text-gray-500 mb-1">量</label>
+                                <input type="number" id="cq-tpl-food-amount" placeholder="100" min="0" step="0.1"
+                                    class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            </div>
+                            <div style="width: 80px;">
+                                <label class="block text-xs text-gray-500 mb-1">単位</label>
+                                <select id="cq-tpl-food-unit" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                    <option value="g">g</option>
+                                    <option value="個">個</option>
+                                    <option value="ml">ml</option>
+                                    <option value="杯">杯</option>
+                                    <option value="枚">枚</option>
+                                    <option value="本">本</option>
+                                    <option value="丁">丁</option>
+                                    <option value="粒">粒</option>
+                                </select>
+                            </div>
+                            <button onclick="addTemplateItem()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 whitespace-nowrap">＋追加</button>
+                        </div>
+                    </div>
+                    <!-- 追加済みアイテムリスト -->
+                    <div class="mt-3">
+                        <label class="block text-sm font-bold mb-1">追加済みアイテム</label>
+                        <div id="cq-tpl-item-list" class="border-2 border-dashed border-gray-300 rounded-lg p-3 min-h-[60px] text-sm text-gray-400">アイテムを追加してください</div>
+                    </div>
+                    <button onclick="createTemplate()" class="btn-primary mt-4">テンプレートを保存</button>
+                    <div id="cq-tpl-message" class="mt-2 text-sm"></div>
+                </div>
+            </div>
+
+            <!-- テンプレート一覧 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>📋 テンプレート一覧</h2>
+                </div>
+                <div class="section-body">
+                    <div id="cq-template-list">読み込み中...</div>
+                </div>
+            </div>
+
+            <!-- ユーザー割当 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>📅 ユーザーへの割当</h2>
+                </div>
+                <div class="section-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div>
+                            <label class="block text-sm font-bold mb-1">対象ユーザーID</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="cq-assign-uid" placeholder="UID" class="flex-1 border-2 border-gray-300 rounded-lg px-3 py-2">
+                                <button onclick="loadUserSlots()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 whitespace-nowrap">取得</button>
+                            </div>
+                            <div id="cq-assign-user-info" class="mt-1 text-xs text-gray-500"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1">日付</label>
+                            <input type="date" id="cq-assign-date" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-bold mb-1">スロット</label>
+                        <div id="cq-assign-slot-container" class="flex flex-wrap gap-2">
+                            <span class="text-gray-400 text-sm">ユーザーIDを入力して「取得」を押してください</span>
+                        </div>
+                        <input type="hidden" id="cq-assign-slot" value="">
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-bold mb-1">割当テンプレート</label>
+                        <select id="cq-assign-template" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2">
+                            <option value="">-- テンプレートを選択 --</option>
+                        </select>
+                    </div>
+                    <button onclick="assignQuestToUser()" class="btn-primary mt-4">割当を保存</button>
+                    <div id="cq-assign-message" class="mt-2 text-sm"></div>
+                </div>
+            </div>
+
+            <!-- 最近のユーザー＆割当一覧 -->
+            <div class="section mb-6">
+                <div class="section-header">
+                    <h2>👤 最近のユーザー / 割当一覧</h2>
+                </div>
+                <div class="section-body">
+                    <!-- 最近のユーザー切替 -->
+                    <div class="mb-3">
+                        <label class="block text-sm font-bold mb-1">最近のユーザー</label>
+                        <div id="cq-recent-users" class="flex flex-wrap gap-2">
+                            <span class="text-gray-400 text-sm">まだ履歴がありません</span>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <!-- 割当一覧 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-bold" id="cq-assign-list-title">割当一覧</label>
+                            <button onclick="loadUserAssignments()" class="text-xs text-blue-500 hover:text-blue-700">🔄 更新</button>
+                        </div>
+                        <div id="cq-assign-list" class="text-gray-400 text-sm">ユーザーを選択してください</div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- カスタムクエストセクション終了 -->
     </div>
 
     <!-- SheetJS (Excel読み込み用) -->
@@ -853,7 +1028,7 @@
 
         // タブ切り替え
         function switchTab(tab) {
-            const sections = ['affiliation', 'users', 'comy', 'analytics', 'pgbase', 'gymhunter'];
+            const sections = ['affiliation', 'users', 'comy', 'analytics', 'pgbase', 'gymhunter', 'customquest'];
             const activeClass = 'px-6 py-3 rounded-lg font-bold transition bg-purple-600 text-white';
             const inactiveClass = 'px-6 py-3 rounded-lg font-bold transition bg-gray-200 text-gray-700 hover:bg-gray-300';
 
@@ -871,6 +1046,7 @@
             if (tab === 'analytics') loadAnalytics();
             if (tab === 'pgbase') loadPgBaseArticles();
             if (tab === 'gymhunter') initGymHunter();
+            if (tab === 'customquest') initCustomQuest();
         }
 
         // ログアウト
@@ -2367,6 +2543,864 @@
                 short.style.display = 'inline';
                 full.style.display = 'none';
                 btn.textContent = '▼ 展開';
+            }
+        }
+
+        // =====================================================
+        // カスタムクエスト管理
+        // =====================================================
+
+        async function initCustomQuest() {
+            await loadTemplates();
+            // 日付のデフォルト値を明日に設定
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('cq-assign-date').value = tomorrow.toISOString().split('T')[0];
+            // 最近のユーザーを復元
+            renderRecentUsers();
+        }
+
+        // ========== FoodDatabase（カテゴリ付き） ==========
+        const FOOD_DATABASE = {
+            "肉類": ["ラム肉（もも脂身つき生）","牛ひき肉（生）","牛もも肉（脂身つき生）","牛もも肉（赤肉生）","牛バラ（脂身つき生）","牛ヒレ（赤肉生）","牛肩ロース（脂身つき生）","牛肩ロース（赤肉生）","豚ひき肉（生）","豚もも肉（脂身つき生）","豚もも肉（赤肉生）","豚バラ（脂身つき生）","豚ヒレ（赤肉生）","豚ロース（脂身つき生）","豚ロース（赤肉生）","鶏ささみ（生）","鶏ひき肉（生）","鶏むね肉（皮つき生）","鶏むね肉（皮なし生）","鶏もも肉（皮つき生）","鶏もも肉（皮なし生）","鹿肉（赤肉生）"],
+            "魚介類": ["アサリ（生）","アジ（生）","イカ（スルメイカ生）","イワシ缶（水煮）","イワシ（生）","ウナギ（養殖生）","エビ（バナメイ生）","エビ（ブラックタイガー生）","カキ（生）","カツオ（生）","カレイ（生）","カンパチ（生）","サケ（生）","サバ缶（味噌煮）","サバ缶（水煮）","サバ（生）","サバ（焼き）","サンマ缶（蒲焼）","サンマ（生）","シジミ（生）","タイ（生）","タコ（マダコ生）","タラ（生）","ツナ缶（水煮）","ツナ缶（油漬）","ハマチ（生）","ヒラメ（生）","ビンチョウマグロ（生）","ブリ（生）","ベニザケ（生）","ホタテ貝柱（生）","マグロ（トロ生）","ムール貝（生）","メバル（生）","甘エビ（生）"],
+            "卵類": ["うずら卵 水煮（1個12g）","うずら卵（1個10g）","ゆで卵 M（58g）","卵焼き（卵1個分+調味料）","温泉卵 M（58g）","目玉焼き M（卵58g+油3g）","鶏卵 LL（70g）","鶏卵 L（64g）","鶏卵 MS（50g）","鶏卵 M（58g）","鶏卵 S（46g）","鶏卵（卵白のみ）","鶏卵（卵黄のみ）"],
+            "主食": ["10割そば（ゆで）","10割そば（乾）","うどん（ゆで）","おかゆ（全がゆ）","そうめん（ゆで）","そば（ゆで）","もち麦ごはん（炊飯直後）","もち米（炊飯後）","オートミール","クロワッサン","グラノーラ","コーンフレーク","スパゲティ（乾）","パスタ（ゆで）","ビーフン（乾）","フランスパン","ベーグル","マカロニ（乾）","ライ麦パン","ロールパン","中華麺（ゆで）","全粒粉パン","小麦粉（強力粉）","小麦粉（薄力粉）","春雨（乾）","片栗粉","玄米","玄米（炊飯後）","発芽玄米（炊飯後）","白米（冷やご飯・再加熱）","白米（炊飯直後）","白米（精白米）","あんこ","胚芽米（炊飯後）","赤飯","食パン","餅"],
+            "野菜類": ["えのきたけ（生）","かぼちゃ（生）","きゅうり（生）","ごぼう（生）","さつまいも（生）","さやいんげん（生）","しいたけ（生）","しめじ（生）","しょうが（生）","じゃがいも（生）","なす（生）","にんじん（生）","にんにく（生）","ほうれん草（生）","まいたけ（生）","もやし（生）","れんこん（生）","アスパラガス（生）","アボカド（生）","エリンギ（生）","オクラ（生）","カリフラワー（生）","キャベツ（生）","ブロッコリー（生）","セロリ（生）","チンゲン菜（生）","トマト（生）","パプリカ（赤・生）","パプリカ（黄・生）","ピーマン（生）","ミニトマト（生）","レタス（生）","大根（生）","小松菜（生）","春菊（生）","枝豆（さやなし生）","玉ねぎ（生）","白菜（生）","里芋（生）","長ねぎ（生）","長芋（生）"],
+            "乳製品": ["カッテージチーズ","ギリシャヨーグルト（無糖）","パルメザンチーズ","プロセスチーズ","モッツァレラチーズ","ヨーグルト（無糖）","低脂肪牛乳","無脂肪牛乳","生クリーム"],
+            "豆類・ナッツ": ["くるみ","アーモンド","カシューナッツ","ピスタチオ","ピーナッツ","厚揚げ","大豆（ゆで）","木綿豆腐","枝豆（ゆで）","油揚げ","絹ごし豆腐","納豆（糸引き）"],
+            "果物類": ["いちご","バナナ","ぶどう","みかん","りんご","オレンジ","キウイ","スイカ","パイナップル","ブルーベリー","マンゴー"],
+            "サプリメント": ["BCAA","EAA","NatureMade DHA","NatureMade L-カルニチン","NatureMade アスタキサンチン","NatureMade カルシウム 200mg","NatureMade カルシウム・マグネシウム・亜鉛","NatureMade コエンザイムQ10","NatureMade スーパーマルチビタミン&ミネラル","NatureMade ビタミンB群","NatureMade ビタミンC 500mg","NatureMade ビタミンD 1000IU","NatureMade ビタミンE 400IU","NatureMade フィッシュオイル（EPA・DHA）","NatureMade マルチビタミン","NatureMade ルテイン","NatureMade 亜鉛","NatureMade 葉酸","NatureMade 鉄","βアラニン","ホエイプロテイン","カゼインプロテイン","クレアチン","クレアチンモノハイドレート","グルタミン","シトルリンマレート","ソイプロテイン","マルトデキストリン"],
+            "ドリンク": ["ブラックコーヒー","緑茶（せん茶）","ピンクソルト（ヒマラヤ岩塩）"],
+            "調味料": ["MCTオイル","えごま油","ごま油","はちみつ","みりん","めんつゆ（3倍濃縮）","アマニ油","オイスターソース","オリーブオイル","グラニュー糖","ケチャップ","ココナッツオイル","バター","ポン酢","マヨネーズ","メープルシロップ","三温糖","上白糖","味噌（淡色辛みそ）","味噌（赤色辛みそ）","料理酒","濃口醤油","無塩バター","米油","米酢","粗塩","薄口醤油","豆板醤","黒糖","黒酢"],
+            "和菓子": ["あられ（塩味）","いちご大福","きんつば","くずもち（黒蜜きなこ）","こしあん","ざらめせんべい","しょうゆせんべい","つぶあん","どら焼き","みたらし団子","ようかん（練り）","わらび餅（黒蜜きなこ）","カステラ","大福餅","最中（もなか）","柏餅","桜餅（関東風）","水ようかん","白玉団子","草餅（よもぎ餅）","薯蕷まんじゅう"]
+        };
+
+        const CATEGORY_EMOJI = { "肉類":"🥩","魚介類":"🐟","卵類":"🥚","主食":"🍚","野菜類":"🥦","乳製品":"🧀","豆類・ナッツ":"🥜","果物類":"🍎","サプリメント":"💊","ドリンク":"🥤","調味料":"🧂","和菓子":"🍡" };
+
+        // ========== ExerciseDatabase（カテゴリ付き） ==========
+        const EXERCISE_DATABASE = {
+            "胸": ["バーベルベンチプレス","ダンベルベンチプレス","インクラインベンチプレス","ダンベルフライ","腕立て伏せ"],
+            "背中": ["デッドリフト","懸垂（チンニング）","ラットプルダウン","ベントオーバーロウ"],
+            "肩": ["オーバーヘッドプレス","サイドレイズ","フロントレイズ","リアデルトフライ"],
+            "腕": ["バーベルカール","ダンベルカール","トライセプスエクステンション"],
+            "脚": ["バーベルスクワット","レッグプレス","ランジ","レッグエクステンション","レッグカール","カーフレイズ"],
+            "体幹": ["プランク","クランチ","レッグレイズ"],
+            "有酸素": ["ランニング","ウォーキング","サイクリング","水泳","HIIT"],
+            "ストレッチ": ["静的ストレッチ","動的ストレッチ","ヨガ"]
+        };
+        const EXERCISE_EMOJI = { "胸":"💪","背中":"🔙","肩":"🏋️","腕":"💪","脚":"🦵","体幹":"🧘","有酸素":"🏃","ストレッチ":"🧘‍♀️" };
+        const EXERCISE_UNITS = ["セット","回","分","km","m"];
+
+        // 食品100gあたりの全栄養素（FoodDatabase.kt八訂準拠値と同期）
+        function r1(v) { return Math.round(v * 10) / 10; }
+        function r2(v) { return Math.round(v * 100) / 100; }
+        function scaleMap(map, coeff) {
+            if (!map) return {};
+            const result = {};
+            for (const [k, v] of Object.entries(map)) { result[k] = r2((v || 0) * coeff); }
+            return result;
+        }
+        const FOOD_NUTRIENTS_PER_100G = {
+            "鶏むね肉（皮なし生）": { calories: 108, protein: 23.3, fat: 1.9, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.47, monounsaturatedFat: 0.63, polyunsaturatedFat: 0.36, diaas: 1.08, gi: 0, vitamins: { vitaminA: 6, vitaminB1: 0.1, vitaminB2: 0.11, vitaminB6: 0.64, vitaminB12: 0.2, vitaminC: 0, vitaminD: 0.1, vitaminE: 0.2, vitaminK: 6, niacin: 12.2, pantothenicAcid: 1.8, biotin: 4.5, folicAcid: 12 }, minerals: { sodium: 46, potassium: 380, calcium: 4, magnesium: 31, phosphorus: 230, iron: 0.3, zinc: 0.7, copper: 0.04, manganese: 0.01, iodine: 0, selenium: 28, chromium: 0, molybdenum: 0 } },
+            "鶏むね肉（皮つき生）": { calories: 133, protein: 21.3, fat: 5.9, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 1.53, monounsaturatedFat: 2.67, polyunsaturatedFat: 1.03, diaas: 1.07, gi: 0, vitamins: { vitaminA: 13, vitaminB1: 0.1, vitaminB2: 0.12, vitaminB6: 0.6, vitaminB12: 0.3, vitaminC: 0, vitaminD: 0.1, vitaminE: 0.3, vitaminK: 8, niacin: 11, pantothenicAcid: 1.6, biotin: 4.2, folicAcid: 13 }, minerals: { sodium: 52, potassium: 360, calcium: 4, magnesium: 29, phosphorus: 210, iron: 0.3, zinc: 0.7, copper: 0.04, manganese: 0.01, iodine: 0, selenium: 26, chromium: 0, molybdenum: 0 } },
+            "鶏もも肉（皮なし生）": { calories: 113, protein: 19, fat: 5, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 1.38, monounsaturatedFat: 2.06, polyunsaturatedFat: 0.71, diaas: 1.05, gi: 0, vitamins: { vitaminA: 18, vitaminB1: 0.1, vitaminB2: 0.18, vitaminB6: 0.25, vitaminB12: 0.3, vitaminC: 0, vitaminD: 0.2, vitaminE: 0.3, vitaminK: 17, niacin: 6.5, pantothenicAcid: 1.8, biotin: 4.5, folicAcid: 12 }, minerals: { sodium: 68, potassium: 340, calcium: 5, magnesium: 26, phosphorus: 180, iron: 0.6, zinc: 1.6, copper: 0.04, manganese: 0.01, iodine: 0, selenium: 21, chromium: 0, molybdenum: 0 } },
+            "鶏もも肉（皮つき生）": { calories: 190, protein: 16.6, fat: 14.2, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 4.37, monounsaturatedFat: 6.71, polyunsaturatedFat: 1.85, diaas: 1.05, gi: 0, vitamins: { vitaminA: 22, vitaminB1: 0.09, vitaminB2: 0.16, vitaminB6: 0.23, vitaminB12: 0.3, vitaminC: 0, vitaminD: 0.2, vitaminE: 0.4, vitaminK: 19, niacin: 5.7, pantothenicAcid: 1.7, biotin: 4.3, folicAcid: 11 }, minerals: { sodium: 75, potassium: 290, calcium: 6, magnesium: 22, phosphorus: 160, iron: 0.7, zinc: 1.7, copper: 0.05, manganese: 0.01, iodine: 0, selenium: 19, chromium: 0, molybdenum: 0 } },
+            "鶏ささみ（生）": { calories: 98, protein: 23.9, fat: 0.8, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.17, monounsaturatedFat: 0.22, polyunsaturatedFat: 0.13, diaas: 1.09, gi: 0, vitamins: { vitaminA: 6, vitaminB1: 0.11, vitaminB2: 0.11, vitaminB6: 0.6, vitaminB12: 0.3, vitaminC: 0, vitaminD: 0.1, vitaminE: 0.2, vitaminK: 7, niacin: 12, pantothenicAcid: 2, biotin: 5, folicAcid: 13 }, minerals: { sodium: 49, potassium: 410, calcium: 3, magnesium: 31, phosphorus: 240, iron: 0.2, zinc: 0.5, copper: 0.03, manganese: 0.01, iodine: 0, selenium: 30, chromium: 0, molybdenum: 0 } },
+            "牛もも肉（脂身つき生）": { calories: 165, protein: 20.5, fat: 9.6, carbs: 0.5, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.22, monounsaturatedFat: 3.69, polyunsaturatedFat: 0.25, diaas: 1.11, gi: 0, vitamins: { vitaminA: 3, vitaminB1: 0.08, vitaminB2: 0.19, vitaminB6: 0.38, vitaminB12: 1.3, vitaminC: 1, vitaminD: 0, vitaminE: 0.4, vitaminK: 5, niacin: 5.4, pantothenicAcid: 0.86, biotin: 2, folicAcid: 9 }, minerals: { sodium: 48, potassium: 340, calcium: 4, magnesium: 22, phosphorus: 170, iron: 2.5, zinc: 4.2, copper: 0.07, manganese: 0.01, iodine: 0, selenium: 15, chromium: 0, molybdenum: 0 } },
+            "牛ひき肉（生）": { calories: 224, protein: 19, fat: 17, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 7.25, monounsaturatedFat: 11.06, polyunsaturatedFat: 0.63, diaas: 1.1, gi: 0, vitamins: { vitaminA: 4, vitaminB1: 0.07, vitaminB2: 0.16, vitaminB6: 0.32, vitaminB12: 1.2, vitaminC: 1, vitaminD: 0, vitaminE: 0.4, vitaminK: 6, niacin: 4.5, pantothenicAcid: 0.75, biotin: 1.8, folicAcid: 8 }, minerals: { sodium: 46, potassium: 290, calcium: 5, magnesium: 19, phosphorus: 150, iron: 2.2, zinc: 4, copper: 0.06, manganese: 0.01, iodine: 0, selenium: 14, chromium: 0, molybdenum: 0 } },
+            "豚ロース（脂身つき生）": { calories: 248, protein: 19.3, fat: 19.2, carbs: 0.2, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 7.84, monounsaturatedFat: 7.68, polyunsaturatedFat: 2.21, diaas: 1.05, gi: 0, vitamins: { vitaminA: 5, vitaminB1: 0.6, vitaminB2: 0.15, vitaminB6: 0.32, vitaminB12: 0.3, vitaminC: 1, vitaminD: 0.1, vitaminE: 0.3, vitaminK: 2, niacin: 6.7, pantothenicAcid: 1.1, biotin: 2.5, folicAcid: 2 }, minerals: { sodium: 48, potassium: 310, calcium: 4, magnesium: 22, phosphorus: 170, iron: 0.3, zinc: 1.9, copper: 0.06, manganese: 0.01, iodine: 0, selenium: 18, chromium: 0, molybdenum: 0 } },
+            "豚もも肉（脂身つき生）": { calories: 171, protein: 20.5, fat: 10.2, carbs: 0.2, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.59, monounsaturatedFat: 4.24, polyunsaturatedFat: 1.24, diaas: 1.05, gi: 0, vitamins: { vitaminA: 4, vitaminB1: 0.72, vitaminB2: 0.19, vitaminB6: 0.36, vitaminB12: 0.3, vitaminC: 1, vitaminD: 0.1, vitaminE: 0.3, vitaminK: 2, niacin: 7.5, pantothenicAcid: 1.28, biotin: 2.8, folicAcid: 3 }, minerals: { sodium: 51, potassium: 340, calcium: 4, magnesium: 25, phosphorus: 190, iron: 0.4, zinc: 2.2, copper: 0.07, manganese: 0.01, iodine: 0, selenium: 20, chromium: 0, molybdenum: 0 } },
+            "豚ひき肉（生）": { calories: 209, protein: 18.8, fat: 15.1, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 6.24, monounsaturatedFat: 7.55, polyunsaturatedFat: 1.62, diaas: 1.05, gi: 0, vitamins: { vitaminA: 5, vitaminB1: 0.62, vitaminB2: 0.16, vitaminB6: 0.3, vitaminB12: 0.3, vitaminC: 1, vitaminD: 0.1, vitaminE: 0.3, vitaminK: 2, niacin: 6.5, pantothenicAcid: 1.15, biotin: 2.6, folicAcid: 2 }, minerals: { sodium: 47, potassium: 300, calcium: 4, magnesium: 21, phosphorus: 160, iron: 0.6, zinc: 2, copper: 0.06, manganese: 0.01, iodine: 0, selenium: 18, chromium: 0, molybdenum: 0 } },
+            "ラム肉（もも脂身つき生）": { calories: 198, protein: 20, fat: 14.1, carbs: 0.2, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 4.91, monounsaturatedFat: 4.39, polyunsaturatedFat: 0.52, diaas: 1.09, gi: 0, vitamins: { vitaminA: 3, vitaminB1: 0.13, vitaminB2: 0.23, vitaminB6: 0.28, vitaminB12: 2.5, vitaminC: 1, vitaminD: 0, vitaminE: 0.3, vitaminK: 6, niacin: 5.8, pantothenicAcid: 0.85, biotin: 2, folicAcid: 8 }, minerals: { sodium: 50, potassium: 310, calcium: 5, magnesium: 22, phosphorus: 170, iron: 1.5, zinc: 3.6, copper: 0.1, manganese: 0.02, iodine: 0, selenium: 16, chromium: 0, molybdenum: 0 } },
+            "鮭（生）": { calories: 124, protein: 22.3, fat: 4.1, carbs: 0.1, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.8, monounsaturatedFat: 1.69, polyunsaturatedFat: 1.01, diaas: 1.03, gi: 0, vitamins: { vitaminA: 11, vitaminB1: 0.15, vitaminB2: 0.21, vitaminB6: 0.64, vitaminB12: 5.9, vitaminC: 1, vitaminD: 32, vitaminE: 1.2, vitaminK: 0, niacin: 6.7, pantothenicAcid: 1.5, biotin: 7.5, folicAcid: 26 }, minerals: { sodium: 47, potassium: 350, calcium: 14, magnesium: 28, phosphorus: 240, iron: 0.5, zinc: 0.5, copper: 0.07, manganese: 0.01, iodine: 0, selenium: 38, chromium: 0, molybdenum: 0 } },
+            "まぐろ赤身（生）": { calories: 98, protein: 26, fat: 0.7, carbs: 0.2, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.15, monounsaturatedFat: 0.19, polyunsaturatedFat: 0.23, diaas: 1.04, gi: 0, vitamins: { vitaminA: 3, vitaminB1: 0.08, vitaminB2: 0.04, vitaminB6: 0.94, vitaminB12: 1.2, vitaminC: 0, vitaminD: 3, vitaminE: 0.3, vitaminK: 0, niacin: 16, pantothenicAcid: 0.18, biotin: 2.8, folicAcid: 4 }, minerals: { sodium: 47, potassium: 440, calcium: 4, magnesium: 42, phosphorus: 290, iron: 0.8, zinc: 0.3, copper: 0.03, manganese: 0.01, iodine: 16, selenium: 120, chromium: 0, molybdenum: 0 } },
+            "さば（生）": { calories: 211, protein: 20.6, fat: 16.8, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 4.57, monounsaturatedFat: 5.03, polyunsaturatedFat: 2.66, diaas: 1.02, gi: 0, vitamins: { vitaminA: 13, vitaminB1: 0.21, vitaminB2: 0.29, vitaminB6: 0.51, vitaminB12: 10.6, vitaminC: 1, vitaminD: 11, vitaminE: 1.6, vitaminK: 5, niacin: 10.4, pantothenicAcid: 0.7, biotin: 6, folicAcid: 12 }, minerals: { sodium: 130, potassium: 360, calcium: 9, magnesium: 30, phosphorus: 220, iron: 1.2, zinc: 1.1, copper: 0.11, manganese: 0.01, iodine: 28, selenium: 52, chromium: 0, molybdenum: 0 } },
+            "えび（バナメイ生）": { calories: 77, protein: 18.1, fat: 0.4, carbs: 0.1, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.08, monounsaturatedFat: 0.04, polyunsaturatedFat: 0.16, diaas: 0.98, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0.01, vitaminB2: 0.02, vitaminB6: 0.04, vitaminB12: 1.2, vitaminC: 0, vitaminD: 0, vitaminE: 1.4, vitaminK: 0, niacin: 2, pantothenicAcid: 0.35, biotin: 1.3, folicAcid: 7 }, minerals: { sodium: 220, potassium: 240, calcium: 42, magnesium: 34, phosphorus: 180, iron: 0.2, zinc: 1.2, copper: 0.35, manganese: 0.03, iodine: 0, selenium: 35, chromium: 0, molybdenum: 0 } },
+            "鶏卵 M（58g）": { calories: 141, protein: 12.2, fat: 10.2, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.29, monounsaturatedFat: 4.62, polyunsaturatedFat: 1.45, diaas: 1.13, gi: 0, vitamins: { vitaminA: 150, vitaminB1: 0.07, vitaminB2: 0.43, vitaminB6: 0.09, vitaminB12: 1.21, vitaminC: 0, vitaminD: 1.72, vitaminE: 1.03, vitaminK: 13.8, niacin: 0.1, pantothenicAcid: 1.5, biotin: 25, folicAcid: 48.3 }, minerals: { sodium: 141, potassium: 129, calcium: 50, magnesium: 10, phosphorus: 172, iron: 1.72, zinc: 1.38, copper: 0.07, manganese: 0.02, iodine: 17, selenium: 33, chromium: 0, molybdenum: 3.4 } },
+            "鶏卵 L（64g）": { calories: 142, protein: 12.2, fat: 10.2, carbs: 0.5, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.3, monounsaturatedFat: 4.6, polyunsaturatedFat: 1.44, diaas: 1.13, gi: 0, vitamins: { vitaminA: 150, vitaminB1: 0, vitaminB2: 0.28, vitaminB6: 0, vitaminB12: 0.8, vitaminC: 0, vitaminD: 1.2, vitaminE: 0.6, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 31 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 1.2, zinc: 0.9, copper: 0, manganese: 0, iodine: 0, selenium: 21, chromium: 0, molybdenum: 0 } },
+            "ゆで卵 M（58g）": { calories: 134, protein: 12.6, fat: 10.3, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.34, monounsaturatedFat: 4.69, polyunsaturatedFat: 1.47, diaas: 1.13, gi: 0, vitamins: { vitaminA: 145, vitaminB1: 0, vitaminB2: 0.41, vitaminB6: 0, vitaminB12: 1.21, vitaminC: 0, vitaminD: 1.72, vitaminE: 1.03, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 45 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 1.72, zinc: 1.38, copper: 0, manganese: 0, iodine: 0, selenium: 33, chromium: 0, molybdenum: 0 } },
+            "うずら卵 水煮（1個12g）": { calories: 150, protein: 12.5, fat: 11.7, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.75, monounsaturatedFat: 4.67, polyunsaturatedFat: 1.5, diaas: 1.12, gi: 0, vitamins: { vitaminA: 333, vitaminB1: 0, vitaminB2: 0.67, vitaminB6: 0, vitaminB12: 5, vitaminC: 0, vitaminD: 6.67, vitaminE: 0.83, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 83 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 3.33, zinc: 1.67, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "白米（炊飯直後）": { calories: 168, protein: 2.5, fat: 0.3, carbs: 37.1, fiber: 0.3, solubleFiber: 0, insolubleFiber: 0.3, sugar: 36.8, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.59, gi: 88, vitamins: { vitaminA: 0, vitaminB1: 0.02, vitaminB2: 0.01, vitaminB6: 0.02, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.2, pantothenicAcid: 0.25, biotin: 0.5, folicAcid: 3 }, minerals: { sodium: 1, potassium: 29, calcium: 3, magnesium: 7, phosphorus: 34, iron: 0.1, zinc: 0.6, copper: 0.1, manganese: 0.35, iodine: 0, selenium: 1, chromium: 0, molybdenum: 30 } },
+            "玄米（炊飯直後）": { calories: 152, protein: 2.8, fat: 1, carbs: 35.6, fiber: 1.4, solubleFiber: 0.2, insolubleFiber: 1.2, sugar: 34.2, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.62, gi: 56, vitamins: { vitaminA: 0, vitaminB1: 0.16, vitaminB2: 0.02, vitaminB6: 0.21, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.5, vitaminK: 0, niacin: 2.9, pantothenicAcid: 0.65, biotin: 2.5, folicAcid: 10 }, minerals: { sodium: 1, potassium: 95, calcium: 7, magnesium: 49, phosphorus: 130, iron: 0.6, zinc: 0.8, copper: 0.12, manganese: 1.04, iodine: 0, selenium: 1, chromium: 0, molybdenum: 34 } },
+            "もち麦ごはん（炊飯直後）": { calories: 143, protein: 2.7, fat: 0.5, carbs: 33.2, fiber: 2.3, solubleFiber: 1.3, insolubleFiber: 1.0, sugar: 30.9, saturatedFat: 0.1, monounsaturatedFat: 0.15, polyunsaturatedFat: 0.2, diaas: 0.5, gi: 48, vitamins: { vitaminA: 0, vitaminB1: 0.06, vitaminB2: 0.01, vitaminB6: 0.03, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.4, pantothenicAcid: 0.3, biotin: 0.5, folicAcid: 4 }, minerals: { sodium: 1, potassium: 35, calcium: 3, magnesium: 12, phosphorus: 40, iron: 0.3, zinc: 0.5, copper: 0.08, manganese: 0.3, iodine: 0, selenium: 1, chromium: 0, molybdenum: 20 } },
+            "食パン（6枚切り）": { calories: 248, protein: 8.9, fat: 4.1, carbs: 44.3, fiber: 2.1, solubleFiber: 0.4, insolubleFiber: 1.7, sugar: 42.2, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.42, gi: 91, vitamins: { vitaminA: 0, vitaminB1: 0.07, vitaminB2: 0.05, vitaminB6: 0.03, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.4, vitaminK: 0, niacin: 1.1, pantothenicAcid: 0.42, biotin: 2.3, folicAcid: 30 }, minerals: { sodium: 470, potassium: 86, calcium: 22, magnesium: 18, phosphorus: 67, iron: 0.5, zinc: 0.5, copper: 0.09, manganese: 0.25, iodine: 1, selenium: 22, chromium: 1, molybdenum: 15 } },
+            "餅（切り餅）": { calories: 223, protein: 4, fat: 0.6, carbs: 50.8, fiber: 0.5, solubleFiber: 0, insolubleFiber: 0.5, sugar: 50.3, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.59, gi: 85, vitamins: { vitaminA: 0, vitaminB1: 0.03, vitaminB2: 0.01, vitaminB6: 0.03, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.2, pantothenicAcid: 0.34, biotin: 0.6, folicAcid: 4 }, minerals: { sodium: 0, potassium: 32, calcium: 3, magnesium: 6, phosphorus: 22, iron: 0.1, zinc: 0.9, copper: 0.13, manganese: 0.58, iodine: 0, selenium: 2, chromium: 0, molybdenum: 56 } },
+            "10割そば（ゆで）": { calories: 136, protein: 4.8, fat: 1.2, carbs: 27.8, fiber: 1.8, solubleFiber: 0.6, insolubleFiber: 1.2, sugar: 26, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.95, gi: 54, vitamins: { vitaminA: 0, vitaminB1: 0.18, vitaminB2: 0.04, vitaminB6: 0.12, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 2.9, vitaminK: 0, niacin: 1.8, pantothenicAcid: 0.62, biotin: 6.8, folicAcid: 20 }, minerals: { sodium: 1, potassium: 164, calcium: 7, magnesium: 76, phosphorus: 160, iron: 1.1, zinc: 1, copper: 0.22, manganese: 0.44, iodine: 0, selenium: 3, chromium: 2, molybdenum: 19 } },
+            "さつまいも（焼き）": { calories: 126, protein: 1.2, fat: 0.2, carbs: 31.9, fiber: 2.2, solubleFiber: 0.5, insolubleFiber: 1.7, sugar: 0.6, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.51, gi: 55, vitamins: { vitaminA: 3, vitaminB1: 0.1, vitaminB2: 0.02, vitaminB6: 0.2, vitaminB12: 0, vitaminC: 25, vitaminD: 0, vitaminE: 1, vitaminK: 0, niacin: 0.6, pantothenicAcid: 0.48, biotin: 4.8, folicAcid: 49 }, minerals: { sodium: 23, potassium: 380, calcium: 40, magnesium: 24, phosphorus: 46, iron: 0.5, zinc: 0.2, copper: 0.13, manganese: 0.37, iodine: 1, selenium: 0, chromium: 0, molybdenum: 5 } },
+            "じゃがいも（生）": { calories: 59, protein: 1.8, fat: 0.1, carbs: 17.3, fiber: 1.8, solubleFiber: 1.2, insolubleFiber: 0.6, sugar: 0.9, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.63, gi: 90, vitamins: { vitaminA: 0, vitaminB1: 0.09, vitaminB2: 0.03, vitaminB6: 0.2, vitaminB12: 0, vitaminC: 28, vitaminD: 0, vitaminE: 0, vitaminK: 1, niacin: 1.5, pantothenicAcid: 0.5, biotin: 0.4, folicAcid: 20 }, minerals: { sodium: 1, potassium: 410, calcium: 4, magnesium: 19, phosphorus: 47, iron: 0.4, zinc: 0.2, copper: 0.09, manganese: 0.37, iodine: 1, selenium: 0, chromium: 4, molybdenum: 3 } },
+            "木綿豆腐": { calories: 73, protein: 7, fat: 4.9, carbs: 0.4, fiber: 0.2, solubleFiber: 0, insolubleFiber: 0.2, sugar: 0.2, saturatedFat: 0.68, monounsaturatedFat: 1.01, polyunsaturatedFat: 2.71, diaas: 0.82, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0.09, vitaminB2: 0.04, vitaminB6: 0.05, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.2, vitaminK: 6, niacin: 0.2, pantothenicAcid: 0.02, biotin: 4.1, folicAcid: 12 }, minerals: { sodium: 9, potassium: 110, calcium: 93, magnesium: 57, phosphorus: 88, iron: 1.5, zinc: 0.6, copper: 0.16, manganese: 0.41, iodine: 6, selenium: 4, chromium: 4, molybdenum: 44 } },
+            "絹ごし豆腐": { calories: 56, protein: 5.3, fat: 3.5, carbs: 2, fiber: 0.3, solubleFiber: 0.1, insolubleFiber: 0.2, sugar: 1.7, saturatedFat: 0.49, monounsaturatedFat: 0.72, polyunsaturatedFat: 1.94, diaas: 0.82, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0.11, vitaminB2: 0.04, vitaminB6: 0.06, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 3.4, vitaminK: 9, niacin: 0.2, pantothenicAcid: 0.09, biotin: 3.5, folicAcid: 12 }, minerals: { sodium: 11, potassium: 150, calcium: 75, magnesium: 50, phosphorus: 68, iron: 1.2, zinc: 0.5, copper: 0.16, manganese: 0.34, iodine: 1, selenium: 1, chromium: 1, molybdenum: 69 } },
+            "納豆（糸引き）": { calories: 200, protein: 16.5, fat: 10, carbs: 12.1, fiber: 6.7, solubleFiber: 2.3, insolubleFiber: 4.4, sugar: 5.4, saturatedFat: 1.54, monounsaturatedFat: 2.36, polyunsaturatedFat: 5.46, diaas: 0.9, gi: 33, vitamins: { vitaminA: 0, vitaminB1: 0.07, vitaminB2: 0.56, vitaminB6: 0.24, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.5, vitaminK: 600, niacin: 1.1, pantothenicAcid: 3.6, biotin: 18.2, folicAcid: 120 }, minerals: { sodium: 2, potassium: 660, calcium: 90, magnesium: 100, phosphorus: 190, iron: 3.3, zinc: 1.9, copper: 0.61, manganese: 0, iodine: 0, selenium: 16, chromium: 1, molybdenum: 290 } },
+            "バナナ": { calories: 93, protein: 1.1, fat: 0.2, carbs: 22.5, fiber: 1.1, solubleFiber: 0.1, insolubleFiber: 1.0, sugar: 21.4, saturatedFat: 0.07, monounsaturatedFat: 0.04, polyunsaturatedFat: 0.05, diaas: 0.5, gi: 51, vitamins: { vitaminA: 5, vitaminB1: 0.05, vitaminB2: 0.04, vitaminB6: 0.38, vitaminB12: 0, vitaminC: 16, vitaminD: 0, vitaminE: 0.5, vitaminK: 0, niacin: 0.7, pantothenicAcid: 0.44, biotin: 1.4, folicAcid: 26 }, minerals: { sodium: 0, potassium: 360, calcium: 6, magnesium: 32, phosphorus: 27, iron: 0.3, zinc: 0.2, copper: 0.09, manganese: 0.26, iodine: 0, selenium: 1, chromium: 0, molybdenum: 0 } },
+            "りんご": { calories: 56, protein: 0.2, fat: 0.2, carbs: 16.2, fiber: 1.9, solubleFiber: 0.5, insolubleFiber: 1.4, sugar: 14.3, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 1.0, gi: 36, vitamins: { vitaminA: 1, vitaminB1: 0.02, vitaminB2: 0, vitaminB6: 0.04, vitaminB12: 0, vitaminC: 4, vitaminD: 0, vitaminE: 0.1, vitaminK: 0, niacin: 0.1, pantothenicAcid: 0.03, biotin: 0.5, folicAcid: 2 }, minerals: { sodium: 0, potassium: 120, calcium: 3, magnesium: 3, phosphorus: 12, iron: 0.1, zinc: 0, copper: 0.05, manganese: 0.02, iodine: 0, selenium: 0, chromium: 1, molybdenum: 0 } },
+            "アボカド": { calories: 178, protein: 2.5, fat: 17.5, carbs: 7.9, fiber: 5.6, solubleFiber: 1.7, insolubleFiber: 3.9, sugar: 0.8, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.65, gi: 27, vitamins: { vitaminA: 7, vitaminB1: 0.09, vitaminB2: 0.2, vitaminB6: 0.29, vitaminB12: 0, vitaminC: 12, vitaminD: 0, vitaminE: 3.3, vitaminK: 21, niacin: 2.3, pantothenicAcid: 1.65, biotin: 5.3, folicAcid: 83 }, minerals: { sodium: 7, potassium: 590, calcium: 8, magnesium: 34, phosphorus: 52, iron: 0.6, zinc: 0.7, copper: 0.24, manganese: 0.19, iodine: 0, selenium: 1, chromium: 0, molybdenum: 2 } },
+            "ブロッコリー（生）": { calories: 37, protein: 5.4, fat: 0.6, carbs: 6.6, fiber: 5.1, solubleFiber: 0.9, insolubleFiber: 4.2, sugar: 1.3, saturatedFat: 0.1, monounsaturatedFat: 0, polyunsaturatedFat: 0.2, diaas: 0.8, gi: 25, vitamins: { vitaminA: 810, vitaminB1: 0.14, vitaminB2: 0.23, vitaminB6: 0.27, vitaminB12: 0, vitaminC: 140, vitaminD: 0, vitaminE: 3, vitaminK: 210, niacin: 1.2, pantothenicAcid: 1.42, biotin: 9.3, folicAcid: 220 }, minerals: { sodium: 7, potassium: 460, calcium: 50, magnesium: 29, phosphorus: 110, iron: 1.3, zinc: 0.8, copper: 0.1, manganese: 0.28, iodine: 0, selenium: 2, chromium: 1, molybdenum: 16 } },
+            "ほうれん草（生）": { calories: 18, protein: 2.2, fat: 0.4, carbs: 3.1, fiber: 2.7, solubleFiber: 0.7, insolubleFiber: 2, sugar: 0.4, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.5, gi: 15, vitamins: { vitaminA: 350, vitaminB1: 0.11, vitaminB2: 0.2, vitaminB6: 0.14, vitaminB12: 0, vitaminC: 35, vitaminD: 0, vitaminE: 2.1, vitaminK: 270, niacin: 0.6, pantothenicAcid: 0.2, biotin: 2.9, folicAcid: 210 }, minerals: { sodium: 16, potassium: 690, calcium: 49, magnesium: 69, phosphorus: 47, iron: 2, zinc: 0.7, copper: 0.11, manganese: 0.32, iodine: 3, selenium: 3, chromium: 2, molybdenum: 5 } },
+            "ヨーグルト（プレーン）": { calories: 56, protein: 3.6, fat: 3, carbs: 4.9, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 1.83, monounsaturatedFat: 0.69, polyunsaturatedFat: 0.1, diaas: 1.22, gi: 0, vitamins: { vitaminA: 33, vitaminB1: 0.04, vitaminB2: 0.14, vitaminB6: 0.04, vitaminB12: 0.1, vitaminC: 1, vitaminD: 0, vitaminE: 0.1, vitaminK: 1, niacin: 0.1, pantothenicAcid: 0.49, biotin: 2.5, folicAcid: 11 }, minerals: { sodium: 48, potassium: 170, calcium: 120, magnesium: 12, phosphorus: 100, iron: 0.02, zinc: 0.4, copper: 0.01, manganese: 0, iodine: 15, selenium: 3, chromium: 0, molybdenum: 4 } },
+            "ギリシャヨーグルト": { calories: 59, protein: 10, fat: 0.4, carbs: 3.9, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.24, monounsaturatedFat: 0.09, polyunsaturatedFat: 0.01, diaas: 1.22, gi: 0, vitamins: { vitaminA: 1, vitaminB1: 0.03, vitaminB2: 0.14, vitaminB6: 0.04, vitaminB12: 0.5, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.1, pantothenicAcid: 0.4, biotin: 4.2, folicAcid: 7 }, minerals: { sodium: 36, potassium: 150, calcium: 100, magnesium: 11, phosphorus: 130, iron: 0.01, zinc: 0.5, copper: 0.01, manganese: 0, iodine: 12, selenium: 5, chromium: 0, molybdenum: 5 } },
+            "低脂肪牛乳": { calories: 42, protein: 3.4, fat: 1, carbs: 5.2, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.61, monounsaturatedFat: 0.23, polyunsaturatedFat: 0.03, diaas: 1.22, gi: 39, vitamins: { vitaminA: 15, vitaminB1: 0.04, vitaminB2: 0.17, vitaminB6: 0.03, vitaminB12: 0.3, vitaminC: 1, vitaminD: 0.3, vitaminE: 0.05, vitaminK: 1, niacin: 0.1, pantothenicAcid: 0.6, biotin: 2, folicAcid: 5 }, minerals: { sodium: 46, potassium: 160, calcium: 120, magnesium: 11, phosphorus: 100, iron: 0.01, zinc: 0.4, copper: 0.01, manganese: 0, iodine: 17, selenium: 3, chromium: 0, molybdenum: 4 } },
+            "無脂肪牛乳": { calories: 33, protein: 3.4, fat: 0.1, carbs: 5, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.06, monounsaturatedFat: 0.02, polyunsaturatedFat: 0, diaas: 1.22, gi: 37, vitamins: { vitaminA: 1, vitaminB1: 0.04, vitaminB2: 0.17, vitaminB6: 0.03, vitaminB12: 0.3, vitaminC: 1, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.1, pantothenicAcid: 0.62, biotin: 2.1, folicAcid: 5 }, minerals: { sodium: 47, potassium: 170, calcium: 125, magnesium: 12, phosphorus: 105, iron: 0, zinc: 0.4, copper: 0.01, manganese: 0, iodine: 18, selenium: 3, chromium: 0, molybdenum: 5 } },
+            "ホエイプロテイン": { calories: 400, protein: 80, fat: 3, carbs: 10, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 3, saturatedFat: 1.5, monounsaturatedFat: 1, polyunsaturatedFat: 0.5, diaas: 1.09, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0.3, vitaminB2: 0.7, vitaminB6: 0.3, vitaminB12: 1.7, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.3, pantothenicAcid: 1.7, biotin: 0, folicAcid: 0 }, minerals: { sodium: 330, potassium: 500, calcium: 400, magnesium: 67, phosphorus: 330, iron: 0.3, zinc: 1.7, copper: 0.03, manganese: 0, iodine: 0, selenium: 7, chromium: 0, molybdenum: 0 } },
+            "カゼインプロテイン": { calories: 373, protein: 85, fat: 1, carbs: 3.7, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 1.12, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0, vitaminB2: 1.7, vitaminB6: 0, vitaminB12: 2.67, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0, pantothenicAcid: 3.17, biotin: 0, folicAcid: 0 }, minerals: { sodium: 533, potassium: 433, calcium: 700, magnesium: 60, phosphorus: 467, iron: 0.67, zinc: 3.33, copper: 0.03, manganese: 0, iodine: 0, selenium: 10, chromium: 0, molybdenum: 0 } },
+            "ソイプロテイン": { calories: 360, protein: 80, fat: 3.7, carbs: 6, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.9, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0.8, vitaminB2: 0.27, vitaminB6: 0.5, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 1, vitaminK: 13.3, niacin: 1, pantothenicAcid: 0.67, biotin: 25, folicAcid: 240 }, minerals: { sodium: 3.3, potassium: 1900, calcium: 210, magnesium: 210, phosphorus: 550, iron: 8, zinc: 3, copper: 0.93, manganese: 0.8, iodine: 0, selenium: 6.67, chromium: 0, molybdenum: 250 } },
+            "BCAA": { calories: 400, protein: 100, fat: 0, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "EAA": { calories: 400, protein: 100, fat: 0, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "マルトデキストリン": { calories: 380, protein: 0, fat: 0, carbs: 95, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0, gi: 105, vitamins: { vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "クレアチン": { calories: 18, protein: 4.4, fat: 0, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "オートミール": { calories: 350, protein: 13.7, fat: 5.7, carbs: 69.1, fiber: 9.4, solubleFiber: 3.2, insolubleFiber: 6.2, sugar: 59.7, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.75, gi: 55, vitamins: { vitaminA: 0, vitaminB1: 0.2, vitaminB2: 0.08, vitaminB6: 0.11, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.6, vitaminK: 0, niacin: 1.1, pantothenicAcid: 1.29, biotin: 22, folicAcid: 30 }, minerals: { sodium: 3, potassium: 260, calcium: 47, magnesium: 100, phosphorus: 370, iron: 3.9, zinc: 2.1, copper: 0.28, manganese: 0, iodine: 0, selenium: 18, chromium: 0, molybdenum: 110 } },
+            "くるみ": { calories: 674, protein: 14.6, fat: 68.8, carbs: 11.7, fiber: 7.5, solubleFiber: 0.6, insolubleFiber: 6.9, sugar: 2.6, saturatedFat: 6.87, monounsaturatedFat: 10.26, polyunsaturatedFat: 50.28, diaas: 0.43, gi: 18, vitamins: { vitaminA: 2, vitaminB1: 0.26, vitaminB2: 0.15, vitaminB6: 0.49, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 28, vitaminK: 7, niacin: 1, pantothenicAcid: 0.67, biotin: 0, folicAcid: 91 }, minerals: { sodium: 4, potassium: 540, calcium: 85, magnesium: 150, phosphorus: 280, iron: 2.6, zinc: 2.6, copper: 1.21, manganese: 3.44, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "アーモンド": { calories: 587, protein: 20.3, fat: 51.8, carbs: 20.9, fiber: 11, solubleFiber: 1.1, insolubleFiber: 9.9, sugar: 4.8, saturatedFat: 3.95, monounsaturatedFat: 33.17, polyunsaturatedFat: 12.52, diaas: 0.52, gi: 30, vitamins: { vitaminA: 1, vitaminB1: 0.03, vitaminB2: 1.04, vitaminB6: 0.08, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 29, vitaminK: 0, niacin: 3.9, pantothenicAcid: 0.26, biotin: 0, folicAcid: 48 }, minerals: { sodium: 0, potassium: 740, calcium: 260, magnesium: 310, phosphorus: 480, iron: 3.7, zinc: 3.7, copper: 1.19, manganese: 2.46, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "オリーブオイル": { calories: 921, protein: 0, fat: 100, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 13.29, monounsaturatedFat: 74.04, polyunsaturatedFat: 7.24, diaas: 0, gi: 0, vitamins: { vitaminA: 15, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 8.9, vitaminK: 42, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "MCTオイル": { calories: 900, protein: 0, fat: 100, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0, gi: 0, vitamins: { vitaminA: 0, vitaminB1: 0, vitaminB2: 0, vitaminB6: 0, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 0 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 0, zinc: 0, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "はちみつ": { calories: 329, protein: 0.3, fat: 0, carbs: 81.9, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0, gi: 58, vitamins: { vitaminA: 0, vitaminB1: 0, vitaminB2: 0.01, vitaminB6: 0.02, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.3, pantothenicAcid: 0.12, biotin: 0.4, folicAcid: 7 }, minerals: { sodium: 2, potassium: 65, calcium: 4, magnesium: 2, phosphorus: 5, iron: 0.2, zinc: 0.1, copper: 0.04, manganese: 0.21, iodine: 0, selenium: 0, chromium: 1, molybdenum: 0 } },
+            "みかん": { calories: 46, protein: 0.7, fat: 0.1, carbs: 12, fiber: 1, solubleFiber: 0.5, insolubleFiber: 0.5, sugar: 11, saturatedFat: 0.01, monounsaturatedFat: 0.02, polyunsaturatedFat: 0.02, diaas: 0.4, gi: 33, vitamins: { vitaminA: 84, vitaminB1: 0.1, vitaminB2: 0.03, vitaminB6: 0.06, vitaminB12: 0, vitaminC: 32, vitaminD: 0, vitaminE: 0.4, vitaminK: 0, niacin: 0.3, pantothenicAcid: 0.23, biotin: 0.5, folicAcid: 22 }, minerals: { sodium: 1, potassium: 150, calcium: 21, magnesium: 11, phosphorus: 15, iron: 0.2, zinc: 0.1, copper: 0.03, manganese: 0.03, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
+            "うどん（ゆで）": { calories: 95, protein: 2.6, fat: 0.4, carbs: 21.6, fiber: 0.8, solubleFiber: 0.2, insolubleFiber: 0.6, sugar: 20.8, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.39, gi: 80, vitamins: { vitaminA: 0, vitaminB1: 0.02, vitaminB2: 0.01, vitaminB6: 0.01, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.1, vitaminK: 0, niacin: 0.2, pantothenicAcid: 0.13, biotin: 0.3, folicAcid: 2 }, minerals: { sodium: 120, potassium: 9, calcium: 6, magnesium: 6, phosphorus: 18, iron: 0.2, zinc: 0.1, copper: 0.04, manganese: 0.12, iodine: 0, selenium: 2, chromium: 1, molybdenum: 2 } },
+            "そば（ゆで）": { calories: 130, protein: 4.8, fat: 0.7, carbs: 26, fiber: 2, solubleFiber: 0.8, insolubleFiber: 1.2, sugar: 24, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.87, gi: 59, vitamins: { vitaminA: 0, vitaminB1: 0.05, vitaminB2: 0.02, vitaminB6: 0.04, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.1, vitaminK: 0, niacin: 0.5, pantothenicAcid: 0.33, biotin: 2.7, folicAcid: 8 }, minerals: { sodium: 2, potassium: 34, calcium: 9, magnesium: 27, phosphorus: 80, iron: 0.8, zinc: 0.4, copper: 0.1, manganese: 0.38, iodine: 0, selenium: 12, chromium: 2, molybdenum: 11 } },
+        };
+
+        // 食品の単位→グラム換算（FoodDatabase.kt servingSizesと同期）
+        const FOOD_SERVING_SIZES = {
+            "鶏卵 M（58g）": { "個": 58 },
+            "鶏卵 L（64g）": { "個": 64 },
+            "鶏卵 LL（70g）": { "個": 70 },
+            "鶏卵 S（46g）": { "個": 46 },
+            "鶏卵 MS（50g）": { "個": 50 },
+            "ゆで卵 M（58g）": { "個": 58 },
+            "温泉卵 M（58g）": { "個": 58 },
+            "目玉焼き M（卵58g+油3g）": { "個": 61 },
+            "うずら卵 水煮（1個12g）": { "個": 12 },
+            "うずら卵（1個10g）": { "個": 10 },
+            "白米（炊飯直後）": { "杯": 150 },
+            "玄米（炊飯直後）": { "杯": 150 },
+            "もち麦ごはん（炊飯直後）": { "杯": 150 },
+            "食パン（6枚切り）": { "枚": 60 },
+            "餅（切り餅）": { "個": 50 },
+            "木綿豆腐": { "丁": 300 },
+            "絹ごし豆腐": { "丁": 300 },
+            "納豆（糸引き）": { "パック": 45 },
+            "バナナ": { "本": 100 },
+            "りんご": { "個": 250 },
+            "アボカド": { "個": 140 },
+            "さつまいも（焼き）": { "本": 200 },
+            "じゃがいも（生）": { "個": 150 },
+            "ヨーグルト（プレーン）": { "個": 100 },
+            "ギリシャヨーグルト": { "個": 100 },
+            "低脂肪牛乳": { "ml": 1, "杯": 200 },
+            "無脂肪牛乳": { "ml": 1, "杯": 200 },
+            "BCAA": { "杯": 5 },
+            "EAA": { "杯": 4 },
+            "カゼインプロテイン": { "杯": 30 },
+            "ソイプロテイン": { "杯": 30 },
+            "マルトデキストリン": { "杯": 30 },
+            "ホエイプロテイン": { "杯": 30 },
+            "みかん": { "個": 80 },
+            "うどん（ゆで）": { "玉": 200 },
+            "そば（ゆで）": { "玉": 170 },
+            "10割そば（ゆで）": { "玉": 170 },
+            "鶏むね肉（皮つき生）": { "枚": 250 },
+            "鶏むね肉（皮なし生）": { "枚": 250 },
+            "ピンクソルト（ヒマラヤ岩塩）": { "小さじ": 5 },
+            "MCTオイル": { "大さじ": 13 },
+            "えごま油": { "大さじ": 12 },
+            "ごま油": { "大さじ": 12 },
+            "はちみつ": { "大さじ": 21 },
+            "みりん": { "大さじ": 18 },
+            "めんつゆ（3倍濃縮）": { "大さじ": 15 },
+            "アマニ油": { "大さじ": 12 },
+            "オイスターソース": { "大さじ": 18 },
+            "オリーブオイル": { "大さじ": 12 },
+            "グラニュー糖": { "大さじ": 12 },
+            "ケチャップ": { "大さじ": 15 },
+            "ココナッツオイル": { "大さじ": 12 },
+            "バター": { "大さじ": 12 },
+            "ポン酢": { "大さじ": 15 },
+            "マヨネーズ": { "大さじ": 12 },
+            "メープルシロップ": { "大さじ": 21 },
+            "三温糖": { "大さじ": 9 },
+            "上白糖": { "大さじ": 9 },
+            "味噌（淡色辛みそ）": { "大さじ": 18 },
+            "味噌（赤色辛みそ）": { "大さじ": 18 },
+            "料理酒": { "大さじ": 15 },
+            "濃口醤油": { "大さじ": 18 },
+            "無塩バター": { "大さじ": 12 },
+            "米油": { "大さじ": 12 },
+            "米酢": { "大さじ": 15 },
+            "粗塩": { "小さじ": 5 },
+            "薄口醤油": { "大さじ": 18 },
+            "豆板醤": { "小さじ": 6 },
+            "黒糖": { "大さじ": 9 },
+            "黒酢": { "大さじ": 15 },
+        };
+
+        // テンプレートアイテム一時保持
+        let templateItems = [];
+        let selectedFoodCategory = 'all';
+
+        function isWorkoutMode() {
+            return document.getElementById('cq-tpl-type').value === 'WORKOUT';
+        }
+
+        function onTemplateTypeChange() {
+            const workout = isWorkoutMode();
+            const catTabs = document.getElementById('cq-category-tabs');
+            const unitSelect = document.getElementById('cq-tpl-food-unit');
+            const label = document.getElementById('cq-tpl-item-label');
+
+            if (workout) {
+                // 運動カテゴリタブに切替
+                label.textContent = '種目名';
+                catTabs.innerHTML = `<button onclick="setFoodCategory('all')" class="cq-cat-btn cq-cat-active" data-cat="all">すべて</button>` +
+                    Object.keys(EXERCISE_DATABASE).map(cat =>
+                        `<button onclick="setFoodCategory('${cat}')" class="cq-cat-btn" data-cat="${cat}">${EXERCISE_EMOJI[cat]||''} ${cat}</button>`
+                    ).join('');
+                unitSelect.innerHTML = EXERCISE_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+            } else {
+                // 食事カテゴリタブに戻す
+                label.textContent = '食品名';
+                catTabs.innerHTML = `<button onclick="setFoodCategory('all')" class="cq-cat-btn cq-cat-active" data-cat="all">すべて</button>` +
+                    Object.keys(FOOD_DATABASE).map(cat =>
+                        `<button onclick="setFoodCategory('${cat}')" class="cq-cat-btn" data-cat="${cat}">${CATEGORY_EMOJI[cat]||''} ${cat.replace('豆類・ナッツ','豆類').replace('サプリメント','サプリ')}</button>`
+                    ).join('');
+                unitSelect.innerHTML = ['g','個','ml','杯','枚','本','丁','粒'].map(u => `<option value="${u}">${u}</option>`).join('');
+            }
+            selectedFoodCategory = 'all';
+            document.getElementById('cq-tpl-food-search').value = '';
+            document.getElementById('cq-tpl-food-search').placeholder = workout ? '種目名で検索...' : '食品名で検索...';
+            filterFoodList();
+        }
+
+        function setFoodCategory(cat) {
+            selectedFoodCategory = cat;
+            document.querySelectorAll('.cq-cat-btn').forEach(btn => {
+                btn.classList.toggle('cq-cat-active', btn.getAttribute('data-cat') === cat);
+            });
+            filterFoodList();
+            document.getElementById('cq-food-dropdown').classList.remove('hidden');
+        }
+
+        function getItemDatabase() {
+            return isWorkoutMode() ? EXERCISE_DATABASE : FOOD_DATABASE;
+        }
+
+        function getItemEmoji() {
+            return isWorkoutMode() ? EXERCISE_EMOJI : CATEGORY_EMOJI;
+        }
+
+        function getFoodList() {
+            const db = getItemDatabase();
+            if (selectedFoodCategory === 'all') {
+                const result = [];
+                for (const [cat, items] of Object.entries(db)) {
+                    items.forEach(f => result.push({ name: f, category: cat }));
+                }
+                return result;
+            } else {
+                return (db[selectedFoodCategory] || []).map(f => ({ name: f, category: selectedFoodCategory }));
+            }
+        }
+
+        function showFoodDropdown() {
+            filterFoodList();
+            document.getElementById('cq-food-dropdown').classList.remove('hidden');
+        }
+
+        function filterFoodList() {
+            const query = document.getElementById('cq-tpl-food-search').value.trim().toLowerCase();
+            const dropdown = document.getElementById('cq-food-dropdown');
+            const allFoods = getFoodList();
+            const emojiMap = getItemEmoji();
+            const filtered = query
+                ? allFoods.filter(f => f.name.toLowerCase().includes(query))
+                : allFoods;
+
+            if (filtered.length === 0) {
+                dropdown.innerHTML = '<div class="px-3 py-2 text-gray-400 text-sm">該当なし</div>';
+            } else {
+                let html = '';
+                let lastCat = '';
+                const items = filtered.slice(0, 80);
+                items.forEach(f => {
+                    if (f.category !== lastCat) {
+                        lastCat = f.category;
+                        const emoji = emojiMap[f.category] || '';
+                        html += `<div class="px-3 py-1 text-xs font-bold text-gray-500 bg-gray-100 sticky top-0">${emoji} ${f.category}</div>`;
+                    }
+                    html += `<div class="px-3 py-1.5 text-sm cursor-pointer hover:bg-yellow-50" onmousedown="selectFood('${escapeHtml(f.name)}')">${escapeHtml(f.name)}</div>`;
+                });
+                if (filtered.length > 80) {
+                    html += '<div class="px-3 py-2 text-xs text-gray-400">...他 ' + (filtered.length - 80) + ' 件</div>';
+                }
+                dropdown.innerHTML = html;
+            }
+            dropdown.classList.remove('hidden');
+        }
+
+        function selectFood(name) {
+            document.getElementById('cq-tpl-food-search').value = name;
+            document.getElementById('cq-food-dropdown').classList.add('hidden');
+
+            // 単位とデフォルト量を自動設定
+            const serving = FOOD_SERVING_SIZES[name];
+            const unitSelect = document.getElementById('cq-tpl-food-unit');
+            const amountInput = document.getElementById('cq-tpl-food-amount');
+            if (serving) {
+                const defaultUnit = Object.keys(serving)[0];
+                unitSelect.value = defaultUnit;
+                amountInput.value = defaultUnit === 'g' ? '100' : '1';
+            } else {
+                unitSelect.value = 'g';
+                amountInput.value = '100';
+            }
+            amountInput.focus();
+        }
+
+        function addTemplateItem() {
+            const foodName = document.getElementById('cq-tpl-food-search').value.trim();
+            const amount = parseFloat(document.getElementById('cq-tpl-food-amount').value);
+            const unit = document.getElementById('cq-tpl-food-unit').value;
+
+            if (!foodName) { alert('食品を選択してください'); return; }
+            if (!amount || amount <= 0) { alert('量を入力してください'); return; }
+
+            // グラム換算 → ratio計算 → マクロ算出
+            let grams = amount;
+            if (unit !== 'g') {
+                const serving = FOOD_SERVING_SIZES[foodName];
+                if (serving && serving[unit]) {
+                    grams = amount * serving[unit];
+                }
+            }
+            const ratio = grams / 100;
+            const nutrients = FOOD_NUTRIENTS_PER_100G[foodName];
+            let item = { foodName, amount, unit, calories: 0, protein: 0, fat: 0, carbs: 0,
+                fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0,
+                saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0,
+                diaas: 0, gi: 0, vitamins: {}, minerals: {} };
+            if (nutrients) {
+                item.calories = Math.round(nutrients.calories * ratio);
+                item.protein = r1(nutrients.protein * ratio);
+                item.fat = r1(nutrients.fat * ratio);
+                item.carbs = r1(nutrients.carbs * ratio);
+                item.fiber = r1((nutrients.fiber || 0) * ratio);
+                item.solubleFiber = r1((nutrients.solubleFiber || 0) * ratio);
+                item.insolubleFiber = r1((nutrients.insolubleFiber || 0) * ratio);
+                item.sugar = r1((nutrients.sugar || 0) * ratio);
+                item.saturatedFat = r2((nutrients.saturatedFat || 0) * ratio);
+                item.monounsaturatedFat = r2((nutrients.monounsaturatedFat || 0) * ratio);
+                item.polyunsaturatedFat = r2((nutrients.polyunsaturatedFat || 0) * ratio);
+                item.diaas = nutrients.diaas || 0;
+                item.gi = nutrients.gi || 0;
+                item.vitamins = scaleMap(nutrients.vitamins || {}, ratio);
+                item.minerals = scaleMap(nutrients.minerals || {}, ratio);
+            }
+
+            templateItems.push(item);
+            renderTemplateItems();
+
+            // 入力欄リセット
+            document.getElementById('cq-tpl-food-search').value = '';
+            document.getElementById('cq-tpl-food-amount').value = '';
+            document.getElementById('cq-tpl-food-search').focus();
+        }
+
+        function removeTemplateItem(index) {
+            templateItems.splice(index, 1);
+            renderTemplateItems();
+        }
+
+        function renderTemplateItems() {
+            const container = document.getElementById('cq-tpl-item-list');
+            if (templateItems.length === 0) {
+                container.innerHTML = '<span class="text-gray-400">アイテムを追加してください</span>';
+                return;
+            }
+            let html = templateItems.map((item, i) =>
+                `<div class="flex items-center justify-between py-1 px-2 rounded ${i % 2 === 0 ? 'bg-yellow-50' : ''}">
+                    <span class="text-sm"><strong>${escapeHtml(item.foodName)}</strong> — ${item.amount} ${escapeHtml(item.unit)}
+                    ${item.calories > 0 ? `<span class="text-xs text-gray-500 ml-1">(${item.calories}kcal P${item.protein} F${item.fat} C${item.carbs})</span>` : ''}</span>
+                    <button onclick="removeTemplateItem(${i})" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>
+                </div>`
+            ).join('');
+            // 合計表示
+            const totals = templateItems.reduce((acc, item) => ({
+                calories: acc.calories + (item.calories || 0),
+                protein: acc.protein + (item.protein || 0),
+                fat: acc.fat + (item.fat || 0),
+                carbs: acc.carbs + (item.carbs || 0),
+                fiber: acc.fiber + (item.fiber || 0),
+                iron: acc.iron + ((item.minerals || {}).iron || 0),
+                calcium: acc.calcium + ((item.minerals || {}).calcium || 0),
+                vitD: acc.vitD + ((item.vitamins || {}).vitaminD || 0),
+                vitC: acc.vitC + ((item.vitamins || {}).vitaminC || 0)
+            }), { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, iron: 0, calcium: 0, vitD: 0, vitC: 0 });
+            html += `<div class="mt-2 pt-2 border-t border-gray-200 text-sm font-bold text-gray-700">
+                合計: ${totals.calories}kcal ｜ P${r1(totals.protein)}g F${r1(totals.fat)}g C${r1(totals.carbs)}g
+                <span class="text-xs font-normal text-gray-500 ml-2">繊維${r1(totals.fiber)}g 鉄${r2(totals.iron)}mg Ca${r1(totals.calcium)}mg VitD${r1(totals.vitD)}μg VitC${r1(totals.vitC)}mg</span>
+            </div>`;
+            container.innerHTML = html;
+        }
+
+        // ドロップダウンを閉じる（外側クリック）
+        document.addEventListener('click', function(e) {
+            const search = document.getElementById('cq-tpl-food-search');
+            const dropdown = document.getElementById('cq-food-dropdown');
+            if (search && dropdown && !search.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        async function createTemplate() {
+            const title = document.getElementById('cq-tpl-title').value.trim();
+            const type = document.getElementById('cq-tpl-type').value;
+
+            if (!title) { alert('テンプレート名を入力してください'); return; }
+            if (templateItems.length === 0) { alert('アイテムを1つ以上追加してください'); return; }
+
+            try {
+                const currentUser = auth.currentUser;
+                const totals = templateItems.reduce((acc, item) => {
+                    acc.calories += (item.calories || 0);
+                    acc.protein += (item.protein || 0);
+                    acc.fat += (item.fat || 0);
+                    acc.carbs += (item.carbs || 0);
+                    acc.fiber += (item.fiber || 0);
+                    const iv = item.vitamins || {};
+                    const im = item.minerals || {};
+                    for (const k of Object.keys(iv)) { acc.vitamins[k] = (acc.vitamins[k] || 0) + (iv[k] || 0); }
+                    for (const k of Object.keys(im)) { acc.minerals[k] = (acc.minerals[k] || 0) + (im[k] || 0); }
+                    return acc;
+                }, { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, vitamins: {}, minerals: {} });
+                // round vitamin/mineral totals
+                const roundedVitamins = {}; for (const [k,v] of Object.entries(totals.vitamins)) { roundedVitamins[k] = r2(v); }
+                const roundedMinerals = {}; for (const [k,v] of Object.entries(totals.minerals)) { roundedMinerals[k] = r2(v); }
+                await db.collection('quest_templates').add({
+                    ownerId: currentUser.uid,
+                    title: title,
+                    type: type,
+                    items: templateItems.map(i => ({ ...i })),
+                    totalMacros: { protein: r1(totals.protein), fat: r1(totals.fat), carbs: r1(totals.carbs), calories: totals.calories, fiber: r1(totals.fiber), vitamins: roundedVitamins, minerals: roundedMinerals },
+                    isActive: true,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('cq-tpl-message').innerHTML = '<span class="text-green-600">✅ テンプレートを保存しました</span>';
+                document.getElementById('cq-tpl-title').value = '';
+                templateItems = [];
+                renderTemplateItems();
+                await loadTemplates();
+            } catch (e) {
+                document.getElementById('cq-tpl-message').innerHTML = '<span class="text-red-500">❌ エラー: ' + e.message + '</span>';
+            }
+        }
+
+        async function loadTemplates() {
+            try {
+                const snapshot = await db.collection('quest_templates').where('isActive', '==', true).get();
+                const templates = [];
+                snapshot.forEach(doc => {
+                    templates.push({ id: doc.id, ...doc.data() });
+                });
+                // クライアント側でソート（複合インデックス不要）
+                templates.sort((a, b) => {
+                    const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+                    const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+                    return bTime - aTime;
+                });
+                document.getElementById('cq-template-count').textContent = templates.length;
+
+                // テンプレート選択肢を更新
+                const select = document.getElementById('cq-assign-template');
+                select.innerHTML = '<option value="">-- テンプレートを選択 --</option>';
+                templates.forEach(t => {
+                    select.innerHTML += `<option value="${t.id}">${escapeHtml(t.title)} (${t.type})</option>`;
+                });
+
+                if (templates.length === 0) {
+                    document.getElementById('cq-template-list').innerHTML = '<p class="text-gray-400">テンプレートがありません</p>';
+                    return;
+                }
+
+                let html = '<div class="space-y-3">';
+                templates.forEach(t => {
+                    const typeBadge = t.type === 'MEAL'
+                        ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">🍽 食事</span>'
+                        : '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">💪 運動</span>';
+                    const items = (t.items || []).map(i => `${i.foodName} ${i.amount}${i.unit}`).join(', ');
+                    html += `<div class="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="font-bold">${escapeHtml(t.title)}</span> ${typeBadge}
+                            </div>
+                            <button onclick="deleteTemplate('${t.id}')" class="text-xs text-red-500 hover:text-red-700">削除</button>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">${escapeHtml(items)}</div>
+                    </div>`;
+                });
+                html += '</div>';
+                document.getElementById('cq-template-list').innerHTML = html;
+            } catch (e) {
+                document.getElementById('cq-template-list').innerHTML = '<p class="text-red-500">読み込みエラー: ' + e.message + '</p>';
+            }
+        }
+
+        async function deleteTemplate(templateId) {
+            if (!confirm('このテンプレートを削除しますか？')) return;
+            try {
+                await db.collection('quest_templates').doc(templateId).update({ isActive: false });
+                await loadTemplates();
+            } catch (e) {
+                alert('エラー: ' + e.message);
+            }
+        }
+
+        // ========== 自動スケーリング用計算 ==========
+        function calculateUserTargetCalories(profile) {
+            const weight = profile.weight || 70;
+            const bodyFatPct = profile.bodyFatPercentage || 15;
+            const activityLevel = profile.activityLevel || 'MODERATE';
+            const goal = profile.goal || 'MAINTAIN';
+            const trainingDays = profile.trainingDaysPerWeek || 3;
+
+            const fatMass = weight * (bodyFatPct / 100);
+            const lbm = weight - fatMass;
+            const bmr = 370 + (21.6 * lbm) + (fatMass * 4.5);
+
+            const activityMultipliers = {
+                'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55,
+                'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9
+            };
+            const tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
+
+            const goalAdjustments = {
+                'LOSE_FAST': -750, 'LOSE': -500, 'LOSE_SLOW': -250,
+                'MAINTAIN': 0, 'GAIN_SLOW': 250, 'GAIN': 500
+            };
+            const calorieAdjustment = goalAdjustments[goal] || 0;
+            const trainingBonus = (trainingDays >= 4) ? 100 : 0;
+
+            return Math.round(tdee + calorieAdjustment + trainingBonus);
+        }
+
+        function calculateSlotTargetCalories(profile, slotKey, totalCalories) {
+            const mealSlotConfig = profile.mealSlotConfig || {};
+            const slots = mealSlotConfig.slots || [];
+            const mealsPerDay = mealSlotConfig.mealsPerDay || profile.mealsPerDay || 3;
+
+            // トレ前後の固定PFCカロリーを算出
+            let preWorkoutCals = 0, postWorkoutCals = 0;
+            const prePFC = profile.preWorkoutMacros || {};
+            const postPFC = profile.postWorkoutMacros || {};
+            if (prePFC.protein || prePFC.fat || prePFC.carbs) {
+                preWorkoutCals = (prePFC.protein || 0) * 4 + (prePFC.fat || 0) * 9 + (prePFC.carbs || 0) * 4;
+            }
+            if (postPFC.protein || postPFC.fat || postPFC.carbs) {
+                postWorkoutCals = (postPFC.protein || 0) * 4 + (postPFC.fat || 0) * 9 + (postPFC.carbs || 0) * 4;
+            }
+
+            // スロットの種別判定
+            const slot = slots.find(s => s.slotNumber === parseInt(slotKey.replace('meal_', ''))) || {};
+            const relTime = slot.relativeTime || '';
+
+            if (relTime.startsWith('training-')) return preWorkoutCals || Math.round(totalCalories / mealsPerDay);
+            if (relTime === 'training+0' || relTime.startsWith('training+')) return postWorkoutCals || Math.round(totalCalories / mealsPerDay);
+
+            // 通常食事: (total - トレ前後) / 通常食事数
+            let trainingSlots = 0;
+            slots.forEach(s => {
+                const rt = s.relativeTime || '';
+                if (rt.startsWith('training-') || rt === 'training+0' || rt.startsWith('training+')) trainingSlots++;
+            });
+            const normalSlots = mealsPerDay - trainingSlots;
+            const remainingCals = totalCalories - preWorkoutCals - postWorkoutCals;
+            return normalSlots > 0 ? Math.round(remainingCals / normalSlots) : Math.round(totalCalories / mealsPerDay);
+        }
+
+        // ユーザーのMealSlotConfigを取得してスロット選択肢を生成
+        async function loadUserSlots() {
+            const uid = document.getElementById('cq-assign-uid').value.trim();
+            if (!uid) { alert('ユーザーIDを入力してください'); return; }
+
+            const container = document.getElementById('cq-assign-slot-container');
+            const infoEl = document.getElementById('cq-assign-user-info');
+            container.innerHTML = '<span class="text-gray-400 text-sm">読み込み中...</span>';
+            infoEl.textContent = '';
+
+            try {
+                const userDoc = await db.collection('users').doc(uid).get();
+                if (!userDoc.exists) { container.innerHTML = '<span class="text-red-500 text-sm">ユーザーが見つかりません</span>'; return; }
+
+                const userData = userDoc.data();
+                const displayName = userData.displayName || userData.email || uid;
+                const profile = userData.profile || {};
+                const mealSlotConfig = profile.mealSlotConfig || {};
+                const mealsPerDay = mealSlotConfig.mealsPerDay || profile.mealsPerDay || 3;
+                const slots = mealSlotConfig.slots || [];
+
+                // 目標カロリー算出
+                const targetCalories = calculateUserTargetCalories(profile);
+
+                // ユーザー情報表示 & 最近のユーザーに保存
+                infoEl.innerHTML = `<strong>${escapeHtml(displayName)}</strong> ｜ 食事${mealsPerDay}回 ｜ 目標 <strong>${targetCalories}kcal/日</strong>`;
+                saveRecentUser(uid, displayName);
+
+                // スロットボタン生成
+                let html = '';
+                for (let i = 1; i <= mealsPerDay; i++) {
+                    const slot = slots.find(s => s.slotNumber === i) || {};
+                    const relTime = slot.relativeTime || '';
+                    let label = `食事${i}`;
+                    let badge = '';
+
+                    // トレ前後の判定
+                    if (relTime.startsWith('training-')) {
+                        badge = '<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">トレ前</span>';
+                    } else if (relTime === 'training+0' || relTime.startsWith('training+')) {
+                        const offset = parseInt(relTime.replace('training+', '') || '0');
+                        badge = offset === 0
+                            ? '<span class="text-[10px] bg-red-100 text-red-700 px-1 rounded">トレ直後</span>'
+                            : '<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">トレ後</span>';
+                    } else if (relTime.startsWith('wake')) {
+                        badge = '<span class="text-[10px] bg-blue-100 text-blue-700 px-1 rounded">起床</span>';
+                    } else if (relTime.startsWith('sleep')) {
+                        badge = '<span class="text-[10px] bg-purple-100 text-purple-700 px-1 rounded">就寝前</span>';
+                    }
+
+                    const slotTargetCals = calculateSlotTargetCalories(profile, 'meal_' + i, targetCalories);
+                    html += `<button onclick="selectSlot('meal_${i}')" data-slot="meal_${i}" data-target-cals="${slotTargetCals}"
+                        class="cq-slot-btn border-2 border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-yellow-500 hover:bg-yellow-50 transition-all flex flex-col items-center gap-0.5">
+                        <span class="font-bold">${label}</span>${badge}<span class="text-[10px] text-gray-400">${slotTargetCals}kcal</span>
+                    </button>`;
+                }
+
+                // 運動スロット
+                html += `<button onclick="selectSlot('workout')" data-slot="workout"
+                    class="cq-slot-btn border-2 border-blue-300 rounded-lg px-3 py-2 text-sm hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center gap-0.5">
+                    <span class="font-bold">🏋️ 運動</span>
+                </button>`;
+
+                container.innerHTML = html;
+                document.getElementById('cq-assign-slot').value = '';
+
+                // 割当一覧も自動読み込み
+                await loadUserAssignments();
+
+            } catch (e) {
+                container.innerHTML = '<span class="text-red-500 text-sm">エラー: ' + e.message + '</span>';
+            }
+        }
+
+        function selectSlot(slotKey) {
+            document.getElementById('cq-assign-slot').value = slotKey;
+            // アクティブ状態を更新
+            document.querySelectorAll('.cq-slot-btn').forEach(btn => {
+                const isActive = btn.getAttribute('data-slot') === slotKey;
+                btn.classList.toggle('border-yellow-500', isActive && slotKey !== 'workout');
+                btn.classList.toggle('bg-yellow-100', isActive && slotKey !== 'workout');
+                btn.classList.toggle('border-blue-500', isActive && slotKey === 'workout');
+                btn.classList.toggle('bg-blue-100', isActive && slotKey === 'workout');
+                btn.classList.toggle('border-gray-300', !isActive && slotKey !== 'workout');
+            });
+        }
+
+        async function assignQuestToUser() {
+            const uid = document.getElementById('cq-assign-uid').value.trim();
+            const date = document.getElementById('cq-assign-date').value;
+            const slotKey = document.getElementById('cq-assign-slot').value;
+            const templateId = document.getElementById('cq-assign-template').value;
+
+            if (!uid || !date || !slotKey || !templateId) {
+                alert('ユーザーID、日付、スロット、テンプレートを全て指定してください');
+                return;
+            }
+
+            try {
+                // テンプレートデータを取得
+                const tplDoc = await db.collection('quest_templates').doc(templateId).get();
+                if (!tplDoc.exists) { alert('テンプレートが見つかりません'); return; }
+                const tpl = tplDoc.data();
+
+                // custom_questsドキュメントを取得（既存があれば更新）
+                const docRef = db.collection('users').doc(uid).collection('custom_quests').doc(date);
+                const existing = await docRef.get();
+
+                // スケーリング: 運動テンプレートはスキップ
+                let scaledItems = tpl.items;
+                let scaledMacros = tpl.totalMacros || { protein: 0, fat: 0, carbs: 0, calories: 0 };
+
+                if (tpl.type === 'MEAL' && scaledMacros.calories > 0) {
+                    // スロットの目標カロリーを取得
+                    const slotBtn = document.querySelector(`.cq-slot-btn[data-slot="${slotKey}"]`);
+                    const slotTargetCals = slotBtn ? parseInt(slotBtn.getAttribute('data-target-cals') || '0') : 0;
+
+                    if (slotTargetCals > 0) {
+                        const coefficient = slotTargetCals / scaledMacros.calories;
+                        scaledItems = tpl.items.map(item => ({
+                            ...item,
+                            amount: r1((item.amount || 0) * coefficient),
+                            calories: Math.round((item.calories || 0) * coefficient),
+                            protein: r1((item.protein || 0) * coefficient),
+                            fat: r1((item.fat || 0) * coefficient),
+                            carbs: r1((item.carbs || 0) * coefficient),
+                            fiber: r1((item.fiber || 0) * coefficient),
+                            solubleFiber: r1((item.solubleFiber || 0) * coefficient),
+                            insolubleFiber: r1((item.insolubleFiber || 0) * coefficient),
+                            sugar: r1((item.sugar || 0) * coefficient),
+                            saturatedFat: r2((item.saturatedFat || 0) * coefficient),
+                            monounsaturatedFat: r2((item.monounsaturatedFat || 0) * coefficient),
+                            polyunsaturatedFat: r2((item.polyunsaturatedFat || 0) * coefficient),
+                            diaas: item.diaas || 0,
+                            gi: item.gi || 0,
+                            vitamins: scaleMap(item.vitamins || {}, coefficient),
+                            minerals: scaleMap(item.minerals || {}, coefficient),
+                        }));
+                        scaledMacros = {
+                            calories: Math.round(scaledMacros.calories * coefficient),
+                            protein: r1((scaledMacros.protein || 0) * coefficient),
+                            fat: r1((scaledMacros.fat || 0) * coefficient),
+                            carbs: r1((scaledMacros.carbs || 0) * coefficient),
+                            fiber: r1((scaledMacros.fiber || 0) * coefficient),
+                            vitamins: scaleMap(scaledMacros.vitamins || {}, coefficient),
+                            minerals: scaleMap(scaledMacros.minerals || {}, coefficient),
+                        };
+                    }
+                }
+
+                const slotData = {
+                    templateId: templateId,
+                    title: tpl.title,
+                    type: tpl.type,
+                    items: scaledItems,
+                    totalMacros: scaledMacros
+                };
+
+                if (existing.exists) {
+                    // 既存ドキュメントにスロットを追加/上書き
+                    await docRef.update({
+                        [`slots.${slotKey}`]: slotData
+                    });
+                } else {
+                    // 新規作成
+                    await docRef.set({
+                        date: date,
+                        assignedBy: auth.currentUser.uid,
+                        isCustom: true,
+                        slots: { [slotKey]: slotData },
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                const slotLabel = slotKey === 'workout' ? '運動' : slotKey.replace('meal_', '食事');
+                document.getElementById('cq-assign-message').innerHTML = '<span class="text-green-600">✅ 割当を保存しました (' + date + ' / ' + slotLabel + ')</span>';
+
+                // 割当一覧を更新
+                await loadUserAssignments();
+            } catch (e) {
+                document.getElementById('cq-assign-message').innerHTML = '<span class="text-red-500">❌ エラー: ' + e.message + '</span>';
+            }
+        }
+
+        async function updateAssignedCount() {
+            // 割当数はテンプレート割当時にインクリメントされるだけの簡易表示
+            // （サブコレクション横断クエリは不可のため正確なカウントは省略）
+        }
+
+        // ========== 最近のユーザー管理 ==========
+        function getRecentUsers() {
+            try { return JSON.parse(localStorage.getItem('cq_recent_users') || '[]'); } catch { return []; }
+        }
+
+        function saveRecentUser(uid, displayName) {
+            let users = getRecentUsers().filter(u => u.uid !== uid);
+            users.unshift({ uid, displayName, timestamp: Date.now() });
+            if (users.length > 10) users = users.slice(0, 10);
+            localStorage.setItem('cq_recent_users', JSON.stringify(users));
+            renderRecentUsers();
+        }
+
+        function renderRecentUsers() {
+            const users = getRecentUsers();
+            const container = document.getElementById('cq-recent-users');
+            if (users.length === 0) {
+                container.innerHTML = '<span class="text-gray-400 text-sm">まだ履歴がありません</span>';
+                return;
+            }
+            container.innerHTML = users.map(u =>
+                `<button onclick="switchToUser('${u.uid}')" class="text-xs border border-gray-300 rounded-full px-3 py-1 hover:bg-yellow-50 hover:border-yellow-400 transition-all ${document.getElementById('cq-assign-uid').value === u.uid ? 'bg-yellow-100 border-yellow-500 font-bold' : ''}">
+                    ${escapeHtml(u.displayName || u.uid.substring(0, 8) + '...')}
+                </button>`
+            ).join('');
+        }
+
+        async function switchToUser(uid) {
+            document.getElementById('cq-assign-uid').value = uid;
+            await loadUserSlots();
+            await loadUserAssignments();
+        }
+
+        // ========== 割当一覧表示 ==========
+        async function loadUserAssignments() {
+            const uid = document.getElementById('cq-assign-uid').value.trim();
+            if (!uid) return;
+
+            const listEl = document.getElementById('cq-assign-list');
+            const titleEl = document.getElementById('cq-assign-list-title');
+            listEl.innerHTML = '<span class="text-gray-400">読み込み中...</span>';
+
+            try {
+                const snapshot = await db.collection('users').doc(uid).collection('custom_quests').orderBy('date', 'desc').limit(30).get();
+
+                if (snapshot.empty) {
+                    listEl.innerHTML = '<span class="text-gray-400">割当なし</span>';
+                    titleEl.textContent = '割当一覧（0件）';
+                    return;
+                }
+
+                titleEl.textContent = `割当一覧（${snapshot.size}件）`;
+                let html = '<div class="space-y-2">';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = data.date || doc.id;
+                    const slots = data.slots || {};
+                    const slotKeys = Object.keys(slots);
+                    const isToday = date === new Date().toISOString().split('T')[0];
+                    const isPast = date < new Date().toISOString().split('T')[0];
+
+                    let dateBadge = '';
+                    if (isToday) dateBadge = '<span class="text-[10px] bg-green-100 text-green-700 px-1 rounded ml-1">今日</span>';
+                    else if (isPast) dateBadge = '<span class="text-[10px] bg-gray-100 text-gray-500 px-1 rounded ml-1">過去</span>';
+                    else dateBadge = '<span class="text-[10px] bg-blue-100 text-blue-700 px-1 rounded ml-1">予定</span>';
+
+                    const slotDetails = slotKeys.map(key => {
+                        const s = slots[key];
+                        const label = key === 'workout' ? '🏋️運動' : key.replace('meal_', '食事');
+                        const typeBadge = s.type === 'WORKOUT'
+                            ? '<span class="text-[10px] bg-blue-50 text-blue-600 px-1 rounded">運動</span>'
+                            : '<span class="text-[10px] bg-green-50 text-green-600 px-1 rounded">食事</span>';
+                        return `<span class="inline-flex items-center gap-1">${label}: <strong>${escapeHtml(s.title || '?')}</strong> ${typeBadge}</span>`;
+                    }).join('<span class="text-gray-300 mx-1">|</span>');
+
+                    html += `<div class="p-2 border ${isToday ? 'border-green-300 bg-green-50' : isPast ? 'border-gray-200 bg-gray-50' : 'border-yellow-200 bg-yellow-50'} rounded-lg text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold">${date}${dateBadge}</span>
+                            <button onclick="deleteAssignment('${uid}','${date}')" class="text-xs text-red-400 hover:text-red-600">削除</button>
+                        </div>
+                        <div class="mt-1 text-xs">${slotDetails}</div>
+                    </div>`;
+                });
+                html += '</div>';
+                listEl.innerHTML = html;
+            } catch (e) {
+                listEl.innerHTML = '<span class="text-red-500 text-sm">エラー: ' + e.message + '</span>';
+            }
+        }
+
+        async function deleteAssignment(uid, date) {
+            if (!confirm(`${date} の割当を削除しますか？`)) return;
+            try {
+                await db.collection('users').doc(uid).collection('custom_quests').doc(date).delete();
+                await loadUserAssignments();
+            } catch (e) {
+                alert('削除エラー: ' + e.message);
             }
         }
 

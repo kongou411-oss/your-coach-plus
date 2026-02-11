@@ -5,6 +5,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -393,11 +394,19 @@ fun TimelineItemCard(
     // 完了済みは折りたたみ表示
     var isExpanded by remember { mutableStateOf(!isCompleted) }
 
+    // カスタムクエスト（トレーナー指定）はゴールド枠
+    val isCustom = item.isCustomQuest
+    val goldColor = Color(0xFFFFD700)
+
     val backgroundColor = when {
+        isCustom && isCurrent -> goldColor.copy(alpha = 0.12f)
+        isCustom -> goldColor.copy(alpha = 0.05f)
         isCurrent -> Primary.copy(alpha = 0.1f)
         isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         else -> MaterialTheme.colorScheme.surface
     }
+
+    val cardBorder = if (isCustom) BorderStroke(2.dp, goldColor) else null
 
     Card(
         modifier = modifier
@@ -408,6 +417,7 @@ fun TimelineItemCard(
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        border = cardBorder,
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (isCurrent) 4.dp else 1.dp
         )
@@ -628,6 +638,7 @@ fun CommandFooter(
     onAnalysisClick: () -> Unit,
     onGenerateQuestClick: () -> Unit,
     isGeneratingQuest: Boolean,
+    hasCustomQuest: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -670,40 +681,74 @@ fun CommandFooter(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // 明日の指示書ボタン
-            Button(
-                onClick = onGenerateQuestClick,
-                enabled = !isGeneratingQuest,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
-            ) {
-                if (isGeneratingQuest) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
+            // 明日の指示書ボタン（カスタムクエスト時は無効化）
+            if (hasCustomQuest) {
+                Button(
+                    onClick = {},
+                    enabled = false,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFD700),
+                        disabledContainerColor = Color(0xFFFFD700).copy(alpha = 0.6f)
                     )
-                } else {
+                ) {
                     Icon(
-                        imageVector = Icons.Default.AutoAwesome,
+                        imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "トレーナープラン",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "実行中",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = "明日の指示書",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "クエスト生成",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
+            } else {
+                Button(
+                    onClick = onGenerateQuestClick,
+                    enabled = !isGeneratingQuest,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
+                ) {
+                    if (isGeneratingQuest) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "明日の指示書",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "クエスト生成",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
         }

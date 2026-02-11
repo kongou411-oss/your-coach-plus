@@ -1,6 +1,6 @@
 # KMP ネイティブ化 進捗記録
 
-**最終更新**: 2026-01-28
+**最終更新**: 2026-02-11
 **ステータス**: Phase 1-3 完了 ✅ **全画面・ビジネスロジック実装完了！**
 
 ## ビルド結果
@@ -441,3 +441,106 @@ cd ycn_native
 **必須ファイル**:
 - `androidApp/google-services.json` - Firebase設定（既に配置済み）
 - `local.properties` - Android SDK パス（既に生成済み）
+
+---
+
+## 食品単位対応 + カスタムクエスト自動スケーリング (2026-02-11) ← **NEW**
+
+**ステータス**: 実装完了 ✅ / ビルド成功 ✅ / 実機テスト未実施
+
+### 背景
+FoodDatabaseの21食品（卵、サプリ、牛乳等）が1個/1杯あたりの栄養素で登録されていたため、`ratio = amount / 100f` 計算が破綻していた（例: 卵2個 → ratio=0.02 → 1.6kcalになるバグ）。また、管理画面でテンプレートを割り当てる際、ユーザーの目標カロリーに応じた自動スケーリングが未実装だった。
+
+### Phase 1: FoodItem + FoodDatabase データ層修正 ✅
+
+**FoodItem.kt** (`shared/.../data/database/FoodItem.kt`)
+- `servingSizes: Map<String, Float>` フィールド追加（単位→グラム換算）
+- `toGrams(amount, selectedUnit)` → グラム換算値を返す
+- `getAvailableUnits()` → 使用可能単位リスト（"g" + servingSizesのキー）
+- `getDefaultUnit()` → servingSizesがあれば最初のキー、なければ"g"
+- `getDefaultAmount(selectedUnit)` → "g"なら100、それ以外なら1
+
+**FoodDatabase.kt** (`shared/.../data/database/FoodDatabase.kt`)
+
+A. バグ修正: 21項目を100gあたりに正規化
+| 対象 | 件数 | 処理 |
+|------|------|------|
+| 卵（unit="個"） | 9項目 | 全栄養素を `/重量g*100` で変換、unit→"g"、servingSizes追加 |
+| 卵白・卵黄（unit="100g"） | 2項目 | unit→"g"に変更のみ |
+| 牛乳・飲料（unit="ml"） | 4項目 | 100ml≈100gのため値変更なし、servingSizes追加 |
+| サプリ（unit="杯"） | 5項目 | 全栄養素を `/スクープg*100` で変換、servingSizes追加 |
+| 鶏卵 L（unit="個"）| 1項目 | 既に100g基準、unit→"g"、servingSizes追加 |
+
+B. 一般食品にservingSizes追加（12品）
+| 食品 | 単位 | グラム |
+|------|------|-------|
+| 白米（炊飯直後） | 杯 | 150g |
+| 玄米（炊飯後） | 杯 | 150g |
+| 食パン | 枚 | 60g |
+| 餅 | 個 | 50g |
+| 木綿豆腐 | 丁 | 300g |
+| 絹ごし豆腐 | 丁 | 300g |
+| さつまいも（生） | 本 | 200g |
+| じゃがいも（生） | 個 | 150g |
+| りんご | 個 | 250g |
+| アボカド（生） | 個 | 140g |
+| ギリシャヨーグルト（無糖） | 個 | 100g |
+| ヨーグルト（無糖） | 個 | 100g |
+
+**合計32件のservingSizesエントリ**
+
+### Phase 2: AddMealScreen UI単位対応 ✅
+
+**Shared AddMealScreen** (`shared/.../ui/screens/meal/AddMealScreen.kt`)
+- `FoodAmountDialog`: onConfirmコールバック `(FoodItem, Float)` → `(FoodItem, Float, String)` に変更
+- 単位選択チップ追加（availableUnits > 1の場合のみ表示）
+- 量の±ステップ: "g"→10刻み、その他→1刻み
+- クイック選択: "g"→[50,100,150,200,300], その他→[1,2,3,4,5]
+- ratio計算: `food.toGrams(amount, selectedUnit) / 100f`
+- `FoodDatabaseDialog`: onSelect引数を3つに拡張
+- `MealItemCard`: 単位対応の量操作UI
+
+**Android AddMealScreen** (`androidApp/.../ui/screens/meal/AddMealScreen.kt`)
+- Shared版と同一の変更を適用
+
+**AddMealScreenModel** → 変更不要（既存のratio方式が全単位で正常動作）
+
+### Phase 3: admin.html 単位対応 ✅
+
+**public/admin.html**
+- `FOOD_NUTRIENTS_PER_100G` 辞書追加（52食品のマクロ栄養素）
+- `FOOD_SERVING_SIZES` 辞書追加（32食品の単位→グラム換算）
+- `selectFood()`: 食品選択時に単位ドロップダウン自動更新、デフォルト量セット
+- `addTemplateItem()`: グラム換算→ratio計算→PFC自動算出
+- `renderTemplateItems()`: アイテム別マクロ表示 + 合計行
+- `createTemplate()`: totalMacrosをアイテムから正確に計算して保存
+
+### Phase 4: 自動スケーリング ✅
+
+**public/admin.html**
+- `calculateUserTargetCalories(profile)`: BMR(Katch-McArdle) × 活動レベル + 目標調整 + トレーニングボーナス
+- `calculateSlotTargetCalories(profile, slotKey, totalCalories)`: トレ前後固定PFC対応、通常食事の均等配分
+- `loadUserSlots()`: ユーザー情報に目標kcal表示、各スロットボタンにtarget-cals属性
+- `assignQuestToUser()`: coefficient = slotTargetCals / templateCalories で全アイテム量スケーリング（WORKOUTはスキップ）
+
+---
+
+## 残作業・次セッション引き継ぎ
+
+### 必須: 実機テスト
+1. **卵の単位テスト**: アプリで「鶏卵 M（58g）」選択 → 「個」単位で2個 → **164kcal, P14.2g** になるか確認
+2. **グラムテスト**: 「鶏むね肉（皮なし生）」100g → **108kcal** 確認（変更なし）
+3. **サプリテスト**: 「カゼインプロテイン」1杯 → 約112kcal, P25.5g確認
+4. **MealItemCard量変更**: 記録済みアイテムの+/-が正常動作するか
+
+### 必須: admin.htmlテスト
+5. **テンプレート作成**: 卵2個+白米1杯を追加 → totalMacros正確に計算されるか
+6. **スケーリング**: 2000kcal目標ユーザーに800kcalテンプレート割当 → coefficient計算確認
+7. **Firebase Hosting デプロイ**: `firebase deploy --only hosting` でadmin.html反映
+
+### 推奨: FoodDatabase拡充
+8. **不足食品の追加**: バナナ、納豆、みかん、もち麦ごはん はDB未登録（servingSizes以前の問題）
+9. **servingSizes追加候補**: うどん（玉/200g）、そば（束/100g）、鶏むね肉（枚/250g）等
+
+### 推奨: コミット
+10. **git commit**: 全変更をコミット（FoodItem.kt, FoodDatabase.kt, AddMealScreen.kt×2, admin.html）

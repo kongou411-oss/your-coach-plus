@@ -391,7 +391,8 @@ fun SettingsScreen(
                     SettingsTab.FEATURES -> FeaturesSettingsTab(
                         onNavigateToRoutine = onNavigateToRoutine,
                         onNavigateToTemplates = onNavigateToTemplates,
-                        onNavigateToMealSlots = onNavigateToMealSlots
+                        onNavigateToMealSlots = onNavigateToMealSlots,
+                        customQuestSlots = uiState.customQuestSlots
                     )
                     SettingsTab.DATA -> DataSettingsTab(
                         customFoods = uiState.customFoods,
@@ -480,7 +481,8 @@ private fun BasicSettingsTab(
 private fun FeaturesSettingsTab(
     onNavigateToRoutine: () -> Unit,
     onNavigateToTemplates: () -> Unit,
-    onNavigateToMealSlots: () -> Unit
+    onNavigateToMealSlots: () -> Unit,
+    customQuestSlots: Map<String, String> = emptyMap()
 ) {
     LazyColumn(
         modifier = Modifier
@@ -515,6 +517,76 @@ private fun FeaturesSettingsTab(
                     subtitle = "固定/AI提案/ルーティン連動を設定",
                     onClick = onNavigateToMealSlots
                 )
+            }
+        }
+
+        // カスタムクエスト（割当がある場合のみ表示）
+        if (customQuestSlots.isNotEmpty()) {
+            item {
+                SectionHeader("カスタムクエスト")
+            }
+
+            item {
+                SettingsCard {
+                    // ゴールドのアクセントカラー
+                    val goldColor = Color(0xFFFFD700)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = goldColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "トレーナー指定メニュー",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "専用プランが設定されています",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (customQuestSlots.isNotEmpty()) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            customQuestSlots.forEach { (slotKey, title) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = goldColor,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

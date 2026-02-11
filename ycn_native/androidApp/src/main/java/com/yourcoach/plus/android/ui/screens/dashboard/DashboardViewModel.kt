@@ -18,7 +18,10 @@ import com.yourcoach.plus.shared.domain.model.RoutineDay
 import com.yourcoach.plus.shared.domain.model.MealSlot
 import com.yourcoach.plus.shared.domain.model.MealSlotConfig
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
+import com.yourcoach.plus.shared.domain.model.CustomQuest
+import com.yourcoach.plus.shared.domain.model.CustomQuestSlotType
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.CustomQuestRepository
 import com.yourcoach.plus.shared.domain.repository.BadgeRepository
 import com.yourcoach.plus.shared.domain.repository.ConditionRepository
 import com.yourcoach.plus.shared.domain.repository.RoutineRepository
@@ -104,6 +107,8 @@ data class DashboardUiState(
     val condition: Condition? = null,
     // 指示書
     val directive: Directive? = null,
+    // カスタムクエスト（トレーナー指定メニュー）
+    val customQuest: CustomQuest? = null,
     val showDirectiveEditDialog: Boolean = false,
     // ピンポイントカロリー調整
     val calorieOverride: com.yourcoach.plus.shared.domain.model.CalorieOverride? = null,
@@ -176,7 +181,8 @@ data class UnifiedTimelineItem(
     val actionItems: List<DirectiveActionItem>? = null, // クエストの場合
     val linkedMeal: Meal? = null,      // 実際の食事記録（記録済みの場合）
     val linkedWorkout: Workout? = null, // 実際の運動記録（記録済みの場合）
-    val slotInfo: TimelineSlotInfo? = null // 元のスロット情報
+    val slotInfo: TimelineSlotInfo? = null, // 元のスロット情報
+    val isCustomQuest: Boolean = false      // カスタムクエスト（ゴールド枠表示用）
 ) {
     val isRecorded: Boolean get() = linkedMeal != null || linkedWorkout != null
     val isQuest: Boolean get() = slotInfo != null && !isRecorded
@@ -223,6 +229,7 @@ private data class DashboardDataBundle(
     val streakInfo: StreakInfo,
     val condition: Condition?,
     val directive: Directive?,
+    val customQuest: CustomQuest?,
     val calorieOverride: com.yourcoach.plus.shared.domain.model.CalorieOverride?,
     val todayRoutine: RoutineDay?,
     val isManualRestDay: Boolean
@@ -240,7 +247,8 @@ class DashboardViewModel(
     private val conditionRepository: ConditionRepository,
     private val directiveRepository: DirectiveRepository,
     private val routineRepository: RoutineRepository,
-    private val badgeRepository: BadgeRepository
+    private val badgeRepository: BadgeRepository,
+    private val customQuestRepository: CustomQuestRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -437,7 +445,7 @@ class DashboardViewModel(
                 // 全データを並列で取得（大幅な高速化）
                 val (
                     user, meals, workouts, score, streakInfo,
-                    condition, directive, calorieOverride, todayRoutine, isManualRestDay
+                    condition, directive, customQuest, calorieOverride, todayRoutine, isManualRestDay
                 ) = coroutineScope {
                     val userDeferred = async { userRepository.getUser(userId).getOrNull() }
                     val mealsDeferred = async { mealRepository.getMealsForDate(userId, date).getOrDefault(emptyList()) }
@@ -446,6 +454,7 @@ class DashboardViewModel(
                     val streakDeferred = async { scoreRepository.getStreakInfo(userId).getOrDefault(StreakInfo()) }
                     val conditionDeferred = async { conditionRepository.getCondition(userId, date).getOrNull() }
                     val directiveDeferred = async { directiveRepository.getDirective(userId, date).getOrNull() }
+                    val customQuestDeferred = async { customQuestRepository.getCustomQuest(userId, date).getOrNull() }
                     val calorieOverrideDeferred = async { scoreRepository.getCalorieOverride(userId, date).getOrNull() }
                     val todayRoutineDeferred = async { routineRepository.getRoutineForDate(userId, date).getOrNull() }
                     val restDayDeferred = async { scoreRepository.getRestDayStatus(userId, date).getOrDefault(false) }
@@ -479,6 +488,7 @@ class DashboardViewModel(
                         streakInfo = streakDeferred.await(),
                         condition = conditionDeferred.await(),
                         directive = directiveDeferred.await(),
+                        customQuest = customQuestDeferred.await(),
                         calorieOverride = calorieOverrideDeferred.await(),
                         todayRoutine = todayRoutineDeferred.await(),
                         isManualRestDay = restDayDeferred.await()
@@ -557,6 +567,7 @@ class DashboardViewModel(
                         carbFiberRatio = detailedNutrition.carbFiberRatio,
                         condition = condition,
                         directive = directive,
+                        customQuest = customQuest,
                         calorieOverride = calorieOverride,
                         todayRoutine = todayRoutine,
                         isManualRestDay = isManualRestDay,
@@ -575,6 +586,7 @@ class DashboardViewModel(
                             meals = meals,
                             workouts = workouts,
                             directive = directive,
+                            customQuest = customQuest,
                             currentTimeMinutes = timelineInfo.currentTimeMinutes,
                             trainingTimeMinutes = timelineInfo.trainingTimeMinutes
                         ),
@@ -2804,6 +2816,12 @@ class DashboardViewModel(
         val userId = currentUserId ?: return
         val user = _uiState.value.user ?: return
 
+        // カスタムクエストが設定されている場合はAI生成をブロック
+        if (_uiState.value.customQuest != null) {
+            _uiState.update { it.copy(questGenerationError = "トレーナーのプラン実行中のため、AI生成は利用できません") }
+            return
+        }
+
         // プレミアム会員チェック（isPremium または 所属名で判定）
         if (user.isPremium != true && !user.hasCorporatePremium) {
             _uiState.update { it.copy(questGenerationError = "クエスト生成はプレミアム会員限定機能です") }
@@ -3071,13 +3089,18 @@ class DashboardViewModel(
         meals: List<Meal>,
         workouts: List<Workout>,
         directive: Directive?,
+        customQuest: CustomQuest? = null,
         currentTimeMinutes: Int,
         trainingTimeMinutes: Int?
     ): List<UnifiedTimelineItem> {
         val items = mutableListOf<UnifiedTimelineItem>()
 
-        // Directiveがある場合のみタイムラインを構築（未生成時は空）
-        if (directive != null && directive.message.isNotBlank()) {
+        // カスタムクエストがある場合はそちらを優先表示
+        if (customQuest != null) {
+            val customItems = buildCustomQuestTimelineItems(customQuest, currentTimeMinutes, meals, workouts)
+            items.addAll(customItems)
+        } else if (directive != null && directive.message.isNotBlank()) {
+            // Directiveがある場合のみタイムラインを構築（未生成時は空）
             val directiveItems = parseDirectiveToTimelineItems(directive, currentTimeMinutes, meals, workouts)
             items.addAll(directiveItems)
         }
@@ -3149,6 +3172,70 @@ class DashboardViewModel(
         return items
             .distinctBy { it.id }
             .sortedBy { it.timeMinutes }
+    }
+
+    /**
+     * カスタムクエストからタイムラインアイテムを生成
+     */
+    private fun buildCustomQuestTimelineItems(
+        customQuest: CustomQuest,
+        currentTimeMinutes: Int,
+        meals: List<Meal>,
+        workouts: List<Workout>
+    ): List<UnifiedTimelineItem> {
+        val items = mutableListOf<UnifiedTimelineItem>()
+        // スロットを定義順（breakfast→lunch→dinner→snack→workout）で処理
+        val slotOrder = listOf("breakfast", "lunch", "snack", "dinner", "workout")
+        val baseTimeMap = mapOf(
+            "breakfast" to 7 * 60,
+            "lunch" to 12 * 60,
+            "snack" to 15 * 60,
+            "dinner" to 19 * 60,
+            "workout" to 18 * 60
+        )
+
+        customQuest.slots.entries
+            .sortedBy { slotOrder.indexOf(it.key).let { idx -> if (idx < 0) 99 else idx } }
+            .forEachIndexed { index, (slotKey, slot) ->
+                val timeMinutes = baseTimeMap[slotKey] ?: (8 * 60 + index * 180)
+                val status = if (timeMinutes < currentTimeMinutes) {
+                    TimelineItemStatus.COMPLETED
+                } else if (timeMinutes - currentTimeMinutes < 60) {
+                    TimelineItemStatus.CURRENT
+                } else {
+                    TimelineItemStatus.UPCOMING
+                }
+
+                val subtitle = if (slot.type == CustomQuestSlotType.MEAL) {
+                    val foodSummary = slot.items.take(3).joinToString(" + ") {
+                        "${it.foodName} ${it.amount.toInt()}${it.unit}"
+                    }
+                    val macros = slot.totalMacros
+                    if (macros != null) "$foodSummary (P${macros.protein.toInt()}g)" else foodSummary
+                } else {
+                    slot.items.joinToString(", ") { "${it.foodName} ${it.amount.toInt()}${it.unit}" }
+                }
+
+                val type = if (slot.type == CustomQuestSlotType.WORKOUT) {
+                    TimelineItemType.WORKOUT
+                } else {
+                    TimelineItemType.MEAL
+                }
+
+                items.add(UnifiedTimelineItem(
+                    id = "custom_${slotKey}",
+                    type = type,
+                    timeMinutes = timeMinutes,
+                    timeString = minutesToTimeString(timeMinutes),
+                    title = slot.title,
+                    subtitle = subtitle,
+                    status = status,
+                    isTrainingRelated = slot.type == CustomQuestSlotType.WORKOUT,
+                    isCustomQuest = true
+                ))
+            }
+
+        return items
     }
 
     /**

@@ -195,7 +195,8 @@ fun DashboardScreen(
                 paidCredits = uiState.user?.paidCredits ?: 0,
                 onAnalysisClick = onNavigateToAnalysis,
                 onGenerateQuestClick = viewModel::generateQuest,
-                isGeneratingQuest = uiState.isGeneratingQuest
+                isGeneratingQuest = uiState.isGeneratingQuest,
+                hasCustomQuest = uiState.customQuest != null
             )
         )
     }

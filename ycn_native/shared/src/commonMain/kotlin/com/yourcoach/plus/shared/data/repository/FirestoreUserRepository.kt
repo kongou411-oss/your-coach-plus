@@ -383,7 +383,8 @@ class FirestoreUserRepository : UserRepository {
             lastLoginBonusDate = get<String?>("lastLoginBonusDate"),
             b2b2cOrgId = get<String?>("b2b2cOrgId"),
             b2b2cOrgName = get<String?>("b2b2cOrgName"),
-            organizationName = get<String?>("organizationName")
+            organizationName = get<String?>("organizationName"),
+            role = get<String?>("role")
         )
     }
 

@@ -71,8 +71,41 @@ data class FoodItem(
     val lCarnitine: Float = 0f,   // mg
     val caffeine: Float = 0f,     // mg（カフェイン）
     val cost: Int = 1,            // コスト指標（1-3）
-    val unit: String = "g"        // 単位
-)
+    val unit: String = "g",       // 単位
+    val servingSizes: Map<String, Float> = emptyMap()  // 単位→グラム換算 (例: "個" to 58f)
+) {
+    /**
+     * 指定された量と単位をグラムに換算
+     * "g"の場合はそのまま、それ以外はservingSizesで変換
+     */
+    fun toGrams(amount: Float, selectedUnit: String): Float {
+        if (selectedUnit == "g") return amount
+        val gramsPerUnit = servingSizes[selectedUnit] ?: return amount
+        return amount * gramsPerUnit
+    }
+
+    /**
+     * 使用可能な単位リスト（"g" + servingSizesのキー）
+     */
+    fun getAvailableUnits(): List<String> {
+        if (servingSizes.isEmpty()) return listOf("g")
+        return listOf("g") + servingSizes.keys.toList()
+    }
+
+    /**
+     * デフォルト単位を取得（servingSizesがあればその最初のキー、なければ"g"）
+     */
+    fun getDefaultUnit(): String {
+        return if (servingSizes.isNotEmpty()) servingSizes.keys.first() else "g"
+    }
+
+    /**
+     * デフォルト量を取得（"g"なら100、それ以外なら1）
+     */
+    fun getDefaultAmount(selectedUnit: String): Float {
+        return if (selectedUnit == "g") 100f else 1f
+    }
+}
 
 /**
  * 食品カテゴリ

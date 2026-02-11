@@ -72,7 +72,8 @@ service cloud.firestore {
       // 本人は保護フィールド以外のみ書き込み可能
       // 他の認証済みユーザーはfollowerCountのみ更新可能（フォロー機能用）
       allow create: if isOwner(userId);
-      allow update: if (isOwner(userId)
+      allow update: if isAdmin()
+                    || (isOwner(userId)
                     && resource.data != null
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'subscription',
@@ -93,7 +94,8 @@ service cloud.firestore {
           'experience',
           'level',
           'processedScoreDates',
-          'processedDirectiveDates'
+          'processedDirectiveDates',
+          'role'
         ]))
                     || (isAuthenticated()
                     && resource.data != null
@@ -158,6 +160,14 @@ service cloud.firestore {
       // サブコレクション: directives（AI分析の指示）
       match /directives/{directiveId} {
         allow read, write: if isOwner(userId);
+      }
+
+      // サブコレクション: custom_quests（トレーナー指定カスタムクエスト）
+      // - 読み取り: 本人のみ
+      // - 書き込み: 管理者のみ（admin.htmlから操作）
+      match /custom_quests/{questDate} {
+        allow read: if isOwner(userId);
+        allow write: if isAdmin();
       }
 
       // サブコレクション: pgbase_progress（PGBASE記事の進捗）
@@ -397,6 +407,14 @@ service cloud.firestore {
     // ============================================
     match /stripeCustomers/{customerId} {
       allow read, write: if false;
+    }
+
+    // ============================================
+    // quest_templates: カスタムクエストテンプレート（管理者のみ）
+    // ============================================
+    match /quest_templates/{templateId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // ============================================

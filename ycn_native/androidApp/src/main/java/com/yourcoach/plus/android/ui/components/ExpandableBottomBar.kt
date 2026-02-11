@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -79,6 +80,7 @@ fun ExpandableBottomBar(
     onAnalysisClick: (() -> Unit)? = null,
     onGenerateQuestClick: (() -> Unit)? = null,
     isGeneratingQuest: Boolean = false,
+    hasCustomQuest: Boolean = false,
     // 展開状態
     modifier: Modifier = Modifier
 ) {
@@ -154,7 +156,8 @@ fun ExpandableBottomBar(
                         ActionButtonsSection(
                             onAnalysisClick = onAnalysisClick,
                             onGenerateQuestClick = onGenerateQuestClick,
-                            isGeneratingQuest = isGeneratingQuest
+                            isGeneratingQuest = isGeneratingQuest,
+                            hasCustomQuest = hasCustomQuest
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -316,7 +319,8 @@ private fun LevelSection(
 private fun ActionButtonsSection(
     onAnalysisClick: (() -> Unit)?,
     onGenerateQuestClick: (() -> Unit)?,
-    isGeneratingQuest: Boolean
+    isGeneratingQuest: Boolean,
+    hasCustomQuest: Boolean = false
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -350,41 +354,75 @@ private fun ActionButtonsSection(
             }
         }
 
-        // 明日の指示書ボタン
+        // 明日の指示書ボタン（カスタムクエスト時は無効化）
         if (onGenerateQuestClick != null) {
-            Button(
-                onClick = onGenerateQuestClick,
-                enabled = !isGeneratingQuest,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
-            ) {
-                if (isGeneratingQuest) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
+            if (hasCustomQuest) {
+                Button(
+                    onClick = {},
+                    enabled = false,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFD700),
+                        disabledContainerColor = Color(0xFFFFD700).copy(alpha = 0.6f)
                     )
-                } else {
+                ) {
                     Icon(
-                        imageVector = Icons.Default.AutoAwesome,
+                        imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "トレーナープラン",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "実行中",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = "② 明日の指示書",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "分析後に生成",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
+            } else {
+                Button(
+                    onClick = onGenerateQuestClick,
+                    enabled = !isGeneratingQuest,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
+                ) {
+                    if (isGeneratingQuest) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "② 明日の指示書",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "分析後に生成",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
         }
@@ -413,5 +451,6 @@ data class BottomBarState(
     val paidCredits: Int = 0,
     val onAnalysisClick: (() -> Unit)? = null,
     val onGenerateQuestClick: (() -> Unit)? = null,
-    val isGeneratingQuest: Boolean = false
+    val isGeneratingQuest: Boolean = false,
+    val hasCustomQuest: Boolean = false
 )

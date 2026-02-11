@@ -91,7 +91,7 @@ val appModule = module {
     // ViewModels
     viewModel { AuthViewModel(get(), get()) }
     viewModel { ProfileSetupViewModel(get()) }
-    viewModel { DashboardViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { DashboardViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { HistoryViewModel(get(), get(), get(), get(), get()) }
     viewModel { PgBaseViewModel(get(), get(), get()) }
     viewModel { ComyViewModel(get(), get(), get(), get()) }

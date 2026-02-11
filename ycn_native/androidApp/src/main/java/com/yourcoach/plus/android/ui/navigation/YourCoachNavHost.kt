@@ -175,7 +175,8 @@ fun YourCoachNavHost() {
                     paidCredits = if (isDashboard) bottomBarState.paidCredits else null,
                     onAnalysisClick = if (isDashboard) bottomBarState.onAnalysisClick else null,
                     onGenerateQuestClick = if (isDashboard) bottomBarState.onGenerateQuestClick else null,
-                    isGeneratingQuest = if (isDashboard) bottomBarState.isGeneratingQuest else false
+                    isGeneratingQuest = if (isDashboard) bottomBarState.isGeneratingQuest else false,
+                    hasCustomQuest = if (isDashboard) bottomBarState.hasCustomQuest else false
                 )
             }
         }

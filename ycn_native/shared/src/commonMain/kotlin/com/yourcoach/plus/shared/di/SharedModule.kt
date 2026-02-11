@@ -6,6 +6,7 @@ import com.yourcoach.plus.shared.data.repository.FirestoreBadgeRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreComyRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreConditionRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreCustomExerciseRepository
+import com.yourcoach.plus.shared.data.repository.FirestoreCustomQuestRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreCustomFoodRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreDirectiveRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreMealRepository
@@ -21,6 +22,7 @@ import com.yourcoach.plus.shared.domain.repository.ComyRepository
 import com.yourcoach.plus.shared.domain.repository.ConditionRepository
 import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
 import com.yourcoach.plus.shared.domain.repository.CustomFoodRepository
+import com.yourcoach.plus.shared.domain.repository.CustomQuestRepository
 import com.yourcoach.plus.shared.domain.repository.DirectiveRepository
 import com.yourcoach.plus.shared.domain.repository.MealRepository
 import com.yourcoach.plus.shared.domain.repository.PgBaseRepository
@@ -67,6 +69,7 @@ val sharedModule = module {
     single<CustomExerciseRepository> { FirestoreCustomExerciseRepository() }
     single<ConditionRepository> { FirestoreConditionRepository() }
     single<DirectiveRepository> { FirestoreDirectiveRepository() }
+    single<CustomQuestRepository> { FirestoreCustomQuestRepository() }
     single<ScoreRepository> { FirestoreScoreRepository() }
     single<BadgeRepository> { FirestoreBadgeRepository() }
     single<PgBaseRepository> { FirestorePgBaseRepository() }

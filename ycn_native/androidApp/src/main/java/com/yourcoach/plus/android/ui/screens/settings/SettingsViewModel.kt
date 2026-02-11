@@ -53,7 +53,9 @@ data class SettingsUiState(
     // 所属（法人プラン）
     val organizationName: String? = null,
     val isValidatingOrganization: Boolean = false,
-    val organizationMessage: String? = null
+    val organizationMessage: String? = null,
+    // カスタムクエスト（トレーナー指定メニューのスロット表示用）
+    val customQuestSlots: Map<String, String> = emptyMap()
 )
 
 /**
@@ -124,6 +126,28 @@ class SettingsViewModel(
                             }
                         }
 
+                        // カスタムクエストのスロット情報を取得
+                        var customQuestSlots = emptyMap<String, String>()
+                        try {
+                            val today = com.yourcoach.plus.shared.util.DateUtil.todayString()
+                            val cqDoc = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val task3 = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                    .collection("users")
+                                    .document(userId)
+                                    .collection("custom_quests")
+                                    .document(today)
+                                    .get()
+                                com.google.android.gms.tasks.Tasks.await(task3)
+                            }
+                            if (cqDoc.exists()) {
+                                @Suppress("UNCHECKED_CAST")
+                                val slots = cqDoc.get("slots") as? Map<String, Map<String, Any?>>
+                                customQuestSlots = slots?.mapValues { (_, v) -> v["title"] as? String ?: "" } ?: emptyMap()
+                            }
+                        } catch (e: Exception) {
+                            Log.e("SettingsVM", "Custom quest load failed: ${e.message}")
+                        }
+
                         _uiState.update {
                             it.copy(
                                 user = user,
@@ -131,6 +155,7 @@ class SettingsViewModel(
                                 freeCredits = user?.freeCredits ?: 0,
                                 paidCredits = user?.paidCredits ?: 0,
                                 organizationName = user?.organizationName ?: user?.b2b2cOrgName,
+                                customQuestSlots = customQuestSlots,
                                 isLoading = false
                             )
                         }

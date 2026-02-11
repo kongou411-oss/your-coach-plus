@@ -376,16 +376,17 @@ fun AddMealScreen(
         FoodDatabaseDialog(
             viewModel = viewModel,
             onDismiss = { showFoodDatabaseDialog = false },
-            onSelect = { foodItem, amount ->
+            onSelect = { foodItem, amount, selectedUnit ->
                 // FoodItemからMealItemに変換（量に応じて栄養素を計算）- 完全版
-                val ratio = amount / 100f
+                val gramsEquivalent = foodItem.toGrams(amount, selectedUnit)
+                val ratio = gramsEquivalent / 100f
                 val protein = foodItem.protein * ratio
                 val fat = foodItem.fat * ratio
                 val carbs = foodItem.carbs * ratio
                 val mealItem = MealItem(
                     name = foodItem.name,
                     amount = amount,
-                    unit = "g",
+                    unit = selectedUnit,
                     calories = MealItem.calculateCalories(protein, fat, carbs),
                     protein = protein,
                     carbs = carbs,
@@ -646,6 +647,9 @@ private fun MealItemCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val isGram = item.unit == "g"
+                val step = if (isGram) 10f else 1f
+                val minVal = if (isGram) 10f else 1f
                 Text(
                     text = "量:",
                     style = MaterialTheme.typography.bodySmall,
@@ -654,7 +658,7 @@ private fun MealItemCard(
                 // マイナスボタン
                 IconButton(
                     onClick = {
-                        val newAmount = (item.amount - 10).coerceAtLeast(10f)
+                        val newAmount = (item.amount - step).coerceAtLeast(minVal)
                         onQuantityChange(newAmount)
                     },
                     modifier = Modifier
@@ -680,7 +684,7 @@ private fun MealItemCard(
                 // プラスボタン
                 IconButton(
                     onClick = {
-                        val newAmount = item.amount + 10
+                        val newAmount = item.amount + step
                         onQuantityChange(newAmount)
                     },
                     modifier = Modifier
@@ -699,18 +703,34 @@ private fun MealItemCard(
                 Spacer(modifier = Modifier.weight(1f))
                 // クイック選択
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf(50, 100, 150, 200).forEach { amount ->
-                        FilterChip(
-                            onClick = { onQuantityChange(amount.toFloat()) },
-                            label = {
-                                Text(
-                                    "${amount}g",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                            },
-                            selected = item.amount.toInt() == amount,
-                            modifier = Modifier.height(28.dp)
-                        )
+                    if (isGram) {
+                        listOf(50, 100, 150, 200).forEach { amount ->
+                            FilterChip(
+                                onClick = { onQuantityChange(amount.toFloat()) },
+                                label = {
+                                    Text(
+                                        "${amount}g",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                },
+                                selected = item.amount.toInt() == amount,
+                                modifier = Modifier.height(28.dp)
+                            )
+                        }
+                    } else {
+                        listOf(1, 2, 3, 4).forEach { amount ->
+                            FilterChip(
+                                onClick = { onQuantityChange(amount.toFloat()) },
+                                label = {
+                                    Text(
+                                        "$amount${item.unit}",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                },
+                                selected = item.amount.toInt() == amount,
+                                modifier = Modifier.height(28.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -838,7 +858,7 @@ private fun AddMealItemDialog(
 private fun FoodDatabaseDialog(
     viewModel: MealViewModel,
     onDismiss: () -> Unit,
-    onSelect: (FoodItem, Float) -> Unit,
+    onSelect: (FoodItem, Float, String) -> Unit,
     onSelectCustom: (SearchResultFood, Float) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -863,10 +883,21 @@ private fun FoodDatabaseDialog(
     }
 
     if (selectedFood != null) {
-        // 選択した食品の量調整ダイアログ（内蔵DB）
+        // 選択した食品の量調整ダイアログ（内蔵DB）- 単位対応
+        val food = selectedFood!!
+        val availableUnits = remember(food) { food.getAvailableUnits() }
+        val defaultUnit = remember(food) { if (food.servingSizes.isNotEmpty()) food.getDefaultUnit() else "g" }
+        var selectedUnit by remember(food) { mutableStateOf(defaultUnit) }
+        // デフォルト単位変更時にamountもリセット
+        LaunchedEffect(food) {
+            amount = if (defaultUnit == "g") 100f else 1f
+        }
+        val step = if (selectedUnit == "g") 10f else 1f
+        val minAmount = if (selectedUnit == "g") 10f else 1f
+
         AlertDialog(
             onDismissRequest = { selectedFood = null },
-            title = { Text(selectedFood!!.name) },
+            title = { Text(food.name) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     // 100gあたりの栄養情報
@@ -880,24 +911,48 @@ private fun FoodDatabaseDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${selectedFood!!.calories.toInt()}", fontWeight = FontWeight.Bold)
+                            Text("${food.calories.toInt()}", fontWeight = FontWeight.Bold)
                             Text("kcal", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${selectedFood!!.protein.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreProtein)
+                            Text("${food.protein.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreProtein)
                             Text("P", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${selectedFood!!.carbs.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreCarbs)
+                            Text("${food.carbs.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreCarbs)
                             Text("C", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${selectedFood!!.fat.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreFat)
+                            Text("${food.fat.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreFat)
                             Text("F", style = MaterialTheme.typography.labelSmall)
                         }
                     }
 
                     HorizontalDivider()
+
+                    // 単位選択（2つ以上の単位がある場合のみ表示）
+                    if (availableUnits.size > 1) {
+                        Text(
+                            text = "単位を選択",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                        ) {
+                            availableUnits.forEach { unit ->
+                                FilterChip(
+                                    onClick = {
+                                        selectedUnit = unit
+                                        amount = if (unit == "g") 100f else 1f
+                                    },
+                                    label = { Text(unit) },
+                                    selected = selectedUnit == unit
+                                )
+                            }
+                        }
+                    }
 
                     // 量調整
                     Text(
@@ -911,7 +966,7 @@ private fun FoodDatabaseDialog(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         IconButton(
-                            onClick = { amount = (amount - 10).coerceAtLeast(10f) },
+                            onClick = { amount = (amount - step).coerceAtLeast(minAmount) },
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(
@@ -922,13 +977,13 @@ private fun FoodDatabaseDialog(
                             Icon(Icons.Default.Remove, "減らす")
                         }
                         Text(
-                            text = "${amount.toInt()}g",
+                            text = "${amount.toInt()}${selectedUnit}",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 24.dp)
                         )
                         IconButton(
-                            onClick = { amount = amount + 10 },
+                            onClick = { amount = amount + step },
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(
@@ -945,21 +1000,32 @@ private fun FoodDatabaseDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
                     ) {
-                        listOf(50, 100, 150, 200, 300).forEach { qty ->
-                            FilterChip(
-                                onClick = { amount = qty.toFloat() },
-                                label = { Text("${qty}g") },
-                                selected = amount.toInt() == qty
-                            )
+                        if (selectedUnit == "g") {
+                            listOf(50, 100, 150, 200, 300).forEach { qty ->
+                                FilterChip(
+                                    onClick = { amount = qty.toFloat() },
+                                    label = { Text("${qty}g") },
+                                    selected = amount.toInt() == qty
+                                )
+                            }
+                        } else {
+                            listOf(1, 2, 3, 4, 5).forEach { qty ->
+                                FilterChip(
+                                    onClick = { amount = qty.toFloat() },
+                                    label = { Text("$qty${selectedUnit}") },
+                                    selected = amount.toInt() == qty
+                                )
+                            }
                         }
                     }
 
                     HorizontalDivider()
 
                     // 計算された栄養素
-                    val ratio = amount / 100f
+                    val gramsEquivalent = food.toGrams(amount, selectedUnit)
+                    val ratio = gramsEquivalent / 100f
                     Text(
-                        text = "${amount.toInt()}gあたり",
+                        text = "${amount.toInt()}${selectedUnit}あたり",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -968,19 +1034,19 @@ private fun FoodDatabaseDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${(selectedFood!!.calories * ratio).toInt()}", fontWeight = FontWeight.Bold)
+                            Text("${(food.calories * ratio).toInt()}", fontWeight = FontWeight.Bold)
                             Text("kcal", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${(selectedFood!!.protein * ratio).toInt()}g", fontWeight = FontWeight.Bold, color = ScoreProtein)
+                            Text("${(food.protein * ratio).toInt()}g", fontWeight = FontWeight.Bold, color = ScoreProtein)
                             Text("P", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${(selectedFood!!.carbs * ratio).toInt()}g", fontWeight = FontWeight.Bold, color = ScoreCarbs)
+                            Text("${(food.carbs * ratio).toInt()}g", fontWeight = FontWeight.Bold, color = ScoreCarbs)
                             Text("C", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${(selectedFood!!.fat * ratio).toInt()}g", fontWeight = FontWeight.Bold, color = ScoreFat)
+                            Text("${(food.fat * ratio).toInt()}g", fontWeight = FontWeight.Bold, color = ScoreFat)
                             Text("F", style = MaterialTheme.typography.labelSmall)
                         }
                     }
@@ -989,9 +1055,7 @@ private fun FoodDatabaseDialog(
             confirmButton = {
                 Button(
                     onClick = {
-                        selectedFood?.let { food ->
-                            onSelect(food, amount)
-                        }
+                        onSelect(food, amount, selectedUnit)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)
                 ) {
