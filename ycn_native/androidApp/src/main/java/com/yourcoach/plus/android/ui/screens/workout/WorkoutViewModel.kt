@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.yourcoach.plus.shared.domain.model.*
+import com.yourcoach.plus.shared.domain.model.RmRecord
 import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
+import com.yourcoach.plus.shared.domain.repository.RmRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import com.yourcoach.plus.shared.util.DateUtil
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,12 +31,15 @@ data class WorkoutUiState(
     val totalDuration: Int = 0,
     val totalCaloriesBurned: Int = 0,
     // カスタム運動
-    val customExercises: List<CustomExercise> = emptyList()
+    val customExercises: List<CustomExercise> = emptyList(),
+    // RM記録
+    val rmRecords: List<RmRecord> = emptyList()
 )
 
 class WorkoutViewModel(
     private val workoutRepository: WorkoutRepository,
-    private val customExerciseRepository: CustomExerciseRepository
+    private val customExerciseRepository: CustomExerciseRepository,
+    private val rmRepository: RmRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkoutUiState())
@@ -260,6 +265,50 @@ class WorkoutViewModel(
                     // テンプレート一覧を再読み込み
                     loadTemplates()
                 }
+        }
+    }
+
+    /**
+     * RM記録を追加
+     */
+    fun addRmRecord(exerciseName: String, category: String, weight: Float, reps: Int) {
+        val uid = userId ?: return
+        viewModelScope.launch {
+            val record = RmRecord(
+                exerciseName = exerciseName,
+                category = category,
+                weight = weight,
+                reps = reps,
+                timestamp = DateUtil.currentTimestamp(),
+                createdAt = DateUtil.currentTimestamp()
+            )
+            rmRepository.addRmRecord(uid, record)
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(rmRecords = state.rmRecords + record)
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "RM記録の保存に失敗しました") }
+                }
+        }
+    }
+
+    /**
+     * RM記録を削除（Firestore + UI）
+     */
+    fun removeRmRecord(index: Int) {
+        val uid = userId ?: return
+        val record = _uiState.value.rmRecords.getOrNull(index) ?: return
+        // UIから即座に削除
+        _uiState.update { state ->
+            state.copy(rmRecords = state.rmRecords.toMutableList().apply { removeAt(index) })
+        }
+        // Firestoreからも削除（IDがある場合）
+        if (record.id.isNotEmpty()) {
+            viewModelScope.launch {
+                rmRepository.deleteRmRecord(uid, record.id)
+            }
         }
     }
 

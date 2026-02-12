@@ -20,6 +20,7 @@ import com.yourcoach.plus.shared.domain.model.MealSlotConfig
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
 import com.yourcoach.plus.shared.domain.model.CustomQuest
 import com.yourcoach.plus.shared.domain.model.CustomQuestSlotType
+import com.yourcoach.plus.shared.domain.model.RmRecord
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.CustomQuestRepository
 import com.yourcoach.plus.shared.domain.repository.BadgeRepository
@@ -27,6 +28,7 @@ import com.yourcoach.plus.shared.domain.repository.ConditionRepository
 import com.yourcoach.plus.shared.domain.repository.RoutineRepository
 import com.yourcoach.plus.shared.domain.repository.DirectiveRepository
 import com.yourcoach.plus.shared.domain.repository.MealRepository
+import com.yourcoach.plus.shared.domain.repository.RmRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import com.yourcoach.plus.shared.domain.repository.ScoreRepository
@@ -146,7 +148,12 @@ data class DashboardUiState(
     val showMicroDetailSheet: Boolean = false,
     // お祝いモーダル
     val celebrationQueue: List<CelebrationInfo> = emptyList(),
-    val currentCelebration: CelebrationInfo? = null
+    val currentCelebration: CelebrationInfo? = null,
+    // RM記録
+    val latestRmRecords: Map<String, RmRecord> = emptyMap(),
+    val editingRmRecord: RmRecord? = null,
+    val showRmEditDialog: Boolean = false,
+    val showRmAddDialog: Boolean = false
 )
 
 /**
@@ -248,11 +255,15 @@ class DashboardViewModel(
     private val directiveRepository: DirectiveRepository,
     private val routineRepository: RoutineRepository,
     private val badgeRepository: BadgeRepository,
-    private val customQuestRepository: CustomQuestRepository
+    private val customQuestRepository: CustomQuestRepository,
+    private val rmRepository: RmRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    // RM記録キャッシュ（種目名→最新のRmRecord）
+    private var rmRecordCache: Map<String, RmRecord> = emptyMap()
 
     // AuthRepository経由で現在のユーザーIDを取得
     private val currentUserId: String?
@@ -493,6 +504,12 @@ class DashboardViewModel(
                         todayRoutine = todayRoutineDeferred.await(),
                         isManualRestDay = restDayDeferred.await()
                     )
+                }
+
+                // RM記録を常に読み込む（レコードタブ表示 + クエストRM%計算用）
+                rmRepository.getLatestRmByExercise(userId).onSuccess { records ->
+                    rmRecordCache = records
+                    _uiState.update { it.copy(latestRmRecords = records) }
                 }
 
                 // TDEEと目標PFCを計算（日常活動 + 目的調整 + トレ日加算）
@@ -744,6 +761,100 @@ class DashboardViewModel(
      */
     fun clearSuccessMessage() {
         _uiState.update { it.copy(successMessage = null) }
+    }
+
+    // ========== RM記録操作 ==========
+
+    fun showRmEditDialog(record: RmRecord) {
+        _uiState.update { it.copy(editingRmRecord = record, showRmEditDialog = true) }
+    }
+
+    fun hideRmEditDialog() {
+        _uiState.update { it.copy(editingRmRecord = null, showRmEditDialog = false) }
+    }
+
+    fun showRmAddDialog() {
+        _uiState.update { it.copy(showRmAddDialog = true) }
+    }
+
+    fun hideRmAddDialog() {
+        _uiState.update { it.copy(showRmAddDialog = false) }
+    }
+
+    /**
+     * RM記録を新規追加
+     */
+    fun addRmRecord(exerciseName: String, category: String, weight: Float, reps: Int) {
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            val record = RmRecord(
+                exerciseName = exerciseName,
+                category = category,
+                weight = weight,
+                reps = reps,
+                timestamp = DateUtil.currentTimestamp(),
+                createdAt = DateUtil.currentTimestamp()
+            )
+            rmRepository.addRmRecord(userId, record).onSuccess {
+                rmRecordCache = rmRecordCache.toMutableMap().apply { put(exerciseName, record) }
+                _uiState.update { it.copy(
+                    latestRmRecords = rmRecordCache,
+                    showRmAddDialog = false,
+                    successMessage = "${exerciseName}のRM記録を追加しました"
+                ) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(error = e.message ?: "RM記録の追加に失敗しました") }
+            }
+        }
+    }
+
+    /**
+     * RM記録を更新（新しいレコードとして追加 → 履歴に残る）
+     */
+    fun updateRmRecord(exerciseName: String, category: String, weight: Float, reps: Int) {
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            val record = RmRecord(
+                exerciseName = exerciseName,
+                category = category,
+                weight = weight,
+                reps = reps,
+                timestamp = DateUtil.currentTimestamp(),
+                createdAt = DateUtil.currentTimestamp()
+            )
+            rmRepository.addRmRecord(userId, record).onSuccess {
+                // キャッシュとUI更新
+                rmRecordCache = rmRecordCache.toMutableMap().apply { put(exerciseName, record) }
+                _uiState.update { it.copy(
+                    latestRmRecords = rmRecordCache,
+                    editingRmRecord = null,
+                    showRmEditDialog = false,
+                    successMessage = "${exerciseName}のRM記録を更新しました"
+                ) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(error = e.message ?: "RM記録の更新に失敗しました") }
+            }
+        }
+    }
+
+    /**
+     * RM記録を削除（Firestore + UI）
+     */
+    fun deleteRmRecord(record: RmRecord) {
+        val userId = currentUserId ?: return
+        if (record.id.isEmpty()) return
+        viewModelScope.launch {
+            rmRepository.deleteRmRecord(userId, record.id).onSuccess {
+                rmRecordCache = rmRecordCache.toMutableMap().apply { remove(record.exerciseName) }
+                _uiState.update { it.copy(
+                    latestRmRecords = rmRecordCache,
+                    editingRmRecord = null,
+                    showRmEditDialog = false
+                ) }
+            }.onFailure { e ->
+                _uiState.update { it.copy(error = e.message ?: "RM記録の削除に失敗しました") }
+            }
+        }
     }
 
     /**
@@ -3213,7 +3324,51 @@ class DashboardViewModel(
                     val macros = slot.totalMacros
                     if (macros != null) "$foodSummary (P${macros.protein.toInt()}g)" else foodSummary
                 } else {
-                    slot.items.joinToString(", ") { "${it.foodName} ${it.amount.toInt()}${it.unit}" }
+                    slot.items.joinToString(", ") { item ->
+                        val parts = mutableListOf<String>()
+                        item.sets?.let { if (it > 0) parts.add("${it}セット") }
+                        item.reps?.let { if (it > 0) parts.add("${it}回") }
+                        // RM%指定がある場合: "RM70%-80%（84-96kg）" or "RM70%-80%"
+                        val rmMin = item.rmPercentMin
+                        val rmMax = item.rmPercentMax
+                        val rmRepsVal = item.rmReps
+                        val hasRmPercent = rmMin != null || rmMax != null
+                        if (hasRmPercent) {
+                            val rmLabel = if (rmRepsVal != null && rmRepsVal > 0) "${rmRepsVal}RM" else "RM"
+                            val percentStr = when {
+                                rmMin != null && rmMax != null ->
+                                    "${rmLabel}${rmMin.toInt()}%-${rmMax.toInt()}%"
+                                rmMin != null ->
+                                    "${rmLabel}${rmMin.toInt()}%"
+                                else ->
+                                    "${rmLabel}${rmMax!!.toInt()}%"
+                            }
+                            // RM記録があれば実際の重量を計算して表示
+                            val rmRecord = rmRecordCache[item.foodName]
+                            if (rmRecord != null) {
+                                val minKg = rmMin?.let { (rmRecord.weight * it / 100f).toInt() }
+                                val maxKg = rmMax?.let { (rmRecord.weight * it / 100f).toInt() }
+                                val kgStr = when {
+                                    minKg != null && maxKg != null -> "（${minKg}-${maxKg}kg）"
+                                    minKg != null -> "（${minKg}kg）"
+                                    maxKg != null -> "（${maxKg}kg）"
+                                    else -> ""
+                                }
+                                parts.add("$percentStr$kgStr")
+                            } else {
+                                parts.add(percentStr)
+                            }
+                        } else {
+                            item.weight?.let { if (it > 0) parts.add("${it.toInt()}kg") }
+                        }
+                        item.duration?.let { if (it > 0) parts.add("${it}分") }
+                        item.distance?.let { if (it > 0) parts.add("${it}km") }
+                        if (parts.isNotEmpty()) {
+                            "${item.foodName} ${parts.joinToString("×")}"
+                        } else {
+                            "${item.foodName} ${item.amount.toInt()}${item.unit}"
+                        }
+                    }
                 }
 
                 val type = if (slot.type == CustomQuestSlotType.WORKOUT) {

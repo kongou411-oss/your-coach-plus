@@ -91,14 +91,14 @@ val appModule = module {
     // ViewModels
     viewModel { AuthViewModel(get(), get()) }
     viewModel { ProfileSetupViewModel(get()) }
-    viewModel { DashboardViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { HistoryViewModel(get(), get(), get(), get(), get()) }
+    viewModel { DashboardViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { HistoryViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { PgBaseViewModel(get(), get(), get()) }
     viewModel { ComyViewModel(get(), get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get(), get(), get()) }
     viewModel { AnalysisViewModel(get<GeminiService>() as FirebaseGeminiService, get<AnalysisRepository>() as FirestoreAnalysisRepository, get<BadgeRepository>() as FirestoreBadgeRepository) }
     viewModel { MealViewModel(get(), get(), get(), get(), get()) }
-    viewModel { WorkoutViewModel(get(), get()) }
+    viewModel { WorkoutViewModel(get(), get(), get()) }
     viewModel { WorkoutRecorderViewModel(get()) }
     viewModel { AiFoodRecognitionViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { SubscriptionViewModel(get()) }

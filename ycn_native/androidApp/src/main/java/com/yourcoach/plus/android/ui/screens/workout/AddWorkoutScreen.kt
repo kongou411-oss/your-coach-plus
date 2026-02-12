@@ -32,6 +32,7 @@ import com.yourcoach.plus.android.ui.theme.*
 import com.yourcoach.plus.shared.data.database.ExerciseDatabase
 import com.yourcoach.plus.shared.data.database.ExerciseItem
 import com.yourcoach.plus.shared.domain.model.*
+import com.yourcoach.plus.shared.domain.model.RmRecord
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -267,6 +268,22 @@ fun AddWorkoutScreen(
                             showEditExerciseDialog = true
                         },
                         onDelete = { viewModel.removeExercise(index) }
+                    )
+                }
+            }
+
+            // RM記録セクション（筋トレの場合のみ）
+            if (uiState.workoutType == WorkoutType.STRENGTH) {
+                item {
+                    RmRecordingSection(
+                        rmRecords = uiState.rmRecords,
+                        customExercises = uiState.customExercises,
+                        onAddRmRecord = { name, category, weight, reps ->
+                            viewModel.addRmRecord(name, category, weight, reps)
+                        },
+                        onRemoveRmRecord = { index ->
+                            viewModel.removeRmRecord(index)
+                        }
                     )
                 }
             }
@@ -1681,6 +1698,191 @@ private fun calculateCalories(
 }
 
 /**
+ * RM記録セクション（折りたたみ可能）
+ */
+@Composable
+private fun RmRecordingSection(
+    rmRecords: List<RmRecord>,
+    customExercises: List<CustomExercise>,
+    onAddRmRecord: (exerciseName: String, category: String, weight: Float, reps: Int) -> Unit,
+    onRemoveRmRecord: (Int) -> Unit
+) {
+    var sectionExpanded by remember { mutableStateOf(false) }
+    var showExercisePicker by remember { mutableStateOf(false) }
+    var selectedExerciseName by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("") }
+    var rmWeight by remember { mutableStateOf("") }
+    var rmReps by remember { mutableStateOf("") }
+
+    // 種目選択ダイアログ
+    if (showExercisePicker) {
+        RmExercisePickerDialog(
+            customExercises = customExercises,
+            onSelect = { name, category ->
+                selectedExerciseName = name
+                selectedCategory = category
+                showExercisePicker = false
+            },
+            onDismiss = { showExercisePicker = false }
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AccentOrange.copy(alpha = 0.05f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header (clickable to expand/collapse)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { sectionExpanded = !sectionExpanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.FitnessCenter,
+                        contentDescription = null,
+                        tint = AccentOrange,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "RM記録",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Icon(
+                    imageVector = if (sectionExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (sectionExpanded) "閉じる" else "開く"
+                )
+            }
+
+            if (sectionExpanded) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 種目選択ボタン
+                OutlinedButton(
+                    onClick = { showExercisePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        if (selectedExerciseName.isNotBlank()) AccentOrange else MaterialTheme.colorScheme.outline
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.FitnessCenter,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = if (selectedExerciseName.isNotBlank()) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (selectedExerciseName.isNotBlank())
+                            "$selectedExerciseName ($selectedCategory)"
+                        else
+                            "種目を選択...",
+                        color = if (selectedExerciseName.isNotBlank())
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Weight and Reps input
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = rmReps,
+                        onValueChange = { rmReps = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("回数") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    OutlinedTextField(
+                        value = rmWeight,
+                        onValueChange = { rmWeight = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("重量 (kg)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Record button
+                Button(
+                    onClick = {
+                        val w = rmWeight.toFloatOrNull()
+                        val r = rmReps.toIntOrNull()
+                        if (selectedExerciseName.isNotBlank() && w != null && w > 0f && r != null && r > 0) {
+                            onAddRmRecord(selectedExerciseName, selectedCategory, w, r)
+                            rmWeight = ""
+                            rmReps = ""
+                            selectedExerciseName = ""
+                            selectedCategory = ""
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentOrange),
+                    enabled = selectedExerciseName.isNotBlank() &&
+                            rmWeight.toFloatOrNull()?.let { it > 0f } == true &&
+                            rmReps.toIntOrNull()?.let { it > 0 } == true
+                ) {
+                    Text("記録")
+                }
+
+                // Recorded RM records list
+                if (rmRecords.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    rmRecords.forEachIndexed { index, record ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${record.exerciseName}: ${record.reps}回 ${record.weight.toInt()}kg",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { onRemoveRmRecord(index) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "削除",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * 運動編集ダイアログ
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1778,6 +1980,141 @@ private fun EditExerciseDialog(
                 Text("保存")
             }
         },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("キャンセル")
+            }
+        }
+    )
+}
+
+/**
+ * RM種目選択ダイアログ（カテゴリ別、ビルトイン＋カスタム）
+ */
+@Composable
+private fun RmExercisePickerDialog(
+    customExercises: List<CustomExercise>,
+    onSelect: (name: String, category: String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strengthCategories = listOf("胸", "背中", "肩", "腕", "脚", "体幹")
+    val categoryEnumMap = mapOf(
+        "胸" to ExerciseCategory.CHEST,
+        "背中" to ExerciseCategory.BACK,
+        "肩" to ExerciseCategory.SHOULDERS,
+        "腕" to ExerciseCategory.ARMS,
+        "脚" to ExerciseCategory.LEGS,
+        "体幹" to ExerciseCategory.CORE
+    )
+
+    var selectedCategory by remember { mutableStateOf(strengthCategories[0]) }
+
+    // 選択カテゴリの種目一覧（カスタム優先 + ビルトイン）
+    val exercisesForCategory = remember(selectedCategory, customExercises) {
+        val enumCat = categoryEnumMap[selectedCategory]
+        val custom = customExercises
+            .filter { it.category == enumCat }
+            .map { Triple(it.name, selectedCategory, true) }
+        val builtIn = ExerciseDatabase.getExercisesByCategory(selectedCategory)
+            .map { Triple(it.name, selectedCategory, false) }
+        (custom + builtIn).distinctBy { it.first }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.7f),
+        title = {
+            Text(
+                text = "RM記録する種目を選択",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // カテゴリタブ
+                ScrollableTabRow(
+                    selectedTabIndex = strengthCategories.indexOf(selectedCategory),
+                    containerColor = Color.Transparent,
+                    contentColor = AccentOrange,
+                    edgePadding = 0.dp
+                ) {
+                    strengthCategories.forEach { category ->
+                        Tab(
+                            selected = selectedCategory == category,
+                            onClick = { selectedCategory = category },
+                            text = {
+                                Text(
+                                    text = category,
+                                    fontWeight = if (selectedCategory == category) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 種目リスト
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(exercisesForCategory.size) { index ->
+                        val (name, category, isCustom) = exercisesForCategory[index]
+                        Card(
+                            onClick = { onSelect(name, category) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                if (isCustom) {
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Tertiary.copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            text = "カスタム",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Tertiary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (exercisesForCategory.isEmpty()) {
+                        item {
+                            Text(
+                                text = "種目がありません",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("キャンセル")

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Restaurant
@@ -41,8 +42,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -63,6 +68,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -72,6 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.yourcoach.plus.android.ui.theme.AccentOrange
 import com.yourcoach.plus.android.ui.theme.Primary
 import com.yourcoach.plus.android.ui.theme.ScoreCalories
@@ -172,6 +180,7 @@ fun HistoryScreen(
                         recordedDates = uiState.recordedDates,
                         meals = uiState.meals,
                         workouts = uiState.workouts,
+                        rmRecords = uiState.rmRecordsForDate,
                         onDateSelected = viewModel::selectDate,
                         onPreviousMonth = viewModel::goToPreviousMonth,
                         onNextMonth = viewModel::goToNextMonth,
@@ -188,13 +197,19 @@ fun HistoryScreen(
                     HistoryTab.GRAPH -> GraphView(
                         selectedType = uiState.graphType,
                         onTypeSelected = viewModel::selectGraphType,
+                        selectedPeriod = uiState.graphPeriod,
+                        onPeriodSelected = viewModel::selectGraphPeriod,
                         fitnessGoal = uiState.fitnessGoal,
                         lbmData = uiState.lbmData,
                         weightData = uiState.weightData,
                         caloriesData = uiState.caloriesData,
                         nutritionData = uiState.nutritionData,
                         exerciseData = uiState.exerciseData,
-                        conditionData = uiState.conditionData
+                        conditionData = uiState.conditionData,
+                        rmData = uiState.rmData,
+                        rmExerciseNames = uiState.rmExerciseNames,
+                        selectedRmExercise = uiState.selectedRmExercise,
+                        onRmExerciseSelected = viewModel::selectRmExercise
                     )
                 }
             }
@@ -505,6 +520,7 @@ private fun CalendarView(
     recordedDates: Set<LocalDate>,
     meals: List<Meal>,
     workouts: List<Workout>,
+    rmRecords: List<com.yourcoach.plus.shared.domain.model.RmRecord> = emptyList(),
     onDateSelected: (LocalDate) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
@@ -582,8 +598,25 @@ private fun CalendarView(
             }
         }
 
+        // RM記録
+        if (rmRecords.isNotEmpty()) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                SectionHeader(
+                    icon = Icons.Default.FitnessCenter,
+                    title = "RM記録",
+                    color = AccentOrange
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            items(rmRecords) { record ->
+                RmRecordHistoryCard(record = record)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
         // 記録がない場合
-        if (meals.isEmpty() && workouts.isEmpty()) {
+        if (meals.isEmpty() && workouts.isEmpty() && rmRecords.isEmpty()) {
             item {
                 EmptyRecordMessage()
             }
@@ -1075,17 +1108,24 @@ private enum class Trend { UP, DOWN, FLAT }
 /**
  * グラフビュー
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GraphView(
     selectedType: GraphType,
     onTypeSelected: (GraphType) -> Unit,
+    selectedPeriod: GraphPeriod,
+    onPeriodSelected: (GraphPeriod) -> Unit,
     fitnessGoal: FitnessGoal,
     lbmData: List<GraphDataPoint>,
     weightData: List<GraphDataPoint>,
     caloriesData: List<GraphDataPoint>,
     nutritionData: NutritionGraphData,
     exerciseData: List<GraphDataPoint>,
-    conditionData: List<GraphDataPoint>
+    conditionData: List<GraphDataPoint>,
+    rmData: List<GraphDataPoint> = emptyList(),
+    rmExerciseNames: List<String> = emptyList(),
+    selectedRmExercise: String? = null,
+    onRmExerciseSelected: (String) -> Unit = {}
 ) {
     // 現在選択中のデータのトレンドを計算
     val trend = when (selectedType) {
@@ -1093,7 +1133,6 @@ private fun GraphView(
         GraphType.WEIGHT -> calculateTrend(weightData)
         GraphType.CALORIES -> calculateTrend(caloriesData)
         GraphType.NUTRITION -> {
-            // 栄養素はタンパク質のトレンドを代表として使用
             val proteinData = nutritionData.dates.mapIndexed { i, date ->
                 GraphDataPoint(date, nutritionData.proteins.getOrElse(i) { 0f })
             }
@@ -1101,6 +1140,7 @@ private fun GraphView(
         }
         GraphType.EXERCISE -> calculateTrend(exerciseData)
         GraphType.CONDITION -> calculateTrend(conditionData)
+        GraphType.RM -> calculateTrend(rmData)
     }
 
     Column(
@@ -1127,7 +1167,8 @@ private fun GraphView(
                                 GraphType.CALORIES -> "カロリー"
                                 GraphType.NUTRITION -> "栄養素"
                                 GraphType.EXERCISE -> "運動"
-                                GraphType.CONDITION -> "体調"
+                                GraphType.CONDITION -> "コンディション"
+                                GraphType.RM -> "RM"
                             },
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -1140,7 +1181,34 @@ private fun GraphView(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 期間選択チップ
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            GraphPeriod.entries.forEach { period ->
+                FilterChip(
+                    selected = selectedPeriod == period,
+                    onClick = { onPeriodSelected(period) },
+                    label = {
+                        Text(
+                            text = period.label,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = AccentOrange.copy(alpha = 0.2f),
+                        selectedLabelColor = AccentOrange
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // グラフエリア
         Card(
@@ -1166,19 +1234,57 @@ private fun GraphView(
                 ) {
                     Text(
                         text = when (selectedType) {
-                            GraphType.LBM -> "LBM推移（過去7日間）"
-                            GraphType.WEIGHT -> "体重推移（過去7日間）"
-                            GraphType.CALORIES -> "摂取カロリー（過去7日間）"
-                            GraphType.NUTRITION -> "栄養素バランス（過去7日間）"
-                            GraphType.EXERCISE -> "消費カロリー（過去7日間）"
-                            GraphType.CONDITION -> "体調スコア（過去7日間）"
+                            GraphType.LBM -> "LBM推移（${selectedPeriod.titleSuffix}）"
+                            GraphType.WEIGHT -> "体重推移（${selectedPeriod.titleSuffix}）"
+                            GraphType.CALORIES -> "摂取カロリー（${selectedPeriod.titleSuffix}）"
+                            GraphType.NUTRITION -> "栄養素バランス（${selectedPeriod.titleSuffix}）"
+                            GraphType.EXERCISE -> "消費カロリー（${selectedPeriod.titleSuffix}）"
+                            GraphType.CONDITION -> "コンディション（${selectedPeriod.titleSuffix}）"
+                            GraphType.RM -> "RM記録推移（${selectedPeriod.titleSuffix}）"
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    // トレンド表示（fitnessGoal考慮）
                     TrendBadge(trend = trend, graphType = selectedType, fitnessGoal = fitnessGoal)
+                }
+
+                // RM種目ドロップダウン
+                if (selectedType == GraphType.RM) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (rmExerciseNames.isNotEmpty()) {
+                        var expanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedRmExercise ?: "",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("種目") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
+                                singleLine = true
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                rmExerciseNames.forEach { name ->
+                                    DropdownMenuItem(
+                                        text = { Text(name) },
+                                        onClick = {
+                                            onRmExerciseSelected(name)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1236,6 +1342,25 @@ private fun GraphView(
                             .fillMaxWidth()
                             .weight(1f)
                     )
+                    GraphType.RM -> {
+                        if (rmExerciseNames.isEmpty()) {
+                            EmptyChartMessage(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                        } else {
+                            ChartWithAxes(
+                                data = rmData,
+                                unit = "kg",
+                                chartColor = AccentOrange,
+                                isLineChart = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                        }
+                    }
                 }
 
                 // 凡例
@@ -1263,7 +1388,10 @@ private fun GraphView(
                         LegendItem(color = ScoreExercise, label = "消費カロリー (kcal)")
                     }
                     GraphType.CONDITION -> {
-                        LegendItem(color = Primary, label = "体調スコア (0-100点)")
+                        LegendItem(color = Primary, label = "コンディション (0-100点)")
+                    }
+                    GraphType.RM -> {
+                        LegendItem(color = AccentOrange, label = "RM記録 (kg)")
                     }
                 }
             }
@@ -1392,9 +1520,21 @@ private fun ChartWithAxes(
         }
     }
 
+    // X軸ラベルの間引きインデックス
+    val maxLabels = 7
+    val visibleIndices = if (data.size <= maxLabels) {
+        data.indices.toList()
+    } else {
+        val step = (data.size - 1).toFloat() / (maxLabels - 1)
+        (0 until maxLabels).map { (it * step).toInt().coerceAtMost(data.size - 1) }.distinct()
+    }
+
+    // ラベル色を取得（Canvas外で）
+    val labelColor = MaterialTheme.colorScheme.onSurface
+
     Column(modifier = modifier) {
         Row(modifier = Modifier.weight(1f)) {
-            // Y軸ラベル（見やすく改善）
+            // Y軸ラベル
             Column(
                 modifier = Modifier
                     .width(50.dp)
@@ -1440,26 +1580,37 @@ private fun ChartWithAxes(
                 }
 
                 if (isLineChart) {
-                    // 折れ線グラフ（両端に余白を持たせる）
-                    val padding = width / (data.size + 1)
-                    val stepX = (width - padding * 2) / (data.size - 1).coerceAtLeast(1)
+                    val dotRadius = when {
+                        data.size <= 7 -> 6f
+                        data.size <= 13 -> 5f
+                        data.size <= 26 -> 4f
+                        else -> 3f
+                    }
+                    val lineWidth = when {
+                        data.size <= 13 -> 4f
+                        data.size <= 26 -> 3f
+                        else -> 2f
+                    }
+
+                    // 折れ線グラフ（端に余白）
+                    val chartPadding = if (data.size > 1) width / (data.size + 1) else width / 2
+                    val stepX = if (data.size > 1) (width - chartPadding * 2) / (data.size - 1) else 0f
                     val path = Path()
                     data.forEachIndexed { index, point ->
-                        val x = padding + index * stepX
+                        val x = chartPadding + index * stepX
                         val y = height - ((point.value - yMin) / yRange * height)
                         if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
                     }
-                    drawPath(path, chartColor, style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                    drawPath(path, chartColor, style = Stroke(width = lineWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
                     data.forEachIndexed { index, point ->
-                        val x = padding + index * stepX
+                        val x = chartPadding + index * stepX
                         val y = height - ((point.value - yMin) / yRange * height)
-                        drawCircle(chartColor, radius = 6f, center = Offset(x, y))
+                        drawCircle(chartColor, radius = dotRadius, center = Offset(x, y))
                     }
                 } else {
                     // 棒グラフ（均等配置）
-                    val totalWidth = width
-                    val barWidth = totalWidth / (data.size * 1.8f)
-                    val groupWidth = totalWidth / data.size
+                    val barWidth = width / (data.size * 1.8f)
+                    val groupWidth = width / data.size
                     data.forEachIndexed { index, point ->
                         val barHeight = ((point.value - yMin) / yRange * height).coerceAtLeast(2f)
                         val centerX = groupWidth * index + groupWidth / 2
@@ -1471,24 +1622,33 @@ private fun ChartWithAxes(
             }
         }
 
-        // X軸ラベル（日付）- 各棒/点の真下に配置
-        Row(
+        // X軸ラベル - データ点と同じ座標系でCanvasに描画
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 50.dp, top = 8.dp)
+                .height(18.dp)
+                .padding(start = 50.dp, top = 2.dp)
         ) {
-            data.forEach { point ->
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "${point.date.dayOfMonth}日",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+            val canvasWidth = size.width
+            val canvasHeight = size.height
+            val paint = android.graphics.Paint().apply {
+                color = labelColor.toArgb()
+                textSize = 10.sp.toPx()
+                textAlign = android.graphics.Paint.Align.CENTER
+                isAntiAlias = true
+            }
+
+            visibleIndices.forEach { index ->
+                val x = if (isLineChart) {
+                    val chartPadding = if (data.size > 1) canvasWidth / (data.size + 1) else canvasWidth / 2
+                    val stepX = if (data.size > 1) (canvasWidth - chartPadding * 2) / (data.size - 1) else 0f
+                    chartPadding + index * stepX
+                } else {
+                    val groupWidth = canvasWidth / data.size
+                    groupWidth * index + groupWidth / 2
                 }
+                val label = data[index].label.ifEmpty { "${data[index].date.dayOfMonth}" }
+                drawContext.canvas.nativeCanvas.drawText(label, x, canvasHeight * 0.85f, paint)
             }
         }
     }
@@ -1510,6 +1670,7 @@ private fun NutritionChartWithAxes(
     val allValues = data.proteins + data.fats + data.carbs
     val maxValue = allValues.maxOrNull() ?: 100f
     val yMax = maxValue * 1.1f
+    val nutLabelColor = MaterialTheme.colorScheme.onSurface
 
     Column(modifier = modifier) {
         Row(modifier = Modifier.weight(1f)) {
@@ -1582,24 +1743,35 @@ private fun NutritionChartWithAxes(
             }
         }
 
-        // X軸ラベル（日付）- 各グループの真下に配置
-        Row(
+        // X軸ラベル - バーグラフと同じ座標系でCanvasに描画
+        val nutMaxLabels = 7
+        val nutVisibleIndices = if (data.dates.size <= nutMaxLabels) {
+            data.dates.indices.toList()
+        } else {
+            val step = (data.dates.size - 1).toFloat() / (nutMaxLabels - 1)
+            (0 until nutMaxLabels).map { (it * step).toInt().coerceAtMost(data.dates.size - 1) }.distinct()
+        }
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 50.dp, top = 8.dp)
+                .height(18.dp)
+                .padding(start = 50.dp, top = 2.dp)
         ) {
-            data.dates.forEach { date ->
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "${date.dayOfMonth}日",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+            val canvasWidth = size.width
+            val canvasHeight = size.height
+            val groupWidth = canvasWidth / data.dates.size
+            val paint = android.graphics.Paint().apply {
+                color = nutLabelColor.toArgb()
+                textSize = 10.sp.toPx()
+                textAlign = android.graphics.Paint.Align.CENTER
+                isAntiAlias = true
+            }
+            nutVisibleIndices.forEach { index ->
+                val x = groupWidth * index + groupWidth / 2
+                drawContext.canvas.nativeCanvas.drawText(
+                    "${data.dates[index].dayOfMonth}",
+                    x, canvasHeight * 0.85f, paint
+                )
             }
         }
     }
@@ -1820,6 +1992,64 @@ private fun EmptyChartMessage(modifier: Modifier = Modifier) {
                 text = "データがありません",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * RM記録カード（カレンダー詳細用）
+ */
+@Composable
+private fun RmRecordHistoryCard(record: com.yourcoach.plus.shared.domain.model.RmRecord) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(AccentOrange.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FitnessCenter,
+                        contentDescription = null,
+                        tint = AccentOrange,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = record.exerciseName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = record.category,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text(
+                text = "${record.weight.toInt()}kg × ${record.reps}rep",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = AccentOrange
             )
         }
     }

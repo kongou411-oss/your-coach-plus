@@ -8,6 +8,7 @@ import com.yourcoach.plus.shared.data.repository.FirestoreConditionRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreCustomExerciseRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreCustomQuestRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreCustomFoodRepository
+import com.yourcoach.plus.shared.data.repository.FirestoreRmRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreDirectiveRepository
 import com.yourcoach.plus.shared.data.repository.FirestoreMealRepository
 import com.yourcoach.plus.shared.data.repository.FirestorePgBaseRepository
@@ -23,6 +24,7 @@ import com.yourcoach.plus.shared.domain.repository.ConditionRepository
 import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
 import com.yourcoach.plus.shared.domain.repository.CustomFoodRepository
 import com.yourcoach.plus.shared.domain.repository.CustomQuestRepository
+import com.yourcoach.plus.shared.domain.repository.RmRepository
 import com.yourcoach.plus.shared.domain.repository.DirectiveRepository
 import com.yourcoach.plus.shared.domain.repository.MealRepository
 import com.yourcoach.plus.shared.domain.repository.PgBaseRepository
@@ -75,11 +77,12 @@ val sharedModule = module {
     single<PgBaseRepository> { FirestorePgBaseRepository() }
     single<ComyRepository> { FirestoreComyRepository() }
     single<AnalysisRepository> { FirestoreAnalysisRepository() }
+    single<RmRepository> { FirestoreRmRepository() }
 
     // ScreenModels (Voyager)
     // Auth
     factory { AuthScreenModel(get(), get()) }
-    factory { ProfileSetupScreenModel(get(), get(), get()) }
+    factory { ProfileSetupScreenModel(get(), get(), get(), rmRepository = get()) }
     // Dashboard
     factory {
         DashboardScreenModel(
@@ -94,7 +97,7 @@ val sharedModule = module {
         )
     }
     // History
-    factory { HistoryScreenModel(get(), get(), get(), get()) }
+    factory { HistoryScreenModel(get(), get(), get(), get(), rmRepository = get()) }
     // Settings
     factory { SettingsScreenModel(get(), get(), get(), getOrNull<GeminiService>()) }
     factory { ProfileEditScreenModel(get(), get()) }

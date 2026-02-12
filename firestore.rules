@@ -185,6 +185,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // サブコレクション: rm_records（RM記録）
+      match /rm_records/{recordId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // サブコレクション: conditions（コンディション記録）
       match /conditions/{conditionId} {
         allow read, write: if isOwner(userId);

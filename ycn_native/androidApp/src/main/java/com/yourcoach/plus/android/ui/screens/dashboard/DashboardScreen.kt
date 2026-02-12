@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,6 +55,7 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +66,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -90,6 +95,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import com.yourcoach.plus.shared.domain.model.RmRecord
+import com.yourcoach.plus.shared.data.database.ExerciseDatabase
 import com.yourcoach.plus.android.ui.theme.AccentOrange
 import com.yourcoach.plus.android.ui.theme.Primary
 import com.yourcoach.plus.android.ui.theme.ScoreCalories
@@ -477,8 +484,30 @@ fun DashboardScreen(
                                     onDeleteWorkout = viewModel::deleteWorkout,
                                     onSaveAsTemplate = viewModel::saveWorkoutAsTemplate,
                                     onExecuteRoutineWorkouts = viewModel::executeRoutineWorkouts,
-                                    onToggleRestDay = viewModel::toggleRestDay
+                                    onToggleRestDay = viewModel::toggleRestDay,
+                                    latestRmRecords = uiState.latestRmRecords,
+                                    onEditRm = viewModel::showRmEditDialog,
+                                    onDeleteRm = viewModel::deleteRmRecord,
+                                    onAddRm = viewModel::showRmAddDialog
                                 )
+
+                                // RM編集ダイアログ
+                                if (uiState.showRmEditDialog && uiState.editingRmRecord != null) {
+                                    RmEditDialog(
+                                        record = uiState.editingRmRecord!!,
+                                        onDismiss = viewModel::hideRmEditDialog,
+                                        onSave = viewModel::updateRmRecord,
+                                        onDelete = { viewModel.deleteRmRecord(uiState.editingRmRecord!!) }
+                                    )
+                                }
+
+                                // RM新規追加ダイアログ
+                                if (uiState.showRmAddDialog) {
+                                    RmAddDialog(
+                                        onDismiss = viewModel::hideRmAddDialog,
+                                        onSave = viewModel::addRmRecord
+                                    )
+                                }
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -2478,6 +2507,10 @@ fun WorkoutListSection(
     onSaveAsTemplate: (com.yourcoach.plus.shared.domain.model.Workout) -> Unit,
     onExecuteRoutineWorkouts: () -> Unit,
     onToggleRestDay: (Boolean) -> Unit,
+    latestRmRecords: Map<String, RmRecord> = emptyMap(),
+    onEditRm: (RmRecord) -> Unit = {},
+    onDeleteRm: (RmRecord) -> Unit = {},
+    onAddRm: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // ルーティン設定の休養日 OR 手動設定の休養日
@@ -2711,6 +2744,20 @@ fun WorkoutListSection(
                         )
                     }
                 }
+            }
+
+            // RM記録セクション（運動セクション内に表示）
+            if (latestRmRecords.isNotEmpty()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+                RmRecordSection(
+                    rmRecords = latestRmRecords,
+                    onEditRm = onEditRm,
+                    onDeleteRm = onDeleteRm,
+                    onAddRm = onAddRm
+                )
             }
         }
     }
@@ -3571,5 +3618,387 @@ private fun WelcomeCard(
             )
         }
     }
+}
+
+/**
+ * RM記録セクション
+ */
+@Composable
+fun RmRecordSection(
+    rmRecords: Map<String, RmRecord>,
+    onEditRm: (RmRecord) -> Unit,
+    onDeleteRm: (RmRecord) -> Unit,
+    onAddRm: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.FitnessCenter,
+                    contentDescription = null,
+                    tint = AccentOrange,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "RM記録",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                if (rmRecords.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${rmRecords.size}種目",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            IconButton(onClick = onAddRm, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "RM追加",
+                    tint = AccentOrange,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (rmRecords.isEmpty()) {
+            Text(
+                text = "RM記録がありません。＋ボタンで追加できます",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            rmRecords.values.sortedBy { it.exerciseName }.forEach { record ->
+                RmRecordCard(
+                    record = record,
+                    onEdit = { onEditRm(record) },
+                    onDelete = { onDeleteRm(record) }
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+        }
+    }
+}
+
+/**
+ * RM記録カード（1種目分）
+ */
+@Composable
+private fun RmRecordCard(
+    record: RmRecord,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AccentOrange.copy(alpha = 0.08f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onEdit)
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = record.exerciseName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${record.weight.toInt()}kg × ${record.reps}rep",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentOrange
+                )
+            }
+            Row {
+                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "編集",
+                        tint = AccentOrange,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "削除",
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * RM記録編集ダイアログ
+ */
+@Composable
+private fun RmEditDialog(
+    record: RmRecord,
+    onDismiss: () -> Unit,
+    onSave: (exerciseName: String, category: String, weight: Float, reps: Int) -> Unit,
+    onDelete: () -> Unit
+) {
+    var weight by remember { mutableStateOf(record.weight.toInt().toString()) }
+    var reps by remember { mutableStateOf(record.reps.toString()) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "RM記録を編集",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 種目名（読み取り専用）
+                Text(
+                    text = record.exerciseName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentOrange
+                )
+
+                // 重量
+                androidx.compose.material3.OutlinedTextField(
+                    value = weight,
+                    onValueChange = { weight = it },
+                    label = { Text("重量 (kg)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                // 回数
+                androidx.compose.material3.OutlinedTextField(
+                    value = reps,
+                    onValueChange = { reps = it },
+                    label = { Text("回数") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.Button(
+                onClick = {
+                    val w = weight.toFloatOrNull()
+                    val r = reps.toIntOrNull()
+                    if (w != null && w > 0f && r != null && r > 0) {
+                        onSave(record.exerciseName, record.category, w, r)
+                    }
+                },
+                enabled = weight.toFloatOrNull()?.let { it > 0f } == true &&
+                        reps.toIntOrNull()?.let { it > 0 } == true,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = AccentOrange
+                )
+            ) {
+                Text("更新")
+            }
+        },
+        dismissButton = {
+            Row {
+                androidx.compose.material3.TextButton(
+                    onClick = onDelete,
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFFEF4444)
+                    )
+                ) {
+                    Text("削除")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                androidx.compose.material3.TextButton(onClick = onDismiss) {
+                    Text("キャンセル")
+                }
+            }
+        }
+    )
+}
+
+/**
+ * RM新規追加ダイアログ（種目選択 → 重量・回数入力の2ステップ）
+ */
+@Composable
+private fun RmAddDialog(
+    onDismiss: () -> Unit,
+    onSave: (exerciseName: String, category: String, weight: Float, reps: Int) -> Unit
+) {
+    var selectedExerciseName by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("") }
+    var weight by remember { mutableStateOf("") }
+    var reps by remember { mutableStateOf("") }
+
+    val strengthCategories = listOf("胸", "背中", "肩", "腕", "脚", "体幹")
+    var selectedTab by remember { mutableStateOf(strengthCategories[0]) }
+
+    val exercisesForCategory = remember(selectedTab) {
+        ExerciseDatabase.getExercisesByCategory(selectedTab)
+    }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.8f),
+        title = {
+            Text(
+                text = if (selectedExerciseName.isBlank()) "RM記録を追加" else selectedExerciseName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (selectedExerciseName.isBlank()) {
+                    // ステップ1: 種目選択
+                    ScrollableTabRow(
+                        selectedTabIndex = strengthCategories.indexOf(selectedTab),
+                        containerColor = Color.Transparent,
+                        contentColor = AccentOrange,
+                        edgePadding = 0.dp
+                    ) {
+                        strengthCategories.forEach { cat ->
+                            Tab(
+                                selected = selectedTab == cat,
+                                onClick = { selectedTab = cat },
+                                text = {
+                                    Text(
+                                        text = cat,
+                                        fontWeight = if (selectedTab == cat) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(exercisesForCategory.size) { index ->
+                            val exercise = exercisesForCategory[index]
+                            Card(
+                                onClick = {
+                                    selectedExerciseName = exercise.name
+                                    selectedCategory = exercise.category
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Text(
+                                    text = exercise.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // ステップ2: 重量・回数入力
+                    Text(
+                        text = selectedCategory,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AccentOrange
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    androidx.compose.material3.OutlinedTextField(
+                        value = weight,
+                        onValueChange = { weight = it },
+                        label = { Text("重量 (kg)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    androidx.compose.material3.OutlinedTextField(
+                        value = reps,
+                        onValueChange = { reps = it },
+                        label = { Text("回数") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (selectedExerciseName.isNotBlank()) {
+                androidx.compose.material3.Button(
+                    onClick = {
+                        val w = weight.toFloatOrNull()
+                        val r = reps.toIntOrNull()
+                        if (w != null && w > 0f && r != null && r > 0) {
+                            onSave(selectedExerciseName, selectedCategory, w, r)
+                        }
+                    },
+                    enabled = weight.toFloatOrNull()?.let { it > 0f } == true &&
+                            reps.toIntOrNull()?.let { it > 0 } == true,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = AccentOrange
+                    )
+                ) {
+                    Text("記録")
+                }
+            }
+        },
+        dismissButton = {
+            Row {
+                if (selectedExerciseName.isNotBlank()) {
+                    androidx.compose.material3.TextButton(onClick = {
+                        selectedExerciseName = ""
+                        selectedCategory = ""
+                        weight = ""
+                        reps = ""
+                    }) {
+                        Text("種目を変更")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                androidx.compose.material3.TextButton(onClick = onDismiss) {
+                    Text("キャンセル")
+                }
+            }
+        }
+    )
 }
 
