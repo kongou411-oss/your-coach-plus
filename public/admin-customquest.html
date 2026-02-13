@@ -57,9 +57,10 @@
             <a href="/admin.html" class="text-sm text-gray-500 hover:text-purple-600 transition">&#8592; 管理画面</a>
             <span class="text-gray-300">|</span>
             <h1 class="text-lg font-bold text-gray-800">カスタムクエスト管理</h1>
-            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold" id="cq-template-count">0</span>
+            <span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold"><span id="cq-template-count">0</span>件</span>
         </div>
         <div class="flex items-center gap-3">
+            <button onclick="toggleGuide()" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-200 font-bold">? 使い方</button>
             <span class="text-sm text-gray-500" id="user-info"></span>
             <button onclick="logout()" class="text-xs text-red-500 hover:text-red-700">ログアウト</button>
         </div>
@@ -296,7 +297,157 @@
         </div>
     </div>
 
+    <!-- Usage Guide Modal -->
+    <div id="cq-guide-overlay" class="fixed inset-0 bg-black/40 z-[60] hidden" onclick="toggleGuide()"></div>
+    <div id="cq-guide-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] max-w-[90vw] max-h-[85vh] bg-white rounded-2xl shadow-2xl z-[61] hidden flex flex-col">
+        <div class="flex items-center justify-between p-5 border-b border-gray-200">
+            <h2 class="text-lg font-bold text-gray-800">カスタムクエスト管理 — 使い方ガイド</h2>
+            <button onclick="toggleGuide()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-5 text-sm text-gray-700 leading-relaxed space-y-6">
+            <!-- Overview -->
+            <section>
+                <h3 class="font-bold text-base text-purple-700 mb-2 flex items-center gap-2">画面構成</h3>
+                <div class="bg-gray-50 rounded-lg p-4 text-xs font-mono leading-5 mb-3">
+                    <div>┌──────────────────────────────────────────────────────────────┐</div>
+                    <div>│ ヘッダー: ← 管理画面 | タイトル (テンプレ数) | 使い方 | ログアウト│</div>
+                    <div>├──────────┬──────────────────────────────────┬────────────────┤</div>
+                    <div>│ 左ペイン  │ メインペイン                      │ ドロワー(右)   │</div>
+                    <div>│ テンプレ  │  ユーザー選択バー                 │ テンプレ作成   │</div>
+                    <div>│ ライブラリ│  PFCサマリー | スロットタイムライン │ テンプレ編集   │</div>
+                    <div>│          │  プロフィール | ルーティン         │ (スライドイン)  │</div>
+                    <div>│ 検索/絞込 │  テンプレート | 割当履歴           │               │</div>
+                    <div>│ +新規    │  プロフィール編集                 │               │</div>
+                    <div>└──────────┴──────────────────────────────────┴────────────────┘</div>
+                </div>
+                <ul class="space-y-1 text-gray-600 list-disc pl-5">
+                    <li><strong>左ペイン</strong> — 全テンプレートの一覧。検索・タイプ絞り込み・ソートが可能。</li>
+                    <li><strong>メインペイン</strong> — ユーザーを選択して食事/運動プランを管理するエリア。</li>
+                    <li><strong>ドロワー</strong> — テンプレートの新規作成・編集時に右側からスライドで開く。</li>
+                </ul>
+            </section>
+
+            <!-- Step 1 -->
+            <section>
+                <h3 class="font-bold text-base text-green-700 mb-2">Step 1: テンプレートを作成する</h3>
+                <div class="bg-green-50 rounded-lg p-3 space-y-2">
+                    <p>テンプレートは「食事メニュー」または「運動メニュー」の雛形です。1回分の献立や1セッション分のトレーニングを登録します。</p>
+                    <ol class="list-decimal pl-5 space-y-1">
+                        <li>左ペイン上部の <span class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-bold">+ 新規</span> をクリック</li>
+                        <li>右ドロワーが開くので <strong>テンプレート名</strong> を入力（例: 【減量】朝食セット）</li>
+                        <li><strong>タイプ</strong> を MEAL（食事） or WORKOUT（運動）から選択</li>
+                        <li><strong>カテゴリタブ</strong> で食品/種目を絞り込み、検索欄で素早く見つける</li>
+                        <li>アイテムを <span class="bg-blue-500 text-white text-xs px-2 py-0.5 rounded font-bold">+</span> で追加。追加後も量・単位・セット数等を直接編集可</li>
+                        <li><span class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-bold">テンプレートを保存</span> をクリック</li>
+                    </ol>
+                    <div class="text-xs text-gray-500 mt-1">左ペイン下部の「食事テンプレ一括」「運動テンプレ一括」で標準テンプレを自動生成することもできます。</div>
+                </div>
+            </section>
+
+            <!-- Step 2 -->
+            <section>
+                <h3 class="font-bold text-base text-blue-700 mb-2">Step 2: ユーザーを選択する</h3>
+                <div class="bg-blue-50 rounded-lg p-3 space-y-2">
+                    <ol class="list-decimal pl-5 space-y-1">
+                        <li>メインペイン上部の入力欄に <strong>ユーザーID（UID）</strong> を入力</li>
+                        <li><span class="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-bold">読み込み</span> をクリック</li>
+                        <li>ユーザーのプロフィール・ルーティン・PFCサマリー・スロットタイムラインが表示される</li>
+                    </ol>
+                    <div class="text-xs text-gray-500 mt-1">一度読み込んだユーザーは「最近のユーザー」にボタンとして残るので、ワンクリックで切替できます。</div>
+                </div>
+            </section>
+
+            <!-- Step 3 -->
+            <section>
+                <h3 class="font-bold text-base text-orange-700 mb-2">Step 3: スロットにテンプレートを割り当てる</h3>
+                <div class="bg-orange-50 rounded-lg p-3 space-y-2">
+                    <p>スロット＝1日の食事・運動枠です。例: 5食+1トレーニング ＝ 6スロット。</p>
+                    <ol class="list-decimal pl-5 space-y-1">
+                        <li><strong>スロットタイムライン</strong> の各カードにあるドロップダウンからテンプレートを選択</li>
+                        <li>テンプレート選択時、カロリーがスロット目標に自動スケーリングされる（食事のみ）</li>
+                        <li>PFCサマリーがリアルタイムで更新 — 過不足をバーで確認</li>
+                        <li>全スロット設定後、<span class="bg-green-600 text-white text-xs px-2 py-0.5 rounded font-bold">一括保存</span> でFirestoreに保存</li>
+                    </ol>
+                    <div class="mt-2 text-xs">
+                        <div class="font-bold text-gray-600 mb-1">永続 / 日付指定の違い:</div>
+                        <ul class="list-disc pl-5 space-y-0.5 text-gray-600">
+                            <li><span class="bg-yellow-100 text-yellow-800 text-[10px] px-1.5 py-0.5 rounded font-bold">永続</span> — 毎日適用されるデフォルトプラン（_default として保存）</li>
+                            <li><span class="text-[10px]">日付指定</span> — 特定日のみ上書き（その日だけの特別プラン）</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 4 -->
+            <section>
+                <h3 class="font-bold text-base text-red-700 mb-2">Step 4: PFCバーの見方</h3>
+                <div class="bg-red-50 rounded-lg p-3 space-y-2">
+                    <p>PFCサマリーの各バーは、ユーザーの目標に対する割当量の割合を表示します。</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs mt-1">
+                        <div class="flex items-center gap-2"><span class="inline-block w-4 h-4 rounded" style="background:#d1d5db"></span> <strong>グレー (95-105%)</strong>: 目標達成</div>
+                        <div class="flex items-center gap-2"><span class="inline-block w-4 h-4 rounded" style="background:#f97316"></span> <strong>オレンジ (&lt;95%)</strong>: やや不足</div>
+                        <div class="flex items-center gap-2"><span class="inline-block w-4 h-4 rounded" style="background:#ef4444"></span> <strong>赤 (&lt;70%)</strong>: 大幅不足</div>
+                        <div class="flex items-center gap-2"><span class="inline-block w-4 h-4 rounded" style="background:#8b5cf6"></span> <strong>紫 (&gt;105%)</strong>: 超過</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Editing Templates -->
+            <section>
+                <h3 class="font-bold text-base text-indigo-700 mb-2">テンプレートの編集・複製・削除</h3>
+                <div class="bg-indigo-50 rounded-lg p-3 space-y-1 text-xs">
+                    <p>左ペインのテンプレートカードにカーソルを当てると、操作ボタンが表示されます。</p>
+                    <ul class="list-disc pl-5 space-y-0.5">
+                        <li><strong>編集</strong> — ドロワーが開き、名前・アイテムの変更が可能</li>
+                        <li><strong>複製</strong> — 同じ内容で新しいテンプレートを作成</li>
+                        <li><strong>削除</strong> — テンプレートを非表示に（確認ダイアログあり）</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Profile -->
+            <section>
+                <h3 class="font-bold text-base text-amber-700 mb-2">プロフィール編集</h3>
+                <div class="bg-amber-50 rounded-lg p-3 space-y-1 text-xs">
+                    <p>メインペイン「プロフィール」カード右上の <span class="bg-orange-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">編集</span> をクリックすると編集パネルが開きます。</p>
+                    <ul class="list-disc pl-5 space-y-0.5">
+                        <li><strong>時刻</strong> — 起床/就寝/食事回数/トレーニング時間帯</li>
+                        <li><strong>基本</strong> — 身長/体重/体脂肪率/理想体型</li>
+                        <li><strong>目標/PFC</strong> — 減量/維持/増量 + PFC比率 + トレ前後PFC固定値</li>
+                        <li><strong>食材</strong> — 優先食材/NG食材/アレルギー</li>
+                    </ul>
+                    <p class="mt-1">編集後は <span class="bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">保存</span> を忘れずに。</p>
+                </div>
+            </section>
+
+            <!-- Tips -->
+            <section>
+                <h3 class="font-bold text-base text-gray-700 mb-2">Tips</h3>
+                <div class="bg-gray-50 rounded-lg p-3 text-xs space-y-1">
+                    <ul class="list-disc pl-5 space-y-0.5 text-gray-600">
+                        <li>ESCキーでドロワーを閉じることができます</li>
+                        <li>ヘッダーの「← 管理画面」で通常の管理画面に戻れます</li>
+                        <li>テンプレートの量変更時は追加済みアイテムの数値を直接クリックして編集できます</li>
+                        <li>スロット割当を変更するたびにPFCバーがリアルタイムで更新されます</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+        <div class="p-4 border-t border-gray-200 text-center">
+            <button onclick="toggleGuide()" class="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 transition">閉じる</button>
+        </div>
+    </div>
+
     <!-- MAIN SCRIPT (loaded after cq-databases.js) -->
     <script src="/js/cq-functions.js"></script>
+    <script>
+        function toggleGuide() {
+            const o = document.getElementById('cq-guide-overlay');
+            const m = document.getElementById('cq-guide-modal');
+            const open = o.classList.contains('hidden');
+            o.classList.toggle('hidden', !open);
+            m.classList.toggle('hidden', !open);
+        }
+    </script>
 </body>
 </html>
