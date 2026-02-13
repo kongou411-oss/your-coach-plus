@@ -644,8 +644,7 @@ async function loadUserSlots() {
         // Show bento grid
         document.getElementById('cq-bento-container').classList.remove('hidden');
 
-        // Profile editor values
-        document.getElementById('cq-profile-editor').classList.remove('hidden');
+        // Profile editor values (now inside bento card)
         document.getElementById('cq-prof-wake').value = profile.wakeUpTime || '07:00';
         document.getElementById('cq-prof-sleep').value = profile.sleepTime || '23:00';
         document.getElementById('cq-prof-meals').value = mealsPerDay;
@@ -865,28 +864,35 @@ async function deleteAssignment(uid, docId) {
 }
 
 // ========== Profile ==========
-function toggleProfileEditor() {
-    const editor = document.getElementById('cq-profile-editor');
-    const isHidden = editor.classList.contains('hidden');
-    editor.classList.toggle('hidden');
-    if (isHidden) {
-        setTimeout(() => {
-            const container = document.querySelector('.cq-main');
-            if (container) {
-                container.scrollTo({ top: editor.offsetTop - container.offsetTop - 10, behavior: 'smooth' });
-            }
-        }, 50);
+function switchProfileMode(mode) {
+    const viewEl = document.getElementById('cq-profile-view');
+    const editEl = document.getElementById('cq-profile-edit-container');
+    // Reset all mode buttons
+    document.querySelectorAll('.prof-mode-btn').forEach(b => {
+        b.classList.remove('bg-purple-100', 'text-purple-700');
+        b.classList.add('text-gray-500');
+    });
+    const activeBtn = document.getElementById('prof-mode-' + mode);
+    if (activeBtn) {
+        activeBtn.classList.add('bg-purple-100', 'text-purple-700');
+        activeBtn.classList.remove('text-gray-500');
+    }
+    if (mode === 'view') {
+        viewEl.classList.remove('hidden');
+        editEl.classList.add('hidden');
+    } else {
+        viewEl.classList.add('hidden');
+        editEl.classList.remove('hidden');
+        // Show the correct panel
+        document.querySelectorAll('.cq-prof-panel').forEach(p => p.classList.add('hidden'));
+        const panel = document.getElementById('cq-panel-' + mode);
+        if (panel) panel.classList.remove('hidden');
     }
 }
 
-function switchProfileTab(tabName) {
-    document.querySelectorAll('.cq-prof-panel').forEach(p => p.classList.add('hidden'));
-    document.querySelectorAll('.prof-tab').forEach(t => t.classList.remove('active'));
-    const panel = document.getElementById('cq-panel-' + tabName);
-    const tab = document.getElementById('cq-tab-' + tabName);
-    if (panel) panel.classList.remove('hidden');
-    if (tab) tab.classList.add('active');
-}
+// Keep backward compat aliases
+function toggleProfileEditor() { switchProfileMode('schedule'); }
+function switchProfileTab(tabName) { switchProfileMode(tabName); }
 
 function toggleTrainingFields() {
     const val = document.getElementById('cq-prof-training-after').value;
