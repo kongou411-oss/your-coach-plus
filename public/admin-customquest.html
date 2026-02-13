@@ -467,7 +467,7 @@
                             <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">PFC</dt><dd class="text-gray-700"><strong>Protein(タンパク質) / Fat(脂質) / Carbs(炭水化物)</strong> の頭文字。3大栄養素の比率。アプリのデフォルトは P35% F15% C50%。P=4kcal/g、F=9kcal/g、C=4kcal/g で計算</dd></div>
                             <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">カロリー</dt><dd class="text-gray-700">エネルギーの単位(kcal)。<strong>摂取カロリー &lt; 消費カロリー</strong>で減量、逆で増量。本アプリでは全てkcal単位</dd></div>
                             <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">GI値</dt><dd class="text-gray-700"><strong>Glycemic Index</strong>（血糖指数）。食後の血糖値上昇速度を示す指標。高GI=急上昇(白米炊きたて等)、低GI=緩やか(玄米、冷やご飯等)。トレ直後は高GI、それ以外は低GI推奨</dd></div>
-                            <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">DIAAS</dt><dd class="text-gray-700"><strong>Digestible Indispensable Amino Acid Score</strong>（消化性必須アミノ酸スコア）。タンパク質の「質」を評価する最新指標。アプリのMicro+インジケーターで表示</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">DIAAS</dt><dd class="text-gray-700"><strong>Digestible Indispensable Amino Acid Score</strong>（消化性必須アミノ酸スコア）。タンパク質の「質」を評価する最新指標。アプリのミクロ+インジケーターで表示</dd></div>
                             <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">RS</dt><dd class="text-gray-700"><strong>Resistant Starch</strong>（レジスタントスターチ）。冷却で生成される難消化性でんぷん。白米を冷やすとRS増加(0.64→1.65g/100g)、再加熱しても維持されGI低下(88→65)</dd></div>
                         </dl>
                     </div>
@@ -506,8 +506,9 @@
                             <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">スロット</dt><dd class="text-gray-700">1日の食事・運動の「枠」。例: 5食+1運動=6スロット。各スロットに時刻とテンプレートを割り当てる</dd></div>
                             <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">永続(_default)</dt><dd class="text-gray-700">毎日適用されるデフォルトの割当。日付指定の割当がない日に自動適用される</dd></div>
                             <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">スケーリング</dt><dd class="text-gray-700">テンプレートのPFCをスロットの目標カロリーに合わせて自動比例調整すること</dd></div>
-                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">Micro+</dt><dd class="text-gray-700">ダッシュボードに表示される栄養品質インジケーター。DIAAS(アミノ酸スコア)、脂肪酸バランス、食物繊維、ビタミン/ミネラルの4項目</dd></div>
-                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">スコア</dt><dd class="text-gray-700">1日の食事・運動・体調記録の達成度を100点満点で評価。PFC達成率、食事回数、運動完了などから算出</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">通常クエスト</dt><dd class="text-gray-700">Cloud Function(generateQuest)がAIで自動生成する翌日の食事・運動プラン。プレミアム会員限定。プロフィール・ルーティン・PFC目標から最適なメニューを提案。ダッシュボードの「クエスト生成」ボタンで実行</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">ミクロ+</dt><dd class="text-gray-700">ダッシュボードに表示される栄養品質インジケーター。DIAAS(アミノ酸スコア)、脂肪酸バランス、食物繊維、ビタミン/ミネラルの4項目</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">コンディション</dt><dd class="text-gray-700">睡眠時間・睡眠品質・消化・集中力・ストレスの5項目からなる体調記録。履歴画面でグラフ確認可能。スコアはコンディション評価のみ現在使用中</dd></div>
                         </dl>
                     </div>
 
