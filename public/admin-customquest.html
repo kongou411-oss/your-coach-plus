@@ -437,7 +437,7 @@
                         <li><strong>基本</strong> — 身長/体重/体脂肪率/理想体型</li>
                         <li><strong>目標</strong> — 減量/維持/増量 + PFC比率 + トレ前後PFC固定値</li>
                         <li><strong>食材</strong> — 優先食材/NG食材/アレルギー</li>
-                        <li><strong>トレ加算</strong> — 分割タイプから3段階(SSS/S/A)で自動算出、LBMスケーリング</li>
+                        <li><strong>トレ加算</strong> — 自動算出(編集不要)。分割タイプから3段階Class(SSS/S/A)を判定し、LBMでスケーリング</li>
                     </ul>
                     <p class="mt-1">編集後は <span class="bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">保存</span> を忘れずに。</p>
                 </div>
@@ -453,6 +453,75 @@
                         <li>テンプレートの量変更時は追加済みアイテムの数値を直接クリックして編集できます</li>
                         <li>スロット割当を変更するたびにPFCバーがリアルタイムで更新されます</li>
                     </ul>
+                </div>
+            </section>
+
+            <!-- Glossary -->
+            <section>
+                <h3 class="font-bold text-base text-violet-700 mb-2">用語集</h3>
+                <div class="space-y-3">
+                    <!-- 栄養・エネルギー -->
+                    <div class="bg-violet-50 border border-violet-200 rounded-lg p-3 text-xs">
+                        <div class="font-bold text-violet-800 mb-2">栄養・エネルギー</div>
+                        <dl class="space-y-1.5">
+                            <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">PFC</dt><dd class="text-gray-700"><strong>Protein(タンパク質) / Fat(脂質) / Carbs(炭水化物)</strong> の頭文字。3大栄養素の比率。アプリのデフォルトは P35% F15% C50%。P=4kcal/g、F=9kcal/g、C=4kcal/g で計算</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">カロリー</dt><dd class="text-gray-700">エネルギーの単位(kcal)。<strong>摂取カロリー &lt; 消費カロリー</strong>で減量、逆で増量。本アプリでは全てkcal単位</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">GI値</dt><dd class="text-gray-700"><strong>Glycemic Index</strong>（血糖指数）。食後の血糖値上昇速度を示す指標。高GI=急上昇(白米炊きたて等)、低GI=緩やか(玄米、冷やご飯等)。トレ直後は高GI、それ以外は低GI推奨</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">DIAAS</dt><dd class="text-gray-700"><strong>Digestible Indispensable Amino Acid Score</strong>（消化性必須アミノ酸スコア）。タンパク質の「質」を評価する最新指標。アプリのMicro+インジケーターで表示</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-violet-700 w-20 shrink-0">RS</dt><dd class="text-gray-700"><strong>Resistant Starch</strong>（レジスタントスターチ）。冷却で生成される難消化性でんぷん。白米を冷やすとRS増加(0.64→1.65g/100g)、再加熱しても維持されGI低下(88→65)</dd></div>
+                        </dl>
+                    </div>
+
+                    <!-- 身体・代謝 -->
+                    <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-3 text-xs">
+                        <div class="font-bold text-cyan-800 mb-2">身体・代謝</div>
+                        <dl class="space-y-1.5">
+                            <div class="flex gap-2"><dt class="font-bold text-cyan-700 w-20 shrink-0">BMR</dt><dd class="text-gray-700"><strong>Basal Metabolic Rate</strong>（基礎代謝量）。何もしなくても消費するカロリー。本アプリでは<strong>Katch-McArdle式</strong>を採用: <code class="bg-gray-100 px-1 rounded">BMR = 370 + 21.6 × LBM + 4.5 × 脂肪量</code></dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-cyan-700 w-20 shrink-0">TDEE</dt><dd class="text-gray-700"><strong>Total Daily Energy Expenditure</strong>（1日の総消費カロリー）。<code class="bg-gray-100 px-1 rounded">TDEE = BMR × 活動係数</code>。活動係数: デスクワーク1.2 / 立ち仕事1.4 / 肉体労働1.6</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-cyan-700 w-20 shrink-0">LBM</dt><dd class="text-gray-700"><strong>Lean Body Mass</strong>（除脂肪体重）。体重から体脂肪を除いた重さ。<code class="bg-gray-100 px-1 rounded">LBM = 体重 × (1 - 体脂肪率/100)</code>。トレ加算やBMRの計算基準</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-cyan-700 w-20 shrink-0">MET</dt><dd class="text-gray-700"><strong>Metabolic Equivalent of Task</strong>（代謝当量）。運動の強度を安静時の倍数で表す。脚トレ=6.0MET、胸/背中=5.0MET、腕=4.0MET。アプリでは記録表示用であり、カロリー収支計算には使用しない</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-cyan-700 w-20 shrink-0">EPOC</dt><dd class="text-gray-700"><strong>Excess Post-exercise Oxygen Consumption</strong>（運動後過剰酸素消費）。トレーニング後も代謝が上がり続ける現象。大筋群ほどEPOCが大きい → Class SSSの根拠</dd></div>
+                        </dl>
+                    </div>
+
+                    <!-- トレ加算・ルーティン -->
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 text-xs">
+                        <div class="font-bold text-orange-800 mb-2">トレ加算・ルーティン</div>
+                        <dl class="space-y-1.5">
+                            <div class="flex gap-2"><dt class="font-bold text-orange-700 w-20 shrink-0">トレ加算</dt><dd class="text-gray-700">トレーニング日のリカバリー(回復)に必要なエネルギー予算。TDEEに上乗せされる。分割タイプから<strong>3段階Class</strong>で自動算出、LBMでスケーリング</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-orange-700 w-20 shrink-0">Class SSS</dt><dd class="text-gray-700"><strong>+400kcal</strong>(LBM60kg基準)。脚・全身・下半身。大筋群・高EPOC・高神経系疲労</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-orange-700 w-20 shrink-0">Class S</dt><dd class="text-gray-700"><strong>+250kcal</strong>(LBM60kg基準)。胸・背中・肩・上半身・プッシュ・プル・複合系。標準的な筋肥大トレーニング</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-orange-700 w-20 shrink-0">Class A</dt><dd class="text-gray-700"><strong>+100kcal</strong>(LBM60kg基準)。腕・腹筋/体幹。小筋群・回復コスト低</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-orange-700 w-20 shrink-0">分割</dt><dd class="text-gray-700">1週間のトレーニングを部位ごとに分けるパターン。例: Day1=胸、Day2=背中、Day3=脚、Day4=肩、Day5=腕、Day6-7=休み</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-orange-700 w-20 shrink-0">ルーティン</dt><dd class="text-gray-700">7日周期の分割パターン。アプリのルーティン設定で登録し、ダッシュボードで「今日の部位」を自動表示</dd></div>
+                        </dl>
+                    </div>
+
+                    <!-- アプリ機能 -->
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs">
+                        <div class="font-bold text-emerald-800 mb-2">アプリ機能・管理用語</div>
+                        <dl class="space-y-1.5">
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">カスタムクエスト</dt><dd class="text-gray-700">管理者がユーザーごとに設定する食事・運動プラン。テンプレートをスロットに割り当てて1日のメニューを構成する</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">テンプレート</dt><dd class="text-gray-700">食事/運動メニューの雛形。1食分の献立や1セッション分のトレーニングを食品・種目の組み合わせで定義</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">スロット</dt><dd class="text-gray-700">1日の食事・運動の「枠」。例: 5食+1運動=6スロット。各スロットに時刻とテンプレートを割り当てる</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">永続(_default)</dt><dd class="text-gray-700">毎日適用されるデフォルトの割当。日付指定の割当がない日に自動適用される</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">スケーリング</dt><dd class="text-gray-700">テンプレートのPFCをスロットの目標カロリーに合わせて自動比例調整すること</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">Micro+</dt><dd class="text-gray-700">ダッシュボードに表示される栄養品質インジケーター。DIAAS(アミノ酸スコア)、脂肪酸バランス、食物繊維、ビタミン/ミネラルの4項目</dd></div>
+                            <div class="flex gap-2"><dt class="font-bold text-emerald-700 w-20 shrink-0">スコア</dt><dd class="text-gray-700">1日の食事・運動・体調記録の達成度を100点満点で評価。PFC達成率、食事回数、運動完了などから算出</dd></div>
+                        </dl>
+                    </div>
+
+                    <!-- 計算式まとめ -->
+                    <div class="bg-gray-100 border border-gray-300 rounded-lg p-3 text-xs">
+                        <div class="font-bold text-gray-800 mb-2">計算フロー</div>
+                        <div class="font-mono text-[11px] text-gray-700 space-y-0.5 bg-white rounded p-2">
+                            <div>1. LBM = 体重 × (1 - 体脂肪率/100)</div>
+                            <div>2. BMR = 370 + 21.6×LBM + 4.5×脂肪量</div>
+                            <div>3. TDEE = BMR × 活動係数(1.2/1.4/1.6)</div>
+                            <div>4. 目標Cal = TDEE ± 目標調整(±300) + トレ加算(Class×LBM/60)</div>
+                            <div>5. P = 目標Cal × P% / 4、F = 目標Cal × F% / 9、C = 目標Cal × C% / 4</div>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
