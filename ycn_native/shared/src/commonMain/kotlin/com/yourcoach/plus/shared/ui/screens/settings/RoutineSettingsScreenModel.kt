@@ -5,8 +5,10 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.RoutineDay
 import com.yourcoach.plus.shared.domain.model.RoutinePattern
 import com.yourcoach.plus.shared.domain.model.SplitTypes
+import com.yourcoach.plus.shared.domain.model.UserProfile
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.RoutineRepository
+import com.yourcoach.plus.shared.domain.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,12 +22,17 @@ data class RoutineSettingsUiState(
     val pattern: RoutinePattern? = null,
     val days: List<RoutineDay> = emptyList(),
     val saveSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // トレーニング加算カロリー
+    val trainingCalorieBonuses: Map<String, Int> = emptyMap(),
+    val userLbm: Float? = null,
+    val bonusSaving: Boolean = false
 )
 
 class RoutineSettingsScreenModel(
     private val authRepository: AuthRepository,
-    private val routineRepository: RoutineRepository
+    private val routineRepository: RoutineRepository,
+    private val userRepository: UserRepository
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(RoutineSettingsUiState())
@@ -38,6 +45,7 @@ class RoutineSettingsScreenModel(
 
     init {
         loadActivePattern()
+        loadTrainingBonuses()
     }
 
     private fun loadActivePattern() {
@@ -99,6 +107,51 @@ class RoutineSettingsScreenModel(
     }
 
     fun clearError() { _uiState.update { it.copy(error = null) } }
+
+    // --- トレーニング加算カロリー ---
+
+    private fun loadTrainingBonuses() {
+        screenModelScope.launch(exceptionHandler) {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            userRepository.getUser(userId).onSuccess { user ->
+                val profile = user?.profile
+                val lbm = profile?.calculateLBM()
+                _uiState.update {
+                    it.copy(
+                        trainingCalorieBonuses = profile?.trainingCalorieBonuses ?: emptyMap(),
+                        userLbm = lbm
+                    )
+                }
+            }
+        }
+    }
+
+    fun updateTrainingBonus(splitType: String, value: Int) {
+        _uiState.update {
+            it.copy(trainingCalorieBonuses = it.trainingCalorieBonuses + (splitType to value))
+        }
+    }
+
+    fun saveTrainingBonuses() {
+        screenModelScope.launch(exceptionHandler) {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            _uiState.update { it.copy(bonusSaving = true) }
+            userRepository.getUser(userId).onSuccess { user ->
+                val profile = user?.profile ?: UserProfile()
+                val bonuses = _uiState.value.trainingCalorieBonuses
+                val updatedProfile = profile.copy(
+                    trainingCalorieBonuses = bonuses.ifEmpty { null }
+                )
+                userRepository.updateProfile(userId, updatedProfile)
+                    .onSuccess {
+                        _uiState.update { it.copy(bonusSaving = false, saveSuccess = true) }
+                    }
+                    .onFailure { e ->
+                        _uiState.update { it.copy(bonusSaving = false, error = "保存に失敗しました: ${e.message}") }
+                    }
+            }
+        }
+    }
 
     fun savePattern() {
         screenModelScope.launch(exceptionHandler) {

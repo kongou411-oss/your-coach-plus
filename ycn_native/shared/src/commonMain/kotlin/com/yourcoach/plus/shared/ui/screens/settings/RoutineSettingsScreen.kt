@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -14,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
@@ -21,6 +24,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.RoutineDay
 import com.yourcoach.plus.shared.domain.model.SplitTypes
+import com.yourcoach.plus.shared.domain.model.TrainingCalorieBonus
 import com.yourcoach.plus.shared.ui.theme.*
 
 class RoutineSettingsScreen : Screen {
@@ -98,6 +102,20 @@ class RoutineSettingsScreen : Screen {
                             day = day,
                             onSplitTypeChanged = { screenModel.updateDaySplitType(day.dayNumber, it) },
                             onToggleRestDay = { screenModel.toggleRestDay(day.dayNumber) }
+                        )
+                    }
+
+                    // トレーニング加算カロリーセクション
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TrainingCalorieBonusSection(
+                            bonuses = uiState.trainingCalorieBonuses,
+                            userLbm = uiState.userLbm,
+                            isSaving = uiState.bonusSaving,
+                            onUpdateBonus = { splitType, value ->
+                                screenModel.updateTrainingBonus(splitType, value)
+                            },
+                            onSave = { screenModel.saveTrainingBonuses() }
                         )
                     }
 
@@ -222,5 +240,110 @@ private fun RoutineDayCard(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun TrainingCalorieBonusSection(
+    bonuses: Map<String, Int>,
+    userLbm: Float?,
+    isSaving: Boolean,
+    onUpdateBonus: (String, Int) -> Unit,
+    onSave: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val defaultBases = TrainingCalorieBonus.DEFAULT_BASES
+    val referenceLbm = TrainingCalorieBonus.REFERENCE_LBM
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "トレーニング加算カロリー",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Icon(
+                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null
+                )
+            }
+
+            if (expanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (userLbm != null) {
+                    Text(
+                        "LBM: ${"%.1f".format(userLbm)}kg",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                defaultBases.forEach { (splitType, defaultBase) ->
+                    val currentBase = bonuses[splitType] ?: defaultBase
+                    val lbm = userLbm ?: referenceLbm
+                    val actualValue = ((currentBase + 100) * (lbm / referenceLbm)).toInt()
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            splitType,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        var textValue by remember(currentBase) { mutableStateOf(currentBase.toString()) }
+                        OutlinedTextField(
+                            value = textValue,
+                            onValueChange = { newVal ->
+                                textValue = newVal
+                                newVal.toIntOrNull()?.let { intVal ->
+                                    if (intVal in 0..2000) onUpdateBonus(splitType, intVal)
+                                }
+                            },
+                            modifier = Modifier.width(72.dp).height(48.dp),
+                            textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Center),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+
+                        Text(
+                            "${actualValue}kcal",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.width(72.dp),
+                            textAlign = TextAlign.End
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = onSave,
+                    enabled = !isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text("保存")
+                }
+            }
+        }
     }
 }

@@ -105,7 +105,7 @@ val appModule = module {
     viewModel { NotificationSettingsViewModel() }
     viewModel { BadgesViewModel(get()) }
     viewModel { RoutineViewModel(get()) }
-    viewModel { RoutineSettingsViewModel(get()) }
+    viewModel { RoutineSettingsViewModel(get(), get()) }
     viewModel { TemplateSettingsViewModel() }
     viewModel { MealSlotSettingsViewModel(routineRepository = get()) }
 }

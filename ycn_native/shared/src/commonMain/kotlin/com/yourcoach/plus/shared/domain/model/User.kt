@@ -72,6 +72,8 @@ data class UserProfile(
     val postWorkoutCarbs: Int = 25,             // トレ後 炭水化物(g)
     // カロリー調整値
     val calorieAdjustment: Int = 0,
+    // 部位別トレーニング消費カロリー加算値（カスタム上書き、LBMスケーリング前の基礎値）
+    val trainingCalorieBonuses: Map<String, Int>? = null,
     // 食材設定
     val preferredCarbSources: List<String> = listOf("白米", "玄米"),      // 優先炭水化物源
     val preferredProteinSources: List<String> = listOf("鶏むね肉", "鮭"), // 優先タンパク源
@@ -244,7 +246,16 @@ object TrainingCalorieBonus {
     private const val BASE_SHOULDERS_ARMS = 350 // 肩・腕
 
     private const val OFFSET = 100              // ベースオフセット
-    private const val REFERENCE_LBM = 60f       // 基準LBM
+    const val REFERENCE_LBM = 60f               // 基準LBM
+
+    /** 全分割タイプのデフォルト基礎値マップ（LBMスケーリング前） */
+    val DEFAULT_BASES: Map<String, Int> = mapOf(
+        "脚" to BASE_LEGS, "背中" to BASE_BACK, "胸" to BASE_CHEST,
+        "肩" to BASE_SHOULDERS, "腕" to BASE_ARMS, "腹筋・体幹" to BASE_ABS,
+        "全身" to BASE_FULL_BODY, "下半身" to BASE_LOWER_BODY, "上半身" to BASE_UPPER_BODY,
+        "プッシュ" to BASE_PUSH, "プル" to BASE_PULL,
+        "胸・三頭" to BASE_CHEST_TRICEPS, "背中・二頭" to BASE_BACK_BICEPS, "肩・腕" to BASE_SHOULDERS_ARMS
+    )
 
     private fun scale(base: Int, lbm: Float): Int {
         return ((base + OFFSET) * (lbm / REFERENCE_LBM)).toInt()
@@ -253,8 +264,12 @@ object TrainingCalorieBonus {
     /**
      * splitTypeとLBMから加算値を取得
      */
-    fun fromSplitType(splitType: String?, isRestDay: Boolean, lbm: Float = REFERENCE_LBM): Int {
+    fun fromSplitType(splitType: String?, isRestDay: Boolean, lbm: Float = REFERENCE_LBM, overrides: Map<String, Int>? = null): Int {
         if (isRestDay) return 0
+        // ユーザーカスタム値があれば優先
+        if (overrides != null && splitType != null && overrides.containsKey(splitType)) {
+            return scale(overrides[splitType]!!, lbm)
+        }
         val base = when (splitType) {
             "脚" -> BASE_LEGS
             "背中" -> BASE_BACK
