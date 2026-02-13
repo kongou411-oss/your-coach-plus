@@ -55,7 +55,7 @@ function calculateUserTargetCalories(profile) {
     const bmr = 370 + (21.6 * lbm) + (fatMass * 4.5);
     const activityMultipliers = { 'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55, 'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9 };
     const tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
-    const goalAdjustments = { 'LOSE_WEIGHT': -500, 'LOSE_FAST': -750, 'LOSE': -500, 'LOSE_SLOW': -250, 'MAINTAIN': 0, 'GAIN_SLOW': 250, 'GAIN': 500, 'GAIN_MUSCLE': 500 };
+    const goalAdjustments = { 'LOSE_WEIGHT': -500, 'MAINTAIN': 0, 'GAIN_MUSCLE': 500 };
     const calorieAdjustment = goalAdjustments[goal] || 0;
     const trainingBonus = (trainingDays >= 4) ? 100 : 0;
     return Math.round(tdee + calorieAdjustment + trainingBonus);
@@ -1019,7 +1019,7 @@ function renderUserProfilePanel(profile, userData) {
     if (height && weight && age && p.gender) { const g = p.gender; if (g === 'MALE') bmr = Math.round(10*weight+6.25*height-5*age+5); else if (g === 'FEMALE') bmr = Math.round(10*weight+6.25*height-5*age-161); else bmr = Math.round(10*weight+6.25*height-5*age-78); }
     const actMulti = { 'DESK_WORK': 1.2, 'STANDING_WORK': 1.4, 'PHYSICAL_LABOR': 1.6, 'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55, 'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9 };
     const tdee = bmr !== '-' ? Math.round(bmr * (actMulti[p.activityLevel] || 1.2)) : '-';
-    const goalLabels = { 'LOSE_WEIGHT': 'ダイエット', 'LOSE_FAST': '急速減量', 'LOSE': 'ダイエット', 'LOSE_SLOW': 'ゆるやか減量', 'MAINTAIN': 'メンテナンス・リコンプ', 'GAIN_SLOW': 'ゆるやか増量', 'GAIN': '増量', 'GAIN_MUSCLE': 'バルクアップ' };
+    const goalLabels = { 'LOSE_WEIGHT': 'ダイエット', 'MAINTAIN': 'メンテナンス・リコンプ', 'GAIN_MUSCLE': 'バルクアップ' };
     const genderLabels = { 'MALE': '男性', 'FEMALE': '女性', 'OTHER': 'その他' };
     function row(l, v) { return `<div class="flex justify-between py-0.5 border-b border-gray-100"><span class="text-gray-500">${l}</span><span class="font-mono font-bold">${v??'-'}</span></div>`; }
     let html = '';
