@@ -605,7 +605,7 @@ function renderPfcBars(profile, existingAssignments, targetCalories) {
     const targetC = targetCalories * cRatio / 4;
 
     function getBarColor(pct) {
-        if (pct >= 95 && pct <= 105) return '#d1d5db';
+        if (pct >= 95 && pct <= 105) return '#4A9EFF';
         if (pct < 70) return '#ef4444';
         if (pct < 95) return '#f97316';
         return '#8b5cf6';
