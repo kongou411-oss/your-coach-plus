@@ -597,9 +597,9 @@ function renderPfcBars(profile, existingAssignments, targetCalories) {
         totalCal += (m.calories || 0); totalP += (m.protein || 0); totalF += (m.fat || 0); totalC += (m.carbs || 0);
     });
     // Target PFC
-    const pRatio = (profile.proteinRatioPercent || 30) / 100;
-    const fRatio = (profile.fatRatioPercent || 25) / 100;
-    const cRatio = (profile.carbRatioPercent || 45) / 100;
+    const pRatio = (profile.proteinRatioPercent || 35) / 100;
+    const fRatio = (profile.fatRatioPercent || 15) / 100;
+    const cRatio = (profile.carbRatioPercent || 50) / 100;
     const targetP = targetCalories * pRatio / 4;
     const targetF = targetCalories * fRatio / 9;
     const targetC = targetCalories * cRatio / 4;
@@ -667,9 +667,9 @@ async function loadUserSlots() {
         document.getElementById('cq-prof-activity').value = profile.activityLevel || 'DESK_WORK';
         document.getElementById('cq-prof-cal-adjust').value = profile.calorieAdjustment || 0;
         document.getElementById('cq-prof-budget').value = profile.budgetTier || 2;
-        document.getElementById('cq-prof-prot-ratio').value = profile.proteinRatioPercent || 30;
-        document.getElementById('cq-prof-fat-ratio').value = profile.fatRatioPercent || 25;
-        document.getElementById('cq-prof-carb-ratio').value = profile.carbRatioPercent || 45;
+        document.getElementById('cq-prof-prot-ratio').value = profile.proteinRatioPercent || 35;
+        document.getElementById('cq-prof-fat-ratio').value = profile.fatRatioPercent || 15;
+        document.getElementById('cq-prof-carb-ratio').value = profile.carbRatioPercent || 50;
         document.getElementById('cq-prof-pre-p').value = profile.preWorkoutProtein ?? 20;
         document.getElementById('cq-prof-pre-f').value = profile.preWorkoutFat ?? 5;
         document.getElementById('cq-prof-pre-c').value = profile.preWorkoutCarbs ?? 50;
@@ -963,9 +963,9 @@ async function saveUserProfile() {
         const activityLevel = document.getElementById('cq-prof-activity').value || null;
         const calorieAdjustment = parseInt(document.getElementById('cq-prof-cal-adjust').value) || 0;
         const budgetTier = parseInt(document.getElementById('cq-prof-budget').value) || 2;
-        const proteinRatioPercent = parseInt(document.getElementById('cq-prof-prot-ratio').value) || 30;
-        const fatRatioPercent = parseInt(document.getElementById('cq-prof-fat-ratio').value) || 25;
-        const carbRatioPercent = parseInt(document.getElementById('cq-prof-carb-ratio').value) || 45;
+        const proteinRatioPercent = parseInt(document.getElementById('cq-prof-prot-ratio').value) || 35;
+        const fatRatioPercent = parseInt(document.getElementById('cq-prof-fat-ratio').value) || 15;
+        const carbRatioPercent = parseInt(document.getElementById('cq-prof-carb-ratio').value) || 50;
         const preWorkoutProtein = parseInt(document.getElementById('cq-prof-pre-p').value) || 20;
         const preWorkoutFat = parseInt(document.getElementById('cq-prof-pre-f').value) || 5;
         const preWorkoutCarbs = parseInt(document.getElementById('cq-prof-pre-c').value) || 50;
@@ -1025,7 +1025,7 @@ function renderUserProfilePanel(profile, userData) {
     let html = '';
     html += row('ニックネーム', escapeHtml(p.nickname)) + row('性別', genderLabels[p.gender]||'-') + row('年齢', age?`${age}歳`:'-') + row('身長', height?`${height}cm`:'-') + row('体重', weight?`${weight}kg`:'-') + row('体脂肪率', bodyFatPct?`${bodyFatPct}%`:'-');
     html += row('LBM', typeof lbm==='number'?`${lbm}kg`:lbm) + row('BMR', bmr!=='-'?`${bmr}kcal`:'-') + row('TDEE', tdee!=='-'?`${tdee}kcal`:'-');
-    html += row('目標', goalLabels[p.goal]||'-') + row('PFC', `P${p.proteinRatioPercent||30}% F${p.fatRatioPercent||25}% C${p.carbRatioPercent||45}%`);
+    html += row('目標', goalLabels[p.goal]||'-') + row('PFC', `P${p.proteinRatioPercent||35}% F${p.fatRatioPercent||15}% C${p.carbRatioPercent||50}%`);
     el.innerHTML = html;
 }
 
