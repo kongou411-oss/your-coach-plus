@@ -55,7 +55,7 @@ function calculateUserTargetCalories(profile) {
     const bmr = 370 + (21.6 * lbm) + (fatMass * 4.5);
     const activityMultipliers = { 'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55, 'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9 };
     const tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
-    const goalAdjustments = { 'LOSE_WEIGHT': -500, 'MAINTAIN': 0, 'GAIN_MUSCLE': 500 };
+    const goalAdjustments = { 'LOSE_WEIGHT': -300, 'MAINTAIN': 0, 'GAIN_MUSCLE': 300 };
     const calorieAdjustment = goalAdjustments[goal] || 0;
     const trainingBonus = (trainingDays >= 4) ? 100 : 0;
     return Math.round(tdee + calorieAdjustment + trainingBonus);
