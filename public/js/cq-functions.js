@@ -53,7 +53,7 @@ function calculateUserTargetCalories(profile) {
     const fatMass = weight * (bodyFatPct / 100);
     const lbm = weight - fatMass;
     const bmr = 370 + (21.6 * lbm) + (fatMass * 4.5);
-    const activityMultipliers = { 'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55, 'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9 };
+    const activityMultipliers = { 'DESK_WORK': 1.2, 'STANDING_WORK': 1.4, 'PHYSICAL_LABOR': 1.6, 'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55, 'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9 };
     const tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
     const goalAdjustments = { 'LOSE_WEIGHT': -300, 'MAINTAIN': 0, 'GAIN_MUSCLE': 300 };
     const calorieAdjustment = goalAdjustments[goal] || 0;
@@ -659,7 +659,6 @@ async function loadUserSlots() {
         document.getElementById('cq-prof-height').value = profile.height || '';
         document.getElementById('cq-prof-weight').value = profile.weight || '';
         document.getElementById('cq-prof-bodyfat').value = profile.bodyFatPercentage || '';
-        document.getElementById('cq-prof-target-weight').value = profile.targetWeight || '';
         document.getElementById('cq-prof-ideal-weight').value = profile.idealWeight || '';
         document.getElementById('cq-prof-ideal-bodyfat').value = profile.idealBodyFatPercentage || '';
         document.getElementById('cq-prof-goal').value = profile.goal || 'MAINTAIN';
@@ -670,11 +669,11 @@ async function loadUserSlots() {
         document.getElementById('cq-prof-fat-ratio').value = profile.fatRatioPercent || 15;
         document.getElementById('cq-prof-carb-ratio').value = profile.carbRatioPercent || 50;
         document.getElementById('cq-prof-pre-p').value = profile.preWorkoutProtein ?? 20;
-        document.getElementById('cq-prof-pre-f').value = profile.preWorkoutFat ?? 5;
-        document.getElementById('cq-prof-pre-c').value = profile.preWorkoutCarbs ?? 50;
-        document.getElementById('cq-prof-post-p').value = profile.postWorkoutProtein ?? 30;
-        document.getElementById('cq-prof-post-f').value = profile.postWorkoutFat ?? 5;
-        document.getElementById('cq-prof-post-c').value = profile.postWorkoutCarbs ?? 60;
+        document.getElementById('cq-prof-pre-f').value = profile.preWorkoutFat ?? 1;
+        document.getElementById('cq-prof-pre-c').value = profile.preWorkoutCarbs ?? 25;
+        document.getElementById('cq-prof-post-p').value = profile.postWorkoutProtein ?? 20;
+        document.getElementById('cq-prof-post-f').value = profile.postWorkoutFat ?? 1;
+        document.getElementById('cq-prof-post-c').value = profile.postWorkoutCarbs ?? 25;
         document.getElementById('cq-prof-prot-sources').value = (profile.preferredProteinSources || []).join(', ');
         document.getElementById('cq-prof-carb-sources').value = (profile.preferredCarbSources || []).join(', ');
         document.getElementById('cq-prof-fat-sources').value = (profile.preferredFatSources || []).join(', ');
@@ -916,14 +915,14 @@ function resetAllProfileDefaults() {
     document.getElementById('cq-prof-style').value = 'PUMP'; document.getElementById('cq-prof-nickname').value = '';
     document.getElementById('cq-prof-age').value = ''; document.getElementById('cq-prof-gender').value = 'MALE';
     document.getElementById('cq-prof-height').value = ''; document.getElementById('cq-prof-weight').value = '';
-    document.getElementById('cq-prof-bodyfat').value = ''; document.getElementById('cq-prof-target-weight').value = '';
+    document.getElementById('cq-prof-bodyfat').value = '';
     document.getElementById('cq-prof-ideal-weight').value = ''; document.getElementById('cq-prof-ideal-bodyfat').value = '';
     document.getElementById('cq-prof-goal').value = 'MAINTAIN'; document.getElementById('cq-prof-activity').value = 'DESK_WORK';
     document.getElementById('cq-prof-cal-adjust').value = '0'; document.getElementById('cq-prof-budget').value = '2';
     document.getElementById('cq-prof-prot-ratio').value = '35'; document.getElementById('cq-prof-fat-ratio').value = '15';
     document.getElementById('cq-prof-carb-ratio').value = '50';
-    document.getElementById('cq-prof-pre-p').value = '20'; document.getElementById('cq-prof-pre-f').value = '5'; document.getElementById('cq-prof-pre-c').value = '50';
-    document.getElementById('cq-prof-post-p').value = '30'; document.getElementById('cq-prof-post-f').value = '5'; document.getElementById('cq-prof-post-c').value = '60';
+    document.getElementById('cq-prof-pre-p').value = '20'; document.getElementById('cq-prof-pre-f').value = '1'; document.getElementById('cq-prof-pre-c').value = '25';
+    document.getElementById('cq-prof-post-p').value = '20'; document.getElementById('cq-prof-post-f').value = '1'; document.getElementById('cq-prof-post-c').value = '25';
     document.getElementById('cq-prof-prot-sources').value = '鶏むね肉, 鮭'; document.getElementById('cq-prof-carb-sources').value = '白米, 玄米';
     document.getElementById('cq-prof-fat-sources').value = 'オリーブオイル, アボカド'; document.getElementById('cq-prof-avoid-foods').value = '';
     document.getElementById('cq-prof-allergies').value = ''; document.getElementById('cq-prof-fav-foods').value = ''; document.getElementById('cq-prof-ng-foods').value = '';
@@ -968,7 +967,6 @@ async function saveUserProfile() {
         const height = parseFloat(document.getElementById('cq-prof-height').value) || null;
         const weight = parseFloat(document.getElementById('cq-prof-weight').value) || null;
         const bodyFatPercentage = parseFloat(document.getElementById('cq-prof-bodyfat').value) || null;
-        const targetWeightVal = parseFloat(document.getElementById('cq-prof-target-weight').value) || null;
         const idealWeight = parseFloat(document.getElementById('cq-prof-ideal-weight').value) || null;
         const idealBodyFatPercentage = parseFloat(document.getElementById('cq-prof-ideal-bodyfat').value) || null;
         const goal = document.getElementById('cq-prof-goal').value || null;
@@ -979,11 +977,11 @@ async function saveUserProfile() {
         const fatRatioPercent = parseInt(document.getElementById('cq-prof-fat-ratio').value) || 15;
         const carbRatioPercent = parseInt(document.getElementById('cq-prof-carb-ratio').value) || 50;
         const preWorkoutProtein = parseInt(document.getElementById('cq-prof-pre-p').value) || 20;
-        const preWorkoutFat = parseInt(document.getElementById('cq-prof-pre-f').value) || 5;
-        const preWorkoutCarbs = parseInt(document.getElementById('cq-prof-pre-c').value) || 50;
-        const postWorkoutProtein = parseInt(document.getElementById('cq-prof-post-p').value) || 30;
-        const postWorkoutFat = parseInt(document.getElementById('cq-prof-post-f').value) || 5;
-        const postWorkoutCarbs = parseInt(document.getElementById('cq-prof-post-c').value) || 60;
+        const preWorkoutFat = parseInt(document.getElementById('cq-prof-pre-f').value) || 1;
+        const preWorkoutCarbs = parseInt(document.getElementById('cq-prof-pre-c').value) || 25;
+        const postWorkoutProtein = parseInt(document.getElementById('cq-prof-post-p').value) || 20;
+        const postWorkoutFat = parseInt(document.getElementById('cq-prof-post-f').value) || 1;
+        const postWorkoutCarbs = parseInt(document.getElementById('cq-prof-post-c').value) || 25;
         const preferredProteinSources = document.getElementById('cq-prof-prot-sources').value.split(',').map(s=>s.trim()).filter(s=>s);
         const preferredCarbSources = document.getElementById('cq-prof-carb-sources').value.split(',').map(s=>s.trim()).filter(s=>s);
         const preferredFatSources = document.getElementById('cq-prof-fat-sources').value.split(',').map(s=>s.trim()).filter(s=>s);
@@ -1001,7 +999,7 @@ async function saveUserProfile() {
         }
         const updateData = {
             'profile.nickname': nickname, 'profile.age': age, 'profile.gender': gender, 'profile.height': height, 'profile.weight': weight,
-            'profile.bodyFatPercentage': bodyFatPercentage, 'profile.targetWeight': targetWeightVal, 'profile.idealWeight': idealWeight, 'profile.idealBodyFatPercentage': idealBodyFatPercentage,
+            'profile.bodyFatPercentage': bodyFatPercentage, 'profile.idealWeight': idealWeight, 'profile.idealBodyFatPercentage': idealBodyFatPercentage,
             'profile.goal': goal, 'profile.activityLevel': activityLevel, 'profile.calorieAdjustment': calorieAdjustment, 'profile.budgetTier': budgetTier,
             'profile.proteinRatioPercent': proteinRatioPercent, 'profile.fatRatioPercent': fatRatioPercent, 'profile.carbRatioPercent': carbRatioPercent,
             'profile.targetCalories': targetCalories, 'profile.targetProtein': targetProtein, 'profile.targetFat': targetFat, 'profile.targetCarbs': targetCarbs,
@@ -1028,7 +1026,11 @@ function renderUserProfilePanel(profile, userData) {
     const lbm = weight && bodyFatPct ? r1(weight * (1 - bodyFatPct / 100)) : '-';
     const height = p.height || 0; const age = p.age || (p.birthYear ? new Date().getFullYear() - p.birthYear : null);
     let bmr = '-';
-    if (height && weight && age && p.gender) { const g = p.gender; if (g === 'MALE') bmr = Math.round(10*weight+6.25*height-5*age+5); else if (g === 'FEMALE') bmr = Math.round(10*weight+6.25*height-5*age-161); else bmr = Math.round(10*weight+6.25*height-5*age-78); }
+    // アプリと同じ: 体脂肪率があればKatch-McArdle優先、なければMifflin-St Jeor
+    if (weight && bodyFatPct && bodyFatPct > 0 && bodyFatPct < 100) {
+        const lbmVal = weight * (1 - bodyFatPct / 100);
+        bmr = Math.round(370 + 21.6 * lbmVal);
+    } else if (height && weight && age && p.gender) { const g = p.gender; if (g === 'MALE') bmr = Math.round(10*weight+6.25*height-5*age+5); else if (g === 'FEMALE') bmr = Math.round(10*weight+6.25*height-5*age-161); else bmr = Math.round(10*weight+6.25*height-5*age-78); }
     const actMulti = { 'DESK_WORK': 1.2, 'STANDING_WORK': 1.4, 'PHYSICAL_LABOR': 1.6, 'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55, 'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9 };
     const tdee = bmr !== '-' ? Math.round(bmr * (actMulti[p.activityLevel] || 1.2)) : '-';
     const goalLabels = { 'LOSE_WEIGHT': 'ダイエット', 'MAINTAIN': 'メンテナンス・リコンプ', 'GAIN_MUSCLE': 'バルクアップ' };

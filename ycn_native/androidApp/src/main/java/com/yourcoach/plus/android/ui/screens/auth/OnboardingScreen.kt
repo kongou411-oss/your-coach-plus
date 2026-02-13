@@ -73,7 +73,6 @@ fun OnboardingScreen(
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
     var bodyFatPercentage by remember { mutableStateOf("") }
-    var targetWeight by remember { mutableStateOf("") }
     var activityLevel by remember { mutableStateOf(ActivityLevel.DESK_WORK) }
     var goal by remember { mutableStateOf(FitnessGoal.MAINTAIN) }
     var mealsPerDay by remember { mutableIntStateOf(5) }
@@ -175,7 +174,6 @@ fun OnboardingScreen(
                     height = height.toFloatOrNull(),
                     weight = weight.toFloatOrNull(),
                     bodyFatPercentage = bodyFatPercentage.toFloatOrNull(),
-                    targetWeight = targetWeight.toFloatOrNull(),
                     activityLevel = activityLevel,
                     goal = goal,
                     targetCalories = targetCalories,
@@ -315,7 +313,6 @@ fun OnboardingScreen(
                         height = height, onHeightChange = { height = it },
                         weight = weight, onWeightChange = { weight = it },
                         bodyFatPercentage = bodyFatPercentage, onBodyFatPercentageChange = { bodyFatPercentage = it },
-                        targetWeight = targetWeight, onTargetWeightChange = { targetWeight = it },
                         activityLevel = activityLevel, onActivityLevelChange = { activityLevel = it },
                         goal = goal, onGoalChange = { goal = it },
                         mealsPerDay = mealsPerDay, onMealsPerDayChange = { mealsPerDay = it },
@@ -489,7 +486,6 @@ private fun ProfileStep(
     height: String, onHeightChange: (String) -> Unit,
     weight: String, onWeightChange: (String) -> Unit,
     bodyFatPercentage: String, onBodyFatPercentageChange: (String) -> Unit,
-    targetWeight: String, onTargetWeightChange: (String) -> Unit,
     activityLevel: ActivityLevel, onActivityLevelChange: (ActivityLevel) -> Unit,
     goal: FitnessGoal, onGoalChange: (FitnessGoal) -> Unit,
     mealsPerDay: Int, onMealsPerDayChange: (Int) -> Unit,
@@ -619,16 +615,6 @@ private fun ProfileStep(
                         supportingText = if (bodyFatPercentage.isBlank()) {
                             { Text("必須", color = MaterialTheme.colorScheme.error) }
                         } else null
-                    )
-                    OutlinedTextField(
-                        value = targetWeight,
-                        onValueChange = onTargetWeightChange,
-                        label = { Text("目標体重") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        shape = RoundedCornerShape(12.dp),
-                        suffix = { Text("kg") }
                     )
                 }
 

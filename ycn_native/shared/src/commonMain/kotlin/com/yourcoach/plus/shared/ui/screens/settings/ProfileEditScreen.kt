@@ -187,17 +187,6 @@ class ProfileEditScreen : Screen {
                                 shape = RoundedCornerShape(12.dp),
                                 suffix = { Text("%") }
                             )
-                            OutlinedTextField(
-                                value = uiState.targetWeight,
-                                onValueChange = { screenModel.updateTargetWeight(it) },
-                                label = { Text("目標体重") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                shape = RoundedCornerShape(12.dp),
-                                suffix = { Text("kg") }
-                            )
                         }
 
                         if (bmr != null && tdee != null) {

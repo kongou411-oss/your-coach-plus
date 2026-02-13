@@ -53,7 +53,6 @@ data class ProfileSetupState(
     val height: String = "",
     val weight: String = "",
     val bodyFatPercentage: String = "",
-    val targetWeight: String = "",
     val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
     val mealsPerDay: Int = 5,
@@ -171,8 +170,6 @@ class ProfileSetupScreenModel(
         _state.update { it.copy(bodyFatPercentage = value, validationError = null) }
         recalculateTDEE()
     }
-
-    fun updateTargetWeight(value: String) = _state.update { it.copy(targetWeight = value, validationError = null) }
 
     fun updateActivityLevel(value: ActivityLevel) {
         _state.update { it.copy(activityLevel = value, validationError = null) }
@@ -431,7 +428,6 @@ class ProfileSetupScreenModel(
                     height = s.height.toFloatOrNull(),
                     weight = s.weight.toFloatOrNull(),
                     bodyFatPercentage = s.bodyFatPercentage.toFloatOrNull(),
-                    targetWeight = s.targetWeight.toFloatOrNull(),
                     activityLevel = s.activityLevel,
                     goal = s.goal,
                     targetCalories = s.targetCalories,

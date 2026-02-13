@@ -21,7 +21,6 @@ data class ProfileEditUiState(
     val height: String = "",
     val weight: String = "",
     val bodyFatPercentage: String = "",
-    val targetWeight: String = "",
     val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
     val mealsPerDay: Int = 5,
@@ -78,7 +77,6 @@ class ProfileEditScreenModel(
                             height = p?.height?.toString() ?: "",
                             weight = p?.weight?.toString() ?: "",
                             bodyFatPercentage = p?.bodyFatPercentage?.toString() ?: "",
-                            targetWeight = p?.targetWeight?.toString() ?: "",
                             activityLevel = p?.activityLevel ?: ActivityLevel.DESK_WORK,
                             goal = p?.goal ?: FitnessGoal.MAINTAIN,
                             mealsPerDay = p?.mealsPerDay ?: 5,
@@ -111,7 +109,6 @@ class ProfileEditScreenModel(
     fun updateHeight(value: String) { _uiState.update { it.copy(height = value) } }
     fun updateWeight(value: String) { _uiState.update { it.copy(weight = value) } }
     fun updateBodyFatPercentage(value: String) { _uiState.update { it.copy(bodyFatPercentage = value) } }
-    fun updateTargetWeight(value: String) { _uiState.update { it.copy(targetWeight = value) } }
     fun updateActivityLevel(value: ActivityLevel) { _uiState.update { it.copy(activityLevel = value) } }
     fun updateGoal(value: FitnessGoal) {
         val previousGoal = _uiState.value.goal
@@ -223,7 +220,6 @@ class ProfileEditScreenModel(
                 height = s.height.toFloatOrNull(),
                 weight = s.weight.toFloatOrNull(),
                 bodyFatPercentage = s.bodyFatPercentage.toFloatOrNull(),
-                targetWeight = s.targetWeight.toFloatOrNull(),
                 activityLevel = s.activityLevel,
                 goal = s.goal,
                 idealWeight = s.idealWeight.toFloatOrNull(),

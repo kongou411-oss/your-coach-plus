@@ -65,11 +65,11 @@ data class UserProfile(
     val trainingStyle: TrainingStyle = TrainingStyle.PUMP,  // トレーニングスタイル（パワー/パンプ）
     // トレ前後のPFC設定
     val preWorkoutProtein: Int = 20,            // トレ前 タンパク質(g)
-    val preWorkoutFat: Int = 5,                 // トレ前 脂質(g) - 消化を遅らせないため低め
-    val preWorkoutCarbs: Int = 50,              // トレ前 炭水化物(g) - 高GI推奨
-    val postWorkoutProtein: Int = 30,           // トレ後 タンパク質(g)
-    val postWorkoutFat: Int = 5,                // トレ後 脂質(g)
-    val postWorkoutCarbs: Int = 60,             // トレ後 炭水化物(g) - 高GI推奨
+    val preWorkoutFat: Int = 1,                 // トレ前 脂質(g) - 消化を遅らせないため最小限
+    val preWorkoutCarbs: Int = 25,              // トレ前 炭水化物(g)
+    val postWorkoutProtein: Int = 20,           // トレ後 タンパク質(g)
+    val postWorkoutFat: Int = 1,                // トレ後 脂質(g)
+    val postWorkoutCarbs: Int = 25,             // トレ後 炭水化物(g)
     // カロリー調整値
     val calorieAdjustment: Int = 0,
     // 食材設定

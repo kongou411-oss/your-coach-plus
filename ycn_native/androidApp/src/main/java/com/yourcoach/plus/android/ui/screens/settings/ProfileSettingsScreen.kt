@@ -72,7 +72,6 @@ fun ProfileSettingsScreen(
     var height by remember(loadedProfile) { mutableStateOf(loadedProfile?.height?.toString() ?: "") }
     var weight by remember(loadedProfile) { mutableStateOf(loadedProfile?.weight?.toString() ?: "") }
     var bodyFatPercentage by remember(loadedProfile) { mutableStateOf(loadedProfile?.bodyFatPercentage?.toString() ?: "") }
-    var targetWeight by remember(loadedProfile) { mutableStateOf(loadedProfile?.targetWeight?.toString() ?: "") }
     var activityLevel by remember(loadedProfile) { mutableStateOf(loadedProfile?.activityLevel ?: ActivityLevel.DESK_WORK) }
     var goal by remember(loadedProfile) { mutableStateOf(loadedProfile?.goal ?: FitnessGoal.MAINTAIN) }
     var mealsPerDay by remember(loadedProfile) { mutableIntStateOf(loadedProfile?.mealsPerDay ?: 5) }
@@ -170,7 +169,6 @@ fun ProfileSettingsScreen(
                     height = height.toFloatOrNull(),
                     weight = weight.toFloatOrNull(),
                     bodyFatPercentage = bodyFatPercentage.toFloatOrNull(),
-                    targetWeight = targetWeight.toFloatOrNull(),
                     activityLevel = activityLevel,
                     goal = goal,
                     targetCalories = targetCalories,
@@ -343,16 +341,6 @@ fun ProfileSettingsScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             shape = RoundedCornerShape(12.dp),
                             suffix = { Text("%") }
-                        )
-                        OutlinedTextField(
-                            value = targetWeight,
-                            onValueChange = { targetWeight = it },
-                            label = { Text("目標体重") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            shape = RoundedCornerShape(12.dp),
-                            suffix = { Text("kg") }
                         )
                     }
 

@@ -55,7 +55,6 @@ data class ProfileSetupState(
     val height: String = "170",
     val weight: String = "70",
     val bodyFatPercentage: String = "15",
-    val targetWeight: String = "70",
     // Step 2: 目標・活動レベル
     val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
@@ -97,7 +96,6 @@ class ProfileSetupViewModel(
                 height = defaults.first,
                 weight = defaults.second,
                 bodyFatPercentage = defaults.third,
-                targetWeight = defaults.second,
                 idealWeight = defaults.second,
                 idealBodyFatPercentage = defaults.third,
                 validationError = null
@@ -108,7 +106,6 @@ class ProfileSetupViewModel(
     fun updateHeight(value: String) = _state.update { it.copy(height = value, validationError = null) }
     fun updateWeight(value: String) = _state.update { it.copy(weight = value, validationError = null) }
     fun updateBodyFatPercentage(value: String) = _state.update { it.copy(bodyFatPercentage = value, validationError = null) }
-    fun updateTargetWeight(value: String) = _state.update { it.copy(targetWeight = value, validationError = null) }
     fun updateActivityLevel(value: ActivityLevel) = _state.update { it.copy(activityLevel = value, validationError = null) }
     fun updateMealsPerDay(value: Int) = _state.update { it.copy(mealsPerDay = value) }
     fun updateGoal(value: FitnessGoal) {
@@ -219,7 +216,6 @@ class ProfileSetupViewModel(
                     height = s.height.toFloatOrNull() ?: 170f,
                     weight = s.weight.toFloatOrNull() ?: 70f,
                     bodyFatPercentage = s.bodyFatPercentage.toFloatOrNull() ?: 15f,
-                    targetWeight = s.targetWeight.toFloatOrNull(),
                     activityLevel = s.activityLevel,
                     goal = s.goal,
                     targetCalories = targetCalories,
@@ -563,16 +559,6 @@ private fun Step1BodyComposition(state: ProfileSetupState, viewModel: ProfileSet
                 shape = RoundedCornerShape(12.dp)
             )
 
-            OutlinedTextField(
-                value = state.targetWeight,
-                onValueChange = viewModel::updateTargetWeight,
-                label = { Text("目標体重") },
-                suffix = { Text("kg") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp)
-            )
         }
 
         OutlinedTextField(

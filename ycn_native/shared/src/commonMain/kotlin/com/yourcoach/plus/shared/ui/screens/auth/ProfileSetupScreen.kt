@@ -477,17 +477,6 @@ private fun ProfileStep(state: ProfileSetupState, screenModel: ProfileSetupScree
                             { Text("必須", color = MaterialTheme.colorScheme.error) }
                         } else null
                     )
-                    OutlinedTextField(
-                        value = state.targetWeight,
-                        onValueChange = screenModel::updateTargetWeight,
-                        label = { Text("目標体重") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        shape = RoundedCornerShape(12.dp),
-                        suffix = { Text("kg") }
-                    )
                 }
 
                 // 体脂肪率の目安ガイド
