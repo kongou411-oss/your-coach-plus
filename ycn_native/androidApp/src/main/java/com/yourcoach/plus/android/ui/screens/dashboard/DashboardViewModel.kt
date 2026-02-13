@@ -1,5 +1,6 @@
 package com.yourcoach.plus.android.ui.screens.dashboard
 
+import kotlin.math.roundToInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yourcoach.plus.shared.domain.model.Condition
@@ -695,7 +696,7 @@ class DashboardViewModel(
             ?: com.yourcoach.plus.shared.domain.model.ActivityLevel.DESK_WORK.multiplier
 
         // TDEE計算（日常活動のみ）
-        val tdee = (bmr * activityMultiplier).toFloat()
+        val tdee = bmr * activityMultiplier
 
         // 目標に応じたカロリー調整
         val goalAdjustment = when (profile.goal) {
@@ -716,7 +717,8 @@ class DashboardViewModel(
         val isRestDay = isManualRestDay || (todayRoutine?.isRestDay == true)
         val trainingBonus = com.yourcoach.plus.shared.domain.model.TrainingCalorieBonus.fromSplitType(
             todayRoutine?.splitType,
-            isRestDay
+            isRestDay,
+            lbm.toFloat()
         )
 
         val adjustedCalories = tdee + calorieAdjustment + trainingBonus
@@ -726,12 +728,12 @@ class DashboardViewModel(
         val fatRatio = profile.fatRatioPercent / 100f
         val carbRatio = profile.carbRatioPercent / 100f
 
-        val targetProtein = adjustedCalories * proteinRatio / 4f
-        val targetFat = adjustedCalories * fatRatio / 9f
-        val targetCarbs = adjustedCalories * carbRatio / 4f
+        val targetProtein = (adjustedCalories * proteinRatio / 4f).toFloat()
+        val targetFat = (adjustedCalories * fatRatio / 9f).toFloat()
+        val targetCarbs = (adjustedCalories * carbRatio / 4f).toFloat()
 
         return NutritionTargets(
-            adjustedCalories.toInt(),
+            adjustedCalories.roundToInt(),
             targetProtein,
             targetCarbs,
             targetFat

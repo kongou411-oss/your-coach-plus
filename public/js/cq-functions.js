@@ -45,16 +45,16 @@ function escapeHtml(str) {
 }
 // ========== Calorie Calculations (r1, r2, scaleMap, scaleTemplateForSlot are in cq-databases.js) ==========
 // 3-tier training calorie bonus (matches app logic in TrainingCalorieBonus.kt)
-const TRAINING_TIER = { HIGH: 400, MID: 250, LOW: 100, REFERENCE_LBM: 60 };
+const TRAINING_CLASS = { SSS: 400, S: 250, A: 100, REFERENCE_LBM: 60 };
 function getTrainingBonus(splitType, isRestDay, lbm) {
     if (isRestDay || !splitType || splitType === '休み') return 0;
-    let tier;
+    let cls;
     switch (splitType) {
-        case '脚': case '全身': case '下半身': tier = TRAINING_TIER.HIGH; break;
-        case '腕': case '腹筋・体幹': tier = TRAINING_TIER.LOW; break;
-        default: tier = TRAINING_TIER.MID; break;
+        case '脚': case '全身': case '下半身': cls = TRAINING_CLASS.SSS; break;
+        case '腕': case '腹筋・体幹': cls = TRAINING_CLASS.A; break;
+        default: cls = TRAINING_CLASS.S; break;
     }
-    return Math.round(tier * ((lbm || TRAINING_TIER.REFERENCE_LBM) / TRAINING_TIER.REFERENCE_LBM));
+    return Math.round(cls * ((lbm || TRAINING_CLASS.REFERENCE_LBM) / TRAINING_CLASS.REFERENCE_LBM));
 }
 
 function calculateUserTargetCalories(profile, splitType, isRestDay) {
@@ -1053,13 +1053,13 @@ function renderUserProfilePanel(profile, userData) {
     html += row('ニックネーム', escapeHtml(p.nickname)) + row('性別', genderLabels[p.gender]||'-') + row('年齢', age?`${age}歳`:'-') + row('身長', height?`${height}cm`:'-') + row('体重', weight?`${weight}kg`:'-') + row('体脂肪率', bodyFatPct?`${bodyFatPct}%`:'-');
     html += row('LBM', typeof lbm==='number'?`${lbm}kg`:lbm) + row('BMR', bmr!=='-'?`${bmr}kcal`:'-') + row('TDEE', tdee!=='-'?`${tdee}kcal`:'-');
     html += row('目標', goalLabels[p.goal]||'-') + row('PFC', `P${p.proteinRatioPercent||35}% F${p.fatRatioPercent||15}% C${p.carbRatioPercent||50}%`);
-    // 3-tier training calorie bonus display
+    // 3-class training calorie bonus display
     if (typeof lbm === 'number' && lbm > 0) {
         const lbmVal = typeof lbm === 'string' ? parseFloat(lbm) : lbm;
-        const tierHigh = Math.round(400 * (lbmVal / 60));
-        const tierMid = Math.round(250 * (lbmVal / 60));
-        const tierLow = Math.round(100 * (lbmVal / 60));
-        html += row('トレ加算(自動)', `H+${tierHigh} / M+${tierMid} / L+${tierLow} kcal`);
+        const classSSS = Math.round(400 * (lbmVal / 60));
+        const classS = Math.round(250 * (lbmVal / 60));
+        const classA = Math.round(100 * (lbmVal / 60));
+        html += row('トレ加算(自動)', `SSS+${classSSS} / S+${classS} / A+${classA} kcal`);
     }
     el.innerHTML = html;
 }

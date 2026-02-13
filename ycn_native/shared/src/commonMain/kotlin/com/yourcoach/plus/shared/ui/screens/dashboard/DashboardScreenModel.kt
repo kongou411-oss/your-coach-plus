@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.dashboard
 
+import kotlin.math.roundToInt
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.data.database.BodymakingFoodDatabase
@@ -1979,7 +1980,7 @@ class DashboardScreenModel(
             ?: ActivityLevel.DESK_WORK.multiplier
 
         // TDEE計算（日常活動のみ）
-        val tdee = (bmr * activityMultiplier).toFloat()
+        val tdee = bmr * activityMultiplier
 
         // 目標に応じたカロリー調整
         val goalAdjustment = when (profile.goal) {
@@ -2011,12 +2012,12 @@ class DashboardScreenModel(
         val fatRatio = profile.fatRatioPercent / 100f
         val carbRatio = profile.carbRatioPercent / 100f
 
-        val targetProtein = adjustedCalories * proteinRatio / 4f
-        val targetFat = adjustedCalories * fatRatio / 9f
-        val targetCarbs = adjustedCalories * carbRatio / 4f
+        val targetProtein = (adjustedCalories * proteinRatio / 4f).toFloat()
+        val targetFat = (adjustedCalories * fatRatio / 9f).toFloat()
+        val targetCarbs = (adjustedCalories * carbRatio / 4f).toFloat()
 
         return NutritionTargets(
-            adjustedCalories.toInt(),
+            adjustedCalories.roundToInt(),
             targetProtein,
             targetCarbs,
             targetFat
