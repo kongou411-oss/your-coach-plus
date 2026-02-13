@@ -867,9 +867,15 @@ async function deleteAssignment(uid, docId) {
 // ========== Profile ==========
 function toggleProfileEditor() {
     const editor = document.getElementById('cq-profile-editor');
+    const isHidden = editor.classList.contains('hidden');
     editor.classList.toggle('hidden');
-    if (!editor.classList.contains('hidden')) {
-        setTimeout(() => editor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    if (isHidden) {
+        setTimeout(() => {
+            const container = document.querySelector('.cq-main');
+            if (container) {
+                container.scrollTo({ top: editor.offsetTop - container.offsetTop - 10, behavior: 'smooth' });
+            }
+        }, 50);
     }
 }
 
