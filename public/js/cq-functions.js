@@ -24,7 +24,6 @@ let loadedUserCustomFoods = [];
 let loadedRoutinePatterns = {};
 let templateItems = [];
 let selectedFoodCategory = 'all';
-let selectedExerciseCategory = '';
 let leftFilterType = 'ALL';
 let drawerMode = 'create';
 let editingTemplateId = null;
@@ -44,53 +43,7 @@ function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
-function r1(v) { return Math.round(v * 10) / 10; }
-function r2(v) { return Math.round(v * 100) / 100; }
-function scaleMap(map, coeff) {
-    if (!map) return {};
-    const result = {};
-    for (const [k, v] of Object.entries(map)) { result[k] = r2((v || 0) * coeff); }
-    return result;
-}
-
-function scaleTemplateForSlot(tpl, slotTargetCals) {
-    let scaledItems = tpl.items;
-    let scaledMacros = tpl.totalMacros || { protein: 0, fat: 0, carbs: 0, calories: 0 };
-    if (tpl.type === 'MEAL' && scaledMacros.calories > 0 && slotTargetCals > 0) {
-        const coefficient = slotTargetCals / scaledMacros.calories;
-        scaledItems = tpl.items.map(item => ({
-            ...item,
-            amount: r1((item.amount || 0) * coefficient),
-            calories: Math.round((item.calories || 0) * coefficient),
-            protein: r1((item.protein || 0) * coefficient),
-            fat: r1((item.fat || 0) * coefficient),
-            carbs: r1((item.carbs || 0) * coefficient),
-            fiber: r1((item.fiber || 0) * coefficient),
-            solubleFiber: r1((item.solubleFiber || 0) * coefficient),
-            insolubleFiber: r1((item.insolubleFiber || 0) * coefficient),
-            sugar: r1((item.sugar || 0) * coefficient),
-            saturatedFat: r2((item.saturatedFat || 0) * coefficient),
-            monounsaturatedFat: r2((item.monounsaturatedFat || 0) * coefficient),
-            polyunsaturatedFat: r2((item.polyunsaturatedFat || 0) * coefficient),
-            diaas: item.diaas || 0,
-            gi: item.gi || 0,
-            vitamins: scaleMap(item.vitamins || {}, coefficient),
-            minerals: scaleMap(item.minerals || {}, coefficient),
-        }));
-        scaledMacros = {
-            calories: Math.round(scaledMacros.calories * coefficient),
-            protein: r1((scaledMacros.protein || 0) * coefficient),
-            fat: r1((scaledMacros.fat || 0) * coefficient),
-            carbs: r1((scaledMacros.carbs || 0) * coefficient),
-            fiber: r1((scaledMacros.fiber || 0) * coefficient),
-            vitamins: scaleMap(scaledMacros.vitamins || {}, coefficient),
-            minerals: scaleMap(scaledMacros.minerals || {}, coefficient),
-        };
-    }
-    return { scaledItems, scaledMacros };
-}
-
-// ========== Calorie Calculations ==========
+// ========== Calorie Calculations (r1, r2, scaleMap, scaleTemplateForSlot are in cq-databases.js) ==========
 function calculateUserTargetCalories(profile) {
     const weight = profile.weight || 70;
     const bodyFatPct = profile.bodyFatPercentage || 15;
@@ -203,22 +156,7 @@ function setLeftFilter(type) {
     renderTemplateList();
 }
 
-// ========== Exercise Type Helpers ==========
-function getExerciseType(category) {
-    if (STRENGTH_CATEGORIES.includes(category)) return 'strength';
-    if (CARDIO_CATEGORIES.includes(category)) return 'cardio';
-    if (STRETCH_CATEGORIES.includes(category)) return 'stretch';
-    return 'strength';
-}
-function updateExerciseFields() {
-    const type = getExerciseType(selectedExerciseCategory);
-    document.getElementById('cq-strength-fields').classList.toggle('hidden', type !== 'strength');
-    document.getElementById('cq-rm-fields').classList.toggle('hidden', type !== 'strength');
-    document.getElementById('cq-cardio-fields').classList.toggle('hidden', type !== 'cardio');
-    document.getElementById('cq-stretch-fields').classList.toggle('hidden', type !== 'stretch');
-}
-
-// ========== Template Type Change / Category Filter ==========
+// ========== Template Type Change / Category Filter (getExerciseType, updateExerciseFields are in cq-databases.js) ==========
 function isWorkoutMode() { return document.getElementById('cq-tpl-type').value === 'WORKOUT'; }
 
 function onTemplateTypeChange() {
