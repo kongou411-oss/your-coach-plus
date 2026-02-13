@@ -3,9 +3,12 @@ package com.yourcoach.plus.shared.ui.screens.settings
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.CustomFood
+import com.yourcoach.plus.shared.domain.model.CustomQuest
+import com.yourcoach.plus.shared.domain.model.CustomQuestSlot
 import com.yourcoach.plus.shared.domain.model.User
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.CustomFoodRepository
+import com.yourcoach.plus.shared.domain.repository.CustomQuestRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.service.GeminiService
 import com.yourcoach.plus.shared.util.DateUtil
@@ -55,7 +58,10 @@ data class SettingsUiState(
     // Organization (B2B2C)
     val organizationName: String? = null,
     val isValidatingOrganization: Boolean = false,
-    val organizationMessage: String? = null
+    val organizationMessage: String? = null,
+    // Custom quest slots
+    val customQuestSlots: Map<String, CustomQuestSlot> = emptyMap(),
+    val customQuestDate: String? = null
 )
 
 /**
@@ -83,6 +89,7 @@ class SettingsScreenModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val customFoodRepository: CustomFoodRepository,
+    private val customQuestRepository: CustomQuestRepository? = null,
     private val geminiService: GeminiService? = null
 ) : ScreenModel {
 
@@ -97,6 +104,7 @@ class SettingsScreenModel(
     init {
         loadUserInfo()
         loadCustomFoods()
+        loadCustomQuestSlots()
     }
 
     /**
@@ -269,6 +277,30 @@ class SettingsScreenModel(
                             error = e.message ?: "Failed to load custom foods"
                         )
                     }
+                }
+        }
+    }
+
+    /**
+     * Load custom quest slots for today
+     */
+    fun loadCustomQuestSlots() {
+        val repo = customQuestRepository ?: return
+        screenModelScope.launch(exceptionHandler) {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            val today = DateUtil.todayString()
+
+            repo.getCustomQuest(userId, today)
+                .onSuccess { quest ->
+                    _uiState.update {
+                        it.copy(
+                            customQuestSlots = quest?.slots ?: emptyMap(),
+                            customQuestDate = if (quest != null) today else null
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    println("SettingsScreenModel: loadCustomQuestSlots error: ${e.message}")
                 }
         }
     }

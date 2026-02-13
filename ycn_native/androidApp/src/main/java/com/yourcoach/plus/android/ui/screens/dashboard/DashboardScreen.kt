@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Pause
@@ -69,6 +70,11 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.text.KeyboardOptions
@@ -288,6 +294,17 @@ fun DashboardScreen(
         )
     }
 
+    // 運動クエスト完了シート
+    if (uiState.showWorkoutCompletionSheet && uiState.workoutCompletionItem != null) {
+        WorkoutCompletionSheet(
+            item = uiState.workoutCompletionItem!!,
+            exercises = uiState.workoutCompletionExercises,
+            onExerciseUpdate = viewModel::updateWorkoutCompletionExercise,
+            onConfirm = viewModel::confirmWorkoutCompletion,
+            onDismiss = viewModel::dismissWorkoutCompletionSheet
+        )
+    }
+
     // Micro+詳細シートの表示状態
     var showMicroSheet by remember { mutableStateOf(false) }
 
@@ -399,8 +416,18 @@ fun DashboardScreen(
                                         item.linkedMeal?.let { viewModel.showMealEditDialog(it) }
                                         item.linkedWorkout?.let { viewModel.showWorkoutEditDialog(it) }
                                     },
+                                    onUndoClick = { item ->
+                                        viewModel.undoQuestCompletion(item)
+                                    },
                                     onRecordClick = { item ->
-                                        when (item.type) {
+                                        // カスタムクエスト（トレーナー指定）の完了処理を優先
+                                        if (item.isCustomQuest && item.customQuestItems != null) {
+                                            when (item.type) {
+                                                TimelineItemType.MEAL -> viewModel.recordMealFromCustomQuest(item)
+                                                TimelineItemType.WORKOUT -> viewModel.showWorkoutCompletionSheet(item)
+                                                else -> {}
+                                            }
+                                        } else when (item.type) {
                                             TimelineItemType.MEAL -> {
                                                 if (item.actionItems != null && item.actionItems.isNotEmpty()) {
                                                     viewModel.recordMealFromDirectiveItem(item)
@@ -412,8 +439,7 @@ fun DashboardScreen(
                                             }
                                             TimelineItemType.WORKOUT -> {
                                                 if (item.id.startsWith("directive_")) {
-                                                    // 部位×時間でカロリー自動計算して記録
-                                                    viewModel.recordWorkoutFromDirectiveItem(item)
+                                                    viewModel.showWorkoutCompletionSheet(item)
                                                 } else {
                                                     onNavigateToAddWorkout()
                                                 }
@@ -4000,5 +4026,324 @@ private fun RmAddDialog(
             }
         }
     )
+}
+
+/**
+ * 運動クエスト完了シート
+ * 種目ごとのセット/回数/重量を入力し、統一カロリー計算式で記録
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WorkoutCompletionSheet(
+    item: UnifiedTimelineItem,
+    exercises: List<WorkoutCompletionExercise>,
+    onExerciseUpdate: (Int, WorkoutCompletionExercise) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val totalDuration = exercises.sumOf { it.duration }
+    val totalCalories = exercises.sumOf { it.calories }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp)
+        ) {
+            // タイトル
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // サマリーバー: 時間 | カロリー | 種目数
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${totalDuration}分",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "時間",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${totalCalories}kcal",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentOrange
+                    )
+                    Text(
+                        text = "消費",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${exercises.size}種目",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "種目",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "種目 (${exercises.size})",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // 補足説明
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "各種目メインセットの平均重量を入力",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
+
+            // 種目リスト
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(exercises.size) { index ->
+                    WorkoutCompletionExerciseCard(
+                        exercise = exercises[index],
+                        onUpdate = { updated -> onExerciseUpdate(index, updated) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 記録ボタン
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AccentOrange
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.FitnessCenter,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "記録 (${totalCalories}kcal / ${totalDuration}分)",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 運動完了シートの種目カード
+ * セット/回数/重量を編集可能、カロリーがリアルタイム更新
+ */
+@Composable
+fun WorkoutCompletionExerciseCard(
+    exercise: WorkoutCompletionExercise,
+    onUpdate: (WorkoutCompletionExercise) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            // 種目名行: 名前 + カテゴリ + 推定バッジ + カロリー
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = exercise.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (exercise.category.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = exercise.category,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (exercise.isWeightEstimated) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = AccentOrange.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = "推定",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AccentOrange,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = "${exercise.calories}kcal",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentOrange
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 入力欄: セット / 回数 / 重量
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // セット
+                OutlinedTextField(
+                    value = exercise.sets.toString(),
+                    onValueChange = { text ->
+                        val newSets = text.toIntOrNull() ?: return@OutlinedTextField
+                        if (newSets in 1..50) onUpdate(exercise.copy(sets = newSets))
+                    },
+                    label = { Text("セット", style = MaterialTheme.typography.labelSmall) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 回数
+                OutlinedTextField(
+                    value = exercise.reps.toString(),
+                    onValueChange = { text ->
+                        val newReps = text.toIntOrNull() ?: return@OutlinedTextField
+                        if (newReps in 1..100) onUpdate(exercise.copy(reps = newReps))
+                    },
+                    label = { Text("回数", style = MaterialTheme.typography.labelSmall) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 重量
+                OutlinedTextField(
+                    value = exercise.weight?.let { String.format("%.1f", it) } ?: "",
+                    onValueChange = { text ->
+                        if (text.isEmpty()) {
+                            onUpdate(exercise.copy(weight = null, isWeightEstimated = false))
+                        } else {
+                            val newWeight = text.toFloatOrNull() ?: return@OutlinedTextField
+                            if (newWeight in 0f..500f) onUpdate(exercise.copy(weight = newWeight, isWeightEstimated = false))
+                        }
+                    },
+                    label = { Text("kg", style = MaterialTheme.typography.labelSmall) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // RM%情報 + 時間表示
+            val hasRmPercent = exercise.rmPercentMin != null || exercise.rmPercentMax != null
+            if (hasRmPercent || exercise.duration > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (hasRmPercent) {
+                        val rmStr = when {
+                            exercise.rmPercentMin != null && exercise.rmPercentMax != null ->
+                                "1RM ${exercise.rmPercentMin.toInt()}-${exercise.rmPercentMax.toInt()}%"
+                            exercise.rmPercentMin != null ->
+                                "1RM ${exercise.rmPercentMin.toInt()}%"
+                            else ->
+                                "1RM ${exercise.rmPercentMax!!.toInt()}%"
+                        }
+                        Text(
+                            text = rmStr,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.width(1.dp))
+                    }
+                    Text(
+                        text = "${exercise.duration}分 (${exercise.sets}セット x 5分)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
 }
 

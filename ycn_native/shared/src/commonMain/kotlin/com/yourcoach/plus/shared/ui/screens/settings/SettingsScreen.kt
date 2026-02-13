@@ -32,6 +32,8 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.CustomFood
+import com.yourcoach.plus.shared.domain.model.CustomQuestSlot
+import com.yourcoach.plus.shared.domain.model.CustomQuestSlotType
 import com.yourcoach.plus.shared.ui.theme.*
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -268,7 +270,9 @@ class SettingsScreen(
                         SettingsTab.FEATURES -> FeaturesSettingsTab(
                             onNavigateToRoutine = onNavigateToRoutine,
                             onNavigateToTemplates = onNavigateToTemplates,
-                            onNavigateToMealSlots = onNavigateToMealSlots
+                            onNavigateToMealSlots = onNavigateToMealSlots,
+                            customQuestSlots = uiState.customQuestSlots,
+                            customQuestDate = uiState.customQuestDate
                         )
                         SettingsTab.DATA -> DataSettingsTab(
                             customFoods = uiState.customFoods,
@@ -359,7 +363,9 @@ private fun BasicSettingsTab(
 private fun FeaturesSettingsTab(
     onNavigateToRoutine: () -> Unit,
     onNavigateToTemplates: () -> Unit,
-    onNavigateToMealSlots: () -> Unit
+    onNavigateToMealSlots: () -> Unit,
+    customQuestSlots: Map<String, CustomQuestSlot> = emptyMap(),
+    customQuestDate: String? = null
 ) {
     LazyColumn(
         modifier = Modifier
@@ -396,7 +402,154 @@ private fun FeaturesSettingsTab(
             }
         }
 
+        // カスタムクエスト詳細表示
+        if (customQuestSlots.isNotEmpty()) {
+            item {
+                SectionHeader("カスタムクエスト（${customQuestDate ?: "今日"}）")
+            }
+
+            customQuestSlots.entries.forEach { (slotKey, slot) ->
+                item(key = "quest_$slotKey") {
+                    CustomQuestSlotCard(slotKey = slotKey, slot = slot)
+                }
+            }
+        }
+
         item { Spacer(modifier = Modifier.height(60.dp)) }
+    }
+}
+
+/**
+ * カスタムクエストスロットカード（展開可能な食材リスト付き）
+ */
+@Composable
+private fun CustomQuestSlotCard(
+    slotKey: String,
+    slot: CustomQuestSlot
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // ヘッダー行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = if (slot.type == CustomQuestSlotType.WORKOUT)
+                            Icons.Default.FitnessCenter else Icons.Default.Restaurant,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = slot.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "${slot.items.size}品目",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // PFC合計
+                slot.totalMacros?.let { macros ->
+                    Text(
+                        text = "${macros.calories.toInt()}kcal",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // PFC バー
+            slot.totalMacros?.let { macros ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "P${macros.protein.toInt()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ScoreProtein
+                    )
+                    Text(
+                        text = "F${macros.fat.toInt()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ScoreFat
+                    )
+                    Text(
+                        text = "C${macros.carbs.toInt()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ScoreCarbs
+                    )
+                }
+            }
+
+            // 展開時：食材詳細リスト
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier.padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(4.dp))
+                    slot.items.forEach { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${item.foodName} ${item.amount.toInt()}${item.unit}",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "${item.calories.toInt()}kcal",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

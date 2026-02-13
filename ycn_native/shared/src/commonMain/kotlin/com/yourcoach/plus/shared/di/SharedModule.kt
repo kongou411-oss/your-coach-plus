@@ -99,7 +99,7 @@ val sharedModule = module {
     // History
     factory { HistoryScreenModel(get(), get(), get(), get(), rmRepository = get()) }
     // Settings
-    factory { SettingsScreenModel(get(), get(), get(), getOrNull<GeminiService>()) }
+    factory { SettingsScreenModel(get(), get(), get(), get(), getOrNull<GeminiService>()) }
     factory { ProfileEditScreenModel(get(), get()) }
     factory { RoutineSettingsScreenModel(get(), get()) }
     factory { TemplateSettingsScreenModel(get(), get(), get()) }

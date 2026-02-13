@@ -19,6 +19,7 @@ import com.yourcoach.plus.shared.domain.model.MealSlot
 import com.yourcoach.plus.shared.domain.model.MealSlotConfig
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
 import com.yourcoach.plus.shared.domain.model.CustomQuest
+import com.yourcoach.plus.shared.domain.model.CustomQuestItem
 import com.yourcoach.plus.shared.domain.model.CustomQuestSlotType
 import com.yourcoach.plus.shared.domain.model.RmRecord
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
@@ -153,7 +154,11 @@ data class DashboardUiState(
     val latestRmRecords: Map<String, RmRecord> = emptyMap(),
     val editingRmRecord: RmRecord? = null,
     val showRmEditDialog: Boolean = false,
-    val showRmAddDialog: Boolean = false
+    val showRmAddDialog: Boolean = false,
+    // 運動クエスト完了シート
+    val showWorkoutCompletionSheet: Boolean = false,
+    val workoutCompletionItem: UnifiedTimelineItem? = null,
+    val workoutCompletionExercises: List<WorkoutCompletionExercise> = emptyList()
 )
 
 /**
@@ -173,6 +178,25 @@ enum class CelebrationInfoType {
 }
 
 /**
+ * 運動クエスト完了シート用の種目データ
+ * 統一カロリー計算式: (volume × 0.05) + (duration × 3)
+ */
+data class WorkoutCompletionExercise(
+    val name: String,
+    val category: String,
+    val sets: Int,
+    val reps: Int,
+    val weight: Float?,
+    val isWeightEstimated: Boolean = false,
+    val rmPercentMin: Float? = null,
+    val rmPercentMax: Float? = null
+) {
+    val duration: Int get() = sets * 5
+    val volume: Float get() = sets * reps * (weight ?: 0f)
+    val calories: Int get() = ((volume * 0.05f) + (duration * 3)).toInt().coerceAtLeast(0)
+}
+
+/**
  * 統合タイムラインアイテム（Pro Cockpit用）
  * 食事スロット（クエスト）、実際の食事記録、運動記録を統合
  */
@@ -189,10 +213,12 @@ data class UnifiedTimelineItem(
     val linkedMeal: Meal? = null,      // 実際の食事記録（記録済みの場合）
     val linkedWorkout: Workout? = null, // 実際の運動記録（記録済みの場合）
     val slotInfo: TimelineSlotInfo? = null, // 元のスロット情報
-    val isCustomQuest: Boolean = false      // カスタムクエスト（ゴールド枠表示用）
+    val isCustomQuest: Boolean = false,     // カスタムクエスト（ゴールド枠表示用）
+    val customQuestSlotKey: String? = null, // カスタムクエストのスロットキー (例: "meal_1")
+    val customQuestItems: List<CustomQuestItem>? = null // カスタムクエストのアイテム（事前計算マクロミクロ付き）
 ) {
     val isRecorded: Boolean get() = linkedMeal != null || linkedWorkout != null
-    val isQuest: Boolean get() = slotInfo != null && !isRecorded
+    val isQuest: Boolean get() = (slotInfo != null || isCustomQuest) && !isRecorded
 }
 
 enum class TimelineItemType { MEAL, WORKOUT, CONDITION }
@@ -1557,6 +1583,257 @@ class DashboardViewModel(
     }
 
     /**
+     * カスタムクエスト（トレーナー指定）の食事を自動記録
+     * 事前計算済みマクロミクロをそのままMealとして保存（FoodDB検索なし）
+     */
+    fun recordMealFromCustomQuest(item: UnifiedTimelineItem) {
+        val userId = currentUserId ?: return
+        val slotKey = item.customQuestSlotKey ?: return
+        val questItems = item.customQuestItems ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExecutingDirectiveItem = true) }
+            try {
+                val selectedDate = _uiState.value.date
+                val baseTimestamp = DateUtil.dateStringToTimestamp(selectedDate)
+                val targetTimestamp = baseTimestamp + (item.timeMinutes * 60 * 1000L)
+
+                val mealItems = questItems.map { cqItem ->
+                    MealItem(
+                        name = cqItem.foodName,
+                        amount = cqItem.amount,
+                        unit = cqItem.unit,
+                        calories = MealItem.calculateCalories(cqItem.protein, cqItem.fat, cqItem.carbs),
+                        protein = cqItem.protein,
+                        carbs = cqItem.carbs,
+                        fat = cqItem.fat,
+                        fiber = cqItem.fiber,
+                        solubleFiber = cqItem.solubleFiber,
+                        insolubleFiber = cqItem.insolubleFiber,
+                        sugar = cqItem.sugar,
+                        saturatedFat = cqItem.saturatedFat,
+                        monounsaturatedFat = cqItem.monounsaturatedFat,
+                        polyunsaturatedFat = cqItem.polyunsaturatedFat,
+                        diaas = cqItem.diaas,
+                        gi = cqItem.gi,
+                        vitamins = cqItem.vitamins,
+                        minerals = cqItem.minerals
+                    )
+                }
+
+                val totalCalories = mealItems.sumOf { it.calories }
+                val totalProtein = mealItems.sumOf { it.protein.toDouble() }.toFloat()
+                val totalCarbs = mealItems.sumOf { it.carbs.toDouble() }.toFloat()
+                val totalFat = mealItems.sumOf { it.fat.toDouble() }.toFloat()
+                val totalFiber = mealItems.sumOf { it.fiber.toDouble() }.toFloat()
+                val totalGL = mealItems.sumOf {
+                    if (it.gi > 0 && it.carbs > 0) (it.gi * it.carbs / 100f).toDouble() else 0.0
+                }.toFloat()
+
+                val meal = Meal(
+                    id = "",
+                    userId = userId,
+                    name = "カスタム: ${item.title}",
+                    type = MealType.SNACK,
+                    items = mealItems,
+                    totalCalories = totalCalories,
+                    totalProtein = totalProtein,
+                    totalCarbs = totalCarbs,
+                    totalFat = totalFat,
+                    totalFiber = totalFiber,
+                    totalGL = totalGL,
+                    isTemplate = true,
+                    timestamp = targetTimestamp,
+                    createdAt = System.currentTimeMillis()
+                )
+
+                mealRepository.addMeal(meal)
+                    .onSuccess {
+                        android.util.Log.d("DashboardVM", "CustomQuest meal recorded: ${item.title}, ${mealItems.size} items, ${totalCalories}kcal")
+                        markCustomQuestSlotCompleted(slotKey)
+                        updateBadgeStats("meal_recorded")
+                        _uiState.update { it.copy(successMessage = "${item.title}を記録しました（${totalCalories}kcal）") }
+                        loadDashboardData()
+                    }
+                    .onFailure { e ->
+                        android.util.Log.e("DashboardVM", "CustomQuest meal record failed: ${e.message}")
+                        _uiState.update { it.copy(error = "記録に失敗しました: ${e.message}") }
+                    }
+            } finally {
+                _uiState.update { it.copy(isExecutingDirectiveItem = false) }
+            }
+        }
+    }
+
+    /**
+     * カスタムクエスト（トレーナー指定）の運動を自動記録
+     * CustomQuestItemからExerciseリストを構築して保存
+     */
+    fun recordWorkoutFromCustomQuest(item: UnifiedTimelineItem) {
+        val userId = currentUserId ?: return
+        val slotKey = item.customQuestSlotKey ?: return
+        val questItems = item.customQuestItems ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExecutingDirectiveItem = true) }
+            try {
+                val selectedDate = _uiState.value.date
+                val baseTimestamp = DateUtil.dateStringToTimestamp(selectedDate)
+                val targetTimestamp = baseTimestamp + (item.timeMinutes * 60 * 1000L)
+
+                // スロットタイトルからカロリー係数を取得（部位名が含まれるため正確）
+                val slotCalorieCoeff = getCalorieCoefficient(item.title)
+
+                val exercises = questItems.map { cqItem ->
+                    val category = when (cqItem.category) {
+                        "胸" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.CHEST
+                        "背中" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.BACK
+                        "肩" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.SHOULDERS
+                        "腕" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.ARMS
+                        "脚" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.LEGS
+                        "腹筋・体幹" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.CORE
+                        "有酸素" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.RUNNING
+                        else -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.OTHER
+                    }
+                    // duration: 明示値 > sets×5分
+                    val duration = cqItem.duration ?: ((cqItem.sets ?: 6) * 5)
+                    com.yourcoach.plus.shared.domain.model.Exercise(
+                        name = cqItem.foodName,
+                        category = category,
+                        sets = cqItem.sets,
+                        reps = cqItem.reps,
+                        weight = cqItem.weight,
+                        duration = duration,
+                        distance = cqItem.distance,
+                        caloriesBurned = duration * slotCalorieCoeff
+                    )
+                }
+
+                val totalDuration = exercises.sumOf { it.duration ?: 0 }
+                val totalCalories = exercises.sumOf { it.caloriesBurned }
+
+                val workout = Workout(
+                    id = "",
+                    userId = userId,
+                    name = item.title,
+                    type = com.yourcoach.plus.shared.domain.model.WorkoutType.STRENGTH,
+                    exercises = exercises,
+                    totalDuration = totalDuration,
+                    totalCaloriesBurned = totalCalories,
+                    intensity = com.yourcoach.plus.shared.domain.model.WorkoutIntensity.MODERATE,
+                    note = "カスタムクエスト",
+                    timestamp = targetTimestamp,
+                    createdAt = System.currentTimeMillis()
+                )
+
+                workoutRepository.addWorkout(workout)
+                    .onSuccess {
+                        android.util.Log.d("DashboardVM", "CustomQuest workout recorded: ${item.title}, ${totalCalories}kcal")
+                        markCustomQuestSlotCompleted(slotKey)
+                        updateBadgeStats("workout_recorded", mapOf("duration" to totalDuration))
+                        _uiState.update { it.copy(successMessage = "${item.title}を記録しました（${totalCalories}kcal）") }
+                        loadDashboardData()
+                    }
+                    .onFailure { e ->
+                        android.util.Log.e("DashboardVM", "CustomQuest workout record failed: ${e.message}")
+                        _uiState.update { it.copy(error = "記録に失敗しました: ${e.message}") }
+                    }
+            } finally {
+                _uiState.update { it.copy(isExecutingDirectiveItem = false) }
+            }
+        }
+    }
+
+    /**
+     * カスタムクエストのスロットを完了済みとしてFirestoreに保存
+     */
+    private suspend fun markCustomQuestSlotCompleted(slotKey: String) {
+        val userId = currentUserId ?: return
+        val selectedDate = _uiState.value.date
+        val customQuest = _uiState.value.customQuest ?: return
+        val docDate = if (customQuest.date == "_default") "_default" else selectedDate
+
+        val itemIndices = customQuest.slots[slotKey]?.items?.indices?.toList() ?: listOf(0)
+        customQuestRepository.updateExecutedItems(userId, docDate, slotKey, itemIndices)
+            .onSuccess {
+                android.util.Log.d("DashboardVM", "CustomQuest slot $slotKey marked completed")
+            }
+            .onFailure { e ->
+                android.util.Log.e("DashboardVM", "Failed to mark custom quest slot: ${e.message}")
+            }
+    }
+
+    /**
+     * クエスト完了の取り消し（カスタム・デフォルト両対応）
+     * 1. 記録済み食事/運動を削除
+     * 2. executedItemsから該当スロットを除去
+     * 3. タイムラインを再読み込み
+     */
+    fun undoQuestCompletion(item: UnifiedTimelineItem) {
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            try {
+                // 1. 記録済み食事/運動を削除
+                item.linkedMeal?.let { meal ->
+                    mealRepository.deleteMeal(userId, meal.id)
+                }
+                item.linkedWorkout?.let { workout ->
+                    workoutRepository.deleteWorkout(userId, workout.id)
+                }
+
+                // 2. executedItemsから除去
+                if (item.isCustomQuest && item.customQuestSlotKey != null) {
+                    // カスタムクエスト: executedItemsからslotKeyを削除
+                    undoCustomQuestSlot(item.customQuestSlotKey)
+                } else if (item.id.startsWith("directive_")) {
+                    // デフォルトクエスト: executedItemsからインデックスを削除
+                    undoDirectiveItem(item)
+                }
+
+                // 3. リロード
+                loadDashboardData()
+                _uiState.update { it.copy(successMessage = "「${item.title}」の完了を取り消しました") }
+            } catch (e: Exception) {
+                android.util.Log.e("DashboardVM", "Undo failed: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun undoCustomQuestSlot(slotKey: String) {
+        val userId = currentUserId ?: return
+        val selectedDate = _uiState.value.date
+        val customQuest = _uiState.value.customQuest ?: return
+        val docDate = if (customQuest.date == "_default") "_default" else selectedDate
+
+        // executedItemsから該当スロットを空リストに更新（＝未完了）
+        customQuestRepository.updateExecutedItems(userId, docDate, slotKey, emptyList())
+    }
+
+    private suspend fun undoDirectiveItem(item: UnifiedTimelineItem) {
+        val userId = currentUserId ?: return
+        val directive = _uiState.value.directive ?: return
+
+        val index = when {
+            item.id.startsWith("directive_meal_") ->
+                item.id.removePrefix("directive_meal_").toIntOrNull()?.minus(1) ?: return
+            item.id == "directive_workout" ->
+                directive.message.lines().filter { it.startsWith("【食事") }.size
+            item.id == "directive_sleep" -> {
+                val mealCount = directive.message.lines().filter { it.startsWith("【食事") }.size
+                val hasWorkout = directive.message.lines().any { it.startsWith("【運動") }
+                mealCount + (if (hasWorkout) 1 else 0)
+            }
+            else -> return
+        }
+
+        val updatedExecutedItems = directive.executedItems.toMutableList()
+        updatedExecutedItems.remove(index)
+
+        val updatedDirective = directive.copy(executedItems = updatedExecutedItems)
+        directiveRepository.saveDirective(updatedDirective)
+    }
+
+    /**
      * Directiveの運動アイテムをタイムラインから自動記録
      * カロリー計算: 部位 × トレーニング時間（分） × 係数
      * 係数: 脚・背中=5, 胸・肩=3, 腕・腹=2 kcal/分（初中級者向け）
@@ -1573,29 +1850,95 @@ class DashboardViewModel(
                 val baseTimestamp = DateUtil.dateStringToTimestamp(selectedDate)
                 val targetTimestamp = baseTimestamp + (item.timeMinutes * 60 * 1000L)
 
-                // subtitleからワークアウト情報をパース
-                // 例: "肩トレーニング 4種目×5セット×5回（計20セット）"
                 val workoutText = item.subtitle ?: ""
                 android.util.Log.d("DashboardVM", "recordWorkout: title=${item.title}, subtitle=${item.subtitle}")
+
+                // 新形式: 「・」行から種目詳細をパース
+                val bulletLines = workoutText.split("\n").filter { it.trimStart().startsWith("・") }
+                val headerLine = workoutText.split("\n").firstOrNull() ?: workoutText
+
+                // 消費予測をヘッダーから取得（例: "消費予測510kcal"）
+                val predictedCalMatch = Regex("消費予測(\\d+)kcal").find(headerLine)
+                val predictedCalories = predictedCalMatch?.groupValues?.get(1)?.toIntOrNull()
+
+                // 時間をヘッダーから取得（例: "120分"）
+                val durationMatch = Regex("(\\d+)分").find(headerLine)
+                val headerDuration = durationMatch?.groupValues?.get(1)?.toIntOrNull()
+
+                if (bulletLines.isNotEmpty()) {
+                    // 新形式: 種目ごとの詳細あり
+                    val exerciseList = bulletLines.map { line ->
+                        val name = line.removePrefix("・").substringBefore(" ").trim()
+                        val setsMatch = Regex("(\\d+)セット").find(line)
+                        val repsMatch = Regex("(\\d+)回/セット").find(line)
+                        val durMatch = Regex("×(\\d+)分").find(line)
+                        val sets = setsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 6
+                        val reps = repsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 10
+                        val exDuration = durMatch?.groupValues?.get(1)?.toIntOrNull() ?: (sets * 5)
+                        Triple(name, sets to reps, exDuration)
+                    }
+
+                    val totalDuration = headerDuration ?: exerciseList.sumOf { it.third }
+                    val totalCalories = predictedCalories ?: (totalDuration * getCalorieCoefficient(item.title))
+                    val caloriesPerEx = totalCalories / exerciseList.size
+
+                    val exercises = exerciseList.map { (name, setsReps, dur) ->
+                        com.yourcoach.plus.shared.domain.model.Exercise(
+                            name = name,
+                            category = com.yourcoach.plus.shared.domain.model.ExerciseCategory.OTHER,
+                            sets = setsReps.first,
+                            reps = setsReps.second,
+                            weight = null,
+                            duration = dur,
+                            caloriesBurned = caloriesPerEx
+                        )
+                    }
+
+                    android.util.Log.d("DashboardVM", "recordWorkout: ${exerciseList.size} exercises, duration=${totalDuration}min, calories=$totalCalories")
+
+                    val workout = Workout(
+                        id = "",
+                        userId = userId,
+                        name = item.title,
+                        type = com.yourcoach.plus.shared.domain.model.WorkoutType.STRENGTH,
+                        exercises = exercises,
+                        totalDuration = totalDuration,
+                        totalCaloriesBurned = totalCalories,
+                        intensity = com.yourcoach.plus.shared.domain.model.WorkoutIntensity.MODERATE,
+                        note = workoutText,
+                        timestamp = targetTimestamp,
+                        createdAt = System.currentTimeMillis()
+                    )
+
+                    workoutRepository.addWorkout(workout)
+                        .onSuccess {
+                            android.util.Log.d("DashboardVM", "Directive workout recorded: ${item.title}, duration=${totalDuration}min, calories=$totalCalories")
+                            _uiState.update { it.copy(successMessage = "${item.title}を記録しました（${totalCalories}kcal）") }
+                            updateBadgeStats("workout_recorded", mapOf("duration" to totalDuration))
+                            markDirectiveItemCompleted(item)
+                            loadDashboardData()
+                        }
+                        .onFailure { e ->
+                            android.util.Log.e("DashboardVM", "Directive workout record failed: ${e.message}")
+                            _uiState.update { it.copy(error = "記録に失敗しました: ${e.message}") }
+                        }
+
+                    return@launch
+                }
+
+                // フォールバック: 旧形式（"N種目×Nセット×N回"）
                 val workoutInfo = parseWorkoutInfoFromText(workoutText)
-                android.util.Log.d("DashboardVM", "recordWorkout: parsed exercises=${workoutInfo.exercises}, sets=${workoutInfo.sets}, reps=${workoutInfo.reps}")
+                android.util.Log.d("DashboardVM", "recordWorkout(legacy): parsed exercises=${workoutInfo.exercises}, sets=${workoutInfo.sets}, reps=${workoutInfo.reps}")
 
-                // トレーニング時間（分）= 種目数 × 30分
-                val durationMinutes = workoutInfo.exercises * 30
+                val durationMinutes = headerDuration ?: (workoutInfo.exercises * 30)
+                val calculatedCalories = predictedCalories ?: (durationMinutes * getCalorieCoefficient(item.title))
 
-                // 部位からカロリー係数を取得
-                val calorieCoefficient = getCalorieCoefficient(item.title)
-
-                // カロリー計算: 時間(分) × 係数
-                val calculatedCalories = durationMinutes * calorieCoefficient
-
-                // 種目数分のExerciseを作成（各種目に均等にセットとカロリーを分配）
                 val caloriesPerExercise = calculatedCalories / workoutInfo.exercises
                 val exercises = (1..workoutInfo.exercises).map { i ->
                     com.yourcoach.plus.shared.domain.model.Exercise(
                         name = "${item.title} #$i",
                         category = com.yourcoach.plus.shared.domain.model.ExerciseCategory.OTHER,
-                        sets = workoutInfo.sets,  // 各種目のセット数
+                        sets = workoutInfo.sets,
                         reps = workoutInfo.reps,
                         weight = null,
                         caloriesBurned = caloriesPerExercise
@@ -1635,6 +1978,196 @@ class DashboardViewModel(
                 _uiState.update { it.copy(isExecutingDirectiveItem = false) }
             }
         }
+    }
+
+    /**
+     * 運動クエスト完了シートを表示
+     * CustomQuest/Directive両対応で種目リストを構築し、RM記録から推定重量をプリフィル
+     */
+    fun showWorkoutCompletionSheet(item: UnifiedTimelineItem) {
+        val exercises = mutableListOf<WorkoutCompletionExercise>()
+
+        if (item.isCustomQuest && item.customQuestItems != null) {
+            // カスタムクエスト: customQuestItemsから構築
+            for (cqItem in item.customQuestItems) {
+                val rmRecord = rmRecordCache[cqItem.foodName]
+                val rmMin = cqItem.rmPercentMin
+                val rmMax = cqItem.rmPercentMax
+
+                val estimatedWeight: Float?
+                val isEstimated: Boolean
+                if (rmRecord != null && (rmMin != null || rmMax != null)) {
+                    val avgPercent = ((rmMin ?: rmMax!!) + (rmMax ?: rmMin!!)) / 2f
+                    estimatedWeight = (rmRecord.weight * avgPercent / 100f)
+                    isEstimated = true
+                } else if (cqItem.weight != null && (cqItem.weight ?: 0f) > 0f) {
+                    estimatedWeight = cqItem.weight!!
+                    isEstimated = false
+                } else {
+                    estimatedWeight = null
+                    isEstimated = false
+                }
+
+                exercises.add(WorkoutCompletionExercise(
+                    name = cqItem.foodName,
+                    category = cqItem.category ?: "",
+                    sets = cqItem.sets ?: 6,
+                    reps = cqItem.reps ?: 10,
+                    weight = estimatedWeight,
+                    isWeightEstimated = isEstimated,
+                    rmPercentMin = rmMin,
+                    rmPercentMax = rmMax
+                ))
+            }
+        } else if (item.id.startsWith("directive_")) {
+            // Directive: subtitleの「・」行からパース
+            val workoutText = item.subtitle ?: ""
+            val bulletLines = workoutText.split("\n").filter { it.trimStart().startsWith("・") }
+
+            for (line in bulletLines) {
+                val name = line.removePrefix("・").substringBefore(" ").trim()
+                val setsMatch = Regex("(\\d+)セット").find(line)
+                val repsMatch = Regex("(\\d+)回/セット").find(line)
+                val sets = setsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 6
+                val reps = repsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 10
+
+                val rmRecord = rmRecordCache[name]
+                // Directiveにはrm%が無いので、RM記録のweight自体をプリフィル
+                val estimatedWeight = rmRecord?.weight
+                val isEstimated = rmRecord != null
+
+                exercises.add(WorkoutCompletionExercise(
+                    name = name,
+                    category = "",
+                    sets = sets,
+                    reps = reps,
+                    weight = estimatedWeight,
+                    isWeightEstimated = isEstimated
+                ))
+            }
+
+            // bulletLinesが空の場合はフォールバックで1種目
+            if (exercises.isEmpty()) {
+                exercises.add(WorkoutCompletionExercise(
+                    name = item.title,
+                    category = "",
+                    sets = 6,
+                    reps = 10,
+                    weight = null
+                ))
+            }
+        }
+
+        _uiState.update { it.copy(
+            showWorkoutCompletionSheet = true,
+            workoutCompletionItem = item,
+            workoutCompletionExercises = exercises
+        ) }
+    }
+
+    /**
+     * 運動クエスト完了シートの種目を更新（セット/回数/重量変更時）
+     */
+    fun updateWorkoutCompletionExercise(index: Int, updated: WorkoutCompletionExercise) {
+        val current = _uiState.value.workoutCompletionExercises.toMutableList()
+        if (index in current.indices) {
+            current[index] = updated
+            _uiState.update { it.copy(workoutCompletionExercises = current) }
+        }
+    }
+
+    /**
+     * 運動クエスト完了シートの記録を確定
+     * 統一カロリー計算: (totalVolume × 0.05) + (totalDuration × 3)
+     */
+    fun confirmWorkoutCompletion() {
+        val userId = currentUserId ?: return
+        val item = _uiState.value.workoutCompletionItem ?: return
+        val exercises = _uiState.value.workoutCompletionExercises
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExecutingDirectiveItem = true) }
+            try {
+                val selectedDate = _uiState.value.date
+                val baseTimestamp = DateUtil.dateStringToTimestamp(selectedDate)
+                val targetTimestamp = baseTimestamp + (item.timeMinutes * 60 * 1000L)
+
+                val exerciseModels = exercises.map { ex ->
+                    val category = when (ex.category) {
+                        "胸" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.CHEST
+                        "背中" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.BACK
+                        "肩" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.SHOULDERS
+                        "腕" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.ARMS
+                        "脚" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.LEGS
+                        "腹筋・体幹" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.CORE
+                        "有酸素" -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.RUNNING
+                        else -> com.yourcoach.plus.shared.domain.model.ExerciseCategory.OTHER
+                    }
+                    com.yourcoach.plus.shared.domain.model.Exercise(
+                        name = ex.name,
+                        category = category,
+                        sets = ex.sets,
+                        reps = ex.reps,
+                        weight = ex.weight,
+                        duration = ex.duration,
+                        caloriesBurned = ex.calories
+                    )
+                }
+
+                val totalDuration = exercises.sumOf { it.duration }
+                val totalCalories = exercises.sumOf { it.calories }
+
+                val workout = Workout(
+                    id = "",
+                    userId = userId,
+                    name = item.title,
+                    type = com.yourcoach.plus.shared.domain.model.WorkoutType.STRENGTH,
+                    exercises = exerciseModels,
+                    totalDuration = totalDuration,
+                    totalCaloriesBurned = totalCalories,
+                    intensity = com.yourcoach.plus.shared.domain.model.WorkoutIntensity.MODERATE,
+                    note = if (item.isCustomQuest) "カスタムクエスト" else (item.subtitle ?: ""),
+                    timestamp = targetTimestamp,
+                    createdAt = System.currentTimeMillis()
+                )
+
+                workoutRepository.addWorkout(workout)
+                    .onSuccess {
+                        android.util.Log.d("DashboardVM", "WorkoutCompletion recorded: ${item.title}, ${totalCalories}kcal")
+                        // 完了マーク
+                        if (item.isCustomQuest && item.customQuestSlotKey != null) {
+                            markCustomQuestSlotCompleted(item.customQuestSlotKey)
+                        } else if (item.id.startsWith("directive_")) {
+                            markDirectiveItemCompleted(item)
+                        }
+                        updateBadgeStats("workout_recorded", mapOf("duration" to totalDuration))
+                        _uiState.update { it.copy(
+                            successMessage = "${item.title}を記録しました（${totalCalories}kcal）",
+                            showWorkoutCompletionSheet = false,
+                            workoutCompletionItem = null,
+                            workoutCompletionExercises = emptyList()
+                        ) }
+                        loadDashboardData()
+                    }
+                    .onFailure { e ->
+                        android.util.Log.e("DashboardVM", "WorkoutCompletion failed: ${e.message}")
+                        _uiState.update { it.copy(error = "記録に失敗しました: ${e.message}") }
+                    }
+            } finally {
+                _uiState.update { it.copy(isExecutingDirectiveItem = false) }
+            }
+        }
+    }
+
+    /**
+     * 運動クエスト完了シートを閉じる
+     */
+    fun dismissWorkoutCompletionSheet() {
+        _uiState.update { it.copy(
+            showWorkoutCompletionSheet = false,
+            workoutCompletionItem = null,
+            workoutCompletionExercises = emptyList()
+        ) }
     }
 
     /**
@@ -2714,11 +3247,27 @@ class DashboardViewModel(
         val now = java.util.Calendar.getInstance()
         val currentTimeMinutes = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
 
-        // 食事スロット設定を動的生成（相対時刻は常に最新ロジックを使用）
-        val mealSlotConfig = MealSlotConfig.createTimelineRoutine(
+        // 食事スロット設定: ユーザー保存済みのabsoluteTimeがあればそれを優先
+        val baseConfig = MealSlotConfig.createTimelineRoutine(
             mealsPerDay = mealsPerDay,
             trainingAfterMeal = trainingAfterMeal
         )
+        val savedConfig = profile.mealSlotConfig
+        val mealSlotConfig = if (savedConfig != null && savedConfig.slots.any { it.absoluteTime != null }) {
+            // 保存済みのabsoluteTimeをベースに上書き（トレーナー設定優先）
+            val mergedSlots = baseConfig.slots.map { baseSlot ->
+                val savedSlot = savedConfig.slots.find { it.slotNumber == baseSlot.slotNumber }
+                if (savedSlot?.absoluteTime != null) {
+                    // absoluteTimeがある場合はrelativeTimeをクリアしてabsoluteTimeを使用
+                    baseSlot.copy(relativeTime = null, absoluteTime = savedSlot.absoluteTime)
+                } else {
+                    baseSlot
+                }
+            }
+            baseConfig.copy(slots = mergedSlots)
+        } else {
+            baseConfig
+        }
 
         // コスト帯（予算）を取得
         val budgetTier = profile.budgetTier
@@ -3207,8 +3756,13 @@ class DashboardViewModel(
         val items = mutableListOf<UnifiedTimelineItem>()
 
         // カスタムクエストがある場合はそちらを優先表示
+        android.util.Log.d("DashboardVM", "buildUnifiedTimeline: customQuest=${customQuest != null}, slots=${customQuest?.slots?.keys}, directive=${directive != null}")
         if (customQuest != null) {
-            val customItems = buildCustomQuestTimelineItems(customQuest, currentTimeMinutes, meals, workouts)
+            val customItems = buildCustomQuestTimelineItems(
+                customQuest, currentTimeMinutes, meals, workouts,
+                timelineSlots = timelineSlots,
+                trainingTimeMinutes = trainingTimeMinutes
+            )
             items.addAll(customItems)
         } else if (directive != null && directive.message.isNotBlank()) {
             // Directiveがある場合のみタイムラインを構築（未生成時は空）
@@ -3287,108 +3841,124 @@ class DashboardViewModel(
 
     /**
      * カスタムクエストからタイムラインアイテムを生成
+     * スロットキー: meal_1, meal_2, ... meal_N, workout
+     * 時刻はcalculateTimelineInfoで計算済みのtimelineSlotsを使用
      */
     private fun buildCustomQuestTimelineItems(
         customQuest: CustomQuest,
         currentTimeMinutes: Int,
         meals: List<Meal>,
-        workouts: List<Workout>
+        workouts: List<Workout>,
+        timelineSlots: List<TimelineSlotInfo>,
+        trainingTimeMinutes: Int? = null
     ): List<UnifiedTimelineItem> {
         val items = mutableListOf<UnifiedTimelineItem>()
-        // スロットを定義順（breakfast→lunch→dinner→snack→workout）で処理
-        val slotOrder = listOf("breakfast", "lunch", "snack", "dinner", "workout")
-        val baseTimeMap = mapOf(
-            "breakfast" to 7 * 60,
-            "lunch" to 12 * 60,
-            "snack" to 15 * 60,
-            "dinner" to 19 * 60,
-            "workout" to 18 * 60
-        )
 
-        customQuest.slots.entries
-            .sortedBy { slotOrder.indexOf(it.key).let { idx -> if (idx < 0) 99 else idx } }
-            .forEachIndexed { index, (slotKey, slot) ->
-                val timeMinutes = baseTimeMap[slotKey] ?: (8 * 60 + index * 180)
-                val status = if (timeMinutes < currentTimeMinutes) {
-                    TimelineItemStatus.COMPLETED
-                } else if (timeMinutes - currentTimeMinutes < 60) {
-                    TimelineItemStatus.CURRENT
-                } else {
-                    TimelineItemStatus.UPCOMING
-                }
+        // meal_N キーを数字順にソート、workoutは最後
+        val mealKeys = customQuest.slots.keys
+            .filter { it.startsWith("meal_") }
+            .sortedBy { it.removePrefix("meal_").toIntOrNull() ?: 0 }
+        val hasWorkout = customQuest.slots.containsKey("workout")
+        val orderedKeys = mealKeys + (if (hasWorkout) listOf("workout") else emptyList())
 
-                val subtitle = if (slot.type == CustomQuestSlotType.MEAL) {
-                    val foodSummary = slot.items.take(3).joinToString(" + ") {
-                        "${it.foodName} ${it.amount.toInt()}${it.unit}"
-                    }
-                    val macros = slot.totalMacros
-                    if (macros != null) "$foodSummary (P${macros.protein.toInt()}g)" else foodSummary
-                } else {
-                    slot.items.joinToString(", ") { item ->
-                        val parts = mutableListOf<String>()
-                        item.sets?.let { if (it > 0) parts.add("${it}セット") }
-                        item.reps?.let { if (it > 0) parts.add("${it}回") }
-                        // RM%指定がある場合: "RM70%-80%（84-96kg）" or "RM70%-80%"
-                        val rmMin = item.rmPercentMin
-                        val rmMax = item.rmPercentMax
-                        val rmRepsVal = item.rmReps
-                        val hasRmPercent = rmMin != null || rmMax != null
-                        if (hasRmPercent) {
-                            val rmLabel = if (rmRepsVal != null && rmRepsVal > 0) "${rmRepsVal}RM" else "RM"
-                            val percentStr = when {
-                                rmMin != null && rmMax != null ->
-                                    "${rmLabel}${rmMin.toInt()}%-${rmMax.toInt()}%"
-                                rmMin != null ->
-                                    "${rmLabel}${rmMin.toInt()}%"
-                                else ->
-                                    "${rmLabel}${rmMax!!.toInt()}%"
-                            }
-                            // RM記録があれば実際の重量を計算して表示
-                            val rmRecord = rmRecordCache[item.foodName]
-                            if (rmRecord != null) {
-                                val minKg = rmMin?.let { (rmRecord.weight * it / 100f).toInt() }
-                                val maxKg = rmMax?.let { (rmRecord.weight * it / 100f).toInt() }
-                                val kgStr = when {
-                                    minKg != null && maxKg != null -> "（${minKg}-${maxKg}kg）"
-                                    minKg != null -> "（${minKg}kg）"
-                                    maxKg != null -> "（${maxKg}kg）"
-                                    else -> ""
-                                }
-                                parts.add("$percentStr$kgStr")
-                            } else {
-                                parts.add(percentStr)
-                            }
-                        } else {
-                            item.weight?.let { if (it > 0) parts.add("${it.toInt()}kg") }
-                        }
-                        item.duration?.let { if (it > 0) parts.add("${it}分") }
-                        item.distance?.let { if (it > 0) parts.add("${it}km") }
-                        if (parts.isNotEmpty()) {
-                            "${item.foodName} ${parts.joinToString("×")}"
-                        } else {
-                            "${item.foodName} ${item.amount.toInt()}${item.unit}"
-                        }
-                    }
-                }
+        // timelineSlotsからスロット番号→時刻のマップを作成
+        val slotTimeMap = timelineSlots.associate { it.slotNumber to it.timeMinutes }
+        val timeMap = mutableMapOf<String, Int>()
+        mealKeys.forEach { key ->
+            val slotNum = key.removePrefix("meal_").toIntOrNull() ?: 0
+            timeMap[key] = slotTimeMap[slotNum] ?: (7 * 60 + (slotNum - 1) * 180) // フォールバック: 7:00から3時間間隔
+        }
+        if (hasWorkout) {
+            timeMap["workout"] = trainingTimeMinutes ?: (18 * 60)
+        }
 
-                val type = if (slot.type == CustomQuestSlotType.WORKOUT) {
-                    TimelineItemType.WORKOUT
-                } else {
-                    TimelineItemType.MEAL
-                }
-
-                items.add(UnifiedTimelineItem(
-                    id = "custom_${slotKey}",
-                    type = type,
-                    timeMinutes = timeMinutes,
-                    timeString = minutesToTimeString(timeMinutes),
-                    title = slot.title,
-                    subtitle = subtitle,
-                    status = status,
-                    isTrainingRelated = slot.type == CustomQuestSlotType.WORKOUT,
-                    isCustomQuest = true
-                ))
+        orderedKeys.forEach { slotKey ->
+            val slot = customQuest.slots[slotKey] ?: return@forEach
+            val timeMinutes = timeMap[slotKey] ?: (12 * 60)
+            val isSlotExecuted = customQuest.executedItems[slotKey]?.isNotEmpty() == true
+            val status = if (isSlotExecuted) {
+                TimelineItemStatus.COMPLETED
+            } else if (timeMinutes < currentTimeMinutes) {
+                TimelineItemStatus.CURRENT
+            } else if (timeMinutes - currentTimeMinutes < 60) {
+                TimelineItemStatus.CURRENT
+            } else {
+                TimelineItemStatus.UPCOMING
             }
+
+            val subtitle = if (slot.type == CustomQuestSlotType.MEAL) {
+                val lines = slot.items.map { "・${it.foodName} ${it.amount.toInt()}${it.unit}" }
+                val macros = slot.totalMacros
+                val macroLine = if (macros != null) {
+                    "P${macros.protein.toInt()}g F${macros.fat.toInt()}g C${macros.carbs.toInt()}g"
+                } else null
+                (lines + listOfNotNull(macroLine)).joinToString("\n")
+            } else {
+                slot.items.joinToString("\n") { item ->
+                    val parts = mutableListOf<String>()
+                    item.sets?.let { if (it > 0) parts.add("${it}セット") }
+                    item.reps?.let { if (it > 0) parts.add("${it}回/セット") }
+                    // 1RM%指定がある場合: "1RM70-80%（84-96kg）" or "1RM70-80%"
+                    val rmMin = item.rmPercentMin
+                    val rmMax = item.rmPercentMax
+                    val hasRmPercent = rmMin != null || rmMax != null
+                    if (hasRmPercent) {
+                        val percentStr = when {
+                            rmMin != null && rmMax != null ->
+                                "1RM${rmMin.toInt()}-${rmMax.toInt()}%"
+                            rmMin != null ->
+                                "1RM${rmMin.toInt()}%"
+                            else ->
+                                "1RM${rmMax!!.toInt()}%"
+                        }
+                        // RM記録があれば実際の重量を計算して表示
+                        val rmRecord = rmRecordCache[item.foodName]
+                        if (rmRecord != null) {
+                            val minKg = rmMin?.let { (rmRecord.weight * it / 100f).toInt() }
+                            val maxKg = rmMax?.let { (rmRecord.weight * it / 100f).toInt() }
+                            val kgStr = when {
+                                minKg != null && maxKg != null -> "（${minKg}-${maxKg}kg）"
+                                minKg != null -> "（${minKg}kg）"
+                                maxKg != null -> "（${maxKg}kg）"
+                                else -> ""
+                            }
+                            parts.add("$percentStr$kgStr")
+                        } else {
+                            parts.add(percentStr)
+                        }
+                    } else {
+                        item.weight?.let { if (it > 0) parts.add("${it.toInt()}kg") }
+                    }
+                    item.duration?.let { if (it > 0) parts.add("${it}分") }
+                    item.distance?.let { if (it > 0) parts.add("${it}km") }
+                    if (parts.isNotEmpty()) {
+                        "・${item.foodName} ${parts.joinToString("×")}"
+                    } else {
+                        "・${item.foodName} ${item.amount.toInt()}${item.unit}"
+                    }
+                }
+            }
+
+            val type = if (slot.type == CustomQuestSlotType.WORKOUT) {
+                TimelineItemType.WORKOUT
+            } else {
+                TimelineItemType.MEAL
+            }
+
+            items.add(UnifiedTimelineItem(
+                id = "custom_${slotKey}",
+                type = type,
+                timeMinutes = timeMinutes,
+                timeString = minutesToTimeString(timeMinutes),
+                title = slot.title,
+                subtitle = subtitle,
+                status = status,
+                isTrainingRelated = slot.type == CustomQuestSlotType.WORKOUT,
+                isCustomQuest = true,
+                customQuestSlotKey = slotKey,
+                customQuestItems = slot.items
+            ))
+        }
 
         return items
     }
@@ -3413,8 +3983,17 @@ class DashboardViewModel(
         val sleepPattern = Regex("""【睡眠】(.*)""")
 
         var foundCurrentItem = false
+        // 「・」で始まる行を直前の【運動】行に連結する前処理
+        val mergedLines = mutableListOf<String>()
+        for (line in lines) {
+            if (line.trimStart().startsWith("・") && mergedLines.isNotEmpty()) {
+                mergedLines[mergedLines.lastIndex] = mergedLines.last() + "\n" + line
+            } else {
+                mergedLines.add(line)
+            }
+        }
 
-        lines.forEach { line ->
+        mergedLines.forEach { line ->
             val mealMatch = mealPattern.find(line)
             val workoutMatch = workoutPattern.find(line)
             val sleepMatch = sleepPattern.find(line)
@@ -3425,11 +4004,21 @@ class DashboardViewModel(
                     val timeStr = mealMatch.groupValues[2].takeIf { it.isNotBlank() }
                     val label = mealMatch.groupValues[3].takeIf { it.isNotBlank() }?.removeSurrounding("[", "]")
                     // contentから時刻パターンを削除（重複防止）
-                    val rawContent = mealMatch.groupValues[4].trim()
-                    val content = rawContent
+                    // マージされた「・」行も含めて全内容を取得
+                    val fullContent = line.substringAfter("】").trim()
+                    val rawContent = fullContent
                         .replace(Regex("^\\d{1,2}:\\d{2}\\s*"), "")  // 先頭の時刻を削除
                         .replace(Regex("\\[\\d{1,2}:\\d{2}\\]\\s*"), "")  // [HH:MM]形式を削除
+                        .replace(Regex("^\\[[^\\]]+\\]\\s*"), "")  // [ラベル]を削除
                         .trim()
+                    // カンマ区切り→箇条書き変換（既に・形式の場合はそのまま）
+                    val content = if (rawContent.contains("・")) {
+                        rawContent
+                    } else if (rawContent.contains(", ")) {
+                        rawContent.split(", ").joinToString("\n") { "・$it" }
+                    } else {
+                        rawContent
+                    }
 
                     val defaultTime = 6 * 60 + slotNumber * 180
                     val timeMinutes = timeStr?.let { parseTimeToMinutes(it) ?: defaultTime } ?: defaultTime
@@ -3463,7 +4052,8 @@ class DashboardViewModel(
                 }
 
                 workoutMatch != null -> {
-                    val content = workoutMatch.groupValues[1].trim()
+                    // マージされた「・」行も含めて全内容を取得
+                    val content = line.substringAfter("【運動】").trim()
                     val trainingTime = _uiState.value.user?.profile?.trainingTime
                     val defaultWorkoutTime = 18 * 60
                     val timeMinutes = trainingTime?.let { parseTimeToMinutes(it) ?: defaultWorkoutTime } ?: defaultWorkoutTime

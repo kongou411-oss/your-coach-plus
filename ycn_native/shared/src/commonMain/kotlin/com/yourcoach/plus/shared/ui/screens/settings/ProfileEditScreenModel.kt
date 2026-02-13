@@ -25,11 +25,23 @@ data class ProfileEditUiState(
     val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
     val mealsPerDay: Int = 5,
-    val proteinRatio: Int = 30,
-    val fatRatio: Int = 25,
-    val carbRatio: Int = 45,
+    val proteinRatio: Int = 35,
+    val fatRatio: Int = 15,
+    val carbRatio: Int = 50,
     val calorieAdjustment: Int = 0,
     val budgetTier: Int = 2,
+    // 理想体型
+    val idealWeight: String = "",
+    val idealBodyFatPercentage: String = "",
+    // 食材好み
+    val preferredProteinSources: List<String> = emptyList(),
+    val preferredCarbSources: List<String> = emptyList(),
+    val preferredFatSources: List<String> = emptyList(),
+    val avoidFoods: List<String> = emptyList(),
+    val allergies: List<String> = emptyList(),
+    // 学習データ
+    val favoriteFoods: String = "",
+    val ngFoods: String = "",
     val saveSuccess: Boolean = false,
     val error: String? = null
 )
@@ -70,11 +82,20 @@ class ProfileEditScreenModel(
                             activityLevel = p?.activityLevel ?: ActivityLevel.DESK_WORK,
                             goal = p?.goal ?: FitnessGoal.MAINTAIN,
                             mealsPerDay = p?.mealsPerDay ?: 5,
-                            proteinRatio = p?.proteinRatioPercent ?: 30,
-                            fatRatio = p?.fatRatioPercent ?: 25,
-                            carbRatio = p?.carbRatioPercent ?: 45,
+                            proteinRatio = p?.proteinRatioPercent ?: 35,
+                            fatRatio = p?.fatRatioPercent ?: 15,
+                            carbRatio = p?.carbRatioPercent ?: 50,
                             calorieAdjustment = p?.calorieAdjustment ?: 0,
-                            budgetTier = p?.budgetTier ?: 2
+                            budgetTier = p?.budgetTier ?: 2,
+                            idealWeight = p?.idealWeight?.toString() ?: "",
+                            idealBodyFatPercentage = p?.idealBodyFatPercentage?.toString() ?: "",
+                            preferredProteinSources = p?.preferredProteinSources ?: emptyList(),
+                            preferredCarbSources = p?.preferredCarbSources ?: emptyList(),
+                            preferredFatSources = p?.preferredFatSources ?: emptyList(),
+                            avoidFoods = p?.avoidFoods ?: emptyList(),
+                            allergies = p?.allergies ?: emptyList(),
+                            favoriteFoods = p?.favoriteFoods ?: "",
+                            ngFoods = p?.ngFoods ?: ""
                         )
                     }
                 }
@@ -109,6 +130,21 @@ class ProfileEditScreenModel(
     fun updateMealsPerDay(value: Int) { _uiState.update { it.copy(mealsPerDay = value) } }
     fun updateCalorieAdjustment(value: Int) { _uiState.update { it.copy(calorieAdjustment = value) } }
     fun updateBudgetTier(value: Int) { _uiState.update { it.copy(budgetTier = value) } }
+    fun updateIdealWeight(value: String) { _uiState.update { it.copy(idealWeight = value) } }
+    fun updateIdealBodyFatPercentage(value: String) { _uiState.update { it.copy(idealBodyFatPercentage = value) } }
+    fun updateFavoriteFoods(value: String) { _uiState.update { it.copy(favoriteFoods = value) } }
+    fun updateNgFoods(value: String) { _uiState.update { it.copy(ngFoods = value) } }
+
+    fun addPreferredProteinSource(item: String) { if (item.isNotBlank()) _uiState.update { it.copy(preferredProteinSources = it.preferredProteinSources + item.trim()) } }
+    fun removePreferredProteinSource(item: String) { _uiState.update { it.copy(preferredProteinSources = it.preferredProteinSources - item) } }
+    fun addPreferredCarbSource(item: String) { if (item.isNotBlank()) _uiState.update { it.copy(preferredCarbSources = it.preferredCarbSources + item.trim()) } }
+    fun removePreferredCarbSource(item: String) { _uiState.update { it.copy(preferredCarbSources = it.preferredCarbSources - item) } }
+    fun addPreferredFatSource(item: String) { if (item.isNotBlank()) _uiState.update { it.copy(preferredFatSources = it.preferredFatSources + item.trim()) } }
+    fun removePreferredFatSource(item: String) { _uiState.update { it.copy(preferredFatSources = it.preferredFatSources - item) } }
+    fun addAvoidFood(item: String) { if (item.isNotBlank()) _uiState.update { it.copy(avoidFoods = it.avoidFoods + item.trim()) } }
+    fun removeAvoidFood(item: String) { _uiState.update { it.copy(avoidFoods = it.avoidFoods - item) } }
+    fun addAllergy(item: String) { if (item.isNotBlank()) _uiState.update { it.copy(allergies = it.allergies + item.trim()) } }
+    fun removeAllergy(item: String) { _uiState.update { it.copy(allergies = it.allergies - item) } }
 
     fun updateProteinRatio(newP: Int) {
         val s = _uiState.value
@@ -190,6 +226,8 @@ class ProfileEditScreenModel(
                 targetWeight = s.targetWeight.toFloatOrNull(),
                 activityLevel = s.activityLevel,
                 goal = s.goal,
+                idealWeight = s.idealWeight.toFloatOrNull(),
+                idealBodyFatPercentage = s.idealBodyFatPercentage.toFloatOrNull(),
                 targetCalories = targetCal,
                 targetProtein = calcTargetProtein,
                 targetFat = calcTargetFat,
@@ -199,6 +237,13 @@ class ProfileEditScreenModel(
                 carbRatioPercent = s.carbRatio,
                 mealsPerDay = s.mealsPerDay,
                 calorieAdjustment = s.calorieAdjustment,
+                preferredProteinSources = s.preferredProteinSources,
+                preferredCarbSources = s.preferredCarbSources,
+                preferredFatSources = s.preferredFatSources,
+                avoidFoods = s.avoidFoods,
+                allergies = s.allergies,
+                favoriteFoods = s.favoriteFoods.takeIf { it.isNotBlank() },
+                ngFoods = s.ngFoods.takeIf { it.isNotBlank() },
                 budgetTier = s.budgetTier,
                 onboardingCompleted = true
             )

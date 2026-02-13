@@ -162,6 +162,7 @@ private fun MealCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable { expanded = !expanded }
                 .padding(12.dp)
         ) {
             // 入力元タグ（予測、ルーティン、テンプレート）
@@ -216,8 +217,7 @@ private fun MealCard(
             // 食事名とカロリー
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {

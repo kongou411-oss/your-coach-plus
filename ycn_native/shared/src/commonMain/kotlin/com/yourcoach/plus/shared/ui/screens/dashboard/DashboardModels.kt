@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.dashboard
 
+import com.yourcoach.plus.shared.domain.model.CustomQuestItem
 import com.yourcoach.plus.shared.domain.model.DirectiveActionItem
 import com.yourcoach.plus.shared.domain.model.Meal
 import com.yourcoach.plus.shared.domain.model.Workout
@@ -21,10 +22,13 @@ data class UnifiedTimelineItem(
     val linkedMeal: Meal? = null,      // 実際の食事記録（記録済みの場合）
     val linkedWorkout: Workout? = null, // 実際の運動記録（記録済みの場合）
     val slotInfo: TimelineSlotInfo? = null, // 元のスロット情報
-    val directiveItemIndex: Int? = null // 指示書アイテムのインデックス（完了トグル用）
+    val directiveItemIndex: Int? = null, // 指示書アイテムのインデックス（完了トグル用）
+    val isCustomQuest: Boolean = false,     // カスタムクエスト（ゴールド枠表示用）
+    val customQuestSlotKey: String? = null, // カスタムクエストのスロットキー
+    val customQuestItems: List<CustomQuestItem>? = null // カスタムクエストのアイテム
 ) {
     val isRecorded: Boolean get() = linkedMeal != null || linkedWorkout != null
-    val isQuest: Boolean get() = slotInfo != null && !isRecorded
+    val isQuest: Boolean get() = (slotInfo != null || isCustomQuest) && !isRecorded
 }
 
 enum class TimelineItemType { MEAL, WORKOUT, CONDITION }

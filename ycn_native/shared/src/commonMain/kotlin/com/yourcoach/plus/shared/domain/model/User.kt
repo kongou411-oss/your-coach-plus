@@ -51,9 +51,9 @@ data class UserProfile(
     val targetFat: Float? = null,
     val targetCarbs: Float? = null,
     // PFCバランス（%）
-    val proteinRatioPercent: Int = 30,
-    val fatRatioPercent: Int = 25,
-    val carbRatioPercent: Int = 45,
+    val proteinRatioPercent: Int = 35,
+    val fatRatioPercent: Int = 15,
+    val carbRatioPercent: Int = 50,
     // 想定食事回数（GL計算に使用）
     val mealsPerDay: Int = 5,
     // タイムライン設定（ルーティンのアンカー）
@@ -221,51 +221,58 @@ enum class ActivityLevel(val multiplier: Float, val displayName: String) {
 
 /**
  * 部位別トレーニング消費カロリー加算値
+ * LBM 60kg基準の基礎値 + 100kcal をLBMでスケーリング
+ * 計算式: (基礎値 + 100) × (userLBM / 60)
  */
 object TrainingCalorieBonus {
-    // 単一部位
-    const val LEGS = 500           // 脚（大腿四頭筋・ハム・臀筋）
-    const val BACK = 450           // 背中（広背筋・脊柱起立筋）
-    const val CHEST = 400          // 胸（大胸筋）
-    const val SHOULDERS = 350      // 肩（三角筋）
-    const val ARMS = 300           // 腕（二頭・三頭）
-    const val ABS = 250            // 腹筋・体幹
+    // 単一部位（LBM 60kg基準）
+    private const val BASE_LEGS = 500           // 脚（大腿四頭筋・ハム・臀筋）
+    private const val BASE_BACK = 450           // 背中（広背筋・脊柱起立筋）
+    private const val BASE_CHEST = 400          // 胸（大胸筋）
+    private const val BASE_SHOULDERS = 350      // 肩（三角筋）
+    private const val BASE_ARMS = 300           // 腕（二頭・三頭）
+    private const val BASE_ABS = 250            // 腹筋・体幹
 
-    // 複合部位
-    const val FULL_BODY = 500      // 全身
-    const val LOWER_BODY = 500     // 下半身
-    const val UPPER_BODY = 400     // 上半身
-    const val PUSH = 400           // プッシュ（胸+肩+三頭）
-    const val PULL = 450           // プル（背中+二頭）
-    const val CHEST_TRICEPS = 400  // 胸・三頭
-    const val BACK_BICEPS = 450    // 背中・二頭
-    const val SHOULDERS_ARMS = 350 // 肩・腕
+    // 複合部位（LBM 60kg基準）
+    private const val BASE_FULL_BODY = 500      // 全身
+    private const val BASE_LOWER_BODY = 500     // 下半身
+    private const val BASE_UPPER_BODY = 400     // 上半身
+    private const val BASE_PUSH = 400           // プッシュ（胸+肩+三頭）
+    private const val BASE_PULL = 450           // プル（背中+二頭）
+    private const val BASE_CHEST_TRICEPS = 400  // 胸・三頭
+    private const val BASE_BACK_BICEPS = 450    // 背中・二頭
+    private const val BASE_SHOULDERS_ARMS = 350 // 肩・腕
 
-    // 休養日
-    const val REST = 0
+    private const val OFFSET = 100              // ベースオフセット
+    private const val REFERENCE_LBM = 60f       // 基準LBM
+
+    private fun scale(base: Int, lbm: Float): Int {
+        return ((base + OFFSET) * (lbm / REFERENCE_LBM)).toInt()
+    }
 
     /**
-     * splitTypeから加算値を取得
+     * splitTypeとLBMから加算値を取得
      */
-    fun fromSplitType(splitType: String?, isRestDay: Boolean): Int {
-        if (isRestDay) return REST
-        return when (splitType) {
-            "脚" -> LEGS
-            "背中" -> BACK
-            "胸" -> CHEST
-            "肩" -> SHOULDERS
-            "腕" -> ARMS
-            "腹筋・体幹" -> ABS
-            "全身" -> FULL_BODY
-            "下半身" -> LOWER_BODY
-            "上半身" -> UPPER_BODY
-            "プッシュ" -> PUSH
-            "プル" -> PULL
-            "胸・三頭" -> CHEST_TRICEPS
-            "背中・二頭" -> BACK_BICEPS
-            "肩・腕" -> SHOULDERS_ARMS
-            else -> UPPER_BODY  // 不明な場合はデフォルト
+    fun fromSplitType(splitType: String?, isRestDay: Boolean, lbm: Float = REFERENCE_LBM): Int {
+        if (isRestDay) return 0
+        val base = when (splitType) {
+            "脚" -> BASE_LEGS
+            "背中" -> BASE_BACK
+            "胸" -> BASE_CHEST
+            "肩" -> BASE_SHOULDERS
+            "腕" -> BASE_ARMS
+            "腹筋・体幹" -> BASE_ABS
+            "全身" -> BASE_FULL_BODY
+            "下半身" -> BASE_LOWER_BODY
+            "上半身" -> BASE_UPPER_BODY
+            "プッシュ" -> BASE_PUSH
+            "プル" -> BASE_PULL
+            "胸・三頭" -> BASE_CHEST_TRICEPS
+            "背中・二頭" -> BASE_BACK_BICEPS
+            "肩・腕" -> BASE_SHOULDERS_ARMS
+            else -> BASE_UPPER_BODY
         }
+        return scale(base, lbm)
     }
 }
 

@@ -62,7 +62,7 @@ private fun formatTwoDigits(value: Int): String {
 /**
  * プロフィール設定画面 (Compose Multiplatform)
  * Android版OnboardingScreenと同等の機能
- * 4ステップ: イントロ → プロフィール → ルーティン → 食事スロット
+ * 5ステップ: イントロ → プロフィール → ルーティン → RM教育 → 食事スロット
  */
 data class ProfileSetupScreen(val userId: String) : Screen {
 
@@ -112,7 +112,8 @@ data class ProfileSetupScreen(val userId: String) : Screen {
                             text = when (state.currentStep) {
                                 1 -> "プロフィール設定"
                                 2 -> "ルーティン設定"
-                                3 -> "クエスト連動設定"
+                                3 -> "RM記録"
+                                4 -> "クエスト連動設定"
                                 else -> ""
                             },
                             style = MaterialTheme.typography.titleMedium,
@@ -191,7 +192,8 @@ data class ProfileSetupScreen(val userId: String) : Screen {
                         0 -> IntroStep()
                         1 -> ProfileStep(state, screenModel)
                         2 -> RoutineStep(state, screenModel)
-                        3 -> MealSlotStep(state, screenModel, snackbarHostState)
+                        3 -> RmEducationStep(state, screenModel)
+                        4 -> MealSlotStep(state, screenModel, snackbarHostState)
                     }
                 }
 
@@ -993,7 +995,140 @@ private fun RoutineStep(state: ProfileSetupState, screenModel: ProfileSetupScree
     }
 }
 
-// ========== ステップ3: クエスト連動設定 ==========
+// ========== ステップ3: RM教育 ==========
+@Composable
+private fun RmEducationStep(
+    state: ProfileSetupState,
+    screenModel: ProfileSetupScreenModel
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        // 説明カード
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.FitnessCenter,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "RMとは？",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text(
+                        "RMとは、ある回数で持ち上げられる最大の重量です。\n\n" +
+                        "例えばベンチプレスで3回がギリギリ120kgなら、それがあなたの3RMです。\n\n" +
+                        "記録しておくと、トレーナーが「3RM70%」のように強度を指定でき、" +
+                        "あなたに最適なトレーニング重量が自動計算されます。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
+
+        // RM入力セクション
+        item {
+            Text(
+                "主要種目のRM記録（任意）",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            Text(
+                "わからない場合はスキップできます",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
+        }
+
+        // 各種目の入力
+        itemsIndexed(state.rmEntries) { index, entry ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        entry.exerciseName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = entry.reps,
+                            onValueChange = { screenModel.updateRmEntryReps(index, it) },
+                            label = { Text("回数") },
+                            placeholder = { Text("例: 3") },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Next
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = entry.weight,
+                            onValueChange = { screenModel.updateRmEntryWeight(index, it) },
+                            label = { Text("重量(kg)") },
+                            placeholder = { Text("例: 120") },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Decimal,
+                                imeAction = ImeAction.Done
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // 入力済みの場合、RMラベル表示
+                    val reps = entry.reps.toIntOrNull()
+                    val weight = entry.weight.toFloatOrNull()
+                    if (reps != null && reps > 0 && weight != null && weight > 0f) {
+                        Text(
+                            "${reps}RM = ${weight.toInt()}kg",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(80.dp)) }
+    }
+}
+
+// ========== ステップ4: クエスト連動設定 ==========
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MealSlotStep(

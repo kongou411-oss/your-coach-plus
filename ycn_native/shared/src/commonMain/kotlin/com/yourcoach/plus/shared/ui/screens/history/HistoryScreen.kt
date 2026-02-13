@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -136,13 +137,22 @@ class HistoryScreen : Screen {
                         HistoryTab.GRAPH -> GraphView(
                             selectedType = uiState.graphType,
                             onTypeSelected = screenModel::selectGraphType,
+                            selectedPeriod = uiState.graphPeriod,
+                            onPeriodSelected = screenModel::selectGraphPeriod,
                             fitnessGoal = uiState.fitnessGoal,
                             lbmData = uiState.lbmData,
                             weightData = uiState.weightData,
                             caloriesData = uiState.caloriesData,
                             nutritionData = uiState.nutritionData,
                             exerciseData = uiState.exerciseData,
-                            conditionData = uiState.conditionData
+                            conditionData = uiState.conditionData,
+                            rmData = uiState.rmData,
+                            rmExerciseNames = uiState.rmExerciseNames,
+                            selectedRmExercise = uiState.selectedRmExercise,
+                            onRmExerciseSelected = screenModel::selectRmExercise,
+                            targetWeight = uiState.targetWeight,
+                            targetCalories = uiState.targetCalories,
+                            targetLbm = uiState.targetLbm
                         )
                     }
                 }
@@ -1015,17 +1025,27 @@ private enum class Trend { UP, DOWN, FLAT }
 /**
  * Graph view
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GraphView(
     selectedType: GraphType,
     onTypeSelected: (GraphType) -> Unit,
+    selectedPeriod: GraphPeriod,
+    onPeriodSelected: (GraphPeriod) -> Unit,
     fitnessGoal: FitnessGoal,
     lbmData: List<GraphDataPoint>,
     weightData: List<GraphDataPoint>,
     caloriesData: List<GraphDataPoint>,
     nutritionData: NutritionGraphData,
     exerciseData: List<GraphDataPoint>,
-    conditionData: List<GraphDataPoint>
+    conditionData: List<GraphDataPoint>,
+    rmData: List<GraphDataPoint> = emptyList(),
+    rmExerciseNames: List<String> = emptyList(),
+    selectedRmExercise: String? = null,
+    onRmExerciseSelected: (String) -> Unit = {},
+    targetWeight: Float? = null,
+    targetCalories: Int? = null,
+    targetLbm: Float? = null
 ) {
     // Calculate trend for current selection
     val trend = when (selectedType) {
@@ -1040,6 +1060,7 @@ private fun GraphView(
         }
         GraphType.EXERCISE -> calculateTrend(exerciseData)
         GraphType.CONDITION -> calculateTrend(conditionData)
+        GraphType.RM -> calculateTrend(rmData)
     }
 
     Column(
@@ -1067,6 +1088,7 @@ private fun GraphView(
                                 GraphType.NUTRITION -> "栄養素"
                                 GraphType.EXERCISE -> "運動"
                                 GraphType.CONDITION -> "体調"
+                                GraphType.RM -> "RM"
                             },
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -1079,7 +1101,7 @@ private fun GraphView(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Graph area
         Card(
@@ -1105,18 +1127,84 @@ private fun GraphView(
                 ) {
                     Text(
                         text = when (selectedType) {
-                            GraphType.LBM -> "LBM推移（過去7日間）"
-                            GraphType.WEIGHT -> "体重推移（過去7日間）"
-                            GraphType.CALORIES -> "摂取カロリー（過去7日間）"
-                            GraphType.NUTRITION -> "栄養素バランス（過去7日間）"
-                            GraphType.EXERCISE -> "消費カロリー（過去7日間）"
-                            GraphType.CONDITION -> "体調スコア（過去7日間）"
+                            GraphType.LBM -> "LBM推移（${selectedPeriod.titleSuffix}）"
+                            GraphType.WEIGHT -> "体重推移（${selectedPeriod.titleSuffix}）"
+                            GraphType.CALORIES -> "摂取カロリー（${selectedPeriod.titleSuffix}）"
+                            GraphType.NUTRITION -> "栄養素バランス（${selectedPeriod.titleSuffix}）"
+                            GraphType.EXERCISE -> "消費カロリー（${selectedPeriod.titleSuffix}）"
+                            GraphType.CONDITION -> "体調スコア（${selectedPeriod.titleSuffix}）"
+                            GraphType.RM -> "RM記録推移（${selectedPeriod.titleSuffix}）"
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
                     TrendBadge(trend = trend, graphType = selectedType, fitnessGoal = fitnessGoal)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Period selection chips
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    GraphPeriod.entries.forEach { period ->
+                        FilterChip(
+                            selected = selectedPeriod == period,
+                            onClick = { onPeriodSelected(period) },
+                            label = {
+                                Text(
+                                    text = period.label,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = AccentOrange.copy(alpha = 0.2f),
+                                selectedLabelColor = AccentOrange
+                            )
+                        )
+                    }
+                }
+
+                // RM exercise dropdown
+                if (selectedType == GraphType.RM) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (rmExerciseNames.isNotEmpty()) {
+                        var expanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedRmExercise ?: "",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("種目") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor(),
+                                singleLine = true
+                            )
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                rmExerciseNames.forEach { name ->
+                                    DropdownMenuItem(
+                                        text = { Text(name) },
+                                        onClick = {
+                                            onRmExerciseSelected(name)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1128,6 +1216,9 @@ private fun GraphView(
                         unit = "kg",
                         chartColor = ScoreProtein,
                         isLineChart = true,
+                        goalValue = targetLbm,
+                        showMovingAverage = true,
+                        showPrediction = true,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -1137,6 +1228,9 @@ private fun GraphView(
                         unit = "kg",
                         chartColor = ScoreWater,
                         isLineChart = true,
+                        goalValue = targetWeight,
+                        showMovingAverage = true,
+                        showPrediction = true,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -1146,6 +1240,7 @@ private fun GraphView(
                         unit = "kcal",
                         chartColor = ScoreCalories,
                         isLineChart = false,
+                        goalValue = targetCalories?.toFloat(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -1170,17 +1265,55 @@ private fun GraphView(
                         unit = "pt",
                         chartColor = Primary,
                         isLineChart = true,
+                        showMovingAverage = true,
+                        showPrediction = true,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
                     )
+                    GraphType.RM -> {
+                        if (rmExerciseNames.isEmpty()) {
+                            EmptyChartMessage(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                        } else {
+                            ChartWithAxes(
+                                data = rmData,
+                                unit = "kg",
+                                chartColor = AccentOrange,
+                                isLineChart = true,
+                                showMovingAverage = true,
+                                showPrediction = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                        }
+                    }
                 }
 
                 // Legend
+                val goalLineColor = Color(0xFF43A047)
+                val maLabel = if (selectedPeriod.needsAggregation) "移動平均（3点）" else "移動平均（3日）"
                 when (selectedType) {
-                    GraphType.LBM -> LegendItem(color = ScoreProtein, label = "LBM - 除脂肪体重 (kg)")
-                    GraphType.WEIGHT -> LegendItem(color = ScoreWater, label = "体重 (kg)")
-                    GraphType.CALORIES -> LegendItem(color = ScoreCalories, label = "摂取カロリー (kcal)")
+                    GraphType.LBM -> {
+                        LegendItem(color = ScoreProtein, label = "LBM - 除脂肪体重 (kg)")
+                        LegendItem(color = ScoreProtein.copy(alpha = 0.6f), label = maLabel)
+                        LegendItem(color = ScoreProtein.copy(alpha = 0.4f), label = "予測線")
+                        if (targetLbm != null) LegendItem(color = goalLineColor, label = "目標LBM")
+                    }
+                    GraphType.WEIGHT -> {
+                        LegendItem(color = ScoreWater, label = "体重 (kg)")
+                        LegendItem(color = ScoreWater.copy(alpha = 0.6f), label = maLabel)
+                        LegendItem(color = ScoreWater.copy(alpha = 0.4f), label = "予測線")
+                        if (targetWeight != null) LegendItem(color = goalLineColor, label = "目標体重")
+                    }
+                    GraphType.CALORIES -> {
+                        LegendItem(color = ScoreCalories, label = "摂取カロリー (kcal)")
+                        if (targetCalories != null) LegendItem(color = goalLineColor, label = "目標カロリー")
+                    }
                     GraphType.NUTRITION -> {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1192,7 +1325,16 @@ private fun GraphView(
                         }
                     }
                     GraphType.EXERCISE -> LegendItem(color = ScoreExercise, label = "消費カロリー (kcal)")
-                    GraphType.CONDITION -> LegendItem(color = Primary, label = "体調スコア (0-100)")
+                    GraphType.CONDITION -> {
+                        LegendItem(color = Primary, label = "体調スコア (0-100)")
+                        LegendItem(color = Primary.copy(alpha = 0.6f), label = maLabel)
+                        LegendItem(color = Primary.copy(alpha = 0.4f), label = "予測線")
+                    }
+                    GraphType.RM -> {
+                        LegendItem(color = AccentOrange, label = "RM記録 (kg)")
+                        LegendItem(color = AccentOrange.copy(alpha = 0.6f), label = maLabel)
+                        LegendItem(color = AccentOrange.copy(alpha = 0.4f), label = "予測線")
+                    }
                 }
             }
         }
@@ -1219,6 +1361,7 @@ private fun TrendBadge(trend: Trend, graphType: GraphType, fitnessGoal: FitnessG
                     FitnessGoal.GAIN_MUSCLE -> Pair("上昇↑", goodColor)
                     FitnessGoal.MAINTAIN -> Pair("上昇↑", neutralColor)
                 }
+                GraphType.RM -> Pair("向上↑", goodColor)
                 else -> Pair("上昇↑", goodColor)
             }
         }
@@ -1286,6 +1429,9 @@ private fun ChartWithAxes(
     unit: String,
     chartColor: Color,
     isLineChart: Boolean,
+    goalValue: Float? = null,
+    showMovingAverage: Boolean = false,
+    showPrediction: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     if (data.isEmpty()) {
@@ -1294,8 +1440,9 @@ private fun ChartWithAxes(
     }
 
     val values = data.map { it.value }
-    val minValue = values.minOrNull() ?: 0f
-    val maxValue = values.maxOrNull() ?: 100f
+    val allValues = if (goalValue != null) values + goalValue else values
+    val minValue = allValues.minOrNull() ?: 0f
+    val maxValue = allValues.maxOrNull() ?: 100f
     val range = (maxValue - minValue).coerceAtLeast(1f)
 
     // Expand Y axis range slightly
@@ -1360,6 +1507,19 @@ private fun ChartWithAxes(
                 }
 
                 if (isLineChart) {
+                    // Adaptive dot/line sizes based on data density
+                    val dotRadius = when {
+                        data.size <= 7 -> 6f
+                        data.size <= 13 -> 5f
+                        data.size <= 26 -> 4f
+                        else -> 3f
+                    }
+                    val lineWidth = when {
+                        data.size <= 13 -> 4f
+                        data.size <= 26 -> 3f
+                        else -> 2f
+                    }
+
                     // Line chart (with padding on both ends)
                     val padding = width / (data.size + 1)
                     val stepX = (width - padding * 2) / (data.size - 1).coerceAtLeast(1)
@@ -1369,11 +1529,67 @@ private fun ChartWithAxes(
                         val y = height - ((point.value - yMin) / yRange * height)
                         if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
                     }
-                    drawPath(path, chartColor, style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                    drawPath(path, chartColor, style = Stroke(width = lineWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
                     data.forEachIndexed { index, point ->
                         val x = padding + index * stepX
                         val y = height - ((point.value - yMin) / yRange * height)
-                        drawCircle(chartColor, radius = 6f, center = Offset(x, y))
+                        drawCircle(chartColor, radius = dotRadius, center = Offset(x, y))
+                    }
+
+                    // Moving average (3-point SMA)
+                    if (showMovingAverage && data.size >= 2) {
+                        val maValues = data.mapIndexed { i, _ ->
+                            when {
+                                i >= 2 -> (data[i - 2].value + data[i - 1].value + data[i].value) / 3f
+                                i == 1 -> (data[0].value + data[1].value) / 2f
+                                else -> data[0].value
+                            }
+                        }
+                        val maPath = Path()
+                        maValues.forEachIndexed { index, value ->
+                            val x = padding + index * stepX
+                            val y = height - ((value - yMin) / yRange * height)
+                            if (index == 0) maPath.moveTo(x, y) else maPath.lineTo(x, y)
+                        }
+                        drawPath(
+                            maPath,
+                            chartColor.copy(alpha = 0.6f),
+                            style = Stroke(
+                                width = 3f,
+                                cap = StrokeCap.Round,
+                                join = StrokeJoin.Round,
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 5f), 0f)
+                            )
+                        )
+                    }
+
+                    // Prediction line (linear regression)
+                    if (showPrediction && data.size >= 2) {
+                        val n = data.size.toFloat()
+                        val xMean = (n - 1f) / 2f
+                        val yMean = data.map { it.value }.average().toFloat()
+                        var numerator = 0f
+                        var denominator = 0f
+                        data.forEachIndexed { i, point ->
+                            numerator += (i - xMean) * (point.value - yMean)
+                            denominator += (i - xMean) * (i - xMean)
+                        }
+                        val slope = if (denominator != 0f) numerator / denominator else 0f
+                        val intercept = yMean - slope * xMean
+                        val lastIdx = data.size - 1
+                        val lastPredValue = slope * lastIdx + intercept
+                        val futureValue = slope * (lastIdx + 2) + intercept
+                        val lastPredX = padding + lastIdx * stepX
+                        val lastPredY = height - ((lastPredValue - yMin) / yRange * height)
+                        val futureX = (padding + (lastIdx + 2) * stepX).coerceAtMost(width)
+                        val futureY = (height - ((futureValue - yMin) / yRange * height)).coerceIn(0f, height)
+                        drawLine(
+                            color = chartColor.copy(alpha = 0.4f),
+                            start = Offset(lastPredX, lastPredY),
+                            end = Offset(futureX, futureY),
+                            strokeWidth = 2f,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+                        )
                     }
                 } else {
                     // Bar chart (evenly distributed)
@@ -1388,26 +1604,57 @@ private fun ChartWithAxes(
                         drawRoundRect(chartColor, Offset(x, y), Size(barWidth, barHeight), CornerRadius(6f))
                     }
                 }
+
+                // Goal line
+                if (goalValue != null) {
+                    val goalY = height - ((goalValue - yMin) / yRange * height)
+                    drawLine(
+                        color = Color(0xFF43A047).copy(alpha = 0.8f),
+                        start = Offset(0f, goalY),
+                        end = Offset(width, goalY),
+                        strokeWidth = 2f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 8f), 0f)
+                    )
+                }
             }
         }
 
-        // X axis labels (dates) - positioned under each bar/point
+        // X axis labels (dates) - with thinning for many data points
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 50.dp, top = 8.dp)
         ) {
-            data.forEach { point ->
+            val showIndices = when {
+                data.size <= 15 -> data.indices.toSet()
+                data.size <= 31 -> {
+                    val step = 5
+                    val indices = mutableSetOf<Int>()
+                    for (i in data.indices step step) indices.add(i)
+                    indices.add(data.size - 1)
+                    indices
+                }
+                else -> {
+                    val step = (data.size / 6).coerceAtLeast(1)
+                    val indices = mutableSetOf<Int>()
+                    for (i in data.indices step step) indices.add(i)
+                    indices.add(data.size - 1)
+                    indices
+                }
+            }
+            data.forEachIndexed { index, point ->
                 Box(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "${point.date.dayOfMonth}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    if (index in showIndices) {
+                        Text(
+                            text = point.label.ifEmpty { "${point.date.dayOfMonth}" },
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }
@@ -1502,23 +1749,42 @@ private fun NutritionChartWithAxes(
             }
         }
 
-        // X axis labels (dates)
+        // X axis labels (dates) - with thinning
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 50.dp, top = 8.dp)
         ) {
-            data.dates.forEach { date ->
+            val showIndices = when {
+                data.dates.size <= 15 -> data.dates.indices.toSet()
+                data.dates.size <= 31 -> {
+                    val step = 5
+                    val indices = mutableSetOf<Int>()
+                    for (i in data.dates.indices step step) indices.add(i)
+                    indices.add(data.dates.size - 1)
+                    indices
+                }
+                else -> {
+                    val step = (data.dates.size / 6).coerceAtLeast(1)
+                    val indices = mutableSetOf<Int>()
+                    for (i in data.dates.indices step step) indices.add(i)
+                    indices.add(data.dates.size - 1)
+                    indices
+                }
+            }
+            data.dates.forEachIndexed { index, date ->
                 Box(
                     modifier = Modifier.weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "${date.dayOfMonth}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    if (index in showIndices) {
+                        Text(
+                            text = "${date.dayOfMonth}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }

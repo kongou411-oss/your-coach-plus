@@ -1302,8 +1302,12 @@ class DashboardScreenModel(
         val category = MetCalorieCalculator.inferExerciseCategory(exerciseName, splitType)
         val bodyWeight = _uiState.value.user?.profile?.weight ?: 70f
         val duration = MetCalorieCalculator.estimateStrengthDuration(category, sets, reps)
-        val calories = MetCalorieCalculator.calculateCalories(category, bodyWeight, duration, WorkoutIntensity.MODERATE)
         val workoutType = MetCalorieCalculator.inferWorkoutType(category)
+
+        // クエスト完了時はTrainingCalorieBonusベース（予測加算と一致させる）
+        val profile = _uiState.value.user?.profile
+        val lbm = bodyWeight * (1 - (profile?.bodyFatPercentage ?: 20f) / 100f)
+        val calories = TrainingCalorieBonus.fromSplitType(splitType, false, lbm)
 
         val exercise = Exercise(
             name = exerciseName,
@@ -1354,8 +1358,12 @@ class DashboardScreenModel(
         val category = MetCalorieCalculator.inferExerciseCategory(exerciseName, splitType)
         val bodyWeight = _uiState.value.user?.profile?.weight ?: 70f
         val duration = MetCalorieCalculator.estimateStrengthDuration(category, sets, reps)
-        val calories = MetCalorieCalculator.calculateCalories(category, bodyWeight, duration, WorkoutIntensity.MODERATE)
         val workoutType = MetCalorieCalculator.inferWorkoutType(category)
+
+        // クエスト完了時はTrainingCalorieBonusベース（予測加算と一致させる）
+        val profile = _uiState.value.user?.profile
+        val lbm = bodyWeight * (1 - (profile?.bodyFatPercentage ?: 20f) / 100f)
+        val calories = TrainingCalorieBonus.fromSplitType(splitType, false, lbm)
 
         val exercise = Exercise(
             name = exerciseName,
@@ -1988,11 +1996,12 @@ class DashboardScreenModel(
             goalAdjustment
         }
 
-        // トレ日加算
+        // トレ日加算（LBMスケーリング）
         val isRestDay = isManualRestDay || (todayRoutine?.isRestDay == true)
         val trainingBonus = TrainingCalorieBonus.fromSplitType(
             todayRoutine?.splitType,
-            isRestDay
+            isRestDay,
+            lbm.toFloat()
         )
 
         val adjustedCalories = tdee + calorieAdjustment + trainingBonus

@@ -864,7 +864,8 @@
                             .cq-cat-btn:hover { background: #fef9c3; border-color: #facc15; }
                             .cq-cat-active { background: #fef08a !important; border-color: #eab308 !important; font-weight: 600; }
                         </style>
-                        <div class="flex gap-2 items-end">
+                        <!-- 食事用入力 -->
+                        <div id="cq-meal-inputs" class="flex gap-2 items-end">
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-500 mb-1" id="cq-tpl-item-label">食品名</label>
                                 <div class="relative">
@@ -894,6 +895,79 @@
                             </div>
                             <button onclick="addTemplateItem()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 whitespace-nowrap">＋追加</button>
                         </div>
+                        <!-- 運動用入力 -->
+                        <div id="cq-workout-inputs" class="hidden">
+                            <div class="flex gap-2 items-end">
+                                <div class="flex-1">
+                                    <label class="block text-xs text-gray-500 mb-1" id="cq-tpl-exercise-label">種目名</label>
+                                    <div class="relative">
+                                        <input type="text" id="cq-tpl-exercise-search" placeholder="種目名で検索..."
+                                            class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                            oninput="filterFoodList()" onfocus="showFoodDropdown()" autocomplete="off">
+                                        <div id="cq-exercise-dropdown" class="absolute z-50 w-full bg-white border-2 border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto hidden shadow-lg"></div>
+                                    </div>
+                                </div>
+                                <button onclick="addTemplateItem()" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 whitespace-nowrap">＋追加</button>
+                            </div>
+                            <!-- 筋トレ用フィールド -->
+                            <div id="cq-strength-fields" class="flex flex-wrap gap-2 items-end mt-2">
+                                <div style="width: 90px;">
+                                    <label class="block text-xs text-gray-500 mb-1">セット数</label>
+                                    <input type="number" id="cq-ex-sets" placeholder="3" min="0" step="1"
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                                <div style="width: 90px;">
+                                    <label class="block text-xs text-gray-500 mb-1">回数/セット</label>
+                                    <input type="number" id="cq-ex-reps" placeholder="10" min="0" step="1"
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                                <div style="width: 90px;">
+                                    <label class="block text-xs text-gray-500 mb-1">重量(kg)</label>
+                                    <input type="number" id="cq-ex-weight" placeholder="60" min="0" step="0.5"
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                                <div style="width: 90px;">
+                                    <label class="block text-xs text-gray-500 mb-1">時間(分)</label>
+                                    <input type="number" id="cq-ex-duration-strength" placeholder="15" min="0" step="1"
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                            </div>
+                            <!-- RM%指定フィールド（筋トレのみ） -->
+                            <div id="cq-rm-fields" class="flex gap-2 items-end mt-2">
+                                <div style="width: 100px;">
+                                    <label class="block text-xs text-gray-500 mb-1">1RM%下限</label>
+                                    <input type="number" id="cq-ex-rm-min" placeholder="70" min="0" max="100" step="5"
+                                        class="w-full border-2 border-orange-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                                <div style="width: 100px;">
+                                    <label class="block text-xs text-gray-500 mb-1">1RM%上限</label>
+                                    <input type="number" id="cq-ex-rm-max" placeholder="80" min="0" max="100" step="5"
+                                        class="w-full border-2 border-orange-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                                <span class="text-xs text-orange-600 pb-2">※ 重量の代わりに1RM%で強度指定</span>
+                            </div>
+                            <!-- 有酸素用フィールド -->
+                            <div id="cq-cardio-fields" class="hidden flex gap-2 items-end mt-2">
+                                <div style="width: 90px;">
+                                    <label class="block text-xs text-gray-500 mb-1">時間(分)</label>
+                                    <input type="number" id="cq-ex-duration-cardio" placeholder="30" min="0" step="1"
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                                <div style="width: 100px;">
+                                    <label class="block text-xs text-gray-500 mb-1">距離(km)</label>
+                                    <input type="number" id="cq-ex-distance" placeholder="5" min="0" step="0.1"
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                            </div>
+                            <!-- ストレッチ用フィールド -->
+                            <div id="cq-stretch-fields" class="hidden flex gap-2 items-end mt-2">
+                                <div style="width: 90px;">
+                                    <label class="block text-xs text-gray-500 mb-1">時間(分)</label>
+                                    <input type="number" id="cq-ex-duration-stretch" placeholder="10" min="0" step="1"
+                                        class="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <!-- 追加済みアイテムリスト -->
                     <div class="mt-3">
@@ -911,6 +985,37 @@
                     <h2>📋 テンプレート一覧</h2>
                 </div>
                 <div class="section-body">
+                    <div class="mb-3 flex flex-wrap items-center gap-2">
+                        <button onclick="createDefaultTemplates()" class="bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-indigo-600 font-bold">🍽 食事テンプレ一括作成</button>
+                        <button onclick="createDefaultWorkoutTemplates()" class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-blue-600 font-bold">🏋️ 運動テンプレ一括作成</button>
+                        <span id="cq-default-tpl-msg" class="text-xs"></span>
+                    </div>
+                    <!-- ソート・フィルターバー -->
+                    <div class="mb-3 flex flex-wrap items-center gap-2 bg-gray-50 rounded-lg p-2 border border-gray-200">
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-gray-500 font-bold">タイプ</span>
+                            <select id="cq-tpl-filter-type" onchange="renderTemplateList()" class="border border-gray-300 rounded px-2 py-1 text-xs">
+                                <option value="ALL">すべて</option>
+                                <option value="MEAL">🍽 食事のみ</option>
+                                <option value="WORKOUT">💪 運動のみ</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[10px] text-gray-500 font-bold">並び順</span>
+                            <select id="cq-tpl-sort" onchange="renderTemplateList()" class="border border-gray-300 rounded px-2 py-1 text-xs">
+                                <option value="newest">新しい順</option>
+                                <option value="oldest">古い順</option>
+                                <option value="name-asc">50音順 A→Z</option>
+                                <option value="name-desc">50音順 Z→A</option>
+                                <option value="cal-desc">カロリー高い順</option>
+                                <option value="cal-asc">カロリー低い順</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-1 flex-1 min-w-[120px]">
+                            <input type="text" id="cq-tpl-search" oninput="renderTemplateList()" placeholder="テンプレ名で検索..." class="border border-gray-300 rounded px-2 py-1 text-xs w-full max-w-[200px]">
+                        </div>
+                        <span id="cq-tpl-filtered-count" class="text-[10px] text-gray-400"></span>
+                    </div>
                     <div id="cq-template-list">読み込み中...</div>
                 </div>
             </div>
@@ -933,8 +1038,289 @@
                         <div>
                             <label class="block text-sm font-bold mb-1">日付</label>
                             <input type="date" id="cq-assign-date" class="w-full border-2 border-gray-300 rounded-lg px-3 py-2">
+                            <label class="flex items-center gap-2 mt-1.5 cursor-pointer">
+                                <input type="checkbox" id="cq-assign-persistent" onchange="togglePersistent()" class="w-4 h-4 accent-yellow-500">
+                                <span class="text-xs font-bold text-yellow-700">永続（毎日適用）</span>
+                            </label>
                         </div>
                     </div>
+                    <!-- ユーザー情報パネル（折りたたみ） -->
+                    <div id="cq-user-panels" class="mt-3 hidden">
+                        <div class="border-2 border-indigo-200 bg-indigo-50 rounded-lg p-4">
+                            <label class="text-sm font-bold text-indigo-800 mb-2 block">📋 クライアント情報</label>
+                            <!-- タブヘッダー -->
+                            <div class="flex border-b border-indigo-300 mb-3 flex-wrap">
+                                <button onclick="switchInfoTab('theory')" id="cq-info-tab-theory" class="cq-info-tab px-3 py-1.5 text-xs font-bold border-b-2 border-indigo-500 text-indigo-700 bg-indigo-100 rounded-t">セオリー</button>
+                                <button onclick="switchInfoTab('profile')" id="cq-info-tab-profile" class="cq-info-tab px-3 py-1.5 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600 rounded-t">プロフィール</button>
+                                <button onclick="switchInfoTab('routine')" id="cq-info-tab-routine" class="cq-info-tab px-3 py-1.5 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600 rounded-t">ルーティン</button>
+                                <button onclick="switchInfoTab('templates')" id="cq-info-tab-templates" class="cq-info-tab px-3 py-1.5 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600 rounded-t">テンプレート</button>
+                                <button onclick="switchInfoTab('custom')" id="cq-info-tab-custom" class="cq-info-tab px-3 py-1.5 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-indigo-600 rounded-t">カスタム</button>
+                            </div>
+
+                            <!-- タブ1: セオリー -->
+                            <div id="cq-info-panel-theory" class="cq-info-panel">
+                            <div class="text-xs space-y-3">
+                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                    <div class="font-bold text-yellow-800 mb-1">基本哲学</div>
+                                    <ul class="space-y-0.5 text-gray-700 list-disc pl-4">
+                                        <li><b>食べなければ身体は作れない</b> — トレーニングはきっかけ、身体を作るのは食事</li>
+                                        <li><b>365日の継続</b> — オン・オフを作らず淡々と続ける</li>
+                                        <li><b>外食より自炊</b> — 見えない脂質・調味料を排除</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div class="font-bold text-blue-800 mb-1">PFC戦略 — P35% F15% C50%</div>
+                                    <div class="grid grid-cols-3 gap-2 mt-1">
+                                        <div class="text-center bg-red-50 rounded p-1.5">
+                                            <div class="font-bold text-red-700">P = エンジン</div>
+                                            <div class="text-gray-600">筋肉の材料<br>最重要項目</div>
+                                        </div>
+                                        <div class="text-center bg-amber-50 rounded p-1.5">
+                                            <div class="font-bold text-amber-700">C = ガソリン</div>
+                                            <div class="text-gray-600">筋肉を動かす<br>抜くとハリ喪失</div>
+                                        </div>
+                                        <div class="text-center bg-gray-100 rounded p-1.5">
+                                            <div class="font-bold text-gray-600">F = 最小限</div>
+                                            <div class="text-gray-500">9kcal/gで過剰注意<br>必須脂肪酸はサプリで</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <div class="font-bold text-green-800 mb-1">GIタイミング戦略</div>
+                                    <table class="w-full text-[11px]">
+                                        <thead><tr class="border-b border-green-300"><th class="text-left py-0.5">タイミング</th><th class="text-left py-0.5">GI</th><th class="text-left py-0.5">推奨食材</th><th class="text-left py-0.5">理由</th></tr></thead>
+                                        <tbody>
+                                            <tr class="border-b border-green-100"><td class="py-0.5"><span class="bg-red-100 text-red-700 px-1 rounded text-[10px] font-bold">トレ直後</span></td><td class="font-bold text-red-600">高GI</td><td>マルトデキストリン、白米（炊飯直後）、もち、バナナ</td><td>インスリン→筋肉へ急速デリバリー</td></tr>
+                                            <tr class="border-b border-green-100"><td class="py-0.5"><span class="bg-orange-100 text-orange-700 px-1 rounded text-[10px] font-bold">トレ前</span></td><td class="font-bold text-blue-600">低GI</td><td>白米（冷やご飯・再加熱）、オートミール、さつまいも + 低脂質</td><td>消化遅延防止＆持続エネルギー</td></tr>
+                                            <tr class="border-b border-green-100"><td class="py-0.5"><span class="bg-gray-200 text-gray-700 px-1 rounded text-[10px] font-bold">通常食</span></td><td class="font-bold text-blue-600">低GI</td><td>白米（冷やご飯・再加熱）、玄米、オートミール、そば</td><td>血糖安定＆体脂肪化防止</td></tr>
+                                            <tr><td class="py-0.5" colspan="4"><span class="text-[10px] text-gray-500">💡 冷却でレジスタントスターチ生成（RS: 0.64→1.65g/100g）。再加熱してもRSは維持されGI低下（88→65）。炊飯直後はトレ直後専用</span></td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                    <div class="font-bold text-purple-800 mb-1">ベースライン法（炭水化物量の調整）</div>
+                                    <ol class="space-y-0.5 text-gray-700 list-decimal pl-4">
+                                        <li>基準量（ベースライン）を決めて1週間食べる</li>
+                                        <li>体重増加 → 炭水化物を半分に減らす</li>
+                                        <li>体重減少しすぎ → 炭水化物を倍に増やす</li>
+                                        <li>微調整を繰り返し、体脂肪が増えないギリギリのラインを探す</li>
+                                    </ol>
+                                    <div class="mt-1 text-gray-500 italic">「減らしすぎない」— 代謝を落とさず筋肉のハリを保つ</div>
+                                </div>
+                            </div>
+                            </div>
+
+                            <!-- タブ2: プロフィール -->
+                            <div id="cq-info-panel-profile" class="cq-info-panel hidden">
+                                <div class="text-sm" id="cq-user-profile-content">読み込み中...</div>
+                            </div>
+
+                            <!-- タブ3: ルーティン -->
+                            <div id="cq-info-panel-routine" class="cq-info-panel hidden">
+                                <div class="text-sm" id="cq-user-routine-content">読み込み中...</div>
+                            </div>
+
+                            <!-- タブ4: テンプレート -->
+                            <div id="cq-info-panel-templates" class="cq-info-panel hidden">
+                                <div class="text-sm" id="cq-user-templates-content">読み込み中...</div>
+                            </div>
+
+                            <!-- タブ5: カスタム -->
+                            <div id="cq-info-panel-custom" class="cq-info-panel hidden">
+                                <div class="text-sm" id="cq-user-custom-items-content">読み込み中...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- プロフィール設定編集（タブ切替式） -->
+                    <div id="cq-profile-editor" class="mt-3 hidden">
+                        <div class="border-2 border-orange-200 bg-orange-50 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="text-sm font-bold text-orange-800">⚙️ クライアント設定</label>
+                                <div class="flex gap-2">
+                                    <button onclick="resetAllProfileDefaults()" class="bg-gray-400 text-white px-3 py-1 rounded-lg text-xs hover:bg-gray-500">全体デフォルトに戻す</button>
+                                    <button onclick="saveUserProfile()" class="bg-orange-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-orange-600">設定を保存</button>
+                                </div>
+                            </div>
+                            <div id="cq-profile-save-msg" class="text-xs mb-2 hidden"></div>
+
+                            <!-- タブヘッダー -->
+                            <div class="flex border-b border-orange-300 mb-3">
+                                <button onclick="switchProfileTab('schedule')" id="cq-tab-schedule" class="cq-prof-tab px-3 py-1.5 text-xs font-bold border-b-2 border-orange-500 text-orange-700 bg-orange-100 rounded-t">時刻設定</button>
+                                <button onclick="switchProfileTab('basic')" id="cq-tab-basic" class="cq-prof-tab px-3 py-1.5 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-orange-600 rounded-t">基本情報</button>
+                                <button onclick="switchProfileTab('goal')" id="cq-tab-goal" class="cq-prof-tab px-3 py-1.5 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-orange-600 rounded-t">目標・PFC</button>
+                                <button onclick="switchProfileTab('food')" id="cq-tab-food" class="cq-prof-tab px-3 py-1.5 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-orange-600 rounded-t">食材・学習</button>
+                            </div>
+
+                            <!-- タブ1: 時刻設定 -->
+                            <div id="cq-panel-schedule" class="cq-prof-panel">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-0.5">
+                                            <label class="text-[11px] text-gray-600">起床時間</label>
+                                            <button onclick="resetProfileField('cq-prof-wake','07:00')" class="text-[9px] text-gray-400 hover:text-orange-500">リセット</button>
+                                        </div>
+                                        <input type="time" id="cq-prof-wake" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between mb-0.5">
+                                            <label class="text-[11px] text-gray-600">就寝時間</label>
+                                            <button onclick="resetProfileField('cq-prof-sleep','23:00')" class="text-[9px] text-gray-400 hover:text-orange-500">リセット</button>
+                                        </div>
+                                        <input type="time" id="cq-prof-sleep" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between mb-0.5">
+                                            <label class="text-[11px] text-gray-600">食事回数</label>
+                                            <button onclick="resetProfileField('cq-prof-meals','5');onMealsPerDayChange()" class="text-[9px] text-gray-400 hover:text-orange-500">リセット</button>
+                                        </div>
+                                        <select id="cq-prof-meals" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" onchange="onMealsPerDayChange()">
+                                            <option value="3">3食</option>
+                                            <option value="4">4食</option>
+                                            <option value="5">5食</option>
+                                            <option value="6">6食</option>
+                                            <option value="7">7食</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between mb-0.5">
+                                            <label class="text-[11px] text-gray-600">トレ前食事</label>
+                                            <button onclick="resetProfileField('cq-prof-training-after','');toggleTrainingFields()" class="text-[9px] text-gray-400 hover:text-orange-500">リセット</button>
+                                        </div>
+                                        <select id="cq-prof-training-after" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" onchange="toggleTrainingFields()">
+                                            <option value="">なし</option>
+                                            <option value="1">1食目</option>
+                                            <option value="2">2食目</option>
+                                            <option value="3">3食目</option>
+                                            <option value="4">4食目</option>
+                                            <option value="5">5食目</option>
+                                            <option value="6">6食目</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- トレーニング詳細 -->
+                                <div id="cq-training-fields" class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3 hidden">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-0.5">
+                                            <label class="text-[11px] text-gray-600">トレーニング時間</label>
+                                            <button onclick="resetProfileField('cq-prof-training-time','17:00')" class="text-[9px] text-gray-400 hover:text-orange-500">リセット</button>
+                                        </div>
+                                        <input type="time" id="cq-prof-training-time" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between mb-0.5">
+                                            <label class="text-[11px] text-gray-600">トレ所要時間(分)</label>
+                                            <button onclick="resetProfileField('cq-prof-training-dur','120')" class="text-[9px] text-gray-400 hover:text-orange-500">リセット</button>
+                                        </div>
+                                        <input type="number" id="cq-prof-training-dur" min="30" max="300" step="10" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center justify-between mb-0.5">
+                                            <label class="text-[11px] text-gray-600">スタイル</label>
+                                            <button onclick="resetProfileField('cq-prof-style','PUMP')" class="text-[9px] text-gray-400 hover:text-orange-500">リセット</button>
+                                        </div>
+                                        <select id="cq-prof-style" class="w-full border border-gray-300 rounded px-2 py-1 text-sm">
+                                            <option value="PUMP">PUMP (10回)</option>
+                                            <option value="POWER">POWER (5回)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- 食事タイムライン -->
+                                <div class="mt-3">
+                                    <label class="block text-[11px] text-gray-600 mb-1 font-bold">食事タイムライン（各スロットの時刻）</label>
+                                    <div id="cq-slot-timeline" class="flex flex-wrap gap-2"></div>
+                                    <div class="mt-1 text-[10px] text-gray-400">時刻を変更すると absoluteTime として保存されます。空欄 = 自動計算</div>
+                                </div>
+                            </div>
+
+                            <!-- タブ2: 基本情報 -->
+                            <div id="cq-panel-basic" class="cq-prof-panel hidden">
+                                <div class="space-y-3">
+                                    <div class="text-[11px] font-bold text-gray-600">基本情報</div>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        <div><label class="text-[10px] text-gray-500">ニックネーム</label><input type="text" id="cq-prof-nickname" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">年齢</label><input type="number" id="cq-prof-age" min="10" max="99" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">性別</label><select id="cq-prof-gender" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"><option value="MALE">男性</option><option value="FEMALE">女性</option><option value="OTHER">その他</option></select></div>
+                                        <div><label class="text-[10px] text-gray-500">身長(cm)</label><input type="number" id="cq-prof-height" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">体重(kg)</label><input type="number" id="cq-prof-weight" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">体脂肪率(%)</label><input type="number" id="cq-prof-bodyfat" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">目標体重(kg)</label><input type="number" id="cq-prof-target-weight" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                    </div>
+                                    <div class="border-t border-orange-200 pt-2">
+                                        <div class="text-[11px] font-bold text-gray-600 mb-1">理想体型</div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div><label class="text-[10px] text-gray-500">理想体重(kg)</label><input type="number" id="cq-prof-ideal-weight" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                            <div><label class="text-[10px] text-gray-500">理想体脂肪率(%)</label><input type="number" id="cq-prof-ideal-bodyfat" step="0.1" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- タブ3: 目標・PFC -->
+                            <div id="cq-panel-goal" class="cq-prof-panel hidden">
+                                <div class="space-y-3">
+                                    <div class="text-[11px] font-bold text-gray-600">目標設定</div>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        <div><label class="text-[10px] text-gray-500">目標</label><select id="cq-prof-goal" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"><option value="LOSE_WEIGHT">減量</option><option value="MAINTAIN">維持</option><option value="GAIN_MUSCLE">増量</option></select></div>
+                                        <div><label class="text-[10px] text-gray-500">活動レベル</label><select id="cq-prof-activity" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"><option value="DESK_WORK">デスクワーク</option><option value="STANDING_WORK">立ち仕事</option><option value="PHYSICAL_LABOR">肉体労働</option></select></div>
+                                        <div><label class="text-[10px] text-gray-500">カロリー調整</label><input type="number" id="cq-prof-cal-adjust" min="-500" max="500" step="50" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">食費予算</label><select id="cq-prof-budget" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"><option value="1">節約</option><option value="2">標準</option></select></div>
+                                    </div>
+                                    <div class="border-t border-orange-200 pt-2">
+                                        <div class="text-[11px] font-bold text-gray-600 mb-1">PFC比率(%)</div>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div><label class="text-[10px] text-gray-500">P(タンパク質)</label><input type="number" id="cq-prof-prot-ratio" min="10" max="50" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                            <div><label class="text-[10px] text-gray-500">F(脂質)</label><input type="number" id="cq-prof-fat-ratio" min="10" max="50" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                            <div><label class="text-[10px] text-gray-500">C(炭水化物)</label><input type="number" id="cq-prof-carb-ratio" min="10" max="60" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-orange-200 pt-2">
+                                        <div class="text-[11px] font-bold text-gray-600 mb-1">トレ前後PFC(g)</div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <div class="text-[10px] text-gray-500 mb-0.5">トレ前</div>
+                                                <div class="grid grid-cols-3 gap-1">
+                                                    <div><label class="text-[9px] text-gray-400">P</label><input type="number" id="cq-prof-pre-p" min="0" class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs"></div>
+                                                    <div><label class="text-[9px] text-gray-400">F</label><input type="number" id="cq-prof-pre-f" min="0" class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs"></div>
+                                                    <div><label class="text-[9px] text-gray-400">C</label><input type="number" id="cq-prof-pre-c" min="0" class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs"></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="text-[10px] text-gray-500 mb-0.5">トレ後</div>
+                                                <div class="grid grid-cols-3 gap-1">
+                                                    <div><label class="text-[9px] text-gray-400">P</label><input type="number" id="cq-prof-post-p" min="0" class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs"></div>
+                                                    <div><label class="text-[9px] text-gray-400">F</label><input type="number" id="cq-prof-post-f" min="0" class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs"></div>
+                                                    <div><label class="text-[9px] text-gray-400">C</label><input type="number" id="cq-prof-post-c" min="0" class="w-full border border-gray-300 rounded px-1 py-0.5 text-xs"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- タブ4: 食材・学習 -->
+                            <div id="cq-panel-food" class="cq-prof-panel hidden">
+                                <div class="space-y-3">
+                                    <div class="text-[11px] font-bold text-gray-600">食材好み（カンマ区切り）</div>
+                                    <div class="space-y-1">
+                                        <div><label class="text-[10px] text-gray-500">優先タンパク源</label><input type="text" id="cq-prof-prot-sources" placeholder="鶏むね肉, 鮭" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">優先炭水化物源</label><input type="text" id="cq-prof-carb-sources" placeholder="白米, 玄米" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">優先脂質源</label><input type="text" id="cq-prof-fat-sources" placeholder="オリーブオイル, アボカド" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">避けたい食材</label><input type="text" id="cq-prof-avoid-foods" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        <div><label class="text-[10px] text-gray-500">アレルギー</label><input type="text" id="cq-prof-allergies" placeholder="卵, 乳, 小麦" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                    </div>
+                                    <div class="border-t border-orange-200 pt-2">
+                                        <div class="text-[11px] font-bold text-gray-600 mb-1">学習データ</div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div><label class="text-[10px] text-gray-500">よく食べる食材</label><input type="text" id="cq-prof-fav-foods" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                            <div><label class="text-[10px] text-gray-500">NG食材</label><input type="text" id="cq-prof-ng-foods" class="w-full border border-gray-300 rounded px-2 py-1 text-sm"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mt-3">
                         <label class="block text-sm font-bold mb-1">スロット</label>
                         <div id="cq-assign-slot-container" class="flex flex-wrap gap-2">
@@ -948,7 +1334,7 @@
                             <option value="">-- テンプレートを選択 --</option>
                         </select>
                     </div>
-                    <button onclick="assignQuestToUser()" class="btn-primary mt-4">割当を保存</button>
+                    <button onclick="assignQuestToUser()" class="btn-primary mt-4">選択スロットに個別保存</button>
                     <div id="cq-assign-message" class="mt-2 text-sm"></div>
                 </div>
             </div>
@@ -2550,6 +2936,13 @@
         // カスタムクエスト管理
         // =====================================================
 
+        function togglePersistent() {
+            const isPersistent = document.getElementById('cq-assign-persistent').checked;
+            const dateInput = document.getElementById('cq-assign-date');
+            dateInput.disabled = isPersistent;
+            dateInput.style.opacity = isPersistent ? '0.4' : '1';
+        }
+
         async function initCustomQuest() {
             await loadTemplates();
             // 日付のデフォルト値を明日に設定
@@ -2576,14 +2969,14 @@
             "和菓子": ["あられ（塩味）","いちご大福","きんつば","くずもち（黒蜜きなこ）","こしあん","ざらめせんべい","しょうゆせんべい","つぶあん","どら焼き","みたらし団子","ようかん（練り）","わらび餅（黒蜜きなこ）","カステラ","大福餅","最中（もなか）","柏餅","桜餅（関東風）","水ようかん","白玉団子","草餅（よもぎ餅）","薯蕷まんじゅう"]
         };
 
-        const CATEGORY_EMOJI = { "肉類":"🥩","魚介類":"🐟","卵類":"🥚","主食":"🍚","野菜類":"🥦","乳製品":"🧀","豆類・ナッツ":"🥜","果物類":"🍎","サプリメント":"💊","ドリンク":"🥤","調味料":"🧂","和菓子":"🍡" };
+        const CATEGORY_EMOJI = { "肉類":"🥩","魚介類":"🐟","卵類":"🥚","主食":"🍚","野菜類":"🥦","乳製品":"🧀","豆類・ナッツ":"🥜","果物類":"🍎","サプリメント":"💊","ドリンク":"🥤","調味料":"🧂","和菓子":"🍡","カスタム食品":"⭐" };
 
         // ========== ExerciseDatabase（カテゴリ付き） ==========
         const EXERCISE_DATABASE = {
-            "胸": ["バーベルベンチプレス","ダンベルベンチプレス","インクラインベンチプレス","ダンベルフライ","腕立て伏せ"],
-            "背中": ["デッドリフト","懸垂（チンニング）","ラットプルダウン","ベントオーバーロウ"],
-            "肩": ["オーバーヘッドプレス","サイドレイズ","フロントレイズ","リアデルトフライ"],
-            "腕": ["バーベルカール","ダンベルカール","トライセプスエクステンション"],
+            "胸": ["バーベルベンチプレス","ダンベルベンチプレス","インクラインベンチプレス","ディップス","ダンベルフライ","ナローベンチプレス","腕立て伏せ"],
+            "背中": ["デッドリフト","懸垂（チンニング）","ラットプルダウン","ベントオーバーロウ","シーテッドロー"],
+            "肩": ["オーバーヘッドプレス","ダンベルショルダープレス","スミスバックプレス","サイドレイズ","フロントレイズ","リアデルトフライ"],
+            "腕": ["バーベルカール","ダンベルカール","インクラインダンベルカール","トライセプスエクステンション","フレンチプレス"],
             "脚": ["バーベルスクワット","レッグプレス","ランジ","レッグエクステンション","レッグカール","カーフレイズ"],
             "体幹": ["プランク","クランチ","レッグレイズ"],
             "有酸素": ["ランニング","ウォーキング","サイクリング","水泳","HIIT"],
@@ -2591,6 +2984,27 @@
         };
         const EXERCISE_EMOJI = { "胸":"💪","背中":"🔙","肩":"🏋️","腕":"💪","脚":"🦵","体幹":"🧘","有酸素":"🏃","ストレッチ":"🧘‍♀️" };
         const EXERCISE_UNITS = ["セット","回","分","km","m"];
+        const STRENGTH_CATEGORIES = ["胸","背中","肩","腕","脚","体幹"];
+        const CARDIO_CATEGORIES = ["有酸素"];
+        const STRETCH_CATEGORIES = ["ストレッチ"];
+
+        // 現在選択中の運動カテゴリ
+        let selectedExerciseCategory = '';
+
+        function getExerciseType(category) {
+            if (STRENGTH_CATEGORIES.includes(category)) return 'strength';
+            if (CARDIO_CATEGORIES.includes(category)) return 'cardio';
+            if (STRETCH_CATEGORIES.includes(category)) return 'stretch';
+            return 'strength';
+        }
+
+        function updateExerciseFields() {
+            const type = getExerciseType(selectedExerciseCategory);
+            document.getElementById('cq-strength-fields').classList.toggle('hidden', type !== 'strength');
+            document.getElementById('cq-rm-fields').classList.toggle('hidden', type !== 'strength');
+            document.getElementById('cq-cardio-fields').classList.toggle('hidden', type !== 'cardio');
+            document.getElementById('cq-stretch-fields').classList.toggle('hidden', type !== 'stretch');
+        }
 
         // 食品100gあたりの全栄養素（FoodDatabase.kt八訂準拠値と同期）
         function r1(v) { return Math.round(v * 10) / 10; }
@@ -2601,6 +3015,43 @@
             for (const [k, v] of Object.entries(map)) { result[k] = r2((v || 0) * coeff); }
             return result;
         }
+        // テンプレートをスロット目標カロリーにスケーリング（共通関数）
+        function scaleTemplateForSlot(tpl, slotTargetCals) {
+            let scaledItems = tpl.items;
+            let scaledMacros = tpl.totalMacros || { protein: 0, fat: 0, carbs: 0, calories: 0 };
+            if (tpl.type === 'MEAL' && scaledMacros.calories > 0 && slotTargetCals > 0) {
+                const coefficient = slotTargetCals / scaledMacros.calories;
+                scaledItems = tpl.items.map(item => ({
+                    ...item,
+                    amount: r1((item.amount || 0) * coefficient),
+                    calories: Math.round((item.calories || 0) * coefficient),
+                    protein: r1((item.protein || 0) * coefficient),
+                    fat: r1((item.fat || 0) * coefficient),
+                    carbs: r1((item.carbs || 0) * coefficient),
+                    fiber: r1((item.fiber || 0) * coefficient),
+                    solubleFiber: r1((item.solubleFiber || 0) * coefficient),
+                    insolubleFiber: r1((item.insolubleFiber || 0) * coefficient),
+                    sugar: r1((item.sugar || 0) * coefficient),
+                    saturatedFat: r2((item.saturatedFat || 0) * coefficient),
+                    monounsaturatedFat: r2((item.monounsaturatedFat || 0) * coefficient),
+                    polyunsaturatedFat: r2((item.polyunsaturatedFat || 0) * coefficient),
+                    diaas: item.diaas || 0,
+                    gi: item.gi || 0,
+                    vitamins: scaleMap(item.vitamins || {}, coefficient),
+                    minerals: scaleMap(item.minerals || {}, coefficient),
+                }));
+                scaledMacros = {
+                    calories: Math.round(scaledMacros.calories * coefficient),
+                    protein: r1((scaledMacros.protein || 0) * coefficient),
+                    fat: r1((scaledMacros.fat || 0) * coefficient),
+                    carbs: r1((scaledMacros.carbs || 0) * coefficient),
+                    fiber: r1((scaledMacros.fiber || 0) * coefficient),
+                    vitamins: scaleMap(scaledMacros.vitamins || {}, coefficient),
+                    minerals: scaleMap(scaledMacros.minerals || {}, coefficient),
+                };
+            }
+            return { scaledItems, scaledMacros };
+        }
         const FOOD_NUTRIENTS_PER_100G = {
             "鶏むね肉（皮なし生）": { calories: 108, protein: 23.3, fat: 1.9, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.47, monounsaturatedFat: 0.63, polyunsaturatedFat: 0.36, diaas: 1.08, gi: 0, vitamins: { vitaminA: 6, vitaminB1: 0.1, vitaminB2: 0.11, vitaminB6: 0.64, vitaminB12: 0.2, vitaminC: 0, vitaminD: 0.1, vitaminE: 0.2, vitaminK: 6, niacin: 12.2, pantothenicAcid: 1.8, biotin: 4.5, folicAcid: 12 }, minerals: { sodium: 46, potassium: 380, calcium: 4, magnesium: 31, phosphorus: 230, iron: 0.3, zinc: 0.7, copper: 0.04, manganese: 0.01, iodine: 0, selenium: 28, chromium: 0, molybdenum: 0 } },
             "鶏むね肉（皮つき生）": { calories: 133, protein: 21.3, fat: 5.9, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 1.53, monounsaturatedFat: 2.67, polyunsaturatedFat: 1.03, diaas: 1.07, gi: 0, vitamins: { vitaminA: 13, vitaminB1: 0.1, vitaminB2: 0.12, vitaminB6: 0.6, vitaminB12: 0.3, vitaminC: 0, vitaminD: 0.1, vitaminE: 0.3, vitaminK: 8, niacin: 11, pantothenicAcid: 1.6, biotin: 4.2, folicAcid: 13 }, minerals: { sodium: 52, potassium: 360, calcium: 4, magnesium: 29, phosphorus: 210, iron: 0.3, zinc: 0.7, copper: 0.04, manganese: 0.01, iodine: 0, selenium: 26, chromium: 0, molybdenum: 0 } },
@@ -2608,6 +3059,7 @@
             "鶏もも肉（皮つき生）": { calories: 190, protein: 16.6, fat: 14.2, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 4.37, monounsaturatedFat: 6.71, polyunsaturatedFat: 1.85, diaas: 1.05, gi: 0, vitamins: { vitaminA: 22, vitaminB1: 0.09, vitaminB2: 0.16, vitaminB6: 0.23, vitaminB12: 0.3, vitaminC: 0, vitaminD: 0.2, vitaminE: 0.4, vitaminK: 19, niacin: 5.7, pantothenicAcid: 1.7, biotin: 4.3, folicAcid: 11 }, minerals: { sodium: 75, potassium: 290, calcium: 6, magnesium: 22, phosphorus: 160, iron: 0.7, zinc: 1.7, copper: 0.05, manganese: 0.01, iodine: 0, selenium: 19, chromium: 0, molybdenum: 0 } },
             "鶏ささみ（生）": { calories: 98, protein: 23.9, fat: 0.8, carbs: 0, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 0.17, monounsaturatedFat: 0.22, polyunsaturatedFat: 0.13, diaas: 1.09, gi: 0, vitamins: { vitaminA: 6, vitaminB1: 0.11, vitaminB2: 0.11, vitaminB6: 0.6, vitaminB12: 0.3, vitaminC: 0, vitaminD: 0.1, vitaminE: 0.2, vitaminK: 7, niacin: 12, pantothenicAcid: 2, biotin: 5, folicAcid: 13 }, minerals: { sodium: 49, potassium: 410, calcium: 3, magnesium: 31, phosphorus: 240, iron: 0.2, zinc: 0.5, copper: 0.03, manganese: 0.01, iodine: 0, selenium: 30, chromium: 0, molybdenum: 0 } },
             "牛もも肉（脂身つき生）": { calories: 165, protein: 20.5, fat: 9.6, carbs: 0.5, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.22, monounsaturatedFat: 3.69, polyunsaturatedFat: 0.25, diaas: 1.11, gi: 0, vitamins: { vitaminA: 3, vitaminB1: 0.08, vitaminB2: 0.19, vitaminB6: 0.38, vitaminB12: 1.3, vitaminC: 1, vitaminD: 0, vitaminE: 0.4, vitaminK: 5, niacin: 5.4, pantothenicAcid: 0.86, biotin: 2, folicAcid: 9 }, minerals: { sodium: 48, potassium: 340, calcium: 4, magnesium: 22, phosphorus: 170, iron: 2.5, zinc: 4.2, copper: 0.07, manganese: 0.01, iodine: 0, selenium: 15, chromium: 0, molybdenum: 0 } },
+            "牛もも肉（赤肉生）": { calories: 132, protein: 21.3, fat: 4.6, carbs: 0.5, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 1.65, monounsaturatedFat: 1.81, polyunsaturatedFat: 0.18, diaas: 1.11, gi: 0, vitamins: { vitaminA: 3, vitaminB1: 0.09, vitaminB2: 0.22, vitaminB6: 0.42, vitaminB12: 1.5, vitaminC: 1, vitaminD: 0, vitaminE: 0.5, vitaminK: 5, niacin: 6.2, pantothenicAcid: 0.98, biotin: 2.2, folicAcid: 10 }, minerals: { sodium: 50, potassium: 370, calcium: 4, magnesium: 24, phosphorus: 190, iron: 2.7, zinc: 4.5, copper: 0.08, manganese: 0.01, iodine: 0, selenium: 17, chromium: 0, molybdenum: 0 } },
             "牛ひき肉（生）": { calories: 224, protein: 19, fat: 17, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 7.25, monounsaturatedFat: 11.06, polyunsaturatedFat: 0.63, diaas: 1.1, gi: 0, vitamins: { vitaminA: 4, vitaminB1: 0.07, vitaminB2: 0.16, vitaminB6: 0.32, vitaminB12: 1.2, vitaminC: 1, vitaminD: 0, vitaminE: 0.4, vitaminK: 6, niacin: 4.5, pantothenicAcid: 0.75, biotin: 1.8, folicAcid: 8 }, minerals: { sodium: 46, potassium: 290, calcium: 5, magnesium: 19, phosphorus: 150, iron: 2.2, zinc: 4, copper: 0.06, manganese: 0.01, iodine: 0, selenium: 14, chromium: 0, molybdenum: 0 } },
             "豚ロース（脂身つき生）": { calories: 248, protein: 19.3, fat: 19.2, carbs: 0.2, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 7.84, monounsaturatedFat: 7.68, polyunsaturatedFat: 2.21, diaas: 1.05, gi: 0, vitamins: { vitaminA: 5, vitaminB1: 0.6, vitaminB2: 0.15, vitaminB6: 0.32, vitaminB12: 0.3, vitaminC: 1, vitaminD: 0.1, vitaminE: 0.3, vitaminK: 2, niacin: 6.7, pantothenicAcid: 1.1, biotin: 2.5, folicAcid: 2 }, minerals: { sodium: 48, potassium: 310, calcium: 4, magnesium: 22, phosphorus: 170, iron: 0.3, zinc: 1.9, copper: 0.06, manganese: 0.01, iodine: 0, selenium: 18, chromium: 0, molybdenum: 0 } },
             "豚もも肉（脂身つき生）": { calories: 171, protein: 20.5, fat: 10.2, carbs: 0.2, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.59, monounsaturatedFat: 4.24, polyunsaturatedFat: 1.24, diaas: 1.05, gi: 0, vitamins: { vitaminA: 4, vitaminB1: 0.72, vitaminB2: 0.19, vitaminB6: 0.36, vitaminB12: 0.3, vitaminC: 1, vitaminD: 0.1, vitaminE: 0.3, vitaminK: 2, niacin: 7.5, pantothenicAcid: 1.28, biotin: 2.8, folicAcid: 3 }, minerals: { sodium: 51, potassium: 340, calcium: 4, magnesium: 25, phosphorus: 190, iron: 0.4, zinc: 2.2, copper: 0.07, manganese: 0.01, iodine: 0, selenium: 20, chromium: 0, molybdenum: 0 } },
@@ -2622,6 +3074,8 @@
             "ゆで卵 M（58g）": { calories: 134, protein: 12.6, fat: 10.3, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.34, monounsaturatedFat: 4.69, polyunsaturatedFat: 1.47, diaas: 1.13, gi: 0, vitamins: { vitaminA: 145, vitaminB1: 0, vitaminB2: 0.41, vitaminB6: 0, vitaminB12: 1.21, vitaminC: 0, vitaminD: 1.72, vitaminE: 1.03, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 45 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 1.72, zinc: 1.38, copper: 0, manganese: 0, iodine: 0, selenium: 33, chromium: 0, molybdenum: 0 } },
             "うずら卵 水煮（1個12g）": { calories: 150, protein: 12.5, fat: 11.7, carbs: 0.3, fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0, saturatedFat: 3.75, monounsaturatedFat: 4.67, polyunsaturatedFat: 1.5, diaas: 1.12, gi: 0, vitamins: { vitaminA: 333, vitaminB1: 0, vitaminB2: 0.67, vitaminB6: 0, vitaminB12: 5, vitaminC: 0, vitaminD: 6.67, vitaminE: 0.83, vitaminK: 0, niacin: 0, pantothenicAcid: 0, biotin: 0, folicAcid: 83 }, minerals: { sodium: 0, potassium: 0, calcium: 0, magnesium: 0, phosphorus: 0, iron: 3.33, zinc: 1.67, copper: 0, manganese: 0, iodine: 0, selenium: 0, chromium: 0, molybdenum: 0 } },
             "白米（炊飯直後）": { calories: 168, protein: 2.5, fat: 0.3, carbs: 37.1, fiber: 0.3, solubleFiber: 0, insolubleFiber: 0.3, sugar: 36.8, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.59, gi: 88, vitamins: { vitaminA: 0, vitaminB1: 0.02, vitaminB2: 0.01, vitaminB6: 0.02, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.2, pantothenicAcid: 0.25, biotin: 0.5, folicAcid: 3 }, minerals: { sodium: 1, potassium: 29, calcium: 3, magnesium: 7, phosphorus: 34, iron: 0.1, zinc: 0.6, copper: 0.1, manganese: 0.35, iodine: 0, selenium: 1, chromium: 0, molybdenum: 30 } },
+            "白米（冷やご飯・再加熱）": { calories: 156, protein: 2.5, fat: 0.3, carbs: 37.1, fiber: 0.3, solubleFiber: 0, insolubleFiber: 0.3, sugar: 36.8, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.59, gi: 65, vitamins: { vitaminA: 0, vitaminB1: 0.02, vitaminB2: 0.01, vitaminB6: 0.02, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.2, pantothenicAcid: 0.25, biotin: 0.5, folicAcid: 3 }, minerals: { sodium: 1, potassium: 29, calcium: 3, magnesium: 7, phosphorus: 34, iron: 0.1, zinc: 0.6, copper: 0.1, manganese: 0.35, iodine: 0, selenium: 1, chromium: 0, molybdenum: 30 } },
+            "白米（精白米）": { calories: 342, protein: 6.1, fat: 0.9, carbs: 77.6, fiber: 0.5, solubleFiber: 0, insolubleFiber: 0.5, sugar: 77.1, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.59, gi: 84, vitamins: { vitaminA: 0, vitaminB1: 0.23, vitaminB2: 0.02, vitaminB6: 0.12, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.1, vitaminK: 0, niacin: 1.2, pantothenicAcid: 0.66, biotin: 1.4, folicAcid: 12 }, minerals: { sodium: 1, potassium: 89, calcium: 5, magnesium: 23, phosphorus: 95, iron: 0.8, zinc: 1.4, copper: 0.22, manganese: 0.8, iodine: 0, selenium: 2, chromium: 0, molybdenum: 70 } },
             "玄米（炊飯直後）": { calories: 152, protein: 2.8, fat: 1, carbs: 35.6, fiber: 1.4, solubleFiber: 0.2, insolubleFiber: 1.2, sugar: 34.2, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.62, gi: 56, vitamins: { vitaminA: 0, vitaminB1: 0.16, vitaminB2: 0.02, vitaminB6: 0.21, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.5, vitaminK: 0, niacin: 2.9, pantothenicAcid: 0.65, biotin: 2.5, folicAcid: 10 }, minerals: { sodium: 1, potassium: 95, calcium: 7, magnesium: 49, phosphorus: 130, iron: 0.6, zinc: 0.8, copper: 0.12, manganese: 1.04, iodine: 0, selenium: 1, chromium: 0, molybdenum: 34 } },
             "もち麦ごはん（炊飯直後）": { calories: 143, protein: 2.7, fat: 0.5, carbs: 33.2, fiber: 2.3, solubleFiber: 1.3, insolubleFiber: 1.0, sugar: 30.9, saturatedFat: 0.1, monounsaturatedFat: 0.15, polyunsaturatedFat: 0.2, diaas: 0.5, gi: 48, vitamins: { vitaminA: 0, vitaminB1: 0.06, vitaminB2: 0.01, vitaminB6: 0.03, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0, vitaminK: 0, niacin: 0.4, pantothenicAcid: 0.3, biotin: 0.5, folicAcid: 4 }, minerals: { sodium: 1, potassium: 35, calcium: 3, magnesium: 12, phosphorus: 40, iron: 0.3, zinc: 0.5, copper: 0.08, manganese: 0.3, iodine: 0, selenium: 1, chromium: 0, molybdenum: 20 } },
             "食パン（6枚切り）": { calories: 248, protein: 8.9, fat: 4.1, carbs: 44.3, fiber: 2.1, solubleFiber: 0.4, insolubleFiber: 1.7, sugar: 42.2, saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0, diaas: 0.42, gi: 91, vitamins: { vitaminA: 0, vitaminB1: 0.07, vitaminB2: 0.05, vitaminB6: 0.03, vitaminB12: 0, vitaminC: 0, vitaminD: 0, vitaminE: 0.4, vitaminK: 0, niacin: 1.1, pantothenicAcid: 0.42, biotin: 2.3, folicAcid: 30 }, minerals: { sodium: 470, potassium: 86, calcium: 22, magnesium: 18, phosphorus: 67, iron: 0.5, zinc: 0.5, copper: 0.09, manganese: 0.25, iodine: 1, selenium: 22, chromium: 1, molybdenum: 15 } },
@@ -2672,6 +3126,8 @@
             "うずら卵 水煮（1個12g）": { "個": 12 },
             "うずら卵（1個10g）": { "個": 10 },
             "白米（炊飯直後）": { "杯": 150 },
+            "白米（冷やご飯・再加熱）": { "杯": 150 },
+            "白米（精白米）": { "合": 150 },
             "玄米（炊飯直後）": { "杯": 150 },
             "もち麦ごはん（炊飯直後）": { "杯": 150 },
             "食パン（6枚切り）": { "枚": 60 },
@@ -2744,29 +3200,37 @@
         function onTemplateTypeChange() {
             const workout = isWorkoutMode();
             const catTabs = document.getElementById('cq-category-tabs');
-            const unitSelect = document.getElementById('cq-tpl-food-unit');
-            const label = document.getElementById('cq-tpl-item-label');
 
             if (workout) {
-                // 運動カテゴリタブに切替
-                label.textContent = '種目名';
+                // 運動モード: 食事入力を非表示、運動入力を表示
+                document.getElementById('cq-meal-inputs').classList.add('hidden');
+                document.getElementById('cq-workout-inputs').classList.remove('hidden');
                 catTabs.innerHTML = `<button onclick="setFoodCategory('all')" class="cq-cat-btn cq-cat-active" data-cat="all">すべて</button>` +
                     Object.keys(EXERCISE_DATABASE).map(cat =>
                         `<button onclick="setFoodCategory('${cat}')" class="cq-cat-btn" data-cat="${cat}">${EXERCISE_EMOJI[cat]||''} ${cat}</button>`
                     ).join('');
-                unitSelect.innerHTML = EXERCISE_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+                selectedExerciseCategory = '';
+                updateExerciseFields();
             } else {
-                // 食事カテゴリタブに戻す
-                label.textContent = '食品名';
+                // 食事モード: 運動入力を非表示、食事入力を表示
+                document.getElementById('cq-meal-inputs').classList.remove('hidden');
+                document.getElementById('cq-workout-inputs').classList.add('hidden');
+                document.getElementById('cq-tpl-item-label').textContent = '食品名';
                 catTabs.innerHTML = `<button onclick="setFoodCategory('all')" class="cq-cat-btn cq-cat-active" data-cat="all">すべて</button>` +
                     Object.keys(FOOD_DATABASE).map(cat =>
                         `<button onclick="setFoodCategory('${cat}')" class="cq-cat-btn" data-cat="${cat}">${CATEGORY_EMOJI[cat]||''} ${cat.replace('豆類・ナッツ','豆類').replace('サプリメント','サプリ')}</button>`
-                    ).join('');
-                unitSelect.innerHTML = ['g','個','ml','杯','枚','本','丁','粒'].map(u => `<option value="${u}">${u}</option>`).join('');
+                    ).join('') +
+                    (loadedUserCustomFoods.length > 0 ? `<button onclick="setFoodCategory('カスタム食品')" class="cq-cat-btn" data-cat="カスタム食品">⭐ カスタム</button>` : '');
+                document.getElementById('cq-tpl-food-unit').innerHTML = ['g','個','ml','杯','枚','本','丁','粒'].map(u => `<option value="${u}">${u}</option>`).join('');
             }
             selectedFoodCategory = 'all';
-            document.getElementById('cq-tpl-food-search').value = '';
-            document.getElementById('cq-tpl-food-search').placeholder = workout ? '種目名で検索...' : '食品名で検索...';
+            const searchInput = workout ? document.getElementById('cq-tpl-exercise-search') : document.getElementById('cq-tpl-food-search');
+            if (!workout) {
+                document.getElementById('cq-tpl-food-search').value = '';
+                document.getElementById('cq-tpl-food-search').placeholder = '食品名で検索...';
+            } else {
+                document.getElementById('cq-tpl-exercise-search').value = '';
+            }
             filterFoodList();
         }
 
@@ -2775,8 +3239,13 @@
             document.querySelectorAll('.cq-cat-btn').forEach(btn => {
                 btn.classList.toggle('cq-cat-active', btn.getAttribute('data-cat') === cat);
             });
+            // 運動モードでカテゴリ選択時、フィールドを切り替え
+            if (isWorkoutMode() && cat !== 'all') {
+                selectedExerciseCategory = cat;
+                updateExerciseFields();
+            }
             filterFoodList();
-            document.getElementById('cq-food-dropdown').classList.remove('hidden');
+            getActiveDropdown().classList.remove('hidden');
         }
 
         function getItemDatabase() {
@@ -2794,20 +3263,41 @@
                 for (const [cat, items] of Object.entries(db)) {
                     items.forEach(f => result.push({ name: f, category: cat }));
                 }
+                // カスタム食品も候補に追加（食事モード時のみ）
+                if (!isWorkoutMode() && loadedUserCustomFoods.length > 0) {
+                    loadedUserCustomFoods.forEach(cf => {
+                        result.push({ name: cf.name, category: 'カスタム食品' });
+                    });
+                }
                 return result;
+            } else if (selectedFoodCategory === 'カスタム食品') {
+                return loadedUserCustomFoods.map(cf => ({ name: cf.name, category: 'カスタム食品' }));
             } else {
                 return (db[selectedFoodCategory] || []).map(f => ({ name: f, category: selectedFoodCategory }));
             }
         }
 
+        function getActiveSearchInput() {
+            return isWorkoutMode()
+                ? document.getElementById('cq-tpl-exercise-search')
+                : document.getElementById('cq-tpl-food-search');
+        }
+
+        function getActiveDropdown() {
+            return isWorkoutMode()
+                ? document.getElementById('cq-exercise-dropdown')
+                : document.getElementById('cq-food-dropdown');
+        }
+
         function showFoodDropdown() {
             filterFoodList();
-            document.getElementById('cq-food-dropdown').classList.remove('hidden');
+            getActiveDropdown().classList.remove('hidden');
         }
 
         function filterFoodList() {
-            const query = document.getElementById('cq-tpl-food-search').value.trim().toLowerCase();
-            const dropdown = document.getElementById('cq-food-dropdown');
+            const searchInput = getActiveSearchInput();
+            const dropdown = getActiveDropdown();
+            const query = searchInput.value.trim().toLowerCase();
             const allFoods = getFoodList();
             const emojiMap = getItemEmoji();
             const filtered = query
@@ -2826,7 +3316,22 @@
                         const emoji = emojiMap[f.category] || '';
                         html += `<div class="px-3 py-1 text-xs font-bold text-gray-500 bg-gray-100 sticky top-0">${emoji} ${f.category}</div>`;
                     }
-                    html += `<div class="px-3 py-1.5 text-sm cursor-pointer hover:bg-yellow-50" onmousedown="selectFood('${escapeHtml(f.name)}')">${escapeHtml(f.name)}</div>`;
+                    // GI・栄養インジケーター（食事モードのみ）
+                    let indicators = '';
+                    if (!isWorkoutMode()) {
+                        const nut = FOOD_NUTRIENTS_PER_100G[f.name];
+                        if (nut) {
+                            if (nut.gi > 0) {
+                                indicators += nut.gi >= 70 ? '<span class="text-[9px] bg-red-100 text-red-600 px-0.5 rounded ml-1">高GI</span>'
+                                    : nut.gi >= 55 ? '<span class="text-[9px] bg-yellow-100 text-yellow-700 px-0.5 rounded ml-1">中GI</span>'
+                                    : '<span class="text-[9px] bg-green-100 text-green-700 px-0.5 rounded ml-1">低GI</span>';
+                            }
+                            if (nut.fat > 15) indicators += '<span class="text-[9px] bg-gray-200 text-gray-600 px-0.5 rounded ml-1">高脂質</span>';
+                            const macroLabel = `<span class="text-[9px] text-gray-400 ml-1">P${r1(nut.protein)} F${r1(nut.fat)} C${r1(nut.carbs)}</span>`;
+                            indicators += macroLabel;
+                        }
+                    }
+                    html += `<div class="px-3 py-1.5 text-sm cursor-pointer hover:bg-yellow-50 flex items-center" onmousedown="selectFood('${escapeHtml(f.name)}','${escapeHtml(f.category)}')">${escapeHtml(f.name)}${indicators}</div>`;
                 });
                 if (filtered.length > 80) {
                     html += '<div class="px-3 py-2 text-xs text-gray-400">...他 ' + (filtered.length - 80) + ' 件</div>';
@@ -2836,26 +3341,41 @@
             dropdown.classList.remove('hidden');
         }
 
-        function selectFood(name) {
-            document.getElementById('cq-tpl-food-search').value = name;
-            document.getElementById('cq-food-dropdown').classList.add('hidden');
-
-            // 単位とデフォルト量を自動設定
-            const serving = FOOD_SERVING_SIZES[name];
-            const unitSelect = document.getElementById('cq-tpl-food-unit');
-            const amountInput = document.getElementById('cq-tpl-food-amount');
-            if (serving) {
-                const defaultUnit = Object.keys(serving)[0];
-                unitSelect.value = defaultUnit;
-                amountInput.value = defaultUnit === 'g' ? '100' : '1';
+        function selectFood(name, category) {
+            if (isWorkoutMode()) {
+                document.getElementById('cq-tpl-exercise-search').value = name;
+                document.getElementById('cq-exercise-dropdown').classList.add('hidden');
+                // カテゴリに応じてフィールドを切替
+                selectedExerciseCategory = category || '';
+                updateExerciseFields();
             } else {
-                unitSelect.value = 'g';
-                amountInput.value = '100';
+                document.getElementById('cq-tpl-food-search').value = name;
+                document.getElementById('cq-food-dropdown').classList.add('hidden');
+                // 単位とデフォルト量を自動設定
+                const serving = FOOD_SERVING_SIZES[name];
+                const unitSelect = document.getElementById('cq-tpl-food-unit');
+                const amountInput = document.getElementById('cq-tpl-food-amount');
+                if (serving) {
+                    const defaultUnit = Object.keys(serving)[0];
+                    unitSelect.value = defaultUnit;
+                    amountInput.value = defaultUnit === 'g' ? '100' : '1';
+                } else {
+                    unitSelect.value = 'g';
+                    amountInput.value = '100';
+                }
+                amountInput.focus();
             }
-            amountInput.focus();
         }
 
         function addTemplateItem() {
+            if (isWorkoutMode()) {
+                addWorkoutTemplateItem();
+            } else {
+                addMealTemplateItem();
+            }
+        }
+
+        function addMealTemplateItem() {
             const foodName = document.getElementById('cq-tpl-food-search').value.trim();
             const amount = parseFloat(document.getElementById('cq-tpl-food-amount').value);
             const unit = document.getElementById('cq-tpl-food-unit').value;
@@ -2872,7 +3392,12 @@
                 }
             }
             const ratio = grams / 100;
-            const nutrients = FOOD_NUTRIENTS_PER_100G[foodName];
+            // 組み込みDBを優先、なければカスタム食品から検索
+            let nutrients = FOOD_NUTRIENTS_PER_100G[foodName];
+            if (!nutrients) {
+                const customFood = loadedUserCustomFoods.find(cf => cf.name === foodName);
+                if (customFood) nutrients = customFood.nutrientsPer100g || customFood;
+            }
             let item = { foodName, amount, unit, calories: 0, protein: 0, fat: 0, carbs: 0,
                 fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0,
                 saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0,
@@ -2904,9 +3429,101 @@
             document.getElementById('cq-tpl-food-search').focus();
         }
 
+        function addWorkoutTemplateItem() {
+            const foodName = document.getElementById('cq-tpl-exercise-search').value.trim();
+            if (!foodName) { alert('種目を選択してください'); return; }
+
+            const exType = getExerciseType(selectedExerciseCategory);
+            let item = {
+                foodName,
+                amount: 0,
+                unit: 'セット',
+                calories: 0, protein: 0, fat: 0, carbs: 0,
+                fiber: 0, solubleFiber: 0, insolubleFiber: 0, sugar: 0,
+                saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0,
+                diaas: 0, gi: 0, vitamins: {}, minerals: {},
+                // Exercise model fields
+                category: selectedExerciseCategory,
+                sets: null, reps: null, weight: null, duration: null, distance: null,
+                rmPercentMin: null, rmPercentMax: null
+            };
+
+            if (exType === 'strength') {
+                const sets = parseInt(document.getElementById('cq-ex-sets').value) || 0;
+                const reps = parseInt(document.getElementById('cq-ex-reps').value) || 0;
+                const weight = parseFloat(document.getElementById('cq-ex-weight').value) || 0;
+                const duration = parseInt(document.getElementById('cq-ex-duration-strength').value) || 0;
+                const rmMin = parseFloat(document.getElementById('cq-ex-rm-min').value) || 0;
+                const rmMax = parseFloat(document.getElementById('cq-ex-rm-max').value) || 0;
+                if (sets <= 0 && reps <= 0) { alert('セット数または回数を入力してください'); return; }
+                item.sets = sets;
+                item.reps = reps;
+                item.weight = weight;
+                item.duration = duration;
+                item.amount = sets;
+                item.unit = 'セット';
+                // 1RM%指定
+                if (rmMin > 0 || rmMax > 0) {
+                    item.rmPercentMin = rmMin > 0 ? rmMin : null;
+                    item.rmPercentMax = rmMax > 0 ? rmMax : null;
+                }
+            } else if (exType === 'cardio') {
+                const duration = parseInt(document.getElementById('cq-ex-duration-cardio').value) || 0;
+                const distance = parseFloat(document.getElementById('cq-ex-distance').value) || 0;
+                if (duration <= 0) { alert('時間（分）を入力してください'); return; }
+                item.duration = duration;
+                item.distance = distance > 0 ? distance : null;
+                item.amount = duration;
+                item.unit = '分';
+            } else {
+                // stretch
+                const duration = parseInt(document.getElementById('cq-ex-duration-stretch').value) || 0;
+                if (duration <= 0) { alert('時間（分）を入力してください'); return; }
+                item.duration = duration;
+                item.amount = duration;
+                item.unit = '分';
+            }
+
+            templateItems.push(item);
+            renderTemplateItems();
+
+            // 入力欄リセット
+            document.getElementById('cq-tpl-exercise-search').value = '';
+            document.getElementById('cq-ex-sets').value = '';
+            document.getElementById('cq-ex-reps').value = '';
+            document.getElementById('cq-ex-weight').value = '';
+            document.getElementById('cq-ex-duration-strength').value = '';
+            document.getElementById('cq-ex-duration-cardio').value = '';
+            document.getElementById('cq-ex-distance').value = '';
+            document.getElementById('cq-ex-duration-stretch').value = '';
+            document.getElementById('cq-ex-rm-min').value = '';
+            document.getElementById('cq-ex-rm-max').value = '';
+            document.getElementById('cq-tpl-exercise-search').focus();
+        }
+
         function removeTemplateItem(index) {
             templateItems.splice(index, 1);
             renderTemplateItems();
+        }
+
+        function formatWorkoutItemDisplay(item) {
+            const parts = [];
+            if (item.sets) parts.push(item.sets + 'セット');
+            if (item.reps) parts.push(item.reps + '回/セット');
+            if (item.rmPercentMin || item.rmPercentMax) {
+                if (item.rmPercentMin && item.rmPercentMax) {
+                    parts.push('1RM' + item.rmPercentMin + '-' + item.rmPercentMax + '%');
+                } else if (item.rmPercentMin) {
+                    parts.push('1RM' + item.rmPercentMin + '%');
+                } else {
+                    parts.push('1RM' + item.rmPercentMax + '%');
+                }
+            } else if (item.weight) {
+                parts.push(item.weight + 'kg');
+            }
+            if (item.duration) parts.push(item.duration + '分');
+            if (item.distance) parts.push(item.distance + 'km');
+            return parts.join(' × ');
         }
 
         function renderTemplateItems() {
@@ -2915,13 +3532,22 @@
                 container.innerHTML = '<span class="text-gray-400">アイテムを追加してください</span>';
                 return;
             }
-            let html = templateItems.map((item, i) =>
-                `<div class="flex items-center justify-between py-1 px-2 rounded ${i % 2 === 0 ? 'bg-yellow-50' : ''}">
-                    <span class="text-sm"><strong>${escapeHtml(item.foodName)}</strong> — ${item.amount} ${escapeHtml(item.unit)}
-                    ${item.calories > 0 ? `<span class="text-xs text-gray-500 ml-1">(${item.calories}kcal P${item.protein} F${item.fat} C${item.carbs})</span>` : ''}</span>
+            let html = templateItems.map((item, i) => {
+                const isExercise = item.sets != null || item.duration != null || item.distance != null;
+                const detail = isExercise
+                    ? formatWorkoutItemDisplay(item)
+                    : `${item.amount} ${escapeHtml(item.unit)}`;
+                const macro = (!isExercise && item.calories > 0)
+                    ? `<span class="text-xs text-gray-500 ml-1">(${item.calories}kcal P${item.protein} F${item.fat} C${item.carbs})</span>`
+                    : '';
+                const catBadge = isExercise && item.category
+                    ? `<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full ml-1">${EXERCISE_EMOJI[item.category]||''} ${item.category}</span>`
+                    : '';
+                return `<div class="flex items-center justify-between py-1 px-2 rounded ${i % 2 === 0 ? 'bg-yellow-50' : ''}">
+                    <span class="text-sm"><strong>${escapeHtml(item.foodName)}</strong>${catBadge} — ${detail}${macro}</span>
                     <button onclick="removeTemplateItem(${i})" class="text-red-400 hover:text-red-600 text-xs ml-2">✕</button>
-                </div>`
-            ).join('');
+                </div>`;
+            }).join('');
             // 合計表示
             const totals = templateItems.reduce((acc, item) => ({
                 calories: acc.calories + (item.calories || 0),
@@ -2947,6 +3573,11 @@
             const dropdown = document.getElementById('cq-food-dropdown');
             if (search && dropdown && !search.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.add('hidden');
+            }
+            const exSearch = document.getElementById('cq-tpl-exercise-search');
+            const exDropdown = document.getElementById('cq-exercise-dropdown');
+            if (exSearch && exDropdown && !exSearch.contains(e.target) && !exDropdown.contains(e.target)) {
+                exDropdown.classList.add('hidden');
             }
         });
 
@@ -2993,6 +3624,287 @@
             }
         }
 
+        async function createDefaultTemplates() {
+            const msgEl = document.getElementById('cq-default-tpl-msg');
+            msgEl.innerHTML = '<span class="text-gray-500">作成中...</span>';
+            try {
+                const currentUser = auth.currentUser;
+                if (!currentUser) { msgEl.innerHTML = '<span class="text-red-500">ログインしてください</span>'; return; }
+
+                // ヘルパー: 食品リストからテンプレアイテム配列を生成
+                function buildItems(foods) {
+                    return foods.map(f => {
+                        const nut = FOOD_NUTRIENTS_PER_100G[f.name];
+                        const grams = f.unit === 'g' ? f.amount : (FOOD_SERVING_SIZES[f.name]?.[f.unit] || 1) * f.amount;
+                        const ratio = grams / 100;
+                        const item = { foodName: f.name, amount: f.amount, unit: f.unit,
+                            calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0,
+                            solubleFiber: 0, insolubleFiber: 0, sugar: 0,
+                            saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0,
+                            diaas: 0, gi: 0, vitamins: {}, minerals: {} };
+                        if (nut) {
+                            item.calories = Math.round(nut.calories * ratio);
+                            item.protein = r1(nut.protein * ratio);
+                            item.fat = r1(nut.fat * ratio);
+                            item.carbs = r1(nut.carbs * ratio);
+                            item.fiber = r1((nut.fiber || 0) * ratio);
+                            item.solubleFiber = r1((nut.solubleFiber || 0) * ratio);
+                            item.insolubleFiber = r1((nut.insolubleFiber || 0) * ratio);
+                            item.sugar = r1((nut.sugar || 0) * ratio);
+                            item.saturatedFat = r2((nut.saturatedFat || 0) * ratio);
+                            item.monounsaturatedFat = r2((nut.monounsaturatedFat || 0) * ratio);
+                            item.polyunsaturatedFat = r2((nut.polyunsaturatedFat || 0) * ratio);
+                            item.diaas = nut.diaas || 0;
+                            item.gi = nut.gi || 0;
+                            item.vitamins = scaleMap(nut.vitamins || {}, ratio);
+                            item.minerals = scaleMap(nut.minerals || {}, ratio);
+                        }
+                        return item;
+                    });
+                }
+                function calcTotals(items) {
+                    const t = items.reduce((acc, i) => {
+                        acc.calories += i.calories; acc.protein += i.protein; acc.fat += i.fat;
+                        acc.carbs += i.carbs; acc.fiber += i.fiber;
+                        for (const k of Object.keys(i.vitamins || {})) acc.vitamins[k] = (acc.vitamins[k] || 0) + (i.vitamins[k] || 0);
+                        for (const k of Object.keys(i.minerals || {})) acc.minerals[k] = (acc.minerals[k] || 0) + (i.minerals[k] || 0);
+                        return acc;
+                    }, { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, vitamins: {}, minerals: {} });
+                    const rv = {}; for (const [k,v] of Object.entries(t.vitamins)) rv[k] = r2(v);
+                    const rm = {}; for (const [k,v] of Object.entries(t.minerals)) rm[k] = r2(v);
+                    return { calories: t.calories, protein: r1(t.protein), fat: r1(t.fat), carbs: r1(t.carbs), fiber: r1(t.fiber), vitamins: rv, minerals: rm };
+                }
+
+                // ===== セオリー準拠テンプレート定義 =====
+                const DEFAULTS = [
+                    {
+                        title: '通常食A（鶏むね＋冷飯）',
+                        type: 'MEAL',
+                        foods: [
+                            { name: '鶏むね肉（皮なし生）', amount: 150, unit: 'g' },
+                            { name: '白米（冷やご飯・再加熱）', amount: 150, unit: 'g' },
+                            { name: 'ブロッコリー（生）', amount: 100, unit: 'g' }
+                        ]
+                    },
+                    {
+                        title: '通常食B（鮭＋冷飯）',
+                        type: 'MEAL',
+                        foods: [
+                            { name: '鮭（生）', amount: 120, unit: 'g' },
+                            { name: '白米（冷やご飯・再加熱）', amount: 150, unit: 'g' },
+                            { name: 'ブロッコリー（生）', amount: 100, unit: 'g' }
+                        ]
+                    },
+                    {
+                        title: '通常食C（牛赤身＋冷飯）',
+                        type: 'MEAL',
+                        foods: [
+                            { name: '牛もも肉（赤肉生）', amount: 150, unit: 'g' },
+                            { name: '白米（冷やご飯・再加熱）', amount: 150, unit: 'g' },
+                            { name: 'ブロッコリー（生）', amount: 100, unit: 'g' }
+                        ]
+                    },
+                    {
+                        title: '朝食（卵＋冷飯）',
+                        type: 'MEAL',
+                        foods: [
+                            { name: '鶏卵 L（64g）', amount: 128, unit: 'g' },
+                            { name: '白米（冷やご飯・再加熱）', amount: 150, unit: 'g' },
+                            { name: 'ブロッコリー（生）', amount: 80, unit: 'g' }
+                        ]
+                    },
+                    {
+                        title: 'トレ前食（低GI・低脂質）',
+                        type: 'MEAL',
+                        foods: [
+                            { name: '鶏むね肉（皮なし生）', amount: 80, unit: 'g' },
+                            { name: '白米（冷やご飯・再加熱）', amount: 150, unit: 'g' }
+                        ]
+                    },
+                    {
+                        title: 'トレ直後（高GI＋ホエイ）',
+                        type: 'MEAL',
+                        foods: [
+                            { name: '餅（切り餅）', amount: 100, unit: 'g' },
+                            { name: 'ホエイプロテイン', amount: 30, unit: 'g' }
+                        ]
+                    },
+                    {
+                        title: 'トレ後食（高GI・炊飯直後白米）',
+                        type: 'MEAL',
+                        foods: [
+                            { name: '鶏むね肉（皮なし生）', amount: 150, unit: 'g' },
+                            { name: '白米（炊飯直後）', amount: 200, unit: 'g' },
+                            { name: 'ブロッコリー（生）', amount: 80, unit: 'g' }
+                        ]
+                    }
+                ];
+
+                const batch = db.batch();
+                DEFAULTS.forEach(def => {
+                    const items = buildItems(def.foods);
+                    const totals = calcTotals(items);
+                    const ref = db.collection('quest_templates').doc();
+                    batch.set(ref, {
+                        ownerId: currentUser.uid,
+                        title: def.title,
+                        type: def.type,
+                        items: items,
+                        totalMacros: totals,
+                        isActive: true,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                await batch.commit();
+                msgEl.innerHTML = `<span class="text-green-600">✅ ${DEFAULTS.length}件の食事テンプレートを作成しました</span>`;
+                await loadTemplates();
+            } catch (e) {
+                msgEl.innerHTML = `<span class="text-red-500">❌ ${e.message}</span>`;
+            }
+        }
+
+        async function createDefaultWorkoutTemplates() {
+            const msgEl = document.getElementById('cq-default-tpl-msg');
+            msgEl.innerHTML = '<span class="text-gray-500">運動テンプレ作成中...</span>';
+            try {
+                const currentUser = auth.currentUser;
+
+                // 運動アイテムビルダー
+                function buildExItem(name, category, sets, reps, duration, rmMin, rmMax) {
+                    return {
+                        foodName: name, amount: sets, unit: 'セット',
+                        calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0,
+                        solubleFiber: 0, insolubleFiber: 0, sugar: 0,
+                        saturatedFat: 0, monounsaturatedFat: 0, polyunsaturatedFat: 0,
+                        diaas: 0, gi: 0, vitamins: {}, minerals: {},
+                        category: category,
+                        sets: sets, reps: reps, weight: null, duration: duration,
+                        distance: null, rmPercentMin: rmMin, rmPercentMax: rmMax
+                    };
+                }
+                const emptyMacros = { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, vitamins: {}, minerals: {} };
+
+                // ===== パワー（筋力）: 1RM%ベース、低レップ =====
+                // ===== パンプ（筋肥大）: RM指定なし、高レップ =====
+                const WORKOUT_DEFAULTS = [
+                    // ── 脚 ──
+                    {
+                        title: '脚パワー（スクワット主軸）',
+                        items: [
+                            buildExItem('バーベルスクワット', '脚', 5, 5, 30, 75, 85),
+                            buildExItem('レッグプレス', '脚', 4, 6, 20, 70, 80),
+                            buildExItem('レッグエクステンション', '脚', 3, 8, 12, null, null),
+                            buildExItem('レッグカール', '脚', 3, 8, 12, null, null)
+                        ]
+                    },
+                    {
+                        title: '脚パンプ（高レップ筋肥大）',
+                        items: [
+                            buildExItem('バーベルスクワット', '脚', 4, 10, 20, null, null),
+                            buildExItem('レッグプレス', '脚', 3, 12, 15, null, null),
+                            buildExItem('レッグエクステンション', '脚', 3, 15, 12, null, null),
+                            buildExItem('レッグカール', '脚', 3, 15, 12, null, null)
+                        ]
+                    },
+                    // ── 背中 ──
+                    {
+                        title: '背中パワー（デッドリフト主軸）',
+                        items: [
+                            buildExItem('デッドリフト', '背中', 5, 3, 35, 80, 90),
+                            buildExItem('ベントオーバーロウ', '背中', 4, 5, 20, 70, 80),
+                            buildExItem('懸垂（チンニング）', '背中', 4, 6, 15, null, null),
+                            buildExItem('シーテッドロー', '背中', 3, 8, 12, null, null)
+                        ]
+                    },
+                    {
+                        title: '背中パンプ（高レップ筋肥大）',
+                        items: [
+                            buildExItem('デッドリフト', '背中', 3, 10, 20, null, null),
+                            buildExItem('ベントオーバーロウ', '背中', 3, 10, 15, null, null),
+                            buildExItem('懸垂（チンニング）', '背中', 3, 10, 12, null, null),
+                            buildExItem('シーテッドロー', '背中', 3, 12, 12, null, null)
+                        ]
+                    },
+                    // ── 胸 ──
+                    {
+                        title: '胸パワー（ベンチプレス主軸）',
+                        items: [
+                            buildExItem('バーベルベンチプレス', '胸', 5, 5, 30, 75, 85),
+                            buildExItem('インクラインベンチプレス', '胸', 4, 6, 20, 70, 80),
+                            buildExItem('ディップス', '胸', 3, 8, 12, null, null),
+                            buildExItem('ダンベルフライ', '胸', 3, 10, 12, null, null)
+                        ]
+                    },
+                    {
+                        title: '胸パンプ（高レップ筋肥大）',
+                        items: [
+                            buildExItem('バーベルベンチプレス', '胸', 4, 10, 20, null, null),
+                            buildExItem('インクラインベンチプレス', '胸', 3, 10, 15, null, null),
+                            buildExItem('ディップス', '胸', 3, 12, 12, null, null),
+                            buildExItem('ダンベルフライ', '胸', 3, 15, 12, null, null)
+                        ]
+                    },
+                    // ── 肩 ──
+                    {
+                        title: '肩パワー（プレス主軸）',
+                        items: [
+                            buildExItem('ダンベルショルダープレス', '肩', 5, 5, 25, 70, 80),
+                            buildExItem('スミスバックプレス', '肩', 4, 6, 20, 65, 75),
+                            buildExItem('サイドレイズ', '肩', 4, 10, 12, null, null),
+                            buildExItem('フロントレイズ', '肩', 3, 10, 10, null, null)
+                        ]
+                    },
+                    {
+                        title: '肩パンプ（高レップ筋肥大）',
+                        items: [
+                            buildExItem('ダンベルショルダープレス', '肩', 4, 10, 15, null, null),
+                            buildExItem('スミスバックプレス', '肩', 3, 12, 12, null, null),
+                            buildExItem('サイドレイズ', '肩', 4, 15, 12, null, null),
+                            buildExItem('フロントレイズ', '肩', 3, 15, 10, null, null)
+                        ]
+                    },
+                    // ── 腕 ──
+                    {
+                        title: '腕パワー（コンパウンド主軸）',
+                        items: [
+                            buildExItem('ナローベンチプレス', '胸', 4, 5, 20, 75, 85),
+                            buildExItem('バーベルカール', '腕', 4, 6, 15, 70, 80),
+                            buildExItem('フレンチプレス', '腕', 3, 8, 12, null, null),
+                            buildExItem('インクラインダンベルカール', '腕', 3, 8, 12, null, null)
+                        ]
+                    },
+                    {
+                        title: '腕パンプ（高レップ筋肥大）',
+                        items: [
+                            buildExItem('ナローベンチプレス', '胸', 3, 10, 15, null, null),
+                            buildExItem('バーベルカール', '腕', 3, 12, 12, null, null),
+                            buildExItem('フレンチプレス', '腕', 3, 15, 10, null, null),
+                            buildExItem('インクラインダンベルカール', '腕', 3, 15, 10, null, null)
+                        ]
+                    }
+                ];
+
+                const batch = db.batch();
+                WORKOUT_DEFAULTS.forEach(def => {
+                    const ref = db.collection('quest_templates').doc();
+                    batch.set(ref, {
+                        ownerId: currentUser.uid,
+                        title: def.title,
+                        type: 'WORKOUT',
+                        items: def.items,
+                        totalMacros: emptyMacros,
+                        isActive: true,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                await batch.commit();
+                msgEl.innerHTML = `<span class="text-green-600">✅ ${WORKOUT_DEFAULTS.length}件の運動テンプレートを作成しました</span>`;
+                await loadTemplates();
+            } catch (e) {
+                msgEl.innerHTML = `<span class="text-red-500">❌ ${e.message}</span>`;
+            }
+        }
+
         async function loadTemplates() {
             try {
                 const snapshot = await db.collection('quest_templates').where('isActive', '==', true).get();
@@ -3000,47 +3912,170 @@
                 snapshot.forEach(doc => {
                     templates.push({ id: doc.id, ...doc.data() });
                 });
-                // クライアント側でソート（複合インデックス不要）
+                // デフォルトソート: 新しい順
                 templates.sort((a, b) => {
                     const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
                     const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
                     return bTime - aTime;
                 });
+                // グローバルキャッシュに保持
+                cachedTemplates = templates;
                 document.getElementById('cq-template-count').textContent = templates.length;
 
-                // テンプレート選択肢を更新
+                // テンプレート選択肢を更新（PFC付き）
                 const select = document.getElementById('cq-assign-template');
                 select.innerHTML = '<option value="">-- テンプレートを選択 --</option>';
                 templates.forEach(t => {
-                    select.innerHTML += `<option value="${t.id}">${escapeHtml(t.title)} (${t.type})</option>`;
+                    const m = t.totalMacros || {};
+                    const pfcLabel = m.calories ? ` (${Math.round(m.calories)}kcal P${r1(m.protein||0)} F${r1(m.fat||0)} C${r1(m.carbs||0)})` : '';
+                    select.innerHTML += `<option value="${t.id}">${escapeHtml(t.title)}${pfcLabel}</option>`;
                 });
 
-                if (templates.length === 0) {
-                    document.getElementById('cq-template-list').innerHTML = '<p class="text-gray-400">テンプレートがありません</p>';
-                    return;
-                }
+                // 一覧をレンダリング（ソート・フィルター適用）
+                renderTemplateList();
 
-                let html = '<div class="space-y-3">';
-                templates.forEach(t => {
-                    const typeBadge = t.type === 'MEAL'
-                        ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">🍽 食事</span>'
-                        : '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">💪 運動</span>';
-                    const items = (t.items || []).map(i => `${i.foodName} ${i.amount}${i.unit}`).join(', ');
-                    html += `<div class="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <span class="font-bold">${escapeHtml(t.title)}</span> ${typeBadge}
-                            </div>
-                            <button onclick="deleteTemplate('${t.id}')" class="text-xs text-red-500 hover:text-red-700">削除</button>
-                        </div>
-                        <div class="text-sm text-gray-600 mt-1">${escapeHtml(items)}</div>
-                    </div>`;
-                });
-                html += '</div>';
-                document.getElementById('cq-template-list').innerHTML = html;
+                // インラインドロップダウンも更新（スロットUI表示中の場合）
+                refreshInlineTemplateDropdowns();
             } catch (e) {
                 document.getElementById('cq-template-list').innerHTML = '<p class="text-red-500">読み込みエラー: ' + e.message + '</p>';
             }
+        }
+
+        // テンプレート一覧をソート・フィルター・検索して再描画
+        function renderTemplateList() {
+            const filterType = document.getElementById('cq-tpl-filter-type')?.value || 'ALL';
+            const sortKey = document.getElementById('cq-tpl-sort')?.value || 'newest';
+            const searchText = (document.getElementById('cq-tpl-search')?.value || '').trim().toLowerCase();
+
+            // 1. フィルター
+            let filtered = cachedTemplates.filter(t => {
+                if (filterType !== 'ALL' && t.type !== filterType) return false;
+                if (searchText && !t.title.toLowerCase().includes(searchText)) return false;
+                return true;
+            });
+
+            // 2. ソート
+            filtered.sort((a, b) => {
+                switch (sortKey) {
+                    case 'newest': {
+                        const aT = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+                        const bT = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+                        return bT - aT;
+                    }
+                    case 'oldest': {
+                        const aT = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+                        const bT = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+                        return aT - bT;
+                    }
+                    case 'name-asc':
+                        return a.title.localeCompare(b.title, 'ja');
+                    case 'name-desc':
+                        return b.title.localeCompare(a.title, 'ja');
+                    case 'cal-desc': {
+                        const aCal = a.totalMacros?.calories || 0;
+                        const bCal = b.totalMacros?.calories || 0;
+                        return bCal - aCal;
+                    }
+                    case 'cal-asc': {
+                        const aCal = a.totalMacros?.calories || 0;
+                        const bCal = b.totalMacros?.calories || 0;
+                        return aCal - bCal;
+                    }
+                    default: return 0;
+                }
+            });
+
+            // カウント表示
+            const countEl = document.getElementById('cq-tpl-filtered-count');
+            if (countEl) {
+                if (filtered.length === cachedTemplates.length) {
+                    countEl.textContent = `${filtered.length}件`;
+                } else {
+                    countEl.textContent = `${filtered.length}/${cachedTemplates.length}件`;
+                }
+            }
+
+            if (filtered.length === 0) {
+                document.getElementById('cq-template-list').innerHTML = '<p class="text-gray-400 text-sm py-2">該当するテンプレートがありません</p>';
+                return;
+            }
+
+            // 3. レンダリング
+            let html = '<div class="space-y-3">';
+            filtered.forEach(t => {
+                const tid = t.id;
+                const typeBadge = t.type === 'MEAL'
+                    ? '<span class="bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded-full">🍽 食事</span>'
+                    : '<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded-full">💪 運動</span>';
+                const macros = t.totalMacros || {};
+                const pfcLine = macros.calories
+                    ? `<span class="text-[11px] font-mono text-gray-600">${Math.round(macros.calories)}kcal P${r1(macros.protein||0)}g F${r1(macros.fat||0)}g C${r1(macros.carbs||0)}g</span>`
+                    : '';
+                // アイテム編集行
+                let itemsHtml = '';
+                (t.items || []).forEach((item, idx) => {
+                    const isWorkout = item.sets != null || item.duration != null || item.distance != null;
+                    const pre = `tpl-${tid}-item-${idx}`;
+                    if (isWorkout) {
+                        const hasRm = item.rmPercentMin != null || item.rmPercentMax != null;
+                        itemsHtml += `<div class="flex flex-wrap items-center gap-1 py-0.5">
+                            <span class="text-[11px] text-gray-700 font-bold min-w-[100px]">${escapeHtml(item.foodName)}</span>
+                            <input type="number" id="${pre}-sets" value="${item.sets||''}" min="1" step="1" class="w-10 border border-blue-300 rounded px-1 py-0.5 text-[11px] text-right" title="セット数">
+                            <span class="text-[10px] text-gray-400">set</span>
+                            <input type="number" id="${pre}-reps" value="${item.reps||''}" min="1" step="1" class="w-10 border border-blue-300 rounded px-1 py-0.5 text-[11px] text-right" title="回数/セット">
+                            <span class="text-[10px] text-gray-400">rep</span>
+                            <input type="number" id="${pre}-rmmin" value="${item.rmPercentMin||''}" min="0" max="100" step="5" class="w-10 border border-orange-300 rounded px-1 py-0.5 text-[11px] text-right" title="1RM%下限" placeholder="-">
+                            <span class="text-[10px] text-gray-400">-</span>
+                            <input type="number" id="${pre}-rmmax" value="${item.rmPercentMax||''}" min="0" max="100" step="5" class="w-10 border border-orange-300 rounded px-1 py-0.5 text-[11px] text-right" title="1RM%上限" placeholder="-">
+                            <span class="text-[10px] text-orange-400">%</span>
+                            <input type="number" id="${pre}-dur" value="${item.duration||''}" min="0" step="1" class="w-10 border border-gray-300 rounded px-1 py-0.5 text-[11px] text-right" title="時間(分)" placeholder="-">
+                            <span class="text-[10px] text-gray-400">分</span>
+                        </div>`;
+                    } else {
+                        itemsHtml += `<div class="flex items-center gap-1 py-0.5">
+                            <span class="text-[11px] text-gray-700 flex-1 truncate" title="${escapeHtml(item.foodName)}">${escapeHtml(item.foodName)}</span>
+                            <input type="number" id="${pre}" value="${item.amount}" min="1" step="1" class="w-16 border border-gray-300 rounded px-1 py-0.5 text-[11px] text-right">
+                            <span class="text-[11px] text-gray-500">${escapeHtml(item.unit)}</span>
+                        </div>`;
+                    }
+                });
+                const borderColor = t.type === 'MEAL' ? 'border-yellow-200 bg-yellow-50' : 'border-blue-200 bg-blue-50';
+                html += `<div class="p-3 border ${borderColor} rounded-lg" id="tpl-card-${tid}">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-sm">${escapeHtml(t.title)}</span>${typeBadge}
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="saveTemplateEdits('${tid}')" class="bg-yellow-500 text-white px-2 py-0.5 rounded text-[10px] hover:bg-yellow-600 font-bold">保存</button>
+                            <button onclick="deleteTemplate('${tid}')" class="text-[10px] text-red-500 hover:text-red-700">削除</button>
+                        </div>
+                    </div>
+                    <div id="tpl-pfc-${tid}" class="mb-1">${pfcLine}</div>
+                    <div>${itemsHtml}</div>
+                    <div id="tpl-msg-${tid}" class="text-[10px] mt-1 hidden"></div>
+                </div>`;
+            });
+            html += '</div>';
+            document.getElementById('cq-template-list').innerHTML = html;
+        }
+
+        // インラインドロップダウン（各スロット横）を最新のcachedTemplatesで再構築
+        function refreshInlineTemplateDropdowns() {
+            document.querySelectorAll('[id^="cq-bulk-tpl-"]').forEach(sel => {
+                const slotKey = sel.id.replace('cq-bulk-tpl-', '');
+                const slotType = slotKey === 'workout' ? 'workout' : 'meal';
+                const currentVal = sel.value; // 選択中の値を保持
+                let opts = '<option value="">-- 未選択 --</option>';
+                cachedTemplates.forEach(t => {
+                    if (slotType === 'workout' && t.type !== 'WORKOUT') return;
+                    if (slotType === 'meal' && t.type !== 'MEAL') return;
+                    const m = t.totalMacros || {};
+                    const pfcLabel = m.calories ? ` (${Math.round(m.calories)}kcal P${r1(m.protein||0)} F${r1(m.fat||0)} C${r1(m.carbs||0)})` : '';
+                    const selected = t.id === currentVal ? ' selected' : '';
+                    opts += `<option value="${t.id}"${selected}>${escapeHtml(t.title)}${pfcLabel}</option>`;
+                });
+                sel.innerHTML = opts;
+            });
         }
 
         async function deleteTemplate(templateId) {
@@ -3050,6 +4085,112 @@
                 await loadTemplates();
             } catch (e) {
                 alert('エラー: ' + e.message);
+            }
+        }
+
+        async function saveTemplateEdits(templateId) {
+            const msgEl = document.getElementById('tpl-msg-' + templateId);
+            msgEl.classList.remove('hidden');
+            msgEl.innerHTML = '<span class="text-gray-500">保存中...</span>';
+            try {
+                const tpl = cachedTemplates.find(t => t.id === templateId);
+                if (!tpl) throw new Error('テンプレートが見つかりません');
+
+                const updatedItems = (tpl.items || []).map((item, idx) => {
+                    const pre = `tpl-${templateId}-item-${idx}`;
+                    const isWorkout = item.sets != null || item.duration != null || item.distance != null;
+
+                    if (isWorkout) {
+                        // 運動アイテム: sets, reps, rmPercentMin, rmPercentMax, duration を編集
+                        const setsEl = document.getElementById(`${pre}-sets`);
+                        const repsEl = document.getElementById(`${pre}-reps`);
+                        const rmMinEl = document.getElementById(`${pre}-rmmin`);
+                        const rmMaxEl = document.getElementById(`${pre}-rmmax`);
+                        const durEl = document.getElementById(`${pre}-dur`);
+                        const updated = { ...item };
+                        if (setsEl) { const v = parseInt(setsEl.value); if (v > 0) { updated.sets = v; updated.amount = v; } }
+                        if (repsEl) { const v = parseInt(repsEl.value); if (v > 0) updated.reps = v; }
+                        if (rmMinEl) { const v = parseFloat(rmMinEl.value); updated.rmPercentMin = (v > 0) ? v : null; }
+                        if (rmMaxEl) { const v = parseFloat(rmMaxEl.value); updated.rmPercentMax = (v > 0) ? v : null; }
+                        if (durEl) { const v = parseInt(durEl.value); updated.duration = (v > 0) ? v : null; }
+                        return updated;
+                    }
+
+                    // 食事アイテム: amount を編集 + マクロ再計算
+                    const inputEl = document.getElementById(pre);
+                    if (inputEl) {
+                        const newAmount = parseFloat(inputEl.value);
+                        if (!newAmount || newAmount <= 0) return { ...item };
+                        const foodName = item.foodName;
+                        let nut = FOOD_NUTRIENTS_PER_100G[foodName];
+                        if (!nut) {
+                            const cf = (loadedUserCustomFoods || []).find(c => c.name === foodName);
+                            if (cf) nut = cf.nutrientsPer100g || cf;
+                        }
+                        let grams = newAmount;
+                        if (item.unit !== 'g') {
+                            const serving = FOOD_SERVING_SIZES[foodName];
+                            if (serving && serving[item.unit]) grams = newAmount * serving[item.unit];
+                        }
+                        const ratio = grams / 100;
+                        const updated = { ...item, amount: newAmount };
+                        if (nut) {
+                            updated.calories = Math.round(nut.calories * ratio);
+                            updated.protein = r1(nut.protein * ratio);
+                            updated.fat = r1(nut.fat * ratio);
+                            updated.carbs = r1(nut.carbs * ratio);
+                            updated.fiber = r1((nut.fiber || 0) * ratio);
+                            updated.solubleFiber = r1((nut.solubleFiber || 0) * ratio);
+                            updated.insolubleFiber = r1((nut.insolubleFiber || 0) * ratio);
+                            updated.sugar = r1((nut.sugar || 0) * ratio);
+                            updated.saturatedFat = r2((nut.saturatedFat || 0) * ratio);
+                            updated.monounsaturatedFat = r2((nut.monounsaturatedFat || 0) * ratio);
+                            updated.polyunsaturatedFat = r2((nut.polyunsaturatedFat || 0) * ratio);
+                            updated.vitamins = scaleMap(nut.vitamins || {}, ratio);
+                            updated.minerals = scaleMap(nut.minerals || {}, ratio);
+                        }
+                        return updated;
+                    }
+                    return { ...item };
+                });
+
+                // 合計再計算
+                const totals = updatedItems.reduce((acc, i) => {
+                    acc.calories += (i.calories || 0); acc.protein += (i.protein || 0);
+                    acc.fat += (i.fat || 0); acc.carbs += (i.carbs || 0); acc.fiber += (i.fiber || 0);
+                    for (const k of Object.keys(i.vitamins || {})) acc.vitamins[k] = (acc.vitamins[k] || 0) + (i.vitamins[k] || 0);
+                    for (const k of Object.keys(i.minerals || {})) acc.minerals[k] = (acc.minerals[k] || 0) + (i.minerals[k] || 0);
+                    return acc;
+                }, { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, vitamins: {}, minerals: {} });
+                const rv = {}; for (const [k,v] of Object.entries(totals.vitamins)) rv[k] = r2(v);
+                const rm = {}; for (const [k,v] of Object.entries(totals.minerals)) rm[k] = r2(v);
+                const totalMacros = { calories: totals.calories, protein: r1(totals.protein), fat: r1(totals.fat), carbs: r1(totals.carbs), fiber: r1(totals.fiber), vitamins: rv, minerals: rm };
+
+                await db.collection('quest_templates').doc(templateId).update({
+                    items: updatedItems,
+                    totalMacros: totalMacros
+                });
+
+                // PFC表示を即時更新
+                const pfcEl = document.getElementById('tpl-pfc-' + templateId);
+                if (pfcEl) pfcEl.innerHTML = `<span class="text-[11px] font-mono text-gray-600">${Math.round(totalMacros.calories)}kcal P${r1(totalMacros.protein)}g F${r1(totalMacros.fat)}g C${r1(totalMacros.carbs)}g</span>`;
+
+                // キャッシュ更新
+                tpl.items = updatedItems;
+                tpl.totalMacros = totalMacros;
+
+                // テンプレート選択肢も更新
+                const select = document.getElementById('cq-assign-template');
+                select.innerHTML = '<option value="">-- テンプレートを選択 --</option>';
+                cachedTemplates.forEach(ct => {
+                    const m = ct.totalMacros || {};
+                    const pfcLabel = m.calories ? ` (${Math.round(m.calories)}kcal P${r1(m.protein||0)} F${r1(m.fat||0)} C${r1(m.carbs||0)})` : '';
+                    select.innerHTML += `<option value="${ct.id}">${escapeHtml(ct.title)}${pfcLabel}</option>`;
+                });
+
+                msgEl.innerHTML = '<span class="text-green-600">✅ 保存しました</span>';
+            } catch (e) {
+                msgEl.innerHTML = `<span class="text-red-500">❌ ${e.message}</span>`;
             }
         }
 
@@ -3115,6 +4256,54 @@
             return normalSlots > 0 ? Math.round(remainingCals / normalSlots) : Math.round(totalCalories / mealsPerDay);
         }
 
+        // ========== タイムライン時刻計算（MealSlot.kt のロジックをJS移植） ==========
+        function parseTimeToMin(t) {
+            if (!t) return null;
+            const p = t.split(':');
+            if (p.length !== 2) return null;
+            return parseInt(p[0]) * 60 + parseInt(p[1]);
+        }
+        function minToTime(m) {
+            const nm = ((m % 1440) + 1440) % 1440;
+            return String(Math.floor(nm / 60)).padStart(2, '0') + ':' + String(nm % 60).padStart(2, '0');
+        }
+        function calcSlotTimes(mealsPerDay, trainingAfterMeal, wakeMin, trainingMin, sleepMin, absoluteTimes) {
+            // createTimelineRoutine と同等のロジック
+            const result = {};
+            for (let num = 1; num <= mealsPerDay; num++) {
+                // absoluteTime が設定されていればそちらを優先
+                if (absoluteTimes && absoluteTimes[num]) {
+                    const parsed = parseTimeToMin(absoluteTimes[num]);
+                    if (parsed != null) { result[num] = parsed; continue; }
+                }
+                // relativeTime から計算
+                let time = null;
+                if (num === 1) {
+                    time = wakeMin; // wake+0
+                } else if (trainingAfterMeal && num === trainingAfterMeal) {
+                    time = trainingMin != null ? trainingMin - 120 : null; // training-120
+                } else if (trainingAfterMeal && num === trainingAfterMeal + 1) {
+                    time = trainingMin; // training+0
+                } else if (trainingAfterMeal && num === trainingAfterMeal + 2) {
+                    time = result[num - 1] != null ? result[num - 1] + 60 : null; // meal(n-1)+60
+                } else {
+                    time = result[num - 1] != null ? result[num - 1] + 180 : null; // meal(n-1)+180
+                }
+                if (time != null) result[num] = time;
+            }
+            return result;
+        }
+
+        // 現在読み込み中のユーザープロフィール（保存用）
+        let loadedUserProfile = null;
+        let loadedUserUid = null;
+        // テンプレートキャッシュ（スロット横ドロップダウン用）
+        let cachedTemplates = [];
+        // ユーザーのカスタム食品キャッシュ（テンプレート食材候補統合用）
+        let loadedUserCustomFoods = [];
+        // ルーティンパターンキャッシュ（リセット用）
+        let loadedRoutinePatterns = {};
+
         // ユーザーのMealSlotConfigを取得してスロット選択肢を生成
         async function loadUserSlots() {
             const uid = document.getElementById('cq-assign-uid').value.trim();
@@ -3133,8 +4322,12 @@
                 const displayName = userData.displayName || userData.email || uid;
                 const profile = userData.profile || {};
                 const mealSlotConfig = profile.mealSlotConfig || {};
-                const mealsPerDay = mealSlotConfig.mealsPerDay || profile.mealsPerDay || 3;
+                const mealsPerDay = mealSlotConfig.mealsPerDay || profile.mealsPerDay || 5;
                 const slots = mealSlotConfig.slots || [];
+
+                // 保持
+                loadedUserProfile = profile;
+                loadedUserUid = uid;
 
                 // 目標カロリー算出
                 const targetCalories = calculateUserTargetCalories(profile);
@@ -3143,40 +4336,197 @@
                 infoEl.innerHTML = `<strong>${escapeHtml(displayName)}</strong> ｜ 食事${mealsPerDay}回 ｜ 目標 <strong>${targetCalories}kcal/日</strong>`;
                 saveRecentUser(uid, displayName);
 
-                // スロットボタン生成
-                let html = '';
+                // プロフィールエディタに値をセット
+                document.getElementById('cq-profile-editor').classList.remove('hidden');
+                document.getElementById('cq-prof-wake').value = profile.wakeUpTime || '07:00';
+                document.getElementById('cq-prof-sleep').value = profile.sleepTime || '23:00';
+                document.getElementById('cq-prof-meals').value = mealsPerDay;
+                document.getElementById('cq-prof-training-time').value = profile.trainingTime || '17:00';
+                document.getElementById('cq-prof-training-after').value = profile.trainingAfterMeal || '';
+                document.getElementById('cq-prof-training-dur').value = profile.trainingDuration || 120;
+                document.getElementById('cq-prof-style').value = profile.trainingStyle || 'PUMP';
+                toggleTrainingFields();
+
+                // プロフィール詳細フィールドに値をセット
+                document.getElementById('cq-prof-nickname').value = profile.nickname || '';
+                document.getElementById('cq-prof-age').value = profile.age || '';
+                document.getElementById('cq-prof-gender').value = profile.gender || 'MALE';
+                document.getElementById('cq-prof-height').value = profile.height || '';
+                document.getElementById('cq-prof-weight').value = profile.weight || '';
+                document.getElementById('cq-prof-bodyfat').value = profile.bodyFatPercentage || '';
+                document.getElementById('cq-prof-target-weight').value = profile.targetWeight || '';
+                document.getElementById('cq-prof-ideal-weight').value = profile.idealWeight || '';
+                document.getElementById('cq-prof-ideal-bodyfat').value = profile.idealBodyFatPercentage || '';
+                document.getElementById('cq-prof-goal').value = profile.goal || 'MAINTAIN';
+                document.getElementById('cq-prof-activity').value = profile.activityLevel || 'DESK_WORK';
+                document.getElementById('cq-prof-cal-adjust').value = profile.calorieAdjustment || 0;
+                document.getElementById('cq-prof-budget').value = profile.budgetTier || 2;
+                document.getElementById('cq-prof-prot-ratio').value = profile.proteinRatioPercent || 30;
+                document.getElementById('cq-prof-fat-ratio').value = profile.fatRatioPercent || 25;
+                document.getElementById('cq-prof-carb-ratio').value = profile.carbRatioPercent || 45;
+                document.getElementById('cq-prof-pre-p').value = profile.preWorkoutProtein ?? 20;
+                document.getElementById('cq-prof-pre-f').value = profile.preWorkoutFat ?? 5;
+                document.getElementById('cq-prof-pre-c').value = profile.preWorkoutCarbs ?? 50;
+                document.getElementById('cq-prof-post-p').value = profile.postWorkoutProtein ?? 30;
+                document.getElementById('cq-prof-post-f').value = profile.postWorkoutFat ?? 5;
+                document.getElementById('cq-prof-post-c').value = profile.postWorkoutCarbs ?? 60;
+                document.getElementById('cq-prof-prot-sources').value = (profile.preferredProteinSources || []).join(', ');
+                document.getElementById('cq-prof-carb-sources').value = (profile.preferredCarbSources || []).join(', ');
+                document.getElementById('cq-prof-fat-sources').value = (profile.preferredFatSources || []).join(', ');
+                document.getElementById('cq-prof-avoid-foods').value = (profile.avoidFoods || []).join(', ');
+                document.getElementById('cq-prof-allergies').value = (profile.allergies || []).join(', ');
+                document.getElementById('cq-prof-fav-foods').value = profile.favoriteFoods || '';
+                document.getElementById('cq-prof-ng-foods').value = profile.ngFoods || '';
+
+                // ユーザー情報パネルを表示 & レンダリング
+                document.getElementById('cq-user-panels').classList.remove('hidden');
+                renderUserProfilePanel(profile, userData);
+                renderUserRoutinePanel(uid, profile);
+                renderUserTemplatesPanel(uid);
+                renderUserCustomItemsPanel(uid);
+
+                // absoluteTimes を既存スロットから収集
+                const absoluteTimes = {};
+                slots.forEach(s => { if (s.absoluteTime) absoluteTimes[s.slotNumber] = s.absoluteTime; });
+
+                // タイムライン時刻を計算
+                const wakeMin = parseTimeToMin(profile.wakeUpTime || '07:00');
+                const trainingMin = parseTimeToMin(profile.trainingTime || '17:00');
+                const sleepMin = parseTimeToMin(profile.sleepTime || '23:00');
+                const trainingAfterMeal = profile.trainingAfterMeal || null;
+                const slotTimes = calcSlotTimes(mealsPerDay, trainingAfterMeal, wakeMin, trainingMin, sleepMin, absoluteTimes);
+
+                // 食事タイムラインUI（absoluteTime編集）
+                renderSlotTimeline(mealsPerDay, slotTimes, absoluteTimes);
+
+                // 既存割当を取得（_default + 選択日付）
+                const isPersistent = document.getElementById('cq-assign-persistent').checked;
+                const selectedDate = isPersistent ? '_default' : (document.getElementById('cq-assign-date').value || new Date().toISOString().split('T')[0]);
+                let existingAssignments = {}; // slotKey -> { title, macros, source }
+                try {
+                    const fetches = [db.collection('users').doc(uid).collection('custom_quests').doc('_default').get()];
+                    // 永続モードでなければ選択日付分も取得
+                    if (!isPersistent && selectedDate !== '_default') {
+                        fetches.push(db.collection('users').doc(uid).collection('custom_quests').doc(selectedDate).get());
+                    }
+                    const results = await Promise.all(fetches);
+                    const defaultDoc = results[0];
+                    const dateDoc = results[1];
+                    // _default を先に適用、選択日付分で上書き
+                    if (defaultDoc.exists) {
+                        const defSlots = defaultDoc.data().slots || {};
+                        Object.entries(defSlots).forEach(([k, v]) => {
+                            existingAssignments[k] = { title: v.title, macros: v.totalMacros || {}, templateId: v.templateId || '', source: '永続' };
+                        });
+                    }
+                    if (dateDoc && dateDoc.exists) {
+                        const dateSlots = dateDoc.data().slots || {};
+                        Object.entries(dateSlots).forEach(([k, v]) => {
+                            existingAssignments[k] = { title: v.title, macros: v.totalMacros || {}, templateId: v.templateId || '', source: selectedDate };
+                        });
+                    }
+                } catch (e) { console.warn('割当取得エラー:', e); }
+
+                // テンプレートドロップダウンのオプションHTML生成
+                function buildTemplateOptions(slotType, selectedTemplateId) {
+                    let opts = '<option value="">-- 未選択 --</option>';
+                    cachedTemplates.forEach(t => {
+                        if (slotType === 'workout' && t.type !== 'WORKOUT') return;
+                        if (slotType === 'meal' && t.type !== 'MEAL') return;
+                        const m = t.totalMacros || {};
+                        const pfcLabel = m.calories ? ` (${Math.round(m.calories)}kcal P${r1(m.protein||0)} F${r1(m.fat||0)} C${r1(m.carbs||0)})` : '';
+                        const selected = t.id === selectedTemplateId ? ' selected' : '';
+                        opts += `<option value="${t.id}"${selected}>${escapeHtml(t.title)}${pfcLabel}</option>`;
+                    });
+                    return opts;
+                }
+
+                // スロットボタン + インラインドロップダウン生成
+                let html = '<div class="space-y-2">';
                 for (let i = 1; i <= mealsPerDay; i++) {
                     const slot = slots.find(s => s.slotNumber === i) || {};
                     const relTime = slot.relativeTime || '';
                     let label = `食事${i}`;
                     let badge = '';
+                    const timeStr = slotTimes[i] != null ? minToTime(slotTimes[i]) : '--:--';
 
-                    // トレ前後の判定
+                    // トレ前後の判定 + GI推奨
+                    let giHint = '';
                     if (relTime.startsWith('training-')) {
                         badge = '<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">トレ前</span>';
+                        giHint = '<span class="text-[9px] bg-blue-50 text-blue-600 px-1 rounded">低GI・低脂質</span>';
                     } else if (relTime === 'training+0' || relTime.startsWith('training+')) {
                         const offset = parseInt(relTime.replace('training+', '') || '0');
-                        badge = offset === 0
-                            ? '<span class="text-[10px] bg-red-100 text-red-700 px-1 rounded">トレ直後</span>'
-                            : '<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">トレ後</span>';
+                        if (offset === 0) {
+                            badge = '<span class="text-[10px] bg-red-100 text-red-700 px-1 rounded">トレ直後</span>';
+                            giHint = '<span class="text-[9px] bg-red-50 text-red-600 px-1 rounded font-bold">高GI推奨</span>';
+                        } else {
+                            badge = '<span class="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">トレ後</span>';
+                            giHint = '<span class="text-[9px] bg-blue-50 text-blue-600 px-1 rounded">低GI</span>';
+                        }
                     } else if (relTime.startsWith('wake')) {
                         badge = '<span class="text-[10px] bg-blue-100 text-blue-700 px-1 rounded">起床</span>';
+                        giHint = '<span class="text-[9px] bg-blue-50 text-blue-600 px-1 rounded">低GI</span>';
                     } else if (relTime.startsWith('sleep')) {
                         badge = '<span class="text-[10px] bg-purple-100 text-purple-700 px-1 rounded">就寝前</span>';
+                        giHint = '<span class="text-[9px] bg-blue-50 text-blue-600 px-1 rounded">低GI</span>';
+                    } else {
+                        giHint = '<span class="text-[9px] bg-blue-50 text-blue-600 px-1 rounded">低GI</span>';
                     }
 
-                    const slotTargetCals = calculateSlotTargetCalories(profile, 'meal_' + i, targetCalories);
-                    html += `<button onclick="selectSlot('meal_${i}')" data-slot="meal_${i}" data-target-cals="${slotTargetCals}"
-                        class="cq-slot-btn border-2 border-gray-300 rounded-lg px-3 py-2 text-sm hover:border-yellow-500 hover:bg-yellow-50 transition-all flex flex-col items-center gap-0.5">
-                        <span class="font-bold">${label}</span>${badge}<span class="text-[10px] text-gray-400">${slotTargetCals}kcal</span>
-                    </button>`;
+                    const slotKey = 'meal_' + i;
+                    const slotTargetCals = calculateSlotTargetCalories(profile, slotKey, targetCalories);
+                    const assign = existingAssignments[slotKey];
+                    const hasTpl = !!assign;
+                    const borderClass = hasTpl ? 'border-green-400 bg-green-50' : 'border-gray-300';
+                    const assignInfo = hasTpl
+                        ? `<span class="text-[10px] text-green-700 font-bold truncate max-w-[120px]">✅ ${escapeHtml(assign.title)}</span>
+                           <span class="text-[9px] text-green-600 font-mono">P${r1(assign.macros.protein||0)} F${r1(assign.macros.fat||0)} C${r1(assign.macros.carbs||0)}</span>
+                           <span class="text-[9px] text-gray-400">(${assign.source})</span>`
+                        : '<span class="text-[10px] text-gray-400">─ 未割当</span>';
+
+                    html += `<div class="flex items-center gap-2">
+                        <button onclick="selectSlot('${slotKey}')" data-slot="${slotKey}" data-target-cals="${slotTargetCals}"
+                            class="cq-slot-btn border-2 ${borderClass} rounded-lg px-3 py-2 text-sm hover:border-yellow-500 hover:bg-yellow-50 transition-all flex flex-col items-center gap-0.5 min-w-[100px]">
+                            <span class="font-bold">${label}</span>
+                            <span class="text-[10px] text-blue-600 font-mono">${timeStr}</span>
+                            ${badge}${giHint}<span class="text-[10px] text-gray-400">${slotTargetCals}kcal</span>
+                            ${assignInfo}
+                        </button>
+                        <select id="cq-bulk-tpl-${slotKey}" class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                            ${buildTemplateOptions('meal', assign?.templateId || '')}
+                        </select>
+                    </div>`;
                 }
 
                 // 運動スロット
-                html += `<button onclick="selectSlot('workout')" data-slot="workout"
-                    class="cq-slot-btn border-2 border-blue-300 rounded-lg px-3 py-2 text-sm hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center gap-0.5">
-                    <span class="font-bold">🏋️ 運動</span>
-                </button>`;
+                const trainingTimeStr = profile.trainingTime || '17:00';
+                const workoutAssign = existingAssignments['workout'];
+                const hasWorkoutTpl = !!workoutAssign;
+                const workoutBorderClass = hasWorkoutTpl ? 'border-green-400 bg-green-50' : 'border-blue-300';
+                const workoutAssignInfo = hasWorkoutTpl
+                    ? `<span class="text-[10px] text-green-700 font-bold truncate max-w-[120px]">✅ ${escapeHtml(workoutAssign.title)}</span>
+                       <span class="text-[9px] text-gray-400">(${workoutAssign.source})</span>`
+                    : '<span class="text-[10px] text-gray-400">─ 未割当</span>';
+
+                html += `<div class="flex items-center gap-2">
+                    <button onclick="selectSlot('workout')" data-slot="workout"
+                        class="cq-slot-btn border-2 ${workoutBorderClass} rounded-lg px-3 py-2 text-sm hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center gap-0.5 min-w-[100px]">
+                        <span class="font-bold">🏋️ 運動</span>
+                        <span class="text-[10px] text-blue-600 font-mono">${trainingTimeStr}</span>
+                        ${workoutAssignInfo}
+                    </button>
+                    <select id="cq-bulk-tpl-workout" class="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                        ${buildTemplateOptions('workout', workoutAssign?.templateId || '')}
+                    </select>
+                </div>`;
+
+                html += '</div>';
+                // 一括保存ボタン
+                html += `<div class="mt-3 flex gap-2">
+                    <button onclick="assignAllSlots()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 font-bold">📦 全スロット一括保存</button>
+                </div>`;
+                html += '<div id="cq-bulk-assign-message" class="mt-1 text-sm"></div>';
 
                 container.innerHTML = html;
                 document.getElementById('cq-assign-slot').value = '';
@@ -3189,27 +4539,335 @@
             }
         }
 
+        // 食事タイムラインのUI生成（各スロットのabsoluteTime入力）
+        function renderSlotTimeline(mealsPerDay, slotTimes, absoluteTimes) {
+            const container = document.getElementById('cq-slot-timeline');
+            let html = '';
+            for (let i = 1; i <= mealsPerDay; i++) {
+                const calcTime = slotTimes[i] != null ? minToTime(slotTimes[i]) : '';
+                const absTime = absoluteTimes[i] || '';
+                const hasAbs = !!absTime;
+                html += `<div class="flex flex-col items-center gap-0.5">
+                    <span class="text-[10px] font-bold">食事${i}</span>
+                    <input type="time" id="cq-slot-time-${i}" value="${absTime || calcTime}"
+                        class="border ${hasAbs ? 'border-orange-400 bg-orange-50' : 'border-gray-300'} rounded px-1 py-0.5 text-xs w-20 text-center"
+                        onchange="onSlotTimeChange(${i})">
+                    <span class="text-[9px] text-gray-400">${hasAbs ? '手動' : '自動'}</span>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // スロット時刻変更時
+        function onSlotTimeChange(slotNum) {
+            // 視覚的フィードバック（手動設定）
+            const input = document.getElementById('cq-slot-time-' + slotNum);
+            if (input.value) {
+                input.classList.add('border-orange-400', 'bg-orange-50');
+                input.classList.remove('border-gray-300');
+            }
+        }
+
+        // トレーニング関連フィールドの表示/非表示
+        function toggleTrainingFields() {
+            const val = document.getElementById('cq-prof-training-after').value;
+            const fields = document.getElementById('cq-training-fields');
+            if (val) {
+                fields.classList.remove('hidden');
+            } else {
+                fields.classList.add('hidden');
+            }
+        }
+
+        // タブ切替
+        function switchProfileTab(tabName) {
+            document.querySelectorAll('.cq-prof-panel').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.cq-prof-tab').forEach(t => {
+                t.classList.remove('border-orange-500', 'text-orange-700', 'bg-orange-100');
+                t.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.getElementById('cq-panel-' + tabName).classList.remove('hidden');
+            const tab = document.getElementById('cq-tab-' + tabName);
+            tab.classList.remove('border-transparent', 'text-gray-500');
+            tab.classList.add('border-orange-500', 'text-orange-700', 'bg-orange-100');
+        }
+
+        function switchInfoTab(tabName) {
+            document.querySelectorAll('.cq-info-panel').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.cq-info-tab').forEach(t => {
+                t.classList.remove('border-indigo-500', 'text-indigo-700', 'bg-indigo-100');
+                t.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.getElementById('cq-info-panel-' + tabName).classList.remove('hidden');
+            const tab = document.getElementById('cq-info-tab-' + tabName);
+            tab.classList.remove('border-transparent', 'text-gray-500');
+            tab.classList.add('border-indigo-500', 'text-indigo-700', 'bg-indigo-100');
+        }
+
+        // 個別フィールドをデフォルト値にリセット
+        function resetProfileField(fieldId, defaultValue) {
+            document.getElementById(fieldId).value = defaultValue;
+        }
+
+        // 全体をデフォルトに戻す
+        function resetAllProfileDefaults() {
+            document.getElementById('cq-prof-wake').value = '07:00';
+            document.getElementById('cq-prof-sleep').value = '23:00';
+            document.getElementById('cq-prof-meals').value = '5';
+            document.getElementById('cq-prof-training-after').value = '';
+            document.getElementById('cq-prof-training-time').value = '17:00';
+            document.getElementById('cq-prof-training-dur').value = '120';
+            document.getElementById('cq-prof-style').value = 'PUMP';
+            // プロフィール詳細フィールドのリセット
+            document.getElementById('cq-prof-nickname').value = '';
+            document.getElementById('cq-prof-age').value = '';
+            document.getElementById('cq-prof-gender').value = 'MALE';
+            document.getElementById('cq-prof-height').value = '';
+            document.getElementById('cq-prof-weight').value = '';
+            document.getElementById('cq-prof-bodyfat').value = '';
+            document.getElementById('cq-prof-target-weight').value = '';
+            document.getElementById('cq-prof-ideal-weight').value = '';
+            document.getElementById('cq-prof-ideal-bodyfat').value = '';
+            document.getElementById('cq-prof-goal').value = 'MAINTAIN';
+            document.getElementById('cq-prof-activity').value = 'DESK_WORK';
+            document.getElementById('cq-prof-cal-adjust').value = '0';
+            document.getElementById('cq-prof-budget').value = '2';
+            document.getElementById('cq-prof-prot-ratio').value = '35';
+            document.getElementById('cq-prof-fat-ratio').value = '15';
+            document.getElementById('cq-prof-carb-ratio').value = '50';
+            document.getElementById('cq-prof-pre-p').value = '20';
+            document.getElementById('cq-prof-pre-f').value = '5';
+            document.getElementById('cq-prof-pre-c').value = '50';
+            document.getElementById('cq-prof-post-p').value = '30';
+            document.getElementById('cq-prof-post-f').value = '5';
+            document.getElementById('cq-prof-post-c').value = '60';
+            document.getElementById('cq-prof-prot-sources').value = '鶏むね肉, 鮭';
+            document.getElementById('cq-prof-carb-sources').value = '白米, 玄米';
+            document.getElementById('cq-prof-fat-sources').value = 'オリーブオイル, アボカド';
+            document.getElementById('cq-prof-avoid-foods').value = '';
+            document.getElementById('cq-prof-allergies').value = '';
+            document.getElementById('cq-prof-fav-foods').value = '';
+            document.getElementById('cq-prof-ng-foods').value = '';
+            toggleTrainingFields();
+            onMealsPerDayChange();
+        }
+
+        // 食事回数変更時：タイムラインを再計算
+        function onMealsPerDayChange() {
+            const mealsPerDay = parseInt(document.getElementById('cq-prof-meals').value) || 5;
+            const wakeMin = parseTimeToMin(document.getElementById('cq-prof-wake').value) || 420;
+            const trainingMin = parseTimeToMin(document.getElementById('cq-prof-training-time').value);
+            const sleepMin = parseTimeToMin(document.getElementById('cq-prof-sleep').value) || 1380;
+            const trainingAfterMeal = parseInt(document.getElementById('cq-prof-training-after').value) || null;
+
+            const slotTimes = calcSlotTimes(mealsPerDay, trainingAfterMeal, wakeMin, trainingMin, sleepMin, {});
+            renderSlotTimeline(mealsPerDay, slotTimes, {});
+        }
+
+        // プロフィール保存
+        async function saveUserProfile() {
+            const uid = loadedUserUid;
+            if (!uid) { alert('ユーザーが選択されていません'); return; }
+
+            const msgEl = document.getElementById('cq-profile-save-msg');
+            msgEl.classList.remove('hidden');
+            msgEl.innerHTML = '<span class="text-gray-500">保存中...</span>';
+
+            try {
+                const mealsPerDay = parseInt(document.getElementById('cq-prof-meals').value) || 5;
+                const wakeUpTime = document.getElementById('cq-prof-wake').value || '07:00';
+                const sleepTime = document.getElementById('cq-prof-sleep').value || '23:00';
+                const trainingTime = document.getElementById('cq-prof-training-time').value || '17:00';
+                const trainingAfterMealVal = document.getElementById('cq-prof-training-after').value;
+                const trainingAfterMeal = trainingAfterMealVal ? parseInt(trainingAfterMealVal) : null;
+                const trainingDuration = parseInt(document.getElementById('cq-prof-training-dur').value) || 120;
+                const trainingStyle = document.getElementById('cq-prof-style').value || 'PUMP';
+
+                // 各スロットのabsoluteTimeを収集
+                const slotsData = [];
+                const wakeMin = parseTimeToMin(wakeUpTime);
+                const trainingMin = parseTimeToMin(trainingTime);
+                const sleepMin = parseTimeToMin(sleepTime);
+
+                // まず自動計算のrelativeTimeを生成（createTimelineRoutineと同等）
+                for (let num = 1; num <= mealsPerDay; num++) {
+                    let relativeTime = null;
+                    if (num === 1) relativeTime = 'wake+0';
+                    else if (trainingAfterMeal && num === trainingAfterMeal) relativeTime = 'training-120';
+                    else if (trainingAfterMeal && num === trainingAfterMeal + 1) relativeTime = 'training+0';
+                    else if (trainingAfterMeal && num === trainingAfterMeal + 2) relativeTime = `meal${num - 1}+60`;
+                    else relativeTime = `meal${num - 1}+180`;
+
+                    const timeInput = document.getElementById('cq-slot-time-' + num);
+                    const inputVal = timeInput ? timeInput.value : '';
+
+                    // 自動計算値と比較して、手動変更されていればabsoluteTimeとして保存
+                    const autoTimes = calcSlotTimes(mealsPerDay, trainingAfterMeal, wakeMin, trainingMin, sleepMin, {});
+                    const autoTime = autoTimes[num] != null ? minToTime(autoTimes[num]) : '';
+                    const absoluteTime = (inputVal && inputVal !== autoTime) ? inputVal : null;
+
+                    const slotObj = { slotNumber: num, relativeTime };
+                    if (absoluteTime) slotObj.absoluteTime = absoluteTime;
+                    slotsData.push(slotObj);
+                }
+
+                // プロフィール詳細フィールドを収集
+                const nickname = document.getElementById('cq-prof-nickname').value.trim() || null;
+                const age = parseInt(document.getElementById('cq-prof-age').value) || null;
+                const gender = document.getElementById('cq-prof-gender').value || null;
+                const height = parseFloat(document.getElementById('cq-prof-height').value) || null;
+                const weight = parseFloat(document.getElementById('cq-prof-weight').value) || null;
+                const bodyFatPercentage = parseFloat(document.getElementById('cq-prof-bodyfat').value) || null;
+                const targetWeightVal = parseFloat(document.getElementById('cq-prof-target-weight').value) || null;
+                const idealWeight = parseFloat(document.getElementById('cq-prof-ideal-weight').value) || null;
+                const idealBodyFatPercentage = parseFloat(document.getElementById('cq-prof-ideal-bodyfat').value) || null;
+                const goal = document.getElementById('cq-prof-goal').value || null;
+                const activityLevel = document.getElementById('cq-prof-activity').value || null;
+                const calorieAdjustment = parseInt(document.getElementById('cq-prof-cal-adjust').value) || 0;
+                const budgetTier = parseInt(document.getElementById('cq-prof-budget').value) || 2;
+                const proteinRatioPercent = parseInt(document.getElementById('cq-prof-prot-ratio').value) || 30;
+                const fatRatioPercent = parseInt(document.getElementById('cq-prof-fat-ratio').value) || 25;
+                const carbRatioPercent = parseInt(document.getElementById('cq-prof-carb-ratio').value) || 45;
+                const preWorkoutProtein = parseInt(document.getElementById('cq-prof-pre-p').value) || 20;
+                const preWorkoutFat = parseInt(document.getElementById('cq-prof-pre-f').value) || 5;
+                const preWorkoutCarbs = parseInt(document.getElementById('cq-prof-pre-c').value) || 50;
+                const postWorkoutProtein = parseInt(document.getElementById('cq-prof-post-p').value) || 30;
+                const postWorkoutFat = parseInt(document.getElementById('cq-prof-post-f').value) || 5;
+                const postWorkoutCarbs = parseInt(document.getElementById('cq-prof-post-c').value) || 60;
+                const preferredProteinSources = document.getElementById('cq-prof-prot-sources').value.split(',').map(s=>s.trim()).filter(s=>s);
+                const preferredCarbSources = document.getElementById('cq-prof-carb-sources').value.split(',').map(s=>s.trim()).filter(s=>s);
+                const preferredFatSources = document.getElementById('cq-prof-fat-sources').value.split(',').map(s=>s.trim()).filter(s=>s);
+                const avoidFoods = document.getElementById('cq-prof-avoid-foods').value.split(',').map(s=>s.trim()).filter(s=>s);
+                const allergies = document.getElementById('cq-prof-allergies').value.split(',').map(s=>s.trim()).filter(s=>s);
+                const favoriteFoods = document.getElementById('cq-prof-fav-foods').value.trim() || null;
+                const ngFoods = document.getElementById('cq-prof-ng-foods').value.trim() || null;
+
+                // targetCalories/PFC再計算
+                let targetCalories = null, targetProtein = null, targetFat = null, targetCarbs = null;
+                if (height && weight && age && gender) {
+                    let bmr;
+                    if (gender === 'MALE') bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+                    else if (gender === 'FEMALE') bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+                    else bmr = 10 * weight + 6.25 * height - 5 * age - 78;
+                    const actMulti = { 'DESK_WORK': 1.2, 'STANDING_WORK': 1.4, 'PHYSICAL_LABOR': 1.6 };
+                    const tdee = bmr * (actMulti[activityLevel] || 1.2);
+                    targetCalories = Math.round(tdee + calorieAdjustment);
+                    targetProtein = targetCalories * proteinRatioPercent / 100 / 4;
+                    targetFat = targetCalories * fatRatioPercent / 100 / 9;
+                    targetCarbs = targetCalories * carbRatioPercent / 100 / 4;
+                }
+
+                // Firestoreに保存
+                const updateData = {
+                    'profile.nickname': nickname,
+                    'profile.age': age,
+                    'profile.gender': gender,
+                    'profile.height': height,
+                    'profile.weight': weight,
+                    'profile.bodyFatPercentage': bodyFatPercentage,
+                    'profile.targetWeight': targetWeightVal,
+                    'profile.idealWeight': idealWeight,
+                    'profile.idealBodyFatPercentage': idealBodyFatPercentage,
+                    'profile.goal': goal,
+                    'profile.activityLevel': activityLevel,
+                    'profile.calorieAdjustment': calorieAdjustment,
+                    'profile.budgetTier': budgetTier,
+                    'profile.proteinRatioPercent': proteinRatioPercent,
+                    'profile.fatRatioPercent': fatRatioPercent,
+                    'profile.carbRatioPercent': carbRatioPercent,
+                    'profile.targetCalories': targetCalories,
+                    'profile.targetProtein': targetProtein,
+                    'profile.targetFat': targetFat,
+                    'profile.targetCarbs': targetCarbs,
+                    'profile.preWorkoutProtein': preWorkoutProtein,
+                    'profile.preWorkoutFat': preWorkoutFat,
+                    'profile.preWorkoutCarbs': preWorkoutCarbs,
+                    'profile.postWorkoutProtein': postWorkoutProtein,
+                    'profile.postWorkoutFat': postWorkoutFat,
+                    'profile.postWorkoutCarbs': postWorkoutCarbs,
+                    'profile.preferredProteinSources': preferredProteinSources,
+                    'profile.preferredCarbSources': preferredCarbSources,
+                    'profile.preferredFatSources': preferredFatSources,
+                    'profile.avoidFoods': avoidFoods,
+                    'profile.allergies': allergies,
+                    'profile.favoriteFoods': favoriteFoods,
+                    'profile.ngFoods': ngFoods,
+                    'profile.wakeUpTime': wakeUpTime,
+                    'profile.sleepTime': sleepTime,
+                    'profile.trainingTime': trainingTime,
+                    'profile.trainingDuration': trainingDuration,
+                    'profile.trainingStyle': trainingStyle,
+                    'profile.mealsPerDay': mealsPerDay,
+                    'profile.mealSlotConfig': {
+                        mealsPerDay: mealsPerDay,
+                        slots: slotsData
+                    }
+                };
+                if (trainingAfterMeal != null) {
+                    updateData['profile.trainingAfterMeal'] = trainingAfterMeal;
+                } else {
+                    updateData['profile.trainingAfterMeal'] = firebase.firestore.FieldValue.delete();
+                }
+
+                await db.collection('users').doc(uid).update(updateData);
+                msgEl.innerHTML = '<span class="text-green-600">✅ 設定を保存しました</span>';
+
+                // スロットを再読み込みして時刻を反映
+                await loadUserSlots();
+            } catch (e) {
+                msgEl.innerHTML = '<span class="text-red-500">❌ エラー: ' + e.message + '</span>';
+            }
+        }
+
         function selectSlot(slotKey) {
             document.getElementById('cq-assign-slot').value = slotKey;
-            // アクティブ状態を更新
+            // アクティブ状態を更新（割当済み緑ボーダーを保持）
             document.querySelectorAll('.cq-slot-btn').forEach(btn => {
-                const isActive = btn.getAttribute('data-slot') === slotKey;
-                btn.classList.toggle('border-yellow-500', isActive && slotKey !== 'workout');
-                btn.classList.toggle('bg-yellow-100', isActive && slotKey !== 'workout');
-                btn.classList.toggle('border-blue-500', isActive && slotKey === 'workout');
-                btn.classList.toggle('bg-blue-100', isActive && slotKey === 'workout');
-                btn.classList.toggle('border-gray-300', !isActive && slotKey !== 'workout');
+                const btnSlot = btn.getAttribute('data-slot');
+                const isActive = btnSlot === slotKey;
+                const isAssigned = btn.classList.contains('border-green-400');
+                // 選択ハイライトをリセット
+                btn.classList.remove('border-yellow-500', 'bg-yellow-100', 'border-blue-500', 'bg-blue-100');
+                if (isActive) {
+                    // 選択中のスロット
+                    if (btnSlot === 'workout') {
+                        btn.classList.add('border-blue-500', 'bg-blue-100');
+                    } else {
+                        btn.classList.add('border-yellow-500', 'bg-yellow-100');
+                    }
+                } else if (!isAssigned) {
+                    // 非選択 & 未割当 → グレーに戻す
+                    btn.classList.remove('border-green-400', 'bg-green-50', 'border-blue-300');
+                    btn.classList.add('border-gray-300');
+                }
+                // 非選択 & 割当済み → border-green-400/bg-green-50 がそのまま残る
+            });
+            // 個別保存ドロップダウンもスロットタイプでフィルタ
+            updateAssignTemplateFilter(slotKey);
+        }
+
+        // 個別保存ドロップダウンをスロットタイプでフィルタ
+        function updateAssignTemplateFilter(slotKey) {
+            const select = document.getElementById('cq-assign-template');
+            const filterType = slotKey === 'workout' ? 'WORKOUT' : 'MEAL';
+            select.innerHTML = '<option value="">-- テンプレートを選択 --</option>';
+            cachedTemplates.forEach(t => {
+                if (t.type !== filterType) return;
+                const m = t.totalMacros || {};
+                const pfcLabel = m.calories ? ` (${Math.round(m.calories)}kcal P${r1(m.protein||0)} F${r1(m.fat||0)} C${r1(m.carbs||0)})` : '';
+                select.innerHTML += `<option value="${t.id}">${escapeHtml(t.title)}${pfcLabel}</option>`;
             });
         }
 
         async function assignQuestToUser() {
             const uid = document.getElementById('cq-assign-uid').value.trim();
-            const date = document.getElementById('cq-assign-date').value;
+            const isPersistent = document.getElementById('cq-assign-persistent').checked;
+            const date = isPersistent ? '_default' : document.getElementById('cq-assign-date').value;
             const slotKey = document.getElementById('cq-assign-slot').value;
             const templateId = document.getElementById('cq-assign-template').value;
 
-            if (!uid || !date || !slotKey || !templateId) {
-                alert('ユーザーID、日付、スロット、テンプレートを全て指定してください');
+            if (!uid || (!isPersistent && !date) || !slotKey || !templateId) {
+                alert('ユーザーID、日付（または永続）、スロット、テンプレートを全て指定してください');
                 return;
             }
 
@@ -3223,54 +4881,13 @@
                 const docRef = db.collection('users').doc(uid).collection('custom_quests').doc(date);
                 const existing = await docRef.get();
 
-                // スケーリング: 運動テンプレートはスキップ
-                let scaledItems = tpl.items;
-                let scaledMacros = tpl.totalMacros || { protein: 0, fat: 0, carbs: 0, calories: 0 };
-
-                if (tpl.type === 'MEAL' && scaledMacros.calories > 0) {
-                    // スロットの目標カロリーを取得
-                    const slotBtn = document.querySelector(`.cq-slot-btn[data-slot="${slotKey}"]`);
-                    const slotTargetCals = slotBtn ? parseInt(slotBtn.getAttribute('data-target-cals') || '0') : 0;
-
-                    if (slotTargetCals > 0) {
-                        const coefficient = slotTargetCals / scaledMacros.calories;
-                        scaledItems = tpl.items.map(item => ({
-                            ...item,
-                            amount: r1((item.amount || 0) * coefficient),
-                            calories: Math.round((item.calories || 0) * coefficient),
-                            protein: r1((item.protein || 0) * coefficient),
-                            fat: r1((item.fat || 0) * coefficient),
-                            carbs: r1((item.carbs || 0) * coefficient),
-                            fiber: r1((item.fiber || 0) * coefficient),
-                            solubleFiber: r1((item.solubleFiber || 0) * coefficient),
-                            insolubleFiber: r1((item.insolubleFiber || 0) * coefficient),
-                            sugar: r1((item.sugar || 0) * coefficient),
-                            saturatedFat: r2((item.saturatedFat || 0) * coefficient),
-                            monounsaturatedFat: r2((item.monounsaturatedFat || 0) * coefficient),
-                            polyunsaturatedFat: r2((item.polyunsaturatedFat || 0) * coefficient),
-                            diaas: item.diaas || 0,
-                            gi: item.gi || 0,
-                            vitamins: scaleMap(item.vitamins || {}, coefficient),
-                            minerals: scaleMap(item.minerals || {}, coefficient),
-                        }));
-                        scaledMacros = {
-                            calories: Math.round(scaledMacros.calories * coefficient),
-                            protein: r1((scaledMacros.protein || 0) * coefficient),
-                            fat: r1((scaledMacros.fat || 0) * coefficient),
-                            carbs: r1((scaledMacros.carbs || 0) * coefficient),
-                            fiber: r1((scaledMacros.fiber || 0) * coefficient),
-                            vitamins: scaleMap(scaledMacros.vitamins || {}, coefficient),
-                            minerals: scaleMap(scaledMacros.minerals || {}, coefficient),
-                        };
-                    }
-                }
-
+                // テンプレートの分量をそのまま使用（トレーナー設定値を尊重）
                 const slotData = {
                     templateId: templateId,
                     title: tpl.title,
                     type: tpl.type,
-                    items: scaledItems,
-                    totalMacros: scaledMacros
+                    items: tpl.items,
+                    totalMacros: tpl.totalMacros || { protein: 0, fat: 0, carbs: 0, calories: 0, fiber: 0, vitamins: {}, minerals: {} }
                 };
 
                 if (existing.exists) {
@@ -3290,10 +4907,11 @@
                 }
 
                 const slotLabel = slotKey === 'workout' ? '運動' : slotKey.replace('meal_', '食事');
-                document.getElementById('cq-assign-message').innerHTML = '<span class="text-green-600">✅ 割当を保存しました (' + date + ' / ' + slotLabel + ')</span>';
+                const dateLabel = isPersistent ? '永続' : date;
+                document.getElementById('cq-assign-message').innerHTML = '<span class="text-green-600">✅ 割当を保存しました (' + dateLabel + ' / ' + slotLabel + ')</span>';
 
-                // 割当一覧を更新
-                await loadUserAssignments();
+                // スロットボタン再レンダリング + 割当一覧を更新
+                await loadUserSlots();
             } catch (e) {
                 document.getElementById('cq-assign-message').innerHTML = '<span class="text-red-500">❌ エラー: ' + e.message + '</span>';
             }
@@ -3302,6 +4920,81 @@
         async function updateAssignedCount() {
             // 割当数はテンプレート割当時にインクリメントされるだけの簡易表示
             // （サブコレクション横断クエリは不可のため正確なカウントは省略）
+        }
+
+        // ========== 全スロット一括保存 ==========
+        async function assignAllSlots() {
+            const uid = document.getElementById('cq-assign-uid').value.trim();
+            const isPersistent = document.getElementById('cq-assign-persistent').checked;
+            const date = isPersistent ? '_default' : document.getElementById('cq-assign-date').value;
+            const msgEl = document.getElementById('cq-bulk-assign-message');
+
+            if (!uid) { alert('ユーザーIDを入力してください'); return; }
+            if (!isPersistent && !date) { alert('日付を指定するか永続にチェックしてください'); return; }
+
+            // 各スロットのドロップダウンから選択されたテンプレートを収集
+            const slotSelections = [];
+            document.querySelectorAll('[id^="cq-bulk-tpl-"]').forEach(sel => {
+                const slotKey = sel.id.replace('cq-bulk-tpl-', '');
+                const templateId = sel.value;
+                if (templateId) {
+                    slotSelections.push({ slotKey, templateId });
+                }
+            });
+
+            if (slotSelections.length === 0) {
+                alert('少なくとも1つのスロットでテンプレートを選択してください');
+                return;
+            }
+
+            msgEl.innerHTML = '<span class="text-gray-500">一括保存中...</span>';
+
+            try {
+                const docRef = db.collection('users').doc(uid).collection('custom_quests').doc(date);
+                const existing = await docRef.get();
+                const updatePayload = {};
+
+                for (const { slotKey, templateId } of slotSelections) {
+                    const tplDoc = await db.collection('quest_templates').doc(templateId).get();
+                    if (!tplDoc.exists) continue;
+                    const tpl = tplDoc.data();
+
+                    // テンプレートの分量をそのまま使用（トレーナー設定値を尊重）
+                    updatePayload[`slots.${slotKey}`] = {
+                        templateId: templateId,
+                        title: tpl.title,
+                        type: tpl.type,
+                        items: tpl.items,
+                        totalMacros: tpl.totalMacros || { protein: 0, fat: 0, carbs: 0, calories: 0, fiber: 0, vitamins: {}, minerals: {} }
+                    };
+                }
+
+                if (existing.exists) {
+                    await docRef.update(updatePayload);
+                } else {
+                    // updatePayloadをslotsオブジェクトに変換
+                    const slotsObj = {};
+                    Object.entries(updatePayload).forEach(([key, val]) => {
+                        const slotKey = key.replace('slots.', '');
+                        slotsObj[slotKey] = val;
+                    });
+                    await docRef.set({
+                        date: date,
+                        assignedBy: auth.currentUser.uid,
+                        isCustom: true,
+                        slots: slotsObj,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                const dateLabel = isPersistent ? '永続' : date;
+                msgEl.innerHTML = `<span class="text-green-600">✅ ${slotSelections.length}スロットを一括保存しました (${dateLabel})</span>`;
+
+                // スロットボタンを再レンダリング（内部でloadUserAssignmentsも呼ばれる）
+                await loadUserSlots();
+            } catch (e) {
+                msgEl.innerHTML = '<span class="text-red-500">❌ エラー: ' + e.message + '</span>';
+            }
         }
 
         // ========== 最近のユーザー管理 ==========
@@ -3362,11 +5055,13 @@
                     const date = data.date || doc.id;
                     const slots = data.slots || {};
                     const slotKeys = Object.keys(slots);
+                    const isPersistent = doc.id === '_default';
                     const isToday = date === new Date().toISOString().split('T')[0];
-                    const isPast = date < new Date().toISOString().split('T')[0];
+                    const isPast = !isPersistent && date < new Date().toISOString().split('T')[0];
 
                     let dateBadge = '';
-                    if (isToday) dateBadge = '<span class="text-[10px] bg-green-100 text-green-700 px-1 rounded ml-1">今日</span>';
+                    if (isPersistent) dateBadge = '<span class="text-[10px] bg-yellow-200 text-yellow-800 px-1 rounded ml-1 font-bold">永続</span>';
+                    else if (isToday) dateBadge = '<span class="text-[10px] bg-green-100 text-green-700 px-1 rounded ml-1">今日</span>';
                     else if (isPast) dateBadge = '<span class="text-[10px] bg-gray-100 text-gray-500 px-1 rounded ml-1">過去</span>';
                     else dateBadge = '<span class="text-[10px] bg-blue-100 text-blue-700 px-1 rounded ml-1">予定</span>';
 
@@ -3379,10 +5074,12 @@
                         return `<span class="inline-flex items-center gap-1">${label}: <strong>${escapeHtml(s.title || '?')}</strong> ${typeBadge}</span>`;
                     }).join('<span class="text-gray-300 mx-1">|</span>');
 
-                    html += `<div class="p-2 border ${isToday ? 'border-green-300 bg-green-50' : isPast ? 'border-gray-200 bg-gray-50' : 'border-yellow-200 bg-yellow-50'} rounded-lg text-sm">
+                    const displayDate = isPersistent ? '永続クエスト' : date;
+                    const docId = doc.id;
+                    html += `<div class="p-2 border ${isPersistent ? 'border-yellow-400 bg-yellow-50' : isToday ? 'border-green-300 bg-green-50' : isPast ? 'border-gray-200 bg-gray-50' : 'border-yellow-200 bg-yellow-50'} rounded-lg text-sm">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold">${date}${dateBadge}</span>
-                            <button onclick="deleteAssignment('${uid}','${date}')" class="text-xs text-red-400 hover:text-red-600">削除</button>
+                            <span class="font-bold">${displayDate}${dateBadge}</span>
+                            <button onclick="deleteAssignment('${uid}','${docId}')" class="text-xs text-red-400 hover:text-red-600">削除</button>
                         </div>
                         <div class="mt-1 text-xs">${slotDetails}</div>
                     </div>`;
@@ -3394,13 +5091,313 @@
             }
         }
 
-        async function deleteAssignment(uid, date) {
-            if (!confirm(`${date} の割当を削除しますか？`)) return;
+        async function deleteAssignment(uid, docId) {
+            const label = docId === '_default' ? '永続クエスト（アプリ既定に戻ります）' : docId;
+            if (!confirm(`${label} の割当を削除しますか？`)) return;
             try {
-                await db.collection('users').doc(uid).collection('custom_quests').doc(date).delete();
+                await db.collection('users').doc(uid).collection('custom_quests').doc(docId).delete();
                 await loadUserAssignments();
             } catch (e) {
                 alert('削除エラー: ' + e.message);
+            }
+        }
+
+        // ========== ユーザー情報パネル レンダリング ==========
+
+        function renderUserProfilePanel(profile, userData) {
+            const el = document.getElementById('cq-user-profile-content');
+            const p = profile || {};
+            const weight = p.weight || 0;
+            const bodyFatPct = p.bodyFatPercentage || 0;
+            const lbm = weight && bodyFatPct ? r1(weight * (1 - bodyFatPct / 100)) : '—';
+            const height = p.height || 0;
+            const age = p.age || (p.birthYear ? new Date().getFullYear() - p.birthYear : null);
+
+            // BMR計算
+            let bmr = '—';
+            if (height && weight && age && p.gender) {
+                const g = p.gender;
+                if (g === 'MALE') bmr = Math.round(10 * weight + 6.25 * height - 5 * age + 5);
+                else if (g === 'FEMALE') bmr = Math.round(10 * weight + 6.25 * height - 5 * age - 161);
+                else bmr = Math.round(10 * weight + 6.25 * height - 5 * age - 78);
+            }
+
+            // TDEE計算
+            const actMulti = { 'DESK_WORK': 1.2, 'STANDING_WORK': 1.4, 'PHYSICAL_LABOR': 1.6,
+                'SEDENTARY': 1.2, 'LIGHT': 1.375, 'MODERATE': 1.55, 'ACTIVE': 1.725, 'VERY_ACTIVE': 1.9 };
+            const tdee = bmr !== '—' ? Math.round(bmr * (actMulti[p.activityLevel] || 1.2)) : '—';
+
+            const goalLabels = { 'LOSE_WEIGHT': '減量', 'MAINTAIN': '維持', 'GAIN_MUSCLE': '増量',
+                'LOSE_FAST': '急速減量', 'LOSE': '減量', 'LOSE_SLOW': 'ゆるやか減量', 'GAIN_SLOW': 'ゆるやか増量', 'GAIN': '増量' };
+            const actLabels = { 'DESK_WORK': 'デスクワーク', 'STANDING_WORK': '立ち仕事', 'PHYSICAL_LABOR': '肉体労働',
+                'SEDENTARY': '座り仕事', 'LIGHT': '軽い活動', 'MODERATE': '中程度', 'ACTIVE': '活動的', 'VERY_ACTIVE': '非常に活動的' };
+            const genderLabels = { 'MALE': '男性', 'FEMALE': '女性', 'OTHER': 'その他' };
+            const budgetLabels = { 1: '節約', 2: '標準', 3: 'ゆとり' };
+
+            function row(label, val) { return `<div class="flex justify-between py-0.5 border-b border-gray-100"><span class="text-gray-500">${label}</span><span class="font-mono font-bold">${val ?? '—'}</span></div>`; }
+            function section(title, rows) { return `<div class="mb-3"><div class="text-xs font-bold text-gray-600 mb-1 bg-gray-100 px-2 py-1 rounded">${title}</div><div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 px-2">${rows}</div></div>`; }
+
+            let html = '';
+            html += section('基本情報', [
+                row('ニックネーム', escapeHtml(p.nickname)),
+                row('性別', genderLabels[p.gender] || p.gender || '—'),
+                row('年齢', age ? `${age}歳 (${p.birthYear}年生)` : '—'),
+                row('身長', height ? `${height}cm` : '—'),
+                row('体重', weight ? `${weight}kg` : '—'),
+                row('体脂肪率', bodyFatPct ? `${bodyFatPct}%` : '—'),
+                row('目標体重', p.targetWeight ? `${p.targetWeight}kg` : '—'),
+            ].join(''));
+
+            html += section('体組成（計算値）', [
+                row('LBM（除脂肪体重）', typeof lbm === 'number' ? `${lbm}kg` : lbm),
+                row('BMR（基礎代謝）', bmr !== '—' ? `${bmr}kcal` : '—'),
+                row('TDEE（消費カロリー）', tdee !== '—' ? `${tdee}kcal` : '—'),
+                row('理想体重', p.idealWeight ? `${p.idealWeight}kg` : '—'),
+                row('理想体脂肪率', p.idealBodyFatPercentage ? `${p.idealBodyFatPercentage}%` : '—'),
+            ].join(''));
+
+            html += section('目標設定', [
+                row('目標', goalLabels[p.goal] || p.goal || '—'),
+                row('活動レベル', actLabels[p.activityLevel] || p.activityLevel || '—'),
+                row('目標カロリー', p.targetCalories ? `${p.targetCalories}kcal` : '—'),
+                row('目標P', p.targetProtein ? `${Math.floor(p.targetProtein)}g` : '—'),
+                row('目標F', p.targetFat ? `${Math.floor(p.targetFat)}g` : '—'),
+                row('目標C', p.targetCarbs ? `${Math.floor(p.targetCarbs)}g` : '—'),
+                row('PFC比率', `P${p.proteinRatioPercent || 30}% F${p.fatRatioPercent || 25}% C${p.carbRatioPercent || 45}%`),
+                row('カロリー調整', p.calorieAdjustment ? `${p.calorieAdjustment > 0 ? '+' : ''}${p.calorieAdjustment}kcal` : '±0'),
+            ].join(''));
+
+            html += section('トレ前後PFC', [
+                row('トレ前 P/F/C', `${p.preWorkoutProtein ?? 20}g / ${p.preWorkoutFat ?? 5}g / ${p.preWorkoutCarbs ?? 50}g`),
+                row('トレ後 P/F/C', `${p.postWorkoutProtein ?? 30}g / ${p.postWorkoutFat ?? 5}g / ${p.postWorkoutCarbs ?? 60}g`),
+            ].join(''));
+
+            html += section('食材好み', [
+                row('優先タンパク源', (p.preferredProteinSources || []).join(', ') || '—'),
+                row('優先炭水化物源', (p.preferredCarbSources || []).join(', ') || '—'),
+                row('優先脂質源', (p.preferredFatSources || []).join(', ') || '—'),
+                row('避けたい食材', (p.avoidFoods || []).join(', ') || '—'),
+                row('アレルギー', (p.allergies || []).join(', ') || '—'),
+                row('食費予算', budgetLabels[p.budgetTier] || '標準'),
+            ].join(''));
+
+            html += section('学習データ', [
+                row('よく食べる食材', escapeHtml(p.favoriteFoods) || '—'),
+                row('NG食材', escapeHtml(p.ngFoods) || '—'),
+            ].join(''));
+
+            el.innerHTML = html;
+        }
+
+        const ROUTINE_SPLIT_OPTIONS = ['胸', '背中', '肩', '腕', '脚', '休み', '全身', '上半身', '下半身', 'プッシュ', 'プル', '胸・三頭', '背中・二頭', '肩・腕', '腹筋・体幹'];
+
+        async function renderUserRoutinePanel(uid, profile) {
+            const el = document.getElementById('cq-user-routine-content');
+            el.innerHTML = '<span class="text-gray-400">読み込み中...</span>';
+            try {
+                const snap = await db.collection('users').doc(uid).collection('routinePatterns').get();
+                if (snap.empty) { el.innerHTML = '<span class="text-gray-400">ルーティン未設定</span>'; return; }
+
+                // キャッシュ
+                loadedRoutinePatterns = {};
+                let html = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    loadedRoutinePatterns[doc.id] = JSON.parse(JSON.stringify(d));
+                    const activeBadge = d.isActive ? '<span class="text-[10px] bg-green-200 text-green-800 px-1.5 rounded-full font-bold ml-1">アクティブ</span>' : '';
+                    html += `<div class="mb-3 border border-gray-200 rounded-lg p-3" id="routine-panel-${doc.id}">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="font-bold text-sm">${escapeHtml(d.name || doc.id)}${activeBadge}</div>
+                            <div class="flex gap-1">
+                                <button onclick="saveRoutinePattern('${doc.id}')" class="bg-teal-500 text-white px-2 py-0.5 rounded text-[10px] hover:bg-teal-600">保存</button>
+                                <button onclick="resetRoutinePattern('${doc.id}')" class="bg-gray-400 text-white px-2 py-0.5 rounded text-[10px] hover:bg-gray-500">リセット</button>
+                            </div>
+                        </div>`;
+                    const days = d.days || [];
+                    if (days.length > 0) {
+                        html += '<div class="grid grid-cols-7 gap-1 text-center">';
+                        days.forEach((day, idx) => {
+                            const isRest = day.isRestDay || day.splitType === '休み';
+                            const selectId = `routine-${doc.id}-day-${idx}`;
+                            let options = ROUTINE_SPLIT_OPTIONS.map(opt => {
+                                const selected = (isRest && opt === '休み') || (!isRest && opt === day.splitType) ? ' selected' : '';
+                                return `<option value="${opt}"${selected}>${opt}</option>`;
+                            }).join('');
+                            html += `<div class="rounded px-0.5 py-1 text-[11px] border border-gray-200">
+                                <div class="font-bold mb-0.5">${escapeHtml(day.name || 'Day' + day.dayNumber)}</div>
+                                <select id="${selectId}" class="w-full border border-gray-300 rounded text-[10px] px-0.5 py-0.5">${options}</select>
+                            </div>`;
+                        });
+                        html += '</div>';
+                    }
+                    html += '<div id="routine-msg-' + doc.id + '" class="text-[10px] mt-1 hidden"></div>';
+                    html += '</div>';
+                });
+
+                // ルーティンテンプレートマッピング
+                const rtc = profile.routineTemplateConfig;
+                if (rtc && rtc.mappings && rtc.mappings.length > 0) {
+                    html += '<div class="mt-2 border-t border-gray-200 pt-2"><div class="text-xs font-bold text-gray-600 mb-1">テンプレートマッピング</div>';
+                    html += '<div class="space-y-0.5">';
+                    rtc.mappings.forEach(m => {
+                        const slotLabel = m.slotNumber === -1 ? '運動' : `食事${m.slotNumber}`;
+                        html += `<div class="text-[11px] flex gap-2"><span class="text-gray-500">${escapeHtml(m.routineName || m.routineId)}</span><span>→</span><span class="font-bold">${slotLabel}: ${escapeHtml(m.templateName || m.templateId)}</span></div>`;
+                    });
+                    html += '</div></div>';
+                }
+
+                el.innerHTML = html;
+            } catch (e) {
+                el.innerHTML = `<span class="text-red-500">エラー: ${e.message}</span>`;
+            }
+        }
+
+        async function saveRoutinePattern(patternId) {
+            const uid = loadedUserUid;
+            if (!uid) { alert('ユーザーが選択されていません'); return; }
+            const msgEl = document.getElementById('routine-msg-' + patternId);
+            msgEl.classList.remove('hidden');
+            msgEl.innerHTML = '<span class="text-gray-500">保存中...</span>';
+            try {
+                const cached = loadedRoutinePatterns[patternId];
+                if (!cached) throw new Error('キャッシュが見つかりません');
+                const days = (cached.days || []).map((day, idx) => {
+                    const selectEl = document.getElementById(`routine-${patternId}-day-${idx}`);
+                    const splitType = selectEl ? selectEl.value : day.splitType;
+                    const isRestDay = splitType === '休み';
+                    return { ...day, splitType: isRestDay ? '休み' : splitType, isRestDay };
+                });
+                await db.collection('users').doc(uid).collection('routinePatterns').doc(patternId).update({ days });
+                // キャッシュも更新
+                loadedRoutinePatterns[patternId].days = JSON.parse(JSON.stringify(days));
+                msgEl.innerHTML = '<span class="text-green-600">✅ 保存しました</span>';
+            } catch (e) {
+                msgEl.innerHTML = `<span class="text-red-500">❌ ${e.message}</span>`;
+            }
+        }
+
+        function resetRoutinePattern(patternId) {
+            const cached = loadedRoutinePatterns[patternId];
+            if (!cached) return;
+            (cached.days || []).forEach((day, idx) => {
+                const selectEl = document.getElementById(`routine-${patternId}-day-${idx}`);
+                if (selectEl) {
+                    const isRest = day.isRestDay || day.splitType === '休み';
+                    selectEl.value = isRest ? '休み' : (day.splitType || '胸');
+                }
+            });
+        }
+
+        async function renderUserTemplatesPanel(uid) {
+            const el = document.getElementById('cq-user-templates-content');
+            const tabEl = document.getElementById('cq-info-tab-templates');
+            el.innerHTML = '<span class="text-gray-400">読み込み中...</span>';
+            try {
+                const [mealSnap, workoutSnap] = await Promise.all([
+                    db.collection('users').doc(uid).collection('mealTemplates').get(),
+                    db.collection('users').doc(uid).collection('workoutTemplates').get()
+                ]);
+
+                if (tabEl) tabEl.textContent = `テンプレート(${mealSnap.size + workoutSnap.size})`;
+
+                let html = '';
+                if (mealSnap.size > 0) {
+                    html += '<div class="mb-3"><div class="text-xs font-bold text-gray-600 mb-1 bg-amber-100 px-2 py-1 rounded">🍽️ 食事テンプレート</div>';
+                    mealSnap.forEach(doc => {
+                        const d = doc.data();
+                        const m = d.totalMacros || {};
+                        const items = d.items || [];
+                        html += `<div class="mb-2 border border-gray-200 rounded p-2">
+                            <div class="font-bold text-sm">${escapeHtml(d.title || doc.id)}</div>
+                            <div class="text-[11px] text-gray-500 font-mono">${Math.round(m.calories||0)}kcal P${r1(m.protein||0)}g F${r1(m.fat||0)}g C${r1(m.carbs||0)}g</div>`;
+                        if (items.length > 0) {
+                            html += '<div class="mt-1 text-[11px] text-gray-600">';
+                            items.forEach(item => {
+                                html += `<div>・${escapeHtml(item.foodName || item.name || '?')} ${item.amount || ''}${item.unit || 'g'}</div>`;
+                            });
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                if (workoutSnap.size > 0) {
+                    html += '<div><div class="text-xs font-bold text-gray-600 mb-1 bg-blue-100 px-2 py-1 rounded">🏋️ 運動テンプレート</div>';
+                    workoutSnap.forEach(doc => {
+                        const d = doc.data();
+                        const items = d.items || [];
+                        html += `<div class="mb-2 border border-gray-200 rounded p-2">
+                            <div class="font-bold text-sm">${escapeHtml(d.title || doc.id)}</div>`;
+                        if (items.length > 0) {
+                            html += '<div class="mt-1 text-[11px] text-gray-600">';
+                            items.forEach(item => {
+                                const detail = item.sets ? `${item.sets}×${item.reps || '?'}回 ${item.weight ? item.weight + 'kg' : ''}` : (item.duration ? `${item.duration}分` : '');
+                                html += `<div>・${escapeHtml(item.foodName || item.name || '?')} ${detail}</div>`;
+                            });
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                if (mealSnap.size === 0 && workoutSnap.size === 0) {
+                    html = '<span class="text-gray-400">テンプレートなし</span>';
+                }
+                el.innerHTML = html;
+            } catch (e) {
+                el.innerHTML = `<span class="text-red-500">エラー: ${e.message}</span>`;
+            }
+        }
+
+        async function renderUserCustomItemsPanel(uid) {
+            const el = document.getElementById('cq-user-custom-items-content');
+            const tabEl = document.getElementById('cq-info-tab-custom');
+            el.innerHTML = '<span class="text-gray-400">読み込み中...</span>';
+            try {
+                const [foodSnap, exSnap] = await Promise.all([
+                    db.collection('users').doc(uid).collection('customFoods').get(),
+                    db.collection('users').doc(uid).collection('customExercises').get()
+                ]);
+
+                if (tabEl) tabEl.textContent = `カスタム(${foodSnap.size + exSnap.size})`;
+
+                // カスタム食品をキャッシュ（テンプレート食材候補統合用）
+                loadedUserCustomFoods = [];
+                foodSnap.forEach(doc => {
+                    const d = doc.data();
+                    loadedUserCustomFoods.push({ id: doc.id, ...d });
+                });
+
+                let html = '';
+                if (foodSnap.size > 0) {
+                    html += '<div class="mb-3"><div class="text-xs font-bold text-gray-600 mb-1 bg-rose-100 px-2 py-1 rounded">🥗 カスタム食品</div>';
+                    html += '<div class="overflow-x-auto"><table class="w-full text-[11px]"><thead><tr class="bg-gray-50 text-left"><th class="px-2 py-1">食品名</th><th class="px-2 py-1">kcal/100g</th><th class="px-2 py-1">P</th><th class="px-2 py-1">F</th><th class="px-2 py-1">C</th><th class="px-2 py-1">使用回数</th></tr></thead><tbody>';
+                    loadedUserCustomFoods.forEach(d => {
+                        const n = d.nutrientsPer100g || d;
+                        html += `<tr class="border-b border-gray-100"><td class="px-2 py-1 font-bold">${escapeHtml(d.name || '?')}</td><td class="px-2 py-1">${Math.round(n.calories||0)}</td><td class="px-2 py-1">${r1(n.protein||0)}</td><td class="px-2 py-1">${r1(n.fat||0)}</td><td class="px-2 py-1">${r1(n.carbs||0)}</td><td class="px-2 py-1">${d.usageCount || 0}</td></tr>`;
+                    });
+                    html += '</tbody></table></div></div>';
+                }
+                if (exSnap.size > 0) {
+                    html += '<div><div class="text-xs font-bold text-gray-600 mb-1 bg-blue-100 px-2 py-1 rounded">🏃 カスタムエクササイズ</div>';
+                    html += '<div class="overflow-x-auto"><table class="w-full text-[11px]"><thead><tr class="bg-gray-50 text-left"><th class="px-2 py-1">種目名</th><th class="px-2 py-1">カテゴリ</th><th class="px-2 py-1">デフォルト</th><th class="px-2 py-1">cal/min</th><th class="px-2 py-1">使用回数</th></tr></thead><tbody>';
+                    exSnap.forEach(doc => {
+                        const d = doc.data();
+                        const defaults = [];
+                        if (d.defaultSets) defaults.push(`${d.defaultSets}セット`);
+                        if (d.defaultReps) defaults.push(`${d.defaultReps}回`);
+                        if (d.defaultWeight) defaults.push(`${d.defaultWeight}kg`);
+                        if (d.defaultDuration) defaults.push(`${d.defaultDuration}分`);
+                        html += `<tr class="border-b border-gray-100"><td class="px-2 py-1 font-bold">${escapeHtml(d.name || '?')}</td><td class="px-2 py-1">${escapeHtml(d.category || '—')}</td><td class="px-2 py-1">${defaults.join(' / ') || '—'}</td><td class="px-2 py-1">${d.caloriesPerMinute || '—'}</td><td class="px-2 py-1">${d.usageCount || 0}</td></tr>`;
+                    });
+                    html += '</tbody></table></div></div>';
+                }
+                if (foodSnap.size === 0 && exSnap.size === 0) {
+                    html = '<span class="text-gray-400">カスタムアイテムなし</span>';
+                }
+                el.innerHTML = html;
+            } catch (e) {
+                el.innerHTML = `<span class="text-red-500">エラー: ${e.message}</span>`;
             }
         }
 

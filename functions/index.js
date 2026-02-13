@@ -4773,6 +4773,453 @@ function getCarbStrategy(goal) {
   return { food_id: "white_rice", reason: "維持/増量：白米で消化促進" };
 }
 
+// ===== クエスト生成ロジック（Gemini置換） =====
+
+// 栄養値定数（100gあたり）
+const FOOD_NUTRITION = {
+  chicken_breast: { p: 23, f: 2, c: 0 },
+  beef_lean: { p: 21, f: 4, c: 0 },
+  saba: { p: 26, f: 12, c: 0 },
+  salmon: { p: 22, f: 4, c: 0 },
+  white_rice: { p: 2.5, f: 0.3, c: 37 },
+  brown_rice: { p: 2.8, f: 1, c: 35 },
+  broccoli: { p: 4, f: 0.5, c: 5 },
+  mochi: { p: 4, f: 1, c: 50 },
+  whey_protein: { p: 80, f: 3, c: 5 },
+  olive_oil: { p: 0, f: 100, c: 0 },
+  pink_salt: { p: 0, f: 0, c: 0 },
+};
+
+// 全卵1個（64g）あたり
+const EGG_PER_UNIT = { p: 8, f: 6.5, c: 0.3 };
+
+/**
+ * 2パス目：PFC個別マクロ調整
+ * P, F, C それぞれが目標の95%に収まるよう食材量をスケーリング
+ * - タンパク質源 → P目標に合わせてスケール
+ * - 炭水化物源 → C目標に合わせてスケール
+ * - オリーブオイル → 残りのF目標に合わせて調整
+ */
+function adjustToMacroTargets(meals, targetProtein, targetFat, targetCarbs, shoppingMap) {
+  const RATIO = 0.95;
+
+  function getFoodMacros(food) {
+    if (food.food_id === "egg_whole") {
+      return { p: EGG_PER_UNIT.p * food.amount, f: EGG_PER_UNIT.f * food.amount, c: EGG_PER_UNIT.c * food.amount };
+    }
+    const nut = FOOD_NUTRITION[food.food_id];
+    if (!nut) return { p: 0, f: 0, c: 0 };
+    return { p: nut.p * food.amount / 100, f: nut.f * food.amount / 100, c: nut.c * food.amount / 100 };
+  }
+
+  function totalMacros() {
+    let p = 0, f = 0, c = 0;
+    for (const meal of meals) {
+      for (const food of meal.foods) {
+        const m = getFoodMacros(food);
+        p += m.p; f += m.f; c += m.c;
+      }
+    }
+    return { p: Math.round(p), f: Math.round(f), c: Math.round(c) };
+  }
+
+  const before = totalMacros();
+  console.log(`[adjustToMacroTargets] before P=${before.p}/${targetProtein} F=${before.f}/${targetFat} C=${before.c}/${targetCarbs}`);
+
+  // 固定食材のPFC合計（卵、ブロッコリー、餅、プロテイン、岩塩）
+  const PROTEIN_IDS = ["chicken_breast", "beef_lean", "saba", "salmon"];
+  const CARB_IDS = ["white_rice", "brown_rice"];
+  let fixedP = 0, fixedF = 0, fixedC = 0;
+  for (const meal of meals) {
+    for (const food of meal.foods) {
+      if (!PROTEIN_IDS.includes(food.food_id) && !CARB_IDS.includes(food.food_id) && food.food_id !== "olive_oil") {
+        const m = getFoodMacros(food);
+        fixedP += m.p; fixedF += m.f; fixedC += m.c;
+      }
+    }
+  }
+
+  // Step 1: タンパク質源をスケーリング（P目標 × 95% に合わせる）
+  const protFoods = [];
+  for (const meal of meals) {
+    for (const food of meal.foods) {
+      if (PROTEIN_IDS.includes(food.food_id)) protFoods.push(food);
+    }
+  }
+  let currentProtP = 0;
+  for (const food of protFoods) {
+    const nut = FOOD_NUTRITION[food.food_id];
+    currentProtP += nut.p * food.amount / 100;
+  }
+  if (currentProtP > 0) {
+    const needP = targetProtein * RATIO - fixedP;
+    const pScale = Math.max(0.5, Math.min(1.5, needP / currentProtP));
+    for (const food of protFoods) {
+      food.amount = Math.round(food.amount * pScale / 10) * 10;
+      food.amount = Math.max(food.amount, 50);
+    }
+  }
+
+  // Step 2: 炭水化物源をスケーリング（C目標 × 95% に合わせる）
+  const carbFoods = [];
+  for (const meal of meals) {
+    for (const food of meal.foods) {
+      if (CARB_IDS.includes(food.food_id)) carbFoods.push(food);
+    }
+  }
+  let currentCarbC = 0;
+  for (const food of carbFoods) {
+    const nut = FOOD_NUTRITION[food.food_id];
+    currentCarbC += nut.c * food.amount / 100;
+  }
+  if (currentCarbC > 0) {
+    const needC = targetCarbs * RATIO - fixedC;
+    const cScale = Math.max(0.5, Math.min(1.5, needC / currentCarbC));
+    for (const food of carbFoods) {
+      food.amount = Math.round(food.amount * cScale / 10) * 10;
+      food.amount = Math.max(food.amount, 50);
+    }
+  }
+
+  // Step 3: スケーリング後のF合計を再計算し、オリーブオイルで調整
+  let scaledF = 0;
+  for (const meal of meals) {
+    for (const food of meal.foods) {
+      if (food.food_id !== "olive_oil") {
+        scaledF += getFoodMacros(food).f;
+      }
+    }
+  }
+  const remainingF = targetFat * RATIO - scaledF;
+
+  // 既存のオリーブオイルを一旦全削除
+  for (const meal of meals) {
+    const idx = meal.foods.findIndex(f => f.food_id === "olive_oil");
+    if (idx >= 0) meal.foods.splice(idx, 1);
+  }
+
+  // F不足分をオリーブオイルで補充（通常食事に均等配分）
+  if (remainingF > 2) {
+    const normalMeals = meals.filter(m =>
+      m.foods.length > 0 && !m.foods.some(f => f.food_id === "mochi" || f.food_id === "whey_protein")
+    );
+    if (normalMeals.length > 0) {
+      const oilPerMeal = Math.max(3, Math.round(remainingF / normalMeals.length));
+      for (const meal of normalMeals) {
+        meal.foods.push({ food_id: "olive_oil", amount: oilPerMeal, unit: "g" });
+      }
+    }
+  }
+
+  const after = totalMacros();
+  const afterCal = after.p * 4 + after.f * 9 + after.c * 4;
+  console.log(`[adjustToMacroTargets] after P=${after.p}/${targetProtein} F=${after.f}/${targetFat} C=${after.c}/${targetCarbs} cal=${afterCal}`);
+
+  // 買い物マップを再構築
+  for (const key of Object.keys(shoppingMap)) {
+    delete shoppingMap[key];
+  }
+  for (const meal of meals) {
+    for (const food of meal.foods) {
+      shoppingMap[food.food_id] = (shoppingMap[food.food_id] || 0) + food.amount;
+    }
+  }
+}
+
+/**
+ * ロジックベースのクエスト生成（Gemini置換）
+ * PFC目標から食材量を決定的に計算
+ */
+function generateQuestLogic(promptData) {
+  const {
+    splitType, budgetTier, mealsPerDay,
+    targetProtein, targetFat, targetCarbs, targetCalories,
+    trainingAfterMeal, trainingDuration, trainingStyle, repsPerSet,
+    isEatingOut, eatingOutMeal,
+    wakeUpTime, trainingTime, sleepTime,
+    goal, weight, bodyFatPercentage
+  } = promptData;
+
+  const isRestDay = ["rest", "off", "abs", "cardio"].includes(splitType);
+
+  // 戦略決定
+  const proteinStrategy = getProteinStrategy(splitType || "off", budgetTier || 2);
+  const carbStrategy = getCarbStrategy(goal || "MAINTAIN");
+  const proteinFoodId = proteinStrategy.food_id;
+  const carbFoodId = carbStrategy.food_id;
+
+  // カロリー計算
+  const calories = targetCalories || Math.round(targetProtein * 4 + targetFat * 9 + targetCarbs * 4);
+
+  // LBM・塩分
+  const lbm = weight && bodyFatPercentage != null
+    ? weight * (1 - bodyFatPercentage / 100) : 68;
+  const saltPerMeal = Math.round(lbm / 22);
+
+  // トレーニング判定
+  const hasTraining = !isRestDay && trainingAfterMeal != null && trainingAfterMeal >= 1;
+  const mochiAmount = calories >= 2200 ? 50 : 25;
+
+  // トレ前後のPFC（餅+プロテインパウダー30g）
+  const preP = 25, preF = 1, preC = Math.round(mochiAmount * 0.5) + 1;
+  const postP = 25, postF = 1, postC = Math.round(mochiAmount * 0.5) + 1;
+
+  // 通常食事の食数（トレ前後・外食を除く）
+  let normalMealCount = mealsPerDay;
+  if (hasTraining) normalMealCount -= 2;
+  if (isEatingOut && eatingOutMeal) normalMealCount -= 1;
+  normalMealCount = Math.max(normalMealCount, 1);
+
+  // 通常食事1食あたりのPFC目標
+  const usedP = hasTraining ? preP + postP : 0;
+  const usedF = hasTraining ? preF + postF : 0;
+  const usedC = hasTraining ? preC + postC : 0;
+  const pPerMeal = Math.round((targetProtein - usedP) / normalMealCount);
+  const fPerMeal = Math.round((targetFat - usedF) / normalMealCount);
+  const cPerMeal = Math.round((targetCarbs - usedC) / normalMealCount);
+
+  // ブロッコリー量（食物繊維25g目標 → 100g/日を均等分割）
+  const totalBroccoli = 100;
+  const broccoliPerMeal = Math.round(totalBroccoli / normalMealCount / 10) * 10;
+
+  // 食事構築
+  const meals = [];
+  const shoppingMap = {};
+  let firstNormalMealDone = false;
+
+  function addShopping(foodId, amount) {
+    shoppingMap[foodId] = (shoppingMap[foodId] || 0) + amount;
+  }
+
+  for (let i = 1; i <= mealsPerDay; i++) {
+    // 外食
+    if (isEatingOut && i === eatingOutMeal) {
+      meals.push({ slot: i, foods: [] });
+      continue;
+    }
+
+    // トレ前
+    if (hasTraining && i === trainingAfterMeal) {
+      const foods = [
+        { food_id: "mochi", amount: mochiAmount, unit: "g" },
+        { food_id: "whey_protein", amount: 30, unit: "g" },
+        { food_id: "pink_salt", amount: saltPerMeal, unit: "g" }
+      ];
+      foods.forEach(f => addShopping(f.food_id, f.amount));
+      meals.push({ slot: i, foods });
+      continue;
+    }
+
+    // トレ後（岩塩なし）
+    if (hasTraining && i === trainingAfterMeal + 1) {
+      const foods = [
+        { food_id: "mochi", amount: mochiAmount, unit: "g" },
+        { food_id: "whey_protein", amount: 30, unit: "g" }
+      ];
+      foods.forEach(f => addShopping(f.food_id, f.amount));
+      meals.push({ slot: i, foods });
+      continue;
+    }
+
+    // 通常食事
+    const foods = [];
+    let pRemaining = pPerMeal;
+    let fRemaining = fPerMeal;
+    let cRemaining = cPerMeal;
+
+    // 1食目に卵追加（1-2個）
+    if (!firstNormalMealDone) {
+      firstNormalMealDone = true;
+      const eggCount = pPerMeal >= 35 ? 2 : 1;
+      foods.push({ food_id: "egg_whole", amount: eggCount, unit: "個" });
+      pRemaining -= EGG_PER_UNIT.p * eggCount;
+      fRemaining -= EGG_PER_UNIT.f * eggCount;
+      cRemaining -= EGG_PER_UNIT.c * eggCount;
+      addShopping("egg_whole", eggCount);
+    }
+
+    // タンパク質源
+    const protNut = FOOD_NUTRITION[proteinFoodId];
+    let proteinAmount = Math.round(Math.max(0, pRemaining) / protNut.p * 100);
+    proteinAmount = Math.round(proteinAmount / 10) * 10;
+    proteinAmount = Math.max(proteinAmount, 50);
+    foods.push({ food_id: proteinFoodId, amount: proteinAmount, unit: "g" });
+    fRemaining -= protNut.f * proteinAmount / 100;
+    cRemaining -= protNut.c * proteinAmount / 100;
+    addShopping(proteinFoodId, proteinAmount);
+
+    // ブロッコリー
+    if (broccoliPerMeal > 0) {
+      foods.push({ food_id: "broccoli", amount: broccoliPerMeal, unit: "g" });
+      fRemaining -= FOOD_NUTRITION.broccoli.f * broccoliPerMeal / 100;
+      cRemaining -= FOOD_NUTRITION.broccoli.c * broccoliPerMeal / 100;
+      addShopping("broccoli", broccoliPerMeal);
+    }
+
+    // 炭水化物源
+    const carbNut = FOOD_NUTRITION[carbFoodId];
+    let carbAmount = Math.round(Math.max(0, cRemaining) / carbNut.c * 100);
+    carbAmount = Math.round(carbAmount / 10) * 10;
+    if (carbAmount > 0) {
+      foods.push({ food_id: carbFoodId, amount: carbAmount, unit: "g" });
+      fRemaining -= carbNut.f * carbAmount / 100;
+      addShopping(carbFoodId, carbAmount);
+    }
+
+    // 脂質補充（オリーブオイル）
+    if (fRemaining > 2) {
+      const oilAmount = Math.max(Math.round(fRemaining), 5);
+      foods.push({ food_id: "olive_oil", amount: oilAmount, unit: "g" });
+      addShopping("olive_oil", oilAmount);
+    }
+
+    // 岩塩
+    foods.push({ food_id: "pink_salt", amount: saltPerMeal, unit: "g" });
+    addShopping("pink_salt", saltPerMeal);
+
+    meals.push({ slot: i, foods });
+  }
+
+  // ===== 2パス目：カロリー微調整 =====
+  adjustToMacroTargets(meals, targetProtein, targetFat, targetCarbs, shoppingMap);
+
+  // ===== 部位×スタイル別 種目テンプレート =====
+  const WORKOUT_TEMPLATES = {
+    legs: {
+      POWER: [
+        { name: "バーベルスクワット", sets: 5, reps: 5, rmMin: 80, rmMax: 85 },
+        { name: "レッグプレス", sets: 5, reps: 5, rmMin: 80, rmMax: 85 },
+        { name: "レッグエクステンション", sets: 4, reps: 8, rmMin: 70, rmMax: 75 },
+        { name: "レッグカール", sets: 4, reps: 8, rmMin: 70, rmMax: 75 }
+      ],
+      PUMP: [
+        { name: "バーベルスクワット", sets: 4, reps: 12 },
+        { name: "レッグプレス", sets: 4, reps: 15 },
+        { name: "レッグエクステンション", sets: 3, reps: 15 },
+        { name: "レッグカール", sets: 3, reps: 15 }
+      ]
+    },
+    back: {
+      POWER: [
+        { name: "デッドリフト", sets: 5, reps: 5, rmMin: 80, rmMax: 85 },
+        { name: "ベントオーバーロー", sets: 5, reps: 5, rmMin: 75, rmMax: 80 },
+        { name: "チンニング", sets: 4, reps: 6, rmMin: 75, rmMax: 80 },
+        { name: "シーテッドロー", sets: 4, reps: 8, rmMin: 70, rmMax: 75 }
+      ],
+      PUMP: [
+        { name: "デッドリフト", sets: 4, reps: 10 },
+        { name: "ベントオーバーロー", sets: 4, reps: 12 },
+        { name: "チンニング", sets: 3, reps: 12 },
+        { name: "シーテッドロー", sets: 3, reps: 15 }
+      ]
+    },
+    chest: {
+      POWER: [
+        { name: "ベンチプレス", sets: 5, reps: 5, rmMin: 80, rmMax: 85 },
+        { name: "インクラインベンチプレス", sets: 4, reps: 6, rmMin: 75, rmMax: 80 },
+        { name: "ディップス", sets: 4, reps: 6, rmMin: 75, rmMax: 80 },
+        { name: "ダンベルフライ", sets: 3, reps: 10, rmMin: 65, rmMax: 70 }
+      ],
+      PUMP: [
+        { name: "ベンチプレス", sets: 4, reps: 12 },
+        { name: "インクラインベンチプレス", sets: 4, reps: 12 },
+        { name: "ディップス", sets: 3, reps: 15 },
+        { name: "ダンベルフライ", sets: 3, reps: 15 }
+      ]
+    },
+    shoulders: {
+      POWER: [
+        { name: "ダンベルショルダープレス", sets: 5, reps: 5, rmMin: 80, rmMax: 85 },
+        { name: "スミスバックプレス", sets: 4, reps: 6, rmMin: 75, rmMax: 80 },
+        { name: "サイドレイズ", sets: 4, reps: 10, rmMin: 65, rmMax: 70 },
+        { name: "フロントレイズ", sets: 3, reps: 10, rmMin: 65, rmMax: 70 }
+      ],
+      PUMP: [
+        { name: "ダンベルショルダープレス", sets: 4, reps: 12 },
+        { name: "スミスバックプレス", sets: 4, reps: 12 },
+        { name: "サイドレイズ", sets: 3, reps: 20 },
+        { name: "フロントレイズ", sets: 3, reps: 15 }
+      ]
+    },
+    arms: {
+      POWER: [
+        { name: "ナローベンチプレス", sets: 5, reps: 5, rmMin: 80, rmMax: 85 },
+        { name: "バーベルカール", sets: 4, reps: 6, rmMin: 75, rmMax: 80 },
+        { name: "フレンチプレス", sets: 4, reps: 8, rmMin: 70, rmMax: 75 },
+        { name: "インクラインダンベルカール", sets: 3, reps: 10, rmMin: 65, rmMax: 70 }
+      ],
+      PUMP: [
+        { name: "ナローベンチプレス", sets: 4, reps: 12 },
+        { name: "バーベルカール", sets: 4, reps: 12 },
+        { name: "フレンチプレス", sets: 3, reps: 15 },
+        { name: "インクラインダンベルカール", sets: 3, reps: 15 }
+      ]
+    }
+  };
+  // 複合部位のマッピング
+  const SPLIT_TO_TEMPLATE = {
+    legs: "legs", lower_body: "legs",
+    back: "back", pull: "back", back_biceps: "back",
+    chest: "chest", push: "chest", chest_triceps: "chest",
+    shoulders: "shoulders", shoulders_arms: "shoulders",
+    arms: "arms",
+    full_body: "legs", upper_body: "chest"
+  };
+
+  // ワークアウト（LBMスケーリングで消費カロリー予測）
+  // 1セット≒5分、1種目≒30分（6セット相当）
+  const workout = {};
+  if (!isRestDay) {
+    const style = trainingStyle === "POWER" ? "POWER" : "PUMP";
+    const templateKey = SPLIT_TO_TEMPLATE[splitType] || "chest";
+    const baseTemplate = WORKOUT_TEMPLATES[templateKey]?.[style] || WORKOUT_TEMPLATES.chest.PUMP;
+
+    // 1セット≒5分、1種目≒30分 → 種目数 = duration/30、総セット数 = duration/5
+    const duration = trainingDuration || 120;
+    const targetExCount = Math.max(1, Math.min(baseTemplate.length, Math.round(duration / 30)));
+    const totalSetsNeeded = Math.round(duration / 5);
+
+    // テンプレートから種目を選択し、セット数を均等配分
+    const selected = baseTemplate.slice(0, targetExCount).map(ex => ({ ...ex }));
+    const setsPerEx = Math.floor(totalSetsNeeded / selected.length);
+    const extraSets = totalSetsNeeded % selected.length;
+    for (let i = 0; i < selected.length; i++) {
+      selected[i].sets = setsPerEx + (i < extraSets ? 1 : 0);
+    }
+    const exerciseTemplate = selected;
+
+    workout.name = `${splitTypeToJapanese(splitType)}トレーニング（${style === "POWER" ? "パワー" : "パンプ"}）`;
+    workout.exerciseDetails = exerciseTemplate;
+    workout.exercises = exerciseTemplate.length;
+    const totalSets = exerciseTemplate.reduce((sum, ex) => sum + ex.sets, 0);
+    workout.total_sets = totalSets;
+    workout.duration = duration;
+
+    // 部位別基準値（LBM 60kg基準） + 100 → LBMスケーリング
+    const BONUS_BASE = {
+      legs: 500, back: 450, chest: 400, shoulders: 350, arms: 300, abs: 250,
+      full_body: 500, lower_body: 500, upper_body: 400,
+      push: 400, pull: 450, chest_triceps: 400, back_biceps: 450, shoulders_arms: 350
+    };
+    const base = BONUS_BASE[splitType] || BONUS_BASE.upper_body;
+    workout.calories_burned = Math.round((base + 100) * (lbm / 60));
+  }
+
+  // 睡眠
+  const wakeM = parseTimeToMinutes(wakeUpTime) || 7 * 60;
+  const sleepM = parseTimeToMinutes(sleepTime) || 22 * 60;
+  const sleepH = Math.round((wakeM + 24 * 60 - sleepM) % (24 * 60) / 60);
+
+  // 買い物リスト
+  const shopping_list = Object.entries(shoppingMap).map(([food_id, total_amount]) => ({
+    food_id,
+    total_amount: Math.round(total_amount),
+    unit: food_id === "egg_whole" ? "個" : "g"
+  }));
+
+  return { meals, workout, sleep: { hours: sleepH }, shopping_list };
+}
+
 // ===== クエスト生成専用スキーマ（分析から分離） =====
 const QUEST_SCHEMA = {
   type: "object",
@@ -4852,7 +5299,6 @@ function minutesToTime(minutes) {
 
 function calculateMealTimes(wakeUpTime, trainingTime, sleepTime, mealsPerDay, trainingAfterMeal, trainingDuration = 120) {
   const wake = parseTimeToMinutes(wakeUpTime) || 7 * 60;  // デフォルト7:00
-  const sleep = parseTimeToMinutes(sleepTime) || 22 * 60; // デフォルト22:00
   const training = parseTimeToMinutes(trainingTime);
   const duration = trainingDuration || 120;  // デフォルト2時間
 
@@ -4865,7 +5311,7 @@ function calculateMealTimes(wakeUpTime, trainingTime, sleepTime, mealsPerDay, tr
     let label;
 
     if (i === 1) {
-      // 食事1: 起床時刻（設定値をそのまま使用）
+      // 食事1: 起床時刻
       time = wake;
       label = "起床後";
     } else if (hasTraining && i === trainingAfterMeal) {
@@ -4873,31 +5319,13 @@ function calculateMealTimes(wakeUpTime, trainingTime, sleepTime, mealsPerDay, tr
       time = training - 120;
       label = "トレ前";
     } else if (hasTraining && i === trainingAfterMeal + 1) {
-      // トレ後: トレーニング終了直後（開始時刻 + 所要時間）
+      // トレ後: トレーニング終了直後
       time = training + duration;
       label = "トレ後";
-    } else if (hasTraining && i === trainingAfterMeal + 2) {
-      // トレ後の次: トレ後から1時間後（トレ開始から2時間後）
-      const postWorkoutTime = training + duration;
-      time = postWorkoutTime + 60;
-      // 就寝2時間前を超えないように調整
-      if (time > sleep - 120) {
-        time = sleep - 120;
-      }
-      label = "";
-    } else if (i === mealsPerDay) {
-      // 最終食事: 就寝2時間前
-      time = sleep - 120;
-      label = "就寝前";
     } else {
-      // その他: 3時間間隔
-      const prevMeal = mealTimes[i - 2];
-      const prevTime = parseTimeToMinutes(prevMeal.time);
+      // 順算: 前食+3時間
+      const prevTime = parseTimeToMinutes(mealTimes[i - 2].time);
       time = prevTime + MEAL_INTERVAL;
-      // 就寝2時間前を超えないように調整
-      if (time > sleep - 120) {
-        time = sleep - 120;
-      }
       label = "";
     }
 
@@ -5255,110 +5683,9 @@ exports.generateQuest = onCall({
     console.log(`[Quest] Generating for ${userId}, budget=${promptData.budgetTier}, meals=${promptData.mealsPerDay}`);
     console.log(`[Quest] Time settings: wake=${promptData.wakeUpTime}, training=${promptData.trainingTime}, sleep=${promptData.sleepTime}, duration=${promptData.trainingDuration}min, trainingAfterMeal=${promptData.trainingAfterMeal}`);
 
-    // 4. Gemini 2.5 Flash でクエスト生成（リトライ付き）
-    const projectId = process.env.GCLOUD_PROJECT;
-    const location = "asia-northeast1";
-    const vertexAI = new VertexAI({ project: projectId, location: location });
-
-    const generativeModel = vertexAI.preview.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        maxOutputTokens: 16384,  // 5食分のJSON出力に十分なトークン数
-        temperature: 0.1,  // 安定した出力
-      },
-    });
-
-    const prompt = generateQuestPrompt(promptData);
-
-    // リトライ設定
-    const MAX_RETRIES = 3;
-    const RETRY_DELAY_MS = 2000;
-    let questResult = null;
-    let lastError = null;
-
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        console.log(`[Quest] Attempt ${attempt}/${MAX_RETRIES}...`);
-
-        // Vertex AI呼び出し（タイムアウト付き）
-        const timeoutMs = 270000; // 270秒（Cloud Functionの300秒より短く）
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("VERTEX_AI_TIMEOUT")), timeoutMs);
-        });
-
-        const result = await Promise.race([
-          generativeModel.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-          }),
-          timeoutPromise
-        ]);
-
-        const response = result.response;
-        const candidate = response.candidates?.[0];
-        const finishReason = candidate?.finishReason;
-        const responseText = candidate?.content?.parts?.[0]?.text;
-
-        console.log(`[Quest] Finish reason: ${finishReason}, response length: ${responseText?.length || 0}`);
-
-        if (!responseText) {
-          throw new Error(`Empty response from AI (finishReason: ${finishReason})`);
-        }
-
-        // JSONパース（ロバストな抽出）
-        let cleanedText = responseText.trim();
-        console.log("[Quest] Raw response (first 1000 chars):", cleanedText.substring(0, 1000));
-
-        // マークダウンコードブロックを削除
-        cleanedText = cleanedText.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
-
-        // JSONオブジェクトを抽出（最初の { から最後の } まで）
-        let jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          // 最後の } がない場合（切り詰められた場合）、手動で閉じる試行
-          console.warn("[Quest] Attempting to repair truncated JSON...");
-          const startIndex = cleanedText.indexOf('{');
-          if (startIndex === -1) {
-            throw new Error("No JSON object found in response");
-          }
-          cleanedText = cleanedText.substring(startIndex);
-          // 不完全な配列/オブジェクトを閉じる試行
-          let openBraces = (cleanedText.match(/\{/g) || []).length;
-          let closeBraces = (cleanedText.match(/\}/g) || []).length;
-          let openBrackets = (cleanedText.match(/\[/g) || []).length;
-          let closeBrackets = (cleanedText.match(/\]/g) || []).length;
-          cleanedText = cleanedText.replace(/,\s*$/, ''); // 末尾のカンマ削除
-          while (openBrackets > closeBrackets) { cleanedText += ']'; closeBrackets++; }
-          while (openBraces > closeBraces) { cleanedText += '}'; closeBraces++; }
-          console.log("[Quest] Repaired JSON length:", cleanedText.length);
-        } else {
-          cleanedText = jsonMatch[0];
-        }
-
-        // 不正な制御文字を削除
-        cleanedText = cleanedText.replace(/[\x00-\x1f\x7f]/g, (char) => {
-          if (char === "\n" || char === "\r" || char === "\t") return char;
-          return "";
-        });
-
-        questResult = JSON.parse(cleanedText);
-        console.log(`[Quest] Attempt ${attempt} succeeded, meals count: ${questResult.meals?.length}`);
-        break; // 成功したらループを抜ける
-
-      } catch (attemptError) {
-        lastError = attemptError;
-        console.error(`[Quest] Attempt ${attempt} failed:`, attemptError.message);
-
-        if (attempt < MAX_RETRIES) {
-          console.log(`[Quest] Retrying in ${RETRY_DELAY_MS}ms...`);
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-        }
-      }
-    }
-
-    if (!questResult) {
-      console.error("[Quest] All retries failed");
-      throw new HttpsError("internal", `Quest generation failed after ${MAX_RETRIES} attempts: ${lastError?.message}`);
-    }
+    // 4. ロジックベースでクエスト生成（Gemini不要）
+    const questResult = generateQuestLogic(promptData);
+    console.log(`[Quest] Logic-based generation succeeded, meals count: ${questResult.meals?.length}`);
 
     // 6. サーバー側で計算した時刻を各食事に追加
     // 休日判定（promptData.splitTypeはプロンプト生成と同じ値）
@@ -5416,12 +5743,24 @@ exports.generateQuest = onCall({
 
     if (questResult.workout && questResult.workout.name) {
       const w = questResult.workout;
-      // 30分あたり1種目×5セット形式 + レップ数
-      const exercises = w.exercises || Math.max(1, Math.floor((promptData.trainingDuration || 120) / 30));
-      const setsPerExercise = w.sets || 5;
-      const reps = w.reps || promptData.repsPerSet || 10;
-      const totalSets = w.total_sets || (exercises * setsPerExercise);
-      directiveItems.push(`【運動】${w.name} ${exercises}種目×${setsPerExercise}セット×${reps}回（計${totalSets}セット）`);
+      const calText = w.calories_burned ? ` 消費予測${w.calories_burned}kcal` : "";
+      const durText = w.duration ? ` ${w.duration}分` : "";
+      if (w.exerciseDetails && w.exerciseDetails.length > 0) {
+        // 種目詳細あり: 箇条書きで出力
+        const exLines = w.exerciseDetails.map(ex => {
+          const dur = ex.sets * 5; // 1セット5分
+          const parts = [`${ex.sets}セット`, `${ex.reps}回/セット`];
+          if (ex.rmMin && ex.rmMax) parts.push(`1RM${ex.rmMin}-${ex.rmMax}%`);
+          parts.push(`${dur}分`);
+          return `・${ex.name} ${parts.join("×")}`;
+        });
+        directiveItems.push(`【運動】${w.name}${durText}${calText}\n${exLines.join("\n")}`);
+      } else {
+        // フォールバック: 従来形式
+        const exercises = w.exercises || 4;
+        const totalSets = w.total_sets || 20;
+        directiveItems.push(`【運動】${w.name} ${exercises}種目（計${totalSets}セット）${calText}`);
+      }
     }
 
     // 睡眠時間を起床・就寝から計算

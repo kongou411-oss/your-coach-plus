@@ -4,6 +4,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.RmRepository
 import com.yourcoach.plus.shared.domain.repository.RoutineRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -31,10 +32,19 @@ val DEFAULT_ROUTINE_DAYS = listOf(
 /**
  * プロフィール設定の状態
  */
+/**
+ * オンボーディングRM入力エントリ
+ */
+data class RmInputEntry(
+    val exerciseName: String,
+    val reps: String = "",   // 回数（文字列: ユーザー入力）
+    val weight: String = ""  // 重量kg（文字列: ユーザー入力）
+)
+
 data class ProfileSetupState(
     // ステップ管理
     val currentStep: Int = 0,
-    val totalSteps: Int = 4, // 0:イントロ, 1:プロフィール, 2:ルーティン, 3:食事スロット
+    val totalSteps: Int = 5, // 0:イントロ, 1:プロフィール, 2:ルーティン, 3:RM教育, 4:食事スロット
 
     // ========== プロフィールデータ ==========
     val nickname: String = "",
@@ -55,6 +65,13 @@ data class ProfileSetupState(
 
     // ========== ルーティンデータ ==========
     val routineDays: List<RoutineDay> = DEFAULT_ROUTINE_DAYS,
+
+    // ========== RM入力データ ==========
+    val rmEntries: List<RmInputEntry> = listOf(
+        RmInputEntry("バーベルベンチプレス"),
+        RmInputEntry("バーベルスクワット"),
+        RmInputEntry("デッドリフト")
+    ),
 
     // ========== 食事スロットデータ ==========
     val wakeUpTime: String = "07:00",
@@ -83,7 +100,8 @@ data class ProfileSetupState(
 class ProfileSetupScreenModel(
     private val userRepository: UserRepository,
     private val routineRepository: RoutineRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val rmRepository: RmRepository? = null
 ) : ScreenModel {
 
     private val _state = MutableStateFlow(ProfileSetupState())
@@ -281,6 +299,23 @@ class ProfileSetupScreenModel(
         }
     }
 
+    // ========== RM入力更新 ==========
+    fun updateRmEntryReps(index: Int, reps: String) {
+        _state.update { s ->
+            s.copy(rmEntries = s.rmEntries.toMutableList().apply {
+                this[index] = this[index].copy(reps = reps)
+            })
+        }
+    }
+
+    fun updateRmEntryWeight(index: Int, weight: String) {
+        _state.update { s ->
+            s.copy(rmEntries = s.rmEntries.toMutableList().apply {
+                this[index] = this[index].copy(weight = weight)
+            })
+        }
+    }
+
     // ========== 食事スロット更新 ==========
     fun updateWakeUpTime(value: String) = _state.update { it.copy(wakeUpTime = value) }
     fun updateSleepTime(value: String) = _state.update { it.copy(sleepTime = value) }
@@ -443,6 +478,29 @@ class ProfileSetupScreenModel(
                 } catch (routineError: Throwable) {
                     println("Routine save error: ${routineError.message}")
                     // ルーティン保存失敗でもプロフィールは保存済みなので続行
+                }
+
+                // RM記録保存（入力がある場合のみ）
+                try {
+                    val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                    s.rmEntries.forEach { entry ->
+                        val reps = entry.reps.toIntOrNull()
+                        val weight = entry.weight.toFloatOrNull()
+                        if (reps != null && reps > 0 && weight != null && weight > 0f) {
+                            val record = RmRecord(
+                                exerciseName = entry.exerciseName,
+                                category = "",
+                                weight = weight,
+                                reps = reps,
+                                timestamp = now,
+                                createdAt = now
+                            )
+                            rmRepository?.addRmRecord(userId, record)
+                        }
+                    }
+                } catch (rmError: Throwable) {
+                    println("RM save error: ${rmError.message}")
+                    // RM保存失敗でも続行
                 }
 
                 _state.update { it.copy(isLoading = false) }

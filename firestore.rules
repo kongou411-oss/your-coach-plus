@@ -164,10 +164,12 @@ service cloud.firestore {
 
       // サブコレクション: custom_quests（トレーナー指定カスタムクエスト）
       // - 読み取り: 本人のみ
-      // - 書き込み: 管理者のみ（admin.htmlから操作）
+      // - 作成・削除: 管理者のみ（admin.htmlから操作）
+      // - 更新: 管理者 or 本人（完了記録executedItemsの更新用）
       match /custom_quests/{questDate} {
         allow read: if isOwner(userId);
-        allow write: if isAdmin();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || isOwner(userId);
       }
 
       // サブコレクション: pgbase_progress（PGBASE記事の進捗）

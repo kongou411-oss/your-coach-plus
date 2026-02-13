@@ -11,7 +11,8 @@ data class CustomQuest(
     val date: String,                          // YYYY-MM-DD
     val assignedBy: String,                    // トレーナーUID
     val isCustom: Boolean = true,              // trueならAI生成をブロック
-    val slots: Map<String, CustomQuestSlot>,   // "breakfast", "lunch", "dinner", "snack", "workout" など
+    val slots: Map<String, CustomQuestSlot>,   // "meal_1", "meal_2", "workout" など
+    val executedItems: Map<String, List<Int>> = emptyMap(), // 完了済みスロット: "meal_1" -> [0,1,2]
     val createdAt: Long = 0
 )
 
@@ -53,7 +54,18 @@ data class CustomQuestItem(
     val gi: Int = 0,                           // グリセミック指数
     // ビタミン・ミネラル
     val vitamins: Map<String, Float> = emptyMap(),
-    val minerals: Map<String, Float> = emptyMap()
+    val minerals: Map<String, Float> = emptyMap(),
+    // 運動専用フィールド（Exerciseモデル互換）
+    val category: String? = null,              // 運動カテゴリ（"胸","背中","有酸素"等）
+    val sets: Int? = null,                     // セット数
+    val reps: Int? = null,                     // 回数/セット
+    val weight: Float? = null,                 // 重量 (kg)
+    val duration: Int? = null,                 // 時間 (分)
+    val distance: Float? = null,               // 距離 (km)
+    // RM%指定（トレーナーが強度を%で指定）
+    val rmPercentMin: Float? = null,           // RM%下限 (例: 70.0)
+    val rmPercentMax: Float? = null,           // RM%上限 (例: 80.0)
+    val rmReps: Int? = null                    // RM基準回数 (例: 3 → 3RMの70-80%)
 )
 
 /**

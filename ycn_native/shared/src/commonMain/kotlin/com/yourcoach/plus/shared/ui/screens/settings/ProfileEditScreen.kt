@@ -2,6 +2,8 @@ package com.yourcoach.plus.shared.ui.screens.settings
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -27,6 +29,8 @@ import com.yourcoach.plus.shared.domain.model.ActivityLevel
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
 import com.yourcoach.plus.shared.domain.model.Gender
 import com.yourcoach.plus.shared.ui.theme.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 
 class ProfileEditScreen : Screen {
 
@@ -361,6 +365,111 @@ class ProfileEditScreen : Screen {
                     }
                 }
 
+                // 理想体型
+                item {
+                    ProfileSectionCard(title = "理想体型") {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = uiState.idealWeight,
+                                onValueChange = { screenModel.updateIdealWeight(it) },
+                                label = { Text("理想体重") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                shape = RoundedCornerShape(12.dp),
+                                suffix = { Text("kg") }
+                            )
+                            OutlinedTextField(
+                                value = uiState.idealBodyFatPercentage,
+                                onValueChange = { screenModel.updateIdealBodyFatPercentage(it) },
+                                label = { Text("理想体脂肪率") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                shape = RoundedCornerShape(12.dp),
+                                suffix = { Text("%") }
+                            )
+                        }
+                    }
+                }
+
+                // 食材好み
+                item {
+                    ProfileSectionCard(title = "食材好み") {
+                        TagInputField(
+                            label = "優先タンパク源",
+                            items = uiState.preferredProteinSources,
+                            suggestions = listOf("鶏むね肉", "鮭", "牛赤身", "卵", "ホエイプロテイン", "ささみ", "マグロ", "タラ"),
+                            onAdd = { screenModel.addPreferredProteinSource(it) },
+                            onRemove = { screenModel.removePreferredProteinSource(it) },
+                            focusManager = focusManager
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TagInputField(
+                            label = "優先炭水化物源",
+                            items = uiState.preferredCarbSources,
+                            suggestions = listOf("白米", "玄米", "オートミール", "さつまいも", "もち", "うどん", "バナナ"),
+                            onAdd = { screenModel.addPreferredCarbSource(it) },
+                            onRemove = { screenModel.removePreferredCarbSource(it) },
+                            focusManager = focusManager
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TagInputField(
+                            label = "優先脂質源",
+                            items = uiState.preferredFatSources,
+                            suggestions = listOf("オリーブオイル", "アボカド", "MCTオイル", "ナッツ", "アーモンド", "くるみ"),
+                            onAdd = { screenModel.addPreferredFatSource(it) },
+                            onRemove = { screenModel.removePreferredFatSource(it) },
+                            focusManager = focusManager
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TagInputField(
+                            label = "避けたい食材",
+                            items = uiState.avoidFoods,
+                            suggestions = emptyList(),
+                            onAdd = { screenModel.addAvoidFood(it) },
+                            onRemove = { screenModel.removeAvoidFood(it) },
+                            focusManager = focusManager
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TagInputField(
+                            label = "アレルギー",
+                            items = uiState.allergies,
+                            suggestions = listOf("卵", "乳", "小麦", "そば", "えび", "かに", "落花生", "大豆"),
+                            onAdd = { screenModel.addAllergy(it) },
+                            onRemove = { screenModel.removeAllergy(it) },
+                            focusManager = focusManager
+                        )
+                    }
+                }
+
+                // 学習データ
+                item {
+                    ProfileSectionCard(title = "学習データ") {
+                        OutlinedTextField(
+                            value = uiState.favoriteFoods,
+                            onValueChange = { screenModel.updateFavoriteFoods(it) },
+                            label = { Text("よく食べる食材") },
+                            supportingText = { Text("カンマ区切り") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = uiState.ngFoods,
+                            onValueChange = { screenModel.updateNgFoods(it) },
+                            label = { Text("NG食材") },
+                            supportingText = { Text("カンマ区切り") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                }
+
                 item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
@@ -373,6 +482,98 @@ private fun PfcSlider(label: String, color: Color, value: Int, range: ClosedFloa
         Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color, modifier = Modifier.width(24.dp))
         Slider(value = value.toFloat(), onValueChange = { onValueChange(it.toInt()) }, valueRange = range, modifier = Modifier.weight(1f))
         Text("$value%", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(48.dp))
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagInputField(
+    label: String,
+    items: List<String>,
+    suggestions: List<String>,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    focusManager: androidx.compose.ui.focus.FocusManager
+) {
+    var inputText by remember { mutableStateOf("") }
+
+    Column {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // 選択済みチップ
+        if (items.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items.forEach { item ->
+                    InputChip(
+                        onClick = { onRemove(item) },
+                        label = { Text(item, style = MaterialTheme.typography.labelSmall) },
+                        selected = true,
+                        trailingIcon = {
+                            Icon(Icons.Default.Close, contentDescription = "削除", modifier = Modifier.size(16.dp))
+                        }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        // 候補チップ
+        val remainingSuggestions = suggestions.filter { it !in items }
+        if (remainingSuggestions.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                remainingSuggestions.forEach { suggestion ->
+                    SuggestionChip(
+                        onClick = { onAdd(suggestion) },
+                        label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        // カスタム入力
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = inputText,
+                onValueChange = { inputText = it },
+                placeholder = { Text("追加...", style = MaterialTheme.typography.labelSmall) },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodySmall,
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    if (inputText.isNotBlank()) {
+                        onAdd(inputText)
+                        inputText = ""
+                    }
+                    focusManager.clearFocus()
+                })
+            )
+            IconButton(
+                onClick = {
+                    if (inputText.isNotBlank()) {
+                        onAdd(inputText)
+                        inputText = ""
+                    }
+                }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "追加")
+            }
+        }
     }
 }
 

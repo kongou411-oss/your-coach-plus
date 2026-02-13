@@ -99,31 +99,63 @@ fun HudHeader(
                 }
 
                 // カロリー表示
-                Surface(
-                    color = ScoreCalories.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                var showCalorieInfo by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = ScoreCalories.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(
-                            text = "${calories.first}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = ScoreCalories
-                        )
-                        Text(
-                            text = "/${calories.second}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "kcal",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${calories.first}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = ScoreCalories
+                            )
+                            Text(
+                                text = "/${calories.second}kcal",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(
+                        onClick = { showCalorieInfo = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "カロリー目標の説明",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
+                }
+                if (showCalorieInfo) {
+                    AlertDialog(
+                        onDismissRequest = { showCalorieInfo = false },
+                        confirmButton = {
+                            TextButton(onClick = { showCalorieInfo = false }) {
+                                Text("OK")
+                            }
+                        },
+                        title = { Text("カロリー目標について") },
+                        text = {
+                            Text(
+                                "この目標値はプロフィール設定のベースカロリーに、" +
+                                "当日のトレーニング種目に応じた運動消費予測を加算しています。\n\n" +
+                                "加算量はLBM(除脂肪体重)でスケーリングされます。\n" +
+                                "計算式: (部位基準値+100) x LBM/60\n\n" +
+                                "部位基準値: 脚500 / 背中450 / 胸400 / 肩350 / 腕300\n\n" +
+                                "PFC目標も同じ比率で連動します。",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    )
                 }
             }
 
@@ -344,6 +376,7 @@ fun UnifiedTimeline(
     currentTimeMinutes: Int,
     onItemClick: (UnifiedTimelineItem) -> Unit,
     onRecordClick: (UnifiedTimelineItem) -> Unit,
+    onUndoClick: (UnifiedTimelineItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -370,7 +403,8 @@ fun UnifiedTimeline(
                 item = item,
                 currentTimeMinutes = currentTimeMinutes,
                 onClick = { onItemClick(item) },
-                onRecordClick = { onRecordClick(item) }
+                onRecordClick = { onRecordClick(item) },
+                onUndoClick = { onUndoClick(item) }
             )
         }
     }
@@ -385,6 +419,7 @@ fun TimelineItemCard(
     currentTimeMinutes: Int,
     onClick: () -> Unit,
     onRecordClick: () -> Unit,
+    onUndoClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isCompleted = item.status == TimelineItemStatus.COMPLETED
@@ -509,7 +544,7 @@ fun TimelineItemCard(
                             text = item.subtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = if (isExpanded) 3 else 1,
+                            maxLines = if (isExpanded) 20 else 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -568,14 +603,51 @@ fun TimelineItemCard(
                     }
                 }
 
-                // 完了済みの折りたたみアイコン
+                // 完了済み: 取消ボタン + 折りたたみアイコン
                 if (isCompleted) {
+                    var showUndoConfirm by remember { mutableStateOf(false) }
+
+                    TextButton(
+                        onClick = { showUndoConfirm = true },
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
+
+                    if (showUndoConfirm) {
+                        AlertDialog(
+                            onDismissRequest = { showUndoConfirm = false },
+                            title = { Text("完了を取り消し") },
+                            text = { Text("「${item.title}」の完了記録を削除しますか？\n記録済みの食事・運動データも削除されます。") },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        showUndoConfirm = false
+                                        onUndoClick()
+                                    }
+                                ) {
+                                    Text("取り消す", color = MaterialTheme.colorScheme.error)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showUndoConfirm = false }) {
+                                    Text("キャンセル")
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }

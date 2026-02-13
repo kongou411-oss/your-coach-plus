@@ -9,9 +9,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,31 +85,63 @@ fun HudHeader(
                 }
 
                 // カロリー表示
-                Surface(
-                    color = ScoreCalories.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                var showCalorieInfo by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = ScoreCalories.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(
-                            text = "${calories.first}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = ScoreCalories
-                        )
-                        Text(
-                            text = "/${calories.second}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "kcal",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${calories.first}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = ScoreCalories
+                            )
+                            Text(
+                                text = "/${calories.second}kcal",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(
+                        onClick = { showCalorieInfo = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "カロリー目標の説明",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
+                }
+                if (showCalorieInfo) {
+                    AlertDialog(
+                        onDismissRequest = { showCalorieInfo = false },
+                        confirmButton = {
+                            TextButton(onClick = { showCalorieInfo = false }) {
+                                Text("OK")
+                            }
+                        },
+                        title = { Text("カロリー目標について") },
+                        text = {
+                            Text(
+                                "この目標値はプロフィール設定のベースカロリーに、" +
+                                "当日のトレーニング種目に応じた運動消費予測を加算しています。\n\n" +
+                                "加算量はLBM(除脂肪体重)でスケーリングされます。\n" +
+                                "計算式: (部位基準値+100) x LBM/60\n\n" +
+                                "部位基準値: 脚500 / 背中450 / 胸400 / 肩350 / 腕300\n\n" +
+                                "PFC目標も同じ比率で連動します。",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    )
                 }
             }
 
