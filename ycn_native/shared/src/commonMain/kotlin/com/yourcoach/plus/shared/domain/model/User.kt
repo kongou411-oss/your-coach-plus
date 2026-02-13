@@ -244,6 +244,7 @@ object TrainingCalorieBonus {
     private const val BASE_CHEST_TRICEPS = 400  // 胸・三頭
     private const val BASE_BACK_BICEPS = 450    // 背中・二頭
     private const val BASE_SHOULDERS_ARMS = 350 // 肩・腕
+    private const val BASE_OTHER = 400          // その他（カスタム分割のフォールバック）
 
     private const val OFFSET = 100              // ベースオフセット
     const val REFERENCE_LBM = 60f               // 基準LBM
@@ -254,7 +255,8 @@ object TrainingCalorieBonus {
         "肩" to BASE_SHOULDERS, "腕" to BASE_ARMS, "腹筋・体幹" to BASE_ABS,
         "全身" to BASE_FULL_BODY, "下半身" to BASE_LOWER_BODY, "上半身" to BASE_UPPER_BODY,
         "プッシュ" to BASE_PUSH, "プル" to BASE_PULL,
-        "胸・三頭" to BASE_CHEST_TRICEPS, "背中・二頭" to BASE_BACK_BICEPS, "肩・腕" to BASE_SHOULDERS_ARMS
+        "胸・三頭" to BASE_CHEST_TRICEPS, "背中・二頭" to BASE_BACK_BICEPS, "肩・腕" to BASE_SHOULDERS_ARMS,
+        "その他" to BASE_OTHER
     )
 
     private fun scale(base: Int, lbm: Float): Int {
@@ -285,7 +287,14 @@ object TrainingCalorieBonus {
             "胸・三頭" -> BASE_CHEST_TRICEPS
             "背中・二頭" -> BASE_BACK_BICEPS
             "肩・腕" -> BASE_SHOULDERS_ARMS
-            else -> BASE_UPPER_BODY
+            "その他" -> BASE_OTHER
+            else -> {
+                // カスタム分割: "その他" overrideがあればフォールバック
+                if (overrides != null && overrides.containsKey("その他")) {
+                    return scale(overrides["その他"]!!, lbm)
+                }
+                return scale(BASE_OTHER, lbm)
+            }
         }
         return scale(base, lbm)
     }

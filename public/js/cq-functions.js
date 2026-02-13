@@ -682,7 +682,7 @@ async function loadUserSlots() {
         document.getElementById('cq-prof-fav-foods').value = profile.favoriteFoods || '';
         document.getElementById('cq-prof-ng-foods').value = profile.ngFoods || '';
         // Training calorie bonuses
-        const tbDefaults = {'脚':500,'背中':450,'胸':400,'肩':350,'腕':300,'腹筋・体幹':250,'全身':500,'上半身':400,'下半身':500,'プッシュ':400,'プル':450,'胸・三頭':400,'背中・二頭':450,'肩・腕':350};
+        const tbDefaults = {'脚':500,'背中':450,'胸':400,'肩':350,'腕':300,'腹筋・体幹':250,'全身':500,'上半身':400,'下半身':500,'プッシュ':400,'プル':450,'胸・三頭':400,'背中・二頭':450,'肩・腕':350,'その他':400};
         const tbOverrides = profile.trainingCalorieBonuses || {};
         Object.keys(tbDefaults).forEach(k => {
             const el = document.getElementById('cq-tb-' + k);
@@ -950,7 +950,7 @@ function resetAllProfileDefaults() {
     document.getElementById('cq-prof-prot-sources').value = '鶏むね肉, 鮭'; document.getElementById('cq-prof-carb-sources').value = '白米, 玄米';
     document.getElementById('cq-prof-fat-sources').value = 'オリーブオイル, アボカド'; document.getElementById('cq-prof-avoid-foods').value = '';
     document.getElementById('cq-prof-allergies').value = ''; document.getElementById('cq-prof-fav-foods').value = ''; document.getElementById('cq-prof-ng-foods').value = '';
-    const tbDef = {'脚':500,'背中':450,'胸':400,'肩':350,'腕':300,'腹筋・体幹':250,'全身':500,'上半身':400,'下半身':500,'プッシュ':400,'プル':450,'胸・三頭':400,'背中・二頭':450,'肩・腕':350};
+    const tbDef = {'脚':500,'背中':450,'胸':400,'肩':350,'腕':300,'腹筋・体幹':250,'全身':500,'上半身':400,'下半身':500,'プッシュ':400,'プル':450,'胸・三頭':400,'背中・二頭':450,'肩・腕':350,'その他':400};
     Object.entries(tbDef).forEach(([k,v]) => { const el = document.getElementById('cq-tb-' + k); if (el) el.value = v; });
     toggleTrainingFields(); onMealsPerDayChange(); updateTrainingBonusPreview();
 }

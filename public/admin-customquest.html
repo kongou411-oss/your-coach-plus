@@ -228,6 +228,7 @@
                                     <div><label class="block text-[10px] text-gray-500 mb-0.5">胸・三頭</label><input type="number" id="cq-tb-胸・三頭" value="400" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
                                     <div><label class="block text-[10px] text-gray-500 mb-0.5">背中・二頭</label><input type="number" id="cq-tb-背中・二頭" value="450" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
                                     <div><label class="block text-[10px] text-gray-500 mb-0.5">肩・腕</label><input type="number" id="cq-tb-肩・腕" value="350" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
+                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">その他</label><input type="number" id="cq-tb-その他" value="400" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
                                 </div>
                                 <div id="cq-tb-preview" class="mt-2 text-[10px] text-gray-400"></div>
                             </div>
@@ -431,6 +432,29 @@
                         </ol>
                         <div class="mt-1 text-gray-500 italic">「減らしすぎない」— 代謝を落とさず筋肉のハリを保つ</div>
                     </div>
+                </div>
+            </section>
+
+            <!-- Step 5 -->
+            <section>
+                <h3 class="font-bold text-base text-purple-700 mb-2">Step 5: トレーニング加算カロリーを調整する</h3>
+                <div class="bg-purple-50 rounded-lg p-3 space-y-2">
+                    <p>部位別のTDEE加算値をカスタマイズできます。トレーニング日のカロリー計算に影響します。</p>
+                    <ol class="list-decimal pl-5 space-y-1">
+                        <li>プロフィールカードの <strong>トレ加算</strong> タブを開く</li>
+                        <li>各部位（脚・背中・胸…）の <strong>基礎値</strong> を変更（LBM 60kg基準）</li>
+                        <li>右側に <strong>LBMスケーリング後の実際加算値</strong> がリアルタイム表示される</li>
+                        <li>「その他」はカスタム分割タイプのフォールバック値として使用</li>
+                        <li>プロフィール保存で反映</li>
+                    </ol>
+                    <div class="mt-2 text-xs">
+                        <div class="font-bold text-gray-600 mb-1">計算式:</div>
+                        <div class="bg-white rounded p-2 font-mono text-[11px] text-gray-700">
+                            実際加算 = (基礎値 + 100) × (ユーザーLBM / 60)
+                        </div>
+                        <div class="mt-1 text-gray-500">例: 脚(500) + オフセット(100) = 600 × (55kg / 60kg) = <strong>550kcal</strong></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">アプリのルーティン設定画面からも編集可能です。</div>
                 </div>
             </section>
 
