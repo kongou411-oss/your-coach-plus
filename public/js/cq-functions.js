@@ -326,14 +326,72 @@ function formatWorkoutItemDisplay(item) {
     return parts.join(' x ');
 }
 
+function updateMealItemAmount(index, newAmount) {
+    const item = templateItems[index];
+    if (!item || newAmount <= 0) return;
+    const oldAmount = item.amount || 1;
+    item.amount = newAmount;
+    let grams = newAmount;
+    if (item.unit !== 'g') { const serving = FOOD_SERVING_SIZES[item.foodName]; if (serving && serving[item.unit]) grams = newAmount * serving[item.unit]; }
+    const ratio = grams / 100;
+    let nutrients = FOOD_NUTRIENTS_PER_100G[item.foodName];
+    if (!nutrients) { const cf = loadedUserCustomFoods.find(c => c.name === item.foodName); if (cf) nutrients = cf.nutrientsPer100g || cf; }
+    if (nutrients) {
+        item.calories = Math.round(nutrients.calories * ratio); item.protein = r1(nutrients.protein * ratio); item.fat = r1(nutrients.fat * ratio); item.carbs = r1(nutrients.carbs * ratio);
+        item.fiber = r1((nutrients.fiber||0)*ratio); item.solubleFiber = r1((nutrients.solubleFiber||0)*ratio); item.insolubleFiber = r1((nutrients.insolubleFiber||0)*ratio);
+        item.sugar = r1((nutrients.sugar||0)*ratio); item.saturatedFat = r2((nutrients.saturatedFat||0)*ratio); item.monounsaturatedFat = r2((nutrients.monounsaturatedFat||0)*ratio); item.polyunsaturatedFat = r2((nutrients.polyunsaturatedFat||0)*ratio);
+        item.vitamins = scaleMap(nutrients.vitamins||{}, ratio); item.minerals = scaleMap(nutrients.minerals||{}, ratio);
+    }
+    renderTemplateItems();
+}
+
+function updateMealItemUnit(index, newUnit) {
+    const item = templateItems[index];
+    if (!item) return;
+    item.unit = newUnit;
+    updateMealItemAmount(index, item.amount);
+}
+
+function updateWorkoutItemField(index, field, value) {
+    const item = templateItems[index];
+    if (!item) return;
+    const num = parseFloat(value) || 0;
+    item[field] = num > 0 ? num : null;
+    if (field === 'sets') item.amount = num;
+    if (field === 'duration' && (CARDIO_CATEGORIES.includes(item.category) || STRETCH_CATEGORIES.includes(item.category))) item.amount = num;
+    renderTemplateItems();
+}
+
 function renderTemplateItems() {
     const container = document.getElementById('cq-tpl-item-list');
     if (templateItems.length === 0) { container.innerHTML = '<span class="text-gray-400">アイテムを追加してください</span>'; return; }
+    const unitOptions = ['g','個','ml','杯','枚','本','丁','粒'];
     let html = templateItems.map((item, i) => {
         const isEx = item.sets != null || item.duration != null || item.distance != null;
-        const detail = isEx ? formatWorkoutItemDisplay(item) : `${item.amount} ${escapeHtml(item.unit)}`;
-        const macro = (!isEx && item.calories > 0) ? `<span class="text-xs text-gray-500 ml-1">(${item.calories}kcal P${item.protein} F${item.fat} C${item.carbs})</span>` : '';
-        return `<div class="flex items-center justify-between py-1 px-2 rounded ${i%2===0?'bg-yellow-50':''}"><span class="text-sm"><strong>${escapeHtml(item.foodName)}</strong> ${detail}${macro}</span><button onclick="removeTemplateItem(${i})" class="text-red-400 hover:text-red-600 text-xs ml-2">x</button></div>`;
+        let detailHtml;
+        if (isEx) {
+            const exType = getExerciseType(item.category || '');
+            let fields = '';
+            if (exType === 'strength') {
+                fields = `<input type="number" value="${item.sets||''}" min="0" step="1" style="width:42px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'sets',this.value)"><span class="text-[10px] text-gray-500">set</span>`;
+                fields += `<input type="number" value="${item.reps||''}" min="0" step="1" style="width:42px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'reps',this.value)"><span class="text-[10px] text-gray-500">rep</span>`;
+                fields += `<input type="number" value="${item.weight||''}" min="0" step="0.5" style="width:50px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'weight',this.value)"><span class="text-[10px] text-gray-500">kg</span>`;
+                fields += `<input type="number" value="${item.duration||''}" min="0" step="1" style="width:42px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'duration',this.value)"><span class="text-[10px] text-gray-500">分</span>`;
+                fields += `<input type="number" value="${item.rmPercentMin||''}" min="0" max="100" step="5" style="width:42px" class="border border-orange-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'rmPercentMin',this.value)"><span class="text-[10px] text-gray-500">-</span>`;
+                fields += `<input type="number" value="${item.rmPercentMax||''}" min="0" max="100" step="5" style="width:42px" class="border border-orange-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'rmPercentMax',this.value)"><span class="text-[10px] text-orange-500">%RM</span>`;
+            } else if (exType === 'cardio') {
+                fields = `<input type="number" value="${item.duration||''}" min="0" step="1" style="width:50px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'duration',this.value)"><span class="text-[10px] text-gray-500">分</span>`;
+                fields += `<input type="number" value="${item.distance||''}" min="0" step="0.1" style="width:50px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'distance',this.value)"><span class="text-[10px] text-gray-500">km</span>`;
+            } else {
+                fields = `<input type="number" value="${item.duration||''}" min="0" step="1" style="width:50px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateWorkoutItemField(${i},'duration',this.value)"><span class="text-[10px] text-gray-500">分</span>`;
+            }
+            detailHtml = `<div class="flex items-center gap-1 flex-wrap">${fields}</div>`;
+        } else {
+            const unitOpts = unitOptions.map(u => `<option value="${u}"${u===item.unit?' selected':''}>${u}</option>`).join('');
+            const macro = item.calories > 0 ? `<span class="text-[10px] text-gray-500 ml-1">(${item.calories}kcal P${item.protein} F${item.fat} C${item.carbs})</span>` : '';
+            detailHtml = `<span class="inline-flex items-center gap-1"><input type="number" value="${item.amount}" min="0" step="0.1" style="width:60px" class="border border-gray-300 rounded px-1 py-0.5 text-xs text-center" onchange="updateMealItemAmount(${i},parseFloat(this.value)||0)"><select class="border border-gray-300 rounded px-1 py-0.5 text-xs" onchange="updateMealItemUnit(${i},this.value)">${unitOpts}</select>${macro}</span>`;
+        }
+        return `<div class="flex items-center justify-between py-1.5 px-2 rounded ${i%2===0?'bg-yellow-50':''}"><div class="flex-1 min-w-0"><div class="text-sm font-bold truncate">${escapeHtml(item.foodName)}</div>${detailHtml}</div><button onclick="removeTemplateItem(${i})" class="text-red-400 hover:text-red-600 text-sm ml-2 flex-shrink-0">x</button></div>`;
     }).join('');
     const totals = templateItems.reduce((acc, i) => ({ calories: acc.calories+(i.calories||0), protein: acc.protein+(i.protein||0), fat: acc.fat+(i.fat||0), carbs: acc.carbs+(i.carbs||0), fiber: acc.fiber+(i.fiber||0) }), { calories:0, protein:0, fat:0, carbs:0, fiber:0 });
     html += `<div class="mt-2 pt-2 border-t border-gray-200 text-sm font-bold text-gray-700">合計: ${totals.calories}kcal | P${r1(totals.protein)}g F${r1(totals.fat)}g C${r1(totals.carbs)}g</div>`;
