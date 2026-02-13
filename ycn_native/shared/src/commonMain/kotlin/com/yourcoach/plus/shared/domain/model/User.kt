@@ -72,8 +72,6 @@ data class UserProfile(
     val postWorkoutCarbs: Int = 25,             // トレ後 炭水化物(g)
     // カロリー調整値
     val calorieAdjustment: Int = 0,
-    // 部位別トレーニング消費カロリー加算値（カスタム上書き、LBMスケーリング前の基礎値）
-    val trainingCalorieBonuses: Map<String, Int>? = null,
     // 食材設定
     val preferredCarbSources: List<String> = listOf("白米", "玄米"),      // 優先炭水化物源
     val preferredProteinSources: List<String> = listOf("鶏むね肉", "鮭"), // 優先タンパク源
@@ -222,81 +220,40 @@ enum class ActivityLevel(val multiplier: Float, val displayName: String) {
 }
 
 /**
- * 部位別トレーニング消費カロリー加算値
- * LBM 60kg基準の基礎値 + 100kcal をLBMでスケーリング
- * 計算式: (基礎値 + 100) × (userLBM / 60)
+ * トレーニング加算カロリー（3Tier制）
+ *
+ * 「消費カロリーの正確な計算」ではなく「リカバリーに必要なエネルギー予算の確保」という設計思想。
+ * 部位に基づきシステムが自動でTierを判定し、ユーザーの認知コストをゼロにする。
+ *
+ * 計算式: TierBase × (userLBM / 60)
  */
 object TrainingCalorieBonus {
-    // 単一部位（LBM 60kg基準）
-    private const val BASE_LEGS = 500           // 脚（大腿四頭筋・ハム・臀筋）
-    private const val BASE_BACK = 450           // 背中（広背筋・脊柱起立筋）
-    private const val BASE_CHEST = 400          // 胸（大胸筋）
-    private const val BASE_SHOULDERS = 350      // 肩（三角筋）
-    private const val BASE_ARMS = 300           // 腕（二頭・三頭）
-    private const val BASE_ABS = 250            // 腹筋・体幹
+    // 3つのTier定数（LBM 60kg基準）
+    private const val TIER_HIGH = 400   // 大筋群・高神経系疲労（脚、全身、下半身）
+    private const val TIER_MID = 250    // 標準的な筋肥大トレ（胸、背中、肩、複合系）
+    private const val TIER_LOW = 100    // 小筋群・回復コスト低（腕、腹筋）
 
-    // 複合部位（LBM 60kg基準）
-    private const val BASE_FULL_BODY = 500      // 全身
-    private const val BASE_LOWER_BODY = 500     // 下半身
-    private const val BASE_UPPER_BODY = 400     // 上半身
-    private const val BASE_PUSH = 400           // プッシュ（胸+肩+三頭）
-    private const val BASE_PULL = 450           // プル（背中+二頭）
-    private const val BASE_CHEST_TRICEPS = 400  // 胸・三頭
-    private const val BASE_BACK_BICEPS = 450    // 背中・二頭
-    private const val BASE_SHOULDERS_ARMS = 350 // 肩・腕
-    private const val BASE_OTHER = 400          // その他（カスタム分割のフォールバック）
-
-    private const val OFFSET = 100              // ベースオフセット
-    const val REFERENCE_LBM = 60f               // 基準LBM
-
-    /** 全分割タイプのデフォルト基礎値マップ（LBMスケーリング前） */
-    val DEFAULT_BASES: Map<String, Int> = mapOf(
-        "脚" to BASE_LEGS, "背中" to BASE_BACK, "胸" to BASE_CHEST,
-        "肩" to BASE_SHOULDERS, "腕" to BASE_ARMS, "腹筋・体幹" to BASE_ABS,
-        "全身" to BASE_FULL_BODY, "下半身" to BASE_LOWER_BODY, "上半身" to BASE_UPPER_BODY,
-        "プッシュ" to BASE_PUSH, "プル" to BASE_PULL,
-        "胸・三頭" to BASE_CHEST_TRICEPS, "背中・二頭" to BASE_BACK_BICEPS, "肩・腕" to BASE_SHOULDERS_ARMS,
-        "その他" to BASE_OTHER
-    )
-
-    private fun scale(base: Int, lbm: Float): Int {
-        return ((base + OFFSET) * (lbm / REFERENCE_LBM)).toInt()
-    }
+    private const val REFERENCE_LBM = 60f
 
     /**
      * splitTypeとLBMから加算値を取得
+     * システムが部位→Tierを自動判定（ユーザー入力不要）
      */
-    fun fromSplitType(splitType: String?, isRestDay: Boolean, lbm: Float = REFERENCE_LBM, overrides: Map<String, Int>? = null): Int {
+    fun fromSplitType(splitType: String?, isRestDay: Boolean, lbm: Float = REFERENCE_LBM): Int {
         if (isRestDay) return 0
-        // ユーザーカスタム値があれば優先
-        if (overrides != null && splitType != null && overrides.containsKey(splitType)) {
-            return scale(overrides[splitType]!!, lbm)
+        val tier = when (splitType) {
+            // Tier HIGH: 大筋群、高エネルギー消費、高EPOC
+            "脚", "全身", "下半身" -> TIER_HIGH
+            // Tier MID: 標準的な筋肥大トレーニング
+            "胸", "背中", "肩", "上半身",
+            "プッシュ", "プル",
+            "胸・三頭", "背中・二頭", "肩・腕" -> TIER_MID
+            // Tier LOW: 小筋群、回復コスト低
+            "腕", "腹筋・体幹" -> TIER_LOW
+            // カスタム分割: MIDをデフォルト（安全な中間値）
+            else -> TIER_MID
         }
-        val base = when (splitType) {
-            "脚" -> BASE_LEGS
-            "背中" -> BASE_BACK
-            "胸" -> BASE_CHEST
-            "肩" -> BASE_SHOULDERS
-            "腕" -> BASE_ARMS
-            "腹筋・体幹" -> BASE_ABS
-            "全身" -> BASE_FULL_BODY
-            "下半身" -> BASE_LOWER_BODY
-            "上半身" -> BASE_UPPER_BODY
-            "プッシュ" -> BASE_PUSH
-            "プル" -> BASE_PULL
-            "胸・三頭" -> BASE_CHEST_TRICEPS
-            "背中・二頭" -> BASE_BACK_BICEPS
-            "肩・腕" -> BASE_SHOULDERS_ARMS
-            "その他" -> BASE_OTHER
-            else -> {
-                // カスタム分割: "その他" overrideがあればフォールバック
-                if (overrides != null && overrides.containsKey("その他")) {
-                    return scale(overrides["その他"]!!, lbm)
-                }
-                return scale(BASE_OTHER, lbm)
-            }
-        }
-        return scale(base, lbm)
+        return (tier * (lbm / REFERENCE_LBM)).toInt()
     }
 }
 

@@ -150,7 +150,6 @@
                                 <button onclick="switchProfileMode('basic')" id="prof-mode-basic" class="prof-mode-btn text-[10px] px-2 py-1 rounded font-bold text-gray-500 hover:bg-gray-100">基本</button>
                                 <button onclick="switchProfileMode('goal')" id="prof-mode-goal" class="prof-mode-btn text-[10px] px-2 py-1 rounded font-bold text-gray-500 hover:bg-gray-100">目標</button>
                                 <button onclick="switchProfileMode('food')" id="prof-mode-food" class="prof-mode-btn text-[10px] px-2 py-1 rounded font-bold text-gray-500 hover:bg-gray-100">食材</button>
-                                <button onclick="switchProfileMode('training')" id="prof-mode-training" class="prof-mode-btn text-[10px] px-2 py-1 rounded font-bold text-gray-500 hover:bg-gray-100">トレ加算</button>
                             </div>
                         </div>
                         <!-- View mode -->
@@ -210,27 +209,6 @@
                                     <div><label class="block text-xs text-gray-500 mb-1">よく食べる食材</label><input type="text" id="cq-prof-fav-foods" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"></div>
                                     <div><label class="block text-xs text-gray-500 mb-1">NG食材</label><input type="text" id="cq-prof-ng-foods" class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm"></div>
                                 </div>
-                            </div>
-                            <div id="cq-panel-training" class="cq-prof-panel hidden">
-                                <div class="text-[10px] text-gray-500 mb-2">部位別のTDEE加算基礎値（LBM 60kg基準）。実際の加算値 = (基礎値+100) × (LBM/60)</div>
-                                <div class="grid grid-cols-3 md:grid-cols-4 gap-2" id="cq-training-bonus-grid">
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">脚</label><input type="number" id="cq-tb-脚" value="500" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">背中</label><input type="number" id="cq-tb-背中" value="450" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">胸</label><input type="number" id="cq-tb-胸" value="400" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">肩</label><input type="number" id="cq-tb-肩" value="350" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">腕</label><input type="number" id="cq-tb-腕" value="300" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">腹筋・体幹</label><input type="number" id="cq-tb-腹筋・体幹" value="250" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">全身</label><input type="number" id="cq-tb-全身" value="500" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">上半身</label><input type="number" id="cq-tb-上半身" value="400" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">下半身</label><input type="number" id="cq-tb-下半身" value="500" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">プッシュ</label><input type="number" id="cq-tb-プッシュ" value="400" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">プル</label><input type="number" id="cq-tb-プル" value="450" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">胸・三頭</label><input type="number" id="cq-tb-胸・三頭" value="400" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">背中・二頭</label><input type="number" id="cq-tb-背中・二頭" value="450" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">肩・腕</label><input type="number" id="cq-tb-肩・腕" value="350" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                    <div><label class="block text-[10px] text-gray-500 mb-0.5">その他</label><input type="number" id="cq-tb-その他" value="400" class="w-full border border-gray-300 rounded px-2 py-1 text-sm cq-tb-input"></div>
-                                </div>
-                                <div id="cq-tb-preview" class="mt-2 text-[10px] text-gray-400"></div>
                             </div>
                             <div class="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                                 <button onclick="resetAllProfileDefaults()" class="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5 border border-gray-300 rounded-lg">リセット</button>
@@ -435,29 +413,6 @@
                 </div>
             </section>
 
-            <!-- Step 5 -->
-            <section>
-                <h3 class="font-bold text-base text-purple-700 mb-2">Step 5: トレーニング加算カロリーを調整する</h3>
-                <div class="bg-purple-50 rounded-lg p-3 space-y-2">
-                    <p>部位別のTDEE加算値をカスタマイズできます。トレーニング日のカロリー計算に影響します。</p>
-                    <ol class="list-decimal pl-5 space-y-1">
-                        <li>プロフィールカードの <strong>トレ加算</strong> タブを開く</li>
-                        <li>各部位（脚・背中・胸…）の <strong>基礎値</strong> を変更（LBM 60kg基準）</li>
-                        <li>右側に <strong>LBMスケーリング後の実際加算値</strong> がリアルタイム表示される</li>
-                        <li>「その他」はカスタム分割タイプのフォールバック値として使用</li>
-                        <li>プロフィール保存で反映</li>
-                    </ol>
-                    <div class="mt-2 text-xs">
-                        <div class="font-bold text-gray-600 mb-1">計算式:</div>
-                        <div class="bg-white rounded p-2 font-mono text-[11px] text-gray-700">
-                            実際加算 = (基礎値 + 100) × (ユーザーLBM / 60)
-                        </div>
-                        <div class="mt-1 text-gray-500">例: 脚(500) + オフセット(100) = 600 × (55kg / 60kg) = <strong>550kcal</strong></div>
-                    </div>
-                    <div class="text-xs text-gray-500 mt-1">アプリのルーティン設定画面からも編集可能です。</div>
-                </div>
-            </section>
-
             <!-- Editing Templates -->
             <section>
                 <h3 class="font-bold text-base text-indigo-700 mb-2">テンプレートの編集・複製・削除</h3>
@@ -482,7 +437,7 @@
                         <li><strong>基本</strong> — 身長/体重/体脂肪率/理想体型</li>
                         <li><strong>目標</strong> — 減量/維持/増量 + PFC比率 + トレ前後PFC固定値</li>
                         <li><strong>食材</strong> — 優先食材/NG食材/アレルギー</li>
-                        <li><strong>トレ加算</strong> — 部位別のTDEE加算基礎値（LBMスケーリング）</li>
+                        <li><strong>トレ加算</strong> — 分割タイプから3段階(HIGH/MID/LOW)で自動算出、LBMスケーリング</li>
                     </ul>
                     <p class="mt-1">編集後は <span class="bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">保存</span> を忘れずに。</p>
                 </div>
@@ -516,7 +471,6 @@
             o.classList.toggle('hidden', !open);
             m.classList.toggle('hidden', !open);
         }
-        document.querySelectorAll('.cq-tb-input').forEach(el => el.addEventListener('input', updateTrainingBonusPreview));
     </script>
 </body>
 </html>

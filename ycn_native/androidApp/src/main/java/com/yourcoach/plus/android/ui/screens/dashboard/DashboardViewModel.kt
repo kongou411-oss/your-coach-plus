@@ -716,8 +716,7 @@ class DashboardViewModel(
         val isRestDay = isManualRestDay || (todayRoutine?.isRestDay == true)
         val trainingBonus = com.yourcoach.plus.shared.domain.model.TrainingCalorieBonus.fromSplitType(
             todayRoutine?.splitType,
-            isRestDay,
-            overrides = profile.trainingCalorieBonuses
+            isRestDay
         )
 
         val adjustedCalories = tdee + calorieAdjustment + trainingBonus

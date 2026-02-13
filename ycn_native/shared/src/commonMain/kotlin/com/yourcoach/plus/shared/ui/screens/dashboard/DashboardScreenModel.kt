@@ -2001,8 +2001,7 @@ class DashboardScreenModel(
         val trainingBonus = TrainingCalorieBonus.fromSplitType(
             todayRoutine?.splitType,
             isRestDay,
-            lbm.toFloat(),
-            profile.trainingCalorieBonuses
+            lbm.toFloat()
         )
 
         val adjustedCalories = tdee + calorieAdjustment + trainingBonus

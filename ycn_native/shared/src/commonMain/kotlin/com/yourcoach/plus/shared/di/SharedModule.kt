@@ -101,7 +101,7 @@ val sharedModule = module {
     // Settings
     factory { SettingsScreenModel(get(), get(), get(), get(), getOrNull<GeminiService>()) }
     factory { ProfileEditScreenModel(get(), get()) }
-    factory { RoutineSettingsScreenModel(get(), get(), get()) }
+    factory { RoutineSettingsScreenModel(get(), get()) }
     factory { TemplateSettingsScreenModel(get(), get(), get()) }
     factory { MealSlotSettingsScreenModel(get(), get()) }
     // Notification

@@ -44,12 +44,24 @@ function escapeHtml(str) {
     return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 }
 // ========== Calorie Calculations (r1, r2, scaleMap, scaleTemplateForSlot are in cq-databases.js) ==========
-function calculateUserTargetCalories(profile) {
+// 3-tier training calorie bonus (matches app logic in TrainingCalorieBonus.kt)
+const TRAINING_TIER = { HIGH: 400, MID: 250, LOW: 100, REFERENCE_LBM: 60 };
+function getTrainingBonus(splitType, isRestDay, lbm) {
+    if (isRestDay || !splitType || splitType === '休み') return 0;
+    let tier;
+    switch (splitType) {
+        case '脚': case '全身': case '下半身': tier = TRAINING_TIER.HIGH; break;
+        case '腕': case '腹筋・体幹': tier = TRAINING_TIER.LOW; break;
+        default: tier = TRAINING_TIER.MID; break;
+    }
+    return Math.round(tier * ((lbm || TRAINING_TIER.REFERENCE_LBM) / TRAINING_TIER.REFERENCE_LBM));
+}
+
+function calculateUserTargetCalories(profile, splitType, isRestDay) {
     const weight = profile.weight || 70;
     const bodyFatPct = profile.bodyFatPercentage || 15;
     const activityLevel = profile.activityLevel || 'MODERATE';
     const goal = profile.goal || 'MAINTAIN';
-    const trainingDays = profile.trainingDaysPerWeek || 3;
     const fatMass = weight * (bodyFatPct / 100);
     const lbm = weight - fatMass;
     const bmr = 370 + (21.6 * lbm) + (fatMass * 4.5);
@@ -57,7 +69,7 @@ function calculateUserTargetCalories(profile) {
     const tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
     const goalAdjustments = { 'LOSE_WEIGHT': -300, 'MAINTAIN': 0, 'GAIN_MUSCLE': 300 };
     const calorieAdjustment = goalAdjustments[goal] || 0;
-    const trainingBonus = (trainingDays >= 4) ? 100 : 0;
+    const trainingBonus = getTrainingBonus(splitType, isRestDay, lbm);
     return Math.round(tdee + calorieAdjustment + trainingBonus);
 }
 
@@ -681,14 +693,6 @@ async function loadUserSlots() {
         document.getElementById('cq-prof-allergies').value = (profile.allergies || []).join(', ');
         document.getElementById('cq-prof-fav-foods').value = profile.favoriteFoods || '';
         document.getElementById('cq-prof-ng-foods').value = profile.ngFoods || '';
-        // Training calorie bonuses
-        const tbDefaults = {'脚':500,'背中':450,'胸':400,'肩':350,'腕':300,'腹筋・体幹':250,'全身':500,'上半身':400,'下半身':500,'プッシュ':400,'プル':450,'胸・三頭':400,'背中・二頭':450,'肩・腕':350,'その他':400};
-        const tbOverrides = profile.trainingCalorieBonuses || {};
-        Object.keys(tbDefaults).forEach(k => {
-            const el = document.getElementById('cq-tb-' + k);
-            if (el) el.value = tbOverrides[k] ?? tbDefaults[k];
-        });
-        updateTrainingBonusPreview();
 
         // Render panels
         document.getElementById('cq-user-panels').classList.remove('hidden');
@@ -901,22 +905,6 @@ function switchProfileMode(mode) {
 function toggleProfileEditor() { switchProfileMode('schedule'); }
 function switchProfileTab(tabName) { switchProfileMode(tabName); }
 
-function updateTrainingBonusPreview() {
-    const weight = parseFloat(document.getElementById('cq-prof-weight')?.value) || 70;
-    const bf = parseFloat(document.getElementById('cq-prof-bodyfat')?.value) || 15;
-    const lbm = weight * (1 - bf / 100);
-    const el = document.getElementById('cq-tb-preview');
-    if (!el) return;
-    const parts = [];
-    document.querySelectorAll('.cq-tb-input').forEach(inp => {
-        const key = inp.id.replace('cq-tb-', '');
-        const base = parseInt(inp.value) || 0;
-        const actual = Math.round((base + 100) * (lbm / 60));
-        parts.push(`${key}: +${actual}kcal`);
-    });
-    el.innerHTML = `<strong>LBM ${r1(lbm)}kg での実際の加算値:</strong> ${parts.join(' / ')}`;
-}
-
 function toggleTrainingFields() {
     const val = document.getElementById('cq-prof-training-after').value;
     document.getElementById('cq-training-fields').classList.toggle('hidden', !val);
@@ -950,9 +938,7 @@ function resetAllProfileDefaults() {
     document.getElementById('cq-prof-prot-sources').value = '鶏むね肉, 鮭'; document.getElementById('cq-prof-carb-sources').value = '白米, 玄米';
     document.getElementById('cq-prof-fat-sources').value = 'オリーブオイル, アボカド'; document.getElementById('cq-prof-avoid-foods').value = '';
     document.getElementById('cq-prof-allergies').value = ''; document.getElementById('cq-prof-fav-foods').value = ''; document.getElementById('cq-prof-ng-foods').value = '';
-    const tbDef = {'脚':500,'背中':450,'胸':400,'肩':350,'腕':300,'腹筋・体幹':250,'全身':500,'上半身':400,'下半身':500,'プッシュ':400,'プル':450,'胸・三頭':400,'背中・二頭':450,'肩・腕':350,'その他':400};
-    Object.entries(tbDef).forEach(([k,v]) => { const el = document.getElementById('cq-tb-' + k); if (el) el.value = v; });
-    toggleTrainingFields(); onMealsPerDayChange(); updateTrainingBonusPreview();
+    toggleTrainingFields(); onMealsPerDayChange();
 }
 
 async function saveUserProfile() {
@@ -1015,13 +1001,6 @@ async function saveUserProfile() {
         const allergies = document.getElementById('cq-prof-allergies').value.split(',').map(s=>s.trim()).filter(s=>s);
         const favoriteFoods = document.getElementById('cq-prof-fav-foods').value.trim() || null;
         const ngFoods = document.getElementById('cq-prof-ng-foods').value.trim() || null;
-        // Training calorie bonuses
-        const trainingCalorieBonuses = {};
-        document.querySelectorAll('.cq-tb-input').forEach(el => {
-            const key = el.id.replace('cq-tb-', '');
-            const val = parseInt(el.value);
-            if (!isNaN(val)) trainingCalorieBonuses[key] = val;
-        });
         let targetCalories = null, targetProtein = null, targetFat = null, targetCarbs = null;
         if (height && weight && age && gender) {
             let bmr; if (gender === 'MALE') bmr = 10*weight+6.25*height-5*age+5; else if (gender === 'FEMALE') bmr = 10*weight+6.25*height-5*age-161; else bmr = 10*weight+6.25*height-5*age-78;
@@ -1042,7 +1021,7 @@ async function saveUserProfile() {
             'profile.avoidFoods': avoidFoods, 'profile.allergies': allergies, 'profile.favoriteFoods': favoriteFoods, 'profile.ngFoods': ngFoods,
             'profile.wakeUpTime': wakeUpTime, 'profile.sleepTime': sleepTime, 'profile.trainingTime': trainingTime, 'profile.trainingDuration': trainingDuration, 'profile.trainingStyle': trainingStyle,
             'profile.mealsPerDay': mealsPerDay, 'profile.mealSlotConfig': { mealsPerDay, slots: slotsData },
-            'profile.trainingCalorieBonuses': trainingCalorieBonuses
+            'profile.trainingCalorieBonuses': firebase.firestore.FieldValue.delete()
         };
         if (trainingAfterMeal != null) updateData['profile.trainingAfterMeal'] = trainingAfterMeal;
         else updateData['profile.trainingAfterMeal'] = firebase.firestore.FieldValue.delete();
@@ -1074,10 +1053,13 @@ function renderUserProfilePanel(profile, userData) {
     html += row('ニックネーム', escapeHtml(p.nickname)) + row('性別', genderLabels[p.gender]||'-') + row('年齢', age?`${age}歳`:'-') + row('身長', height?`${height}cm`:'-') + row('体重', weight?`${weight}kg`:'-') + row('体脂肪率', bodyFatPct?`${bodyFatPct}%`:'-');
     html += row('LBM', typeof lbm==='number'?`${lbm}kg`:lbm) + row('BMR', bmr!=='-'?`${bmr}kcal`:'-') + row('TDEE', tdee!=='-'?`${tdee}kcal`:'-');
     html += row('目標', goalLabels[p.goal]||'-') + row('PFC', `P${p.proteinRatioPercent||35}% F${p.fatRatioPercent||15}% C${p.carbRatioPercent||50}%`);
-    if (p.trainingCalorieBonuses && typeof lbm === 'number') {
-        const tb = p.trainingCalorieBonuses;
-        const tbParts = Object.entries(tb).map(([k,v]) => `${k}+${Math.round((v+100)*(lbm/60))}`).join(', ');
-        html += row('トレ加算', tbParts || 'デフォルト');
+    // 3-tier training calorie bonus display
+    if (typeof lbm === 'number' && lbm > 0) {
+        const lbmVal = typeof lbm === 'string' ? parseFloat(lbm) : lbm;
+        const tierHigh = Math.round(400 * (lbmVal / 60));
+        const tierMid = Math.round(250 * (lbmVal / 60));
+        const tierLow = Math.round(100 * (lbmVal / 60));
+        html += row('トレ加算(自動)', `H+${tierHigh} / M+${tierMid} / L+${tierLow} kcal`);
     }
     el.innerHTML = html;
 }

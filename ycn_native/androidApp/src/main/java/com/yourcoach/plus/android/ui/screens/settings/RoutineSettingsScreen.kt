@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -18,8 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,11 +30,8 @@ import com.yourcoach.plus.shared.domain.model.MealTemplate
 import com.yourcoach.plus.shared.domain.model.RoutineDay
 import com.yourcoach.plus.shared.domain.model.RoutinePattern
 import com.yourcoach.plus.shared.domain.model.SplitTypes
-import com.yourcoach.plus.shared.domain.model.TrainingCalorieBonus
-import com.yourcoach.plus.shared.domain.model.UserProfile
 import com.yourcoach.plus.shared.domain.model.WorkoutTemplate
 import com.yourcoach.plus.shared.domain.repository.RoutineRepository
-import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,11 +49,7 @@ data class RoutineSettingsUiState(
     val mealTemplates: List<MealTemplate> = emptyList(),
     val workoutTemplates: List<WorkoutTemplate> = emptyList(),
     val error: String? = null,
-    val successMessage: String? = null,
-    // トレーニング加算カロリー
-    val trainingCalorieBonuses: Map<String, Int> = emptyMap(),
-    val userLbm: Float? = null,
-    val bonusSaving: Boolean = false
+    val successMessage: String? = null
 )
 
 /**
@@ -80,7 +70,6 @@ val DEFAULT_ROUTINE_DAYS = listOf(
  */
 class RoutineSettingsViewModel(
     private val routineRepository: RoutineRepository,
-    private val userRepository: UserRepository,
     private val mealRepository: FirestoreMealRepository = FirestoreMealRepository(),
     private val workoutRepository: FirestoreWorkoutRepository = FirestoreWorkoutRepository()
 ) : ViewModel() {
@@ -96,7 +85,6 @@ class RoutineSettingsViewModel(
 
     init {
         loadData()
-        loadTrainingBonuses()
     }
 
     fun loadData() {
@@ -323,53 +311,6 @@ class RoutineSettingsViewModel(
         }
     }
 
-    // --- トレーニング加算カロリー ---
-
-    private fun loadTrainingBonuses() {
-        val userId = currentUserId ?: return
-        viewModelScope.launch {
-            userRepository.getUser(userId).onSuccess { user ->
-                val profile = user?.profile
-                val lbm = profile?.calculateLBM()
-                _uiState.update {
-                    it.copy(
-                        trainingCalorieBonuses = profile?.trainingCalorieBonuses ?: emptyMap(),
-                        userLbm = lbm
-                    )
-                }
-            }
-        }
-    }
-
-    fun updateTrainingBonus(splitType: String, value: Int) {
-        _uiState.update {
-            it.copy(trainingCalorieBonuses = it.trainingCalorieBonuses + (splitType to value))
-        }
-    }
-
-    fun saveTrainingBonuses() {
-        val userId = currentUserId ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(bonusSaving = true) }
-            userRepository.getUser(userId).onSuccess { user ->
-                val profile = user?.profile ?: UserProfile()
-                val bonuses = _uiState.value.trainingCalorieBonuses
-                val updatedProfile = profile.copy(
-                    trainingCalorieBonuses = bonuses.ifEmpty { null }
-                )
-                userRepository.updateProfile(userId, updatedProfile)
-                    .onSuccess {
-                        _uiState.update { it.copy(bonusSaving = false, successMessage = "加算カロリーを保存しました") }
-                    }
-                    .onFailure { e ->
-                        _uiState.update { it.copy(bonusSaving = false, error = "保存に失敗しました") }
-                    }
-            }.onFailure {
-                _uiState.update { it.copy(bonusSaving = false, error = "ユーザー情報の取得に失敗しました") }
-            }
-        }
-    }
-
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
@@ -513,20 +454,6 @@ fun RoutineSettingsScreen(
                         onRemoveWorkoutTemplate = { idx ->
                             viewModel.removeWorkoutTemplateFromDay(day.dayNumber, idx)
                         }
-                    )
-                }
-
-                // トレーニング加算カロリーセクション
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TrainingCalorieBonusSection(
-                        bonuses = uiState.trainingCalorieBonuses,
-                        userLbm = uiState.userLbm,
-                        isSaving = uiState.bonusSaving,
-                        onUpdateBonus = { splitType, value ->
-                            viewModel.updateTrainingBonus(splitType, value)
-                        },
-                        onSave = { viewModel.saveTrainingBonuses() }
                     )
                 }
 
@@ -1083,212 +1010,5 @@ private fun TemplateBindingSection(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-/**
- * トレーニング加算カロリー編集セクション
- */
-@Composable
-private fun TrainingCalorieBonusSection(
-    bonuses: Map<String, Int>,
-    userLbm: Float?,
-    isSaving: Boolean,
-    onUpdateBonus: (String, Int) -> Unit,
-    onSave: () -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val defaultBases = TrainingCalorieBonus.DEFAULT_BASES
-    val referenceLbm = TrainingCalorieBonus.REFERENCE_LBM
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // ヘッダー（タップで展開）
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.LocalFireDepartment,
-                        contentDescription = null,
-                        tint = AccentOrange,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "トレーニング加算カロリー",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Icon(
-                    if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (!expanded) {
-                Text(
-                    text = "部位ごとのTDEE加算値をカスタマイズ",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // LBM情報
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Primary.copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            tint = Primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (userLbm != null) {
-                                "LBM: ${"%.1f".format(userLbm)}kg  |  計算式: (基礎値+100) × LBM/${"%.0f".format(referenceLbm)}"
-                            } else {
-                                "体重・体脂肪率を設定するとLBMスケーリングが有効になります"
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Primary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // ヘッダー行
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        "部位",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        "基礎値",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.width(72.dp),
-                        textAlign = TextAlign.Center
-                    )
-                    Text(
-                        "実際加算",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.width(72.dp),
-                        textAlign = TextAlign.End
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 各分割タイプ
-                defaultBases.forEach { (splitType, defaultBase) ->
-                    val currentBase = bonuses[splitType] ?: defaultBase
-                    val isCustom = bonuses.containsKey(splitType)
-                    val lbm = userLbm ?: referenceLbm
-                    val actualValue = ((currentBase + 100) * (lbm / referenceLbm)).toInt()
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = splitType,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = if (isCustom) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isCustom) AccentOrange else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        var textValue by remember(currentBase) { mutableStateOf(currentBase.toString()) }
-
-                        OutlinedTextField(
-                            value = textValue,
-                            onValueChange = { newVal ->
-                                textValue = newVal
-                                newVal.toIntOrNull()?.let { intVal ->
-                                    if (intVal in 0..2000) {
-                                        onUpdateBonus(splitType, intVal)
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .width(72.dp)
-                                .height(48.dp),
-                            textStyle = MaterialTheme.typography.bodySmall.copy(
-                                textAlign = TextAlign.Center
-                            ),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true
-                        )
-
-                        Text(
-                            text = "${actualValue}kcal",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(72.dp),
-                            textAlign = TextAlign.End
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 保存ボタン
-                Button(
-                    onClick = onSave,
-                    enabled = !isSaving,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("加算カロリーを保存")
-                }
-            }
-        }
     }
 }
