@@ -287,10 +287,11 @@ const DataService = {
 
         // profileが存在する場合、デフォルト値とフラグを設定
         if (profile) {
-            // Premium判定: subscription.status === 'active' または b2b2cOrgId または giftCodeActive
+            // Premium判定: subscription.status === 'active' または b2b2cOrgId または giftCodeActive または organizationName
             const isPremium = profile.subscription?.status === 'active'
                 || profile.b2b2cOrgId
-                || profile.subscription?.giftCodeActive === true;
+                || profile.subscription?.giftCodeActive === true
+                || profile.organizationName;
 
             return {
                 ...profile,
@@ -2202,7 +2203,8 @@ const CreditService = {
         // Premium判定
         const isPremium = updatedProfile.subscription?.status === 'active'
             || updatedProfile.b2b2cOrgId
-            || updatedProfile.subscription?.giftCodeActive === true;
+            || updatedProfile.subscription?.giftCodeActive === true
+            || updatedProfile.organizationName;
 
         // トライアル終了後の無料ユーザーはfreeCreditsを使用不可（有料登録で解放）
         const trialExpired = !trialStatus.isActive;
@@ -2437,7 +2439,8 @@ const ExperienceService = {
         const trialStatus = CreditService.checkFreeTrialStatus(profile);
         const isPremium = profile.subscription?.status === 'active'
             || profile.b2b2cOrgId
-            || profile.subscription?.giftCodeActive === true;
+            || profile.subscription?.giftCodeActive === true
+            || profile.organizationName;
         const trialExpired = !trialStatus.isActive;
 
         // トライアル終了後の無料ユーザーはfreeCreditsを使用不可
@@ -2794,6 +2797,11 @@ const PremiumService = {
 
         // サブスクリプションステータスチェック
         if (!userProfile) return false;
+
+        // 法人所属ユーザー
+        if (userProfile.organizationName) {
+            return true;
+        }
 
         // subscriptionStatus が 'active' の場合
         if (userProfile.subscriptionStatus === 'active') {

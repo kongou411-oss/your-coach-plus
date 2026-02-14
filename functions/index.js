@@ -925,6 +925,13 @@ exports.adminCreateContract = onCall({
 
             <p>所属名は会員様の数だけ共有いただけます（ライセンス数上限まで）。</p>
 
+            <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+              <h3 style="margin-top: 0; color: #065f46;">トレーナーポータル</h3>
+              <p style="margin-bottom: 8px;">会員様の記録データをリアルタイムで確認できるトレーナー専用ポータルもご利用いただけます。</p>
+              <p style="margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
+              <p style="color: #6b7280; font-size: 12px; margin-bottom: 0;">※ トレーナーアカウントの設定は管理者にお問い合わせください。</p>
+            </div>
+
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
             <p style="color: #6b7280; font-size: 12px;">
               Your Coach+ サポートチーム<br>
@@ -1923,6 +1930,9 @@ exports.getAdminUserList = onCall({
         b2b2cOrgId: data.b2b2cOrgId || null,
         referralCode: data.referralCode || null,
         referredBy: data.referredBy || null,
+        organizationName: data.organizationName || null,
+        isPremium: data.isPremium || !!data.organizationName || false,
+        role: data.role || null,
       });
     });
 
@@ -1930,6 +1940,144 @@ exports.getAdminUserList = onCall({
   } catch (error) {
     console.error('[Admin] Get user list error:', error);
     throw new HttpsError("internal", "ユーザー一覧の取得に失敗しました", error.message);
+  }
+});
+
+// ===== トレーナー管理 =====
+
+// SuperAdminがトレーナーを任命/解除
+exports.setTrainerRole = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const SUPER_ADMIN_EMAIL = 'official@your-coach-plus.com';
+  if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
+    throw new HttpsError("permission-denied", "SuperAdmin権限が必要です");
+  }
+
+  const { userId, setAsTrainer } = request.data;
+  if (!userId) {
+    throw new HttpsError("invalid-argument", "userIdは必須です");
+  }
+
+  try {
+    // 対象ユーザーのFirestoreデータを取得
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "ユーザーが見つかりません");
+    }
+    const userData = userDoc.data();
+
+    if (setAsTrainer) {
+      // トレーナーに設定
+      const organizationName = userData.organizationName;
+      if (!organizationName || !organizationName.trim()) {
+        throw new HttpsError("failed-precondition", "対象ユーザーにorganizationNameが設定されていません");
+      }
+
+      // Custom Claims設定
+      await admin.auth().setCustomUserClaims(userId, {
+        role: 'trainer',
+        organizationName: organizationName.trim(),
+      });
+
+      // Firestoreのroleフィールドも同期更新
+      await admin.firestore().collection('users').doc(userId).update({
+        role: 'trainer',
+      });
+
+      console.log(`[Trainer] Set trainer role: ${userId} (org: ${organizationName})`);
+      return { success: true, message: `${organizationName} のトレーナーに設定しました` };
+
+    } else {
+      // トレーナー解除
+      await admin.auth().setCustomUserClaims(userId, {});
+
+      // Firestoreのroleフィールドを削除
+      await admin.firestore().collection('users').doc(userId).update({
+        role: admin.firestore.FieldValue.delete(),
+      });
+
+      console.log(`[Trainer] Removed trainer role: ${userId}`);
+      return { success: true, message: 'トレーナー権限を解除しました' };
+    }
+  } catch (error) {
+    if (error.code) throw error; // HttpsError はそのまま
+    console.error('[Trainer] setTrainerRole error:', error);
+    throw new HttpsError("internal", "トレーナー設定に失敗しました", error.message);
+  }
+});
+
+// トレーナーが自社クライアント一覧を取得
+exports.getTrainerUserList = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  // Custom ClaimsからroleとorganizationNameを検証
+  const claims = request.auth.token;
+  if (claims.role !== 'trainer' || !claims.organizationName) {
+    throw new HttpsError("permission-denied", "トレーナー権限が必要です");
+  }
+
+  const trainerOrg = claims.organizationName;
+
+  try {
+    // 同一organizationNameのユーザーを取得
+    const snapshot = await admin.firestore()
+      .collection('users')
+      .where('organizationName', '==', trainerOrg)
+      .get();
+
+    const users = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      users.push({
+        id: doc.id,
+        email: data.email || null,
+        displayName: data.displayName || data.nickname || null,
+        organizationName: data.organizationName || null,
+      });
+    });
+
+    return { success: true, users, organizationName: trainerOrg };
+  } catch (error) {
+    console.error('[Trainer] getTrainerUserList error:', error);
+    throw new HttpsError("internal", "ユーザー一覧の取得に失敗しました", error.message);
+  }
+});
+
+// 既存テンプレートにorganizationName: nullを一括追加（マイグレーション用・一度実行後削除可）
+exports.migrateTemplateOrgField = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  const SUPER_ADMIN_EMAIL = 'official@your-coach-plus.com';
+  if (!request.auth || request.auth.token.email !== SUPER_ADMIN_EMAIL) {
+    throw new HttpsError("permission-denied", "SuperAdmin権限が必要です");
+  }
+
+  try {
+    const snapshot = await admin.firestore().collection('quest_templates').get();
+    let count = 0;
+    const batch = admin.firestore().batch();
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.organizationName === undefined) {
+        batch.update(doc.ref, { organizationName: null });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+    }
+
+    return { success: true, message: `${count}件のテンプレートにorganizationName: nullを追加しました` };
+  } catch (error) {
+    console.error('[Migration] migrateTemplateOrgField error:', error);
+    throw new HttpsError("internal", "マイグレーションに失敗しました", error.message);
   }
 });
 
@@ -2022,19 +2170,6 @@ exports.createB2B2CCheckoutSession = onCall({
   }
 });
 
-// B2B2Cアクセスコード生成（内部関数）
-function generateB2B2CAccessCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = 'B2B-';
-  for (let i = 0; i < 12; i++) {
-    if (i === 4 || i === 8) {
-      code += '-';
-    }
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code; // 例: B2B-A1B2-C3D4-E5F6
-}
-
 // 法人契約 Webhookハンドラ（Stripe決済完了時の処理）
 async function handleB2B2CCheckout(session) {
   const {planId, companyName, companyEmail, licenses, price} = session.metadata;
@@ -2103,6 +2238,8 @@ async function handleB2B2CCheckout(session) {
               <li>管理画面で登録状況を確認可能</li>
             </ol>
 
+            <p style="color: #6b7280; font-size: 13px;">※ トレーナー設定が必要な場合は管理画面から設定してください。</p>
+
             <p><a href="https://your-coach-plus.web.app/admin.html" style="color: #4A9EFF;">管理画面を開く</a></p>
           </div>
         `,
@@ -2150,6 +2287,13 @@ async function handleB2B2CCheckout(session) {
             </ol>
 
             <p>所属名は会員様の数だけ共有いただけます（ライセンス数上限まで）。</p>
+
+            <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+              <h3 style="margin-top: 0; color: #065f46;">トレーナーポータル</h3>
+              <p style="margin-bottom: 8px;">会員様の記録データをリアルタイムで確認できるトレーナー専用ポータルもご利用いただけます。</p>
+              <p style="margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
+              <p style="color: #6b7280; font-size: 12px; margin-bottom: 0;">※ トレーナーアカウントの設定は管理者にお問い合わせください。</p>
+            </div>
 
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
             <p style="color: #6b7280; font-size: 12px;">
@@ -2259,6 +2403,7 @@ exports.validateOrganizationName = onCall({
     const updateData = {
       organizationName: orgName,
       organizationJoinedAt: admin.firestore.FieldValue.serverTimestamp(),
+      isPremium: true,
     };
 
     // 初回登録時のみクレジット付与
@@ -2320,10 +2465,29 @@ exports.leaveOrganization = onCall({
     }
 
     // ユーザーから所属情報を削除
-    await admin.firestore().collection('users').doc(userId).update({
+    const updateFields = {
       organizationName: admin.firestore.FieldValue.delete(),
       organizationJoinedAt: admin.firestore.FieldValue.delete(),
-    });
+    };
+
+    // トレーナーの場合はrole・Custom Claimsもクリア
+    if (userData.role === 'trainer') {
+      updateFields.role = admin.firestore.FieldValue.delete();
+      const userRecord = await admin.auth().getUser(userId);
+      const currentClaims = userRecord.customClaims || {};
+      delete currentClaims.role;
+      delete currentClaims.organizationName;
+      await admin.auth().setCustomUserClaims(userId, currentClaims);
+    }
+
+    // Stripeサブスク/ギフトコードがなければisPremium=false
+    const hasStripe = userData.subscription?.status === 'active';
+    const hasGift = userData.giftCodeActive === true;
+    if (!hasStripe && !hasGift) {
+      updateFields.isPremium = false;
+    }
+
+    await admin.firestore().collection('users').doc(userId).update(updateFields);
 
     // 契約の登録ユーザー一覧から削除
     const contractSnapshot = await admin.firestore()
