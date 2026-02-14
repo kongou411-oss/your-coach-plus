@@ -187,7 +187,15 @@
       "Bash(\"/c/Users/yourc/AppData/Local/Android/Sdk/platform-tools/adb.exe\" install \"C:/Users/yourc/ycn_re/ycn_native/androidApp/build/outputs/apk/debug/androidApp-debug.apk\")",
       "Bash(\"/c/Users/yourc/AppData/Local/Android/Sdk/platform-tools/adb.exe\" devices)",
       "Bash(\"/c/Users/yourc/AppData/Local/Android/Sdk/platform-tools/adb.exe\" install -r C:/Users/yourc/ycn_re/ycn_native/androidApp/build/outputs/apk/debug/androidApp-debug.apk)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(firebase emulators:start:*)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" logcat -d -t 100)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" install -r C:/Users/yourc/ycn_re/ycn_native/androidApp/build/outputs/apk/debug/androidApp-debug.apk)",
+      "Bash(/c/Users/yourc/AppData/Local/Android/Sdk/platform-tools/adb.exe install:*)",
+      "WebFetch(domain:www.biohackr.health)",
+      "WebFetch(domain:pubmed.ncbi.nlm.nih.gov)",
+      "WebFetch(domain:your-coach-plus.web.app)",
+      "Bash(firebase:*)"
     ],
     "deny": [],
     "ask": []

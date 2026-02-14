@@ -36,7 +36,8 @@ async function seedPgBaseArticles() {
       id: article.id,
       title: article.title,
       summary: article.summary,
-      content: article.content,
+      content: article.content || '',
+      contentUrl: article.contentUrl || '',
       category: article.category,
       readingTime: article.readingTime,
       isPremium: article.isPremium,
@@ -45,7 +46,7 @@ async function seedPgBaseArticles() {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    batch.set(docRef, articleData);
+    batch.set(docRef, articleData, { merge: true });
     console.log(`  ✅ ${article.id}: ${article.title}`);
   }
 

@@ -2,43 +2,73 @@
   "articles": [
     {
       "id": "protein_001",
-      "title": "プロテイン科学と実践",
-      "summary": "筋タンパク質合成を最大化する科学的摂取戦略。タンパク質の必要量、最適なタイミング、ホエイ・カゼイン・ソイの使い分けを解説。",
+      "title": "タンパク質の教科書",
+      "summary": "筋タンパク質合成を最大化する科学的摂取戦略。必要量、最適タイミング、DIAASによる品質評価を解説。",
       "category": "PROTEIN",
-      "readingTime": 20,
+      "readingTime": 15,
       "isPremium": false,
       "order": 1,
-      "contentUrl": "https://your-coach-plus.web.app/module/Nutrition/macro/protein_textbook_new.html"
+      "contentUrl": "https://your-coach-plus.web.app/module/v2/protein.html"
     },
     {
       "id": "carbs_001",
       "title": "炭水化物の教科書",
-      "summary": "GI値コントロールとタイミング戦略。炭水化物を敵ではなく味方にする科学的アプローチを解説。",
+      "summary": "GI値コントロールとタイミング戦略。炭水化物を味方にする科学的アプローチを解説。",
       "category": "CARBS",
-      "readingTime": 10,
+      "readingTime": 15,
       "isPremium": false,
       "order": 2,
-      "contentUrl": "https://your-coach-plus.web.app/module/Nutrition/macro/carb_textbook_new.html"
+      "contentUrl": "https://your-coach-plus.web.app/module/v2/carb.html"
     },
     {
       "id": "fat_001",
-      "title": "脂質科学とオメガバランス",
-      "summary": "炎症抑制とパフォーマンス最大化のための脂質戦略。オメガ3・オメガ6のバランス、EPA・DHAの重要性を科学的に解説。",
+      "title": "脂質の教科書",
+      "summary": "オメガ3・オメガ6のバランス、EPA・DHAの重要性。脂質を正しく摂る科学的戦略を解説。",
       "category": "FAT",
-      "readingTime": 25,
+      "readingTime": 15,
       "isPremium": false,
       "order": 3,
-      "contentUrl": "https://your-coach-plus.web.app/module/Nutrition/macro/fat_textbook_new.html"
+      "contentUrl": "https://your-coach-plus.web.app/module/v2/fat.html"
+    },
+    {
+      "id": "vitamin_mineral_001",
+      "title": "ビタミン・ミネラルの教科書",
+      "summary": "13種ビタミン＋13種ミネラルの役割と充足率管理。吸収を左右する組み合わせの科学を解説。",
+      "category": "VITAMINS",
+      "readingTime": 15,
+      "isPremium": false,
+      "order": 4,
+      "contentUrl": "https://your-coach-plus.web.app/module/v2/vitamin_mineral.html"
+    },
+    {
+      "id": "supplements_001",
+      "title": "基礎サプリメントの教科書",
+      "summary": "クレアチン・プロテイン・フィッシュオイル等の科学的根拠と優先順位マトリックスを解説。",
+      "category": "VITAMINS",
+      "readingTime": 15,
+      "isPremium": false,
+      "order": 5,
+      "contentUrl": "https://your-coach-plus.web.app/module/v2/supplements.html"
+    },
+    {
+      "id": "sleep_001",
+      "title": "睡眠の教科書",
+      "summary": "食事と運動だけでは足りない。睡眠が最大のパフォーマンスレバーである理由と実践テクニックを解説。",
+      "category": "RECOVERY",
+      "readingTime": 15,
+      "isPremium": false,
+      "order": 6,
+      "contentUrl": "https://your-coach-plus.web.app/module/v2/sleep.html"
     },
     {
       "id": "mindset_001",
       "title": "メンタルの教科書",
-      "summary": "モチベーション非依存の自動行動システム構築法。トップアスリートの思考法と24-42日間のマインドプログラミングを解説。",
+      "summary": "モチベーション非依存の自動行動システム構築法。指示書システムと24-42日プロトコルを解説。",
       "category": "MINDSET",
-      "readingTime": 12,
+      "readingTime": 15,
       "isPremium": true,
-      "order": 4,
-      "contentUrl": "https://your-coach-plus.web.app/module/mental_textbook_new.html"
+      "order": 7,
+      "contentUrl": "https://your-coach-plus.web.app/module/v2/mental.html"
     }
   ]
 }
