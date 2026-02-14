@@ -224,6 +224,18 @@
                         <h3 class="font-bold text-gray-800 text-sm mb-2" id="cq-assign-list-title">割当履歴</h3>
                         <div id="cq-assign-list" class="text-xs max-h-[300px] overflow-y-auto"><span class="text-gray-400">データなし</span></div>
                     </div>
+                    <!-- Condition Records -->
+                    <div class="bento-card bento-card-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-gray-800 text-sm">コンディション記録</h3>
+                            <select id="cq-condition-days" onchange="loadConditionRecords()" class="text-[10px] border border-gray-300 rounded px-2 py-0.5">
+                                <option value="7">7日間</option>
+                                <option value="14">14日間</option>
+                                <option value="30" selected>30日間</option>
+                            </select>
+                        </div>
+                        <div id="cq-condition-content" class="text-xs max-h-[350px] overflow-y-auto"><span class="text-gray-400">クライアントを選択してください</span></div>
+                    </div>
                 </div>
             </div>
 

@@ -673,6 +673,7 @@ async function loadUserSlots() {
         renderUserProfilePanel(profile, userData);
         renderUserRoutinePanel(uid, profile);
         renderUserCustomItemsPanel(uid);
+        loadConditionRecords();
 
         // Timeline
         const absoluteTimes = {};
@@ -1061,4 +1062,89 @@ async function renderUserCustomItemsPanel(uid) {
         if (!html) html = '<span class="text-gray-400">なし</span>';
         el.innerHTML = html;
     } catch (e) { el.innerHTML = `<span class="text-red-500">${e.message}</span>`; }
+}
+
+// ========== Condition Records ==========
+const CONDITION_LABELS = { sleepHours: '睡眠時間', sleepQuality: '睡眠の質', digestion: '消化', focus: '集中力', stress: 'ストレス' };
+const CONDITION_COLORS = { sleepHours: '#3b82f6', sleepQuality: '#8b5cf6', digestion: '#22c55e', focus: '#f59e0b', stress: '#ef4444' };
+
+async function loadConditionRecords() {
+    const uid = loadedUserUid;
+    const el = document.getElementById('cq-condition-content');
+    if (!uid) { el.innerHTML = '<span class="text-gray-400">クライアントを選択してください</span>'; return; }
+    el.innerHTML = '<span class="text-gray-400">読み込み中...</span>';
+    const days = parseInt(document.getElementById('cq-condition-days').value) || 30;
+    try {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+        const startStr = startDate.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
+        const snap = await db.collection('dailyRecords').doc(uid).collection('records')
+            .where(firebase.firestore.FieldPath.documentId(), '>=', startStr)
+            .where(firebase.firestore.FieldPath.documentId(), '<=', endStr)
+            .orderBy(firebase.firestore.FieldPath.documentId(), 'desc')
+            .get();
+        const records = [];
+        snap.forEach(doc => {
+            const d = doc.data();
+            if (d.conditions && Object.keys(d.conditions).length > 0) {
+                records.push({ date: doc.id, conditions: d.conditions, weight: d.weight || null });
+            }
+        });
+        renderConditionRecords(records);
+    } catch (e) { el.innerHTML = `<span class="text-red-500">エラー: ${e.message}</span>`; console.error(e); }
+}
+
+function renderConditionRecords(records) {
+    const el = document.getElementById('cq-condition-content');
+    if (records.length === 0) { el.innerHTML = '<span class="text-gray-400">コンディション記録なし</span>'; return; }
+    // Trend summary (latest 7 records average vs previous 7)
+    const recent = records.slice(0, Math.min(7, records.length));
+    const older = records.slice(7, Math.min(14, records.length));
+    function avgScore(recs) {
+        if (recs.length === 0) return null;
+        let total = 0;
+        recs.forEach(r => {
+            const c = r.conditions;
+            total += ((c.sleepHours||0)+(c.sleepQuality||0)+(c.digestion||0)+(c.focus||0)+(c.stress||0)) / 5 * 20;
+        });
+        return Math.round(total / recs.length);
+    }
+    const recentAvg = avgScore(recent);
+    const olderAvg = avgScore(older);
+    let trendHtml = '';
+    if (recentAvg !== null) {
+        const scoreColor = recentAvg >= 70 ? '#22c55e' : recentAvg >= 50 ? '#f59e0b' : '#ef4444';
+        trendHtml += `<div class="flex items-center gap-3 mb-3 p-2 rounded-lg" style="background:${scoreColor}10;border:1px solid ${scoreColor}30">`;
+        trendHtml += `<div class="text-center"><div class="text-2xl font-black" style="color:${scoreColor}">${recentAvg}</div><div class="text-[9px] text-gray-500">直近平均</div></div>`;
+        if (olderAvg !== null) {
+            const diff = recentAvg - olderAvg;
+            const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+            const diffColor = diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : '#6b7280';
+            trendHtml += `<div class="text-center"><span style="color:${diffColor}" class="font-bold">${arrow}${diff > 0 ? '+' : ''}${diff}</span><div class="text-[9px] text-gray-500">前週比</div></div>`;
+        }
+        trendHtml += `<div class="text-[9px] text-gray-400 ml-auto">${records.length}件</div>`;
+        trendHtml += '</div>';
+    }
+    // Daily list
+    let listHtml = '';
+    records.forEach(r => {
+        const c = r.conditions;
+        const score = Math.round(((c.sleepHours||0)+(c.sleepQuality||0)+(c.digestion||0)+(c.focus||0)+(c.stress||0)) / 5 * 20);
+        const scoreColor = score >= 70 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
+        listHtml += `<div class="border-b border-gray-100 py-1.5">`;
+        listHtml += `<div class="flex items-center justify-between mb-1"><span class="font-bold text-gray-700">${r.date}</span>`;
+        listHtml += `<span class="font-bold text-sm" style="color:${scoreColor}">${score}点</span></div>`;
+        listHtml += '<div class="flex gap-1">';
+        for (const [key, label] of Object.entries(CONDITION_LABELS)) {
+            const val = c[key] || 0;
+            const color = CONDITION_COLORS[key];
+            const pct = val / 5 * 100;
+            listHtml += `<div class="flex-1 text-center"><div class="text-[8px] text-gray-500 mb-0.5">${label}</div><div class="h-1.5 rounded-full bg-gray-200 overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%;background:${color}"></div></div><div class="text-[9px] font-bold mt-0.5" style="color:${color}">${val}/5</div></div>`;
+        }
+        if (r.weight) listHtml += `<div class="flex-1 text-center"><div class="text-[8px] text-gray-500 mb-0.5">体重</div><div class="text-[10px] font-bold text-gray-700 mt-1">${r.weight}kg</div></div>`;
+        listHtml += '</div></div>';
+    });
+    el.innerHTML = trendHtml + listHtml;
 }

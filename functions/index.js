@@ -949,9 +949,10 @@ exports.adminCreateContract = onCall({
               <p style="margin-bottom: 4px;"><strong>利用手順:</strong></p>
               <ol style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px;">
                 <li style="margin-bottom: 4px;">トレーナー本人が Your Coach+ アプリでアカウントを作成し、所属名「${companyName}」を入力</li>
-                <li style="margin-bottom: 4px;">弊社にてトレーナー権限を付与いたします（<a href="mailto:official@your-coach-plus.com" style="color: #10b981;">メールでご連絡ください</a>）</li>
+                <li style="margin-bottom: 4px;">下記リンクからトレーナー権限を申請してください（トレーナーのアプリ登録メールアドレスが必要です）</li>
                 <li style="margin-bottom: 4px;">権限付与後、下記リンクからログインいただけます</li>
               </ol>
+              <p style="margin-top: 8px; margin-bottom: 0;"><a href="mailto:official@your-coach-plus.com?subject=${encodeURIComponent('[トレーナー権限申請] ' + companyName)}&body=${encodeURIComponent('所属名: ' + companyName + '\nトレーナーのメールアドレス: \n（アプリ登録時と同じメールアドレスをご記入ください）')}" style="display: inline-block; background: #10b981; color: white; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">トレーナー権限を申請する →</a></p>
               <p style="margin-top: 12px; margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
             </div>
 
@@ -2336,9 +2337,10 @@ async function handleB2B2CCheckout(session) {
               <p style="margin-bottom: 4px;"><strong>利用手順:</strong></p>
               <ol style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px;">
                 <li style="margin-bottom: 4px;">トレーナー本人が Your Coach+ アプリでアカウントを作成し、所属名「${companyName}」を入力</li>
-                <li style="margin-bottom: 4px;">弊社にてトレーナー権限を付与いたします（<a href="mailto:official@your-coach-plus.com" style="color: #10b981;">メールでご連絡ください</a>）</li>
+                <li style="margin-bottom: 4px;">下記リンクからトレーナー権限を申請してください（トレーナーのアプリ登録メールアドレスが必要です）</li>
                 <li style="margin-bottom: 4px;">権限付与後、下記リンクからログインいただけます</li>
               </ol>
+              <p style="margin-top: 8px; margin-bottom: 0;"><a href="mailto:official@your-coach-plus.com?subject=${encodeURIComponent('[トレーナー権限申請] ' + companyName)}&body=${encodeURIComponent('所属名: ' + companyName + '\nトレーナーのメールアドレス: \n（アプリ登録時と同じメールアドレスをご記入ください）')}" style="display: inline-block; background: #10b981; color: white; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px;">トレーナー権限を申請する →</a></p>
               <p style="margin-top: 12px; margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
             </div>
 
