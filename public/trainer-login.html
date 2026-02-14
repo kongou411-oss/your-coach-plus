@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>トレーナーログイン - Your Coach+</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0d9488 0%, #065f46 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            color: #0d9488;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0d9488;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #0d9488 0%, #065f46 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(13, 148, 136, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider span {
+            padding: 0 16px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .btn-google {
+            width: 100%;
+            padding: 14px;
+            background: white;
+            color: #333;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn-google:hover {
+            border-color: #0d9488;
+            background: #f0fdfa;
+        }
+
+        .btn-google:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-google img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>Your Coach+</h1>
+            <p>トレーナーポータル</p>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="email">メールアドレス</label>
+                <input type="email" id="email" required placeholder="trainer@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" required placeholder="パスワードを入力">
+            </div>
+
+            <button type="submit" class="btn-login" id="login-btn">
+                ログイン
+            </button>
+        </form>
+
+        <div class="divider">
+            <span>または</span>
+        </div>
+
+        <button type="button" class="btn-google" id="google-login-btn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+            Googleでログイン
+        </button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="/config.js"></script>
+
+    <script>
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const auth = firebase.auth();
+
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const errorMessage = document.getElementById('error-message');
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        // Custom Claims検証してリダイレクト
+        async function verifyTrainerAndRedirect(user) {
+            try {
+                const idTokenResult = await user.getIdTokenResult(true);
+                if (idTokenResult.claims.role !== 'trainer') {
+                    await auth.signOut();
+                    showError('トレーナー権限がありません: ' + user.email);
+                    return false;
+                }
+                window.location.href = '/trainer.html';
+                return true;
+            } catch (e) {
+                await auth.signOut();
+                showError('認証情報の検証に失敗しました');
+                return false;
+            }
+        }
+
+        // Googleログイン
+        googleLoginBtn.addEventListener('click', async () => {
+            hideError();
+            googleLoginBtn.disabled = true;
+            googleLoginBtn.textContent = 'ログイン中...';
+
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await auth.signInWithPopup(provider);
+                const ok = await verifyTrainerAndRedirect(result.user);
+                if (!ok) {
+                    googleLoginBtn.disabled = false;
+                    googleLoginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">Googleでログイン';
+                }
+            } catch (error) {
+                console.error('Google login error:', error);
+                let errorMsg = 'Googleログインに失敗しました';
+                if (error.code === 'auth/popup-closed-by-user') {
+                    errorMsg = 'ログインがキャンセルされました';
+                } else if (error.code === 'auth/popup-blocked') {
+                    errorMsg = 'ポップアップがブロックされました。ポップアップを許可してください';
+                }
+                showError(errorMsg);
+                googleLoginBtn.disabled = false;
+                googleLoginBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">Googleでログイン';
+            }
+        });
+
+        // メール/パスワードログイン
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'ログイン中...';
+
+            try {
+                const result = await auth.signInWithEmailAndPassword(email, password);
+                const ok = await verifyTrainerAndRedirect(result.user);
+                if (!ok) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'ログイン';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                let errorMsg = 'ログインに失敗しました';
+                if (error.code === 'auth/user-not-found') {
+                    errorMsg = 'ユーザーが見つかりません';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorMsg = 'パスワードが間違っています';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMsg = 'メールアドレスの形式が正しくありません';
+                }
+                showError(errorMsg);
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'ログイン';
+            }
+        });
+
+        // 既にログイン済みの場合はClaims検証してリダイレクト
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                await verifyTrainerAndRedirect(user);
+            }
+        });
+    </script>
+</body>
+</html>

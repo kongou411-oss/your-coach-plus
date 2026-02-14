@@ -23,6 +23,16 @@ service cloud.firestore {
          request.auth.token.email == 'kongou411@gmail.com');
     }
 
+    // トレーナーかどうか（Custom Claims）
+    function isTrainer() {
+      return isAuthenticated() && request.auth.token.role == 'trainer';
+    }
+
+    // 指定orgのトレーナーかどうか
+    function isOrgTrainer(orgName) {
+      return isTrainer() && request.auth.token.organizationName == orgName;
+    }
+
     // ============================================
     // giftCodes: クライアントアクセス禁止（Cloud Functionsのみ）
     // ============================================
@@ -99,7 +109,33 @@ service cloud.firestore {
         ]))
                     || (isAuthenticated()
                     && resource.data != null
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount']));
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount']))
+                    || (isTrainer()
+                    && resource.data != null
+                    && resource.data.organizationName == request.auth.token.organizationName
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'role',
+          'organizationName',
+          'subscription',
+          'subscriptionStatus',
+          'subscriptionTier',
+          'paidCredits',
+          'freeCredits',
+          'stripeCustomerId',
+          'isPremium',
+          'b2b2cOrgId',
+          'b2b2cOrgName',
+          'b2b2cAccessCode',
+          'b2b2cJoinedAt',
+          'referralCode',
+          'referredBy',
+          'referralCodeUsed',
+          'referralCreditsEarned',
+          'experience',
+          'level',
+          'processedScoreDates',
+          'processedDirectiveDates'
+        ]));
       allow delete: if isOwner(userId);
 
       // サブコレクション: settings
@@ -139,17 +175,26 @@ service cloud.firestore {
 
       // サブコレクション: routinePatterns（ネイティブアプリ用）
       match /routinePatterns/{patternId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId)
+                    || (isTrainer()
+                        && get(/databases/$(database)/documents/users/$(userId)).data.organizationName == request.auth.token.organizationName);
+        allow write: if isOwner(userId);
       }
 
       // サブコレクション: customFoods
       match /customFoods/{foodId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId)
+                    || (isTrainer()
+                        && get(/databases/$(database)/documents/users/$(userId)).data.organizationName == request.auth.token.organizationName);
+        allow write: if isOwner(userId);
       }
 
       // サブコレクション: customExercises
       match /customExercises/{exerciseId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId)
+                    || (isTrainer()
+                        && get(/databases/$(database)/documents/users/$(userId)).data.organizationName == request.auth.token.organizationName);
+        allow write: if isOwner(userId);
       }
 
       // サブコレクション: purchasedTextbooks
@@ -164,12 +209,19 @@ service cloud.firestore {
 
       // サブコレクション: custom_quests（トレーナー指定カスタムクエスト）
       // - 読み取り: 本人のみ
-      // - 作成・削除: 管理者のみ（admin.htmlから操作）
-      // - 更新: 管理者 or 本人（完了記録executedItemsの更新用）
+      // - 作成・削除: 管理者 or 同一orgトレーナー
+      // - 更新: 管理者 or 同一orgトレーナー or 本人（完了記録executedItemsの更新用）
       match /custom_quests/{questDate} {
-        allow read: if isOwner(userId);
-        allow create, delete: if isAdmin();
-        allow update: if isAdmin() || isOwner(userId);
+        allow read: if isOwner(userId)
+                    || (isTrainer()
+                        && get(/databases/$(database)/documents/users/$(userId)).data.organizationName == request.auth.token.organizationName);
+        allow create, delete: if isAdmin()
+                              || (isTrainer()
+                                  && get(/databases/$(database)/documents/users/$(userId)).data.organizationName == request.auth.token.organizationName);
+        allow update: if isAdmin()
+                      || isOwner(userId)
+                      || (isTrainer()
+                          && get(/databases/$(database)/documents/users/$(userId)).data.organizationName == request.auth.token.organizationName);
       }
 
       // サブコレクション: pgbase_progress（PGBASE記事の進捗）
@@ -422,11 +474,25 @@ service cloud.firestore {
     }
 
     // ============================================
-    // quest_templates: カスタムクエストテンプレート（管理者のみ）
+    // quest_templates: カスタムクエストテンプレート
+    // - 読み取り: 管理者は全て、トレーナーはグローバル(organizationName==null)+自社orgのみ
+    // - 作成/更新/削除: 管理者は全て、トレーナーは自社orgのみ
     // ============================================
     match /quest_templates/{templateId} {
-      allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow read: if isAdmin()
+                  || (isTrainer()
+                      && (resource.data.organizationName == null
+                          || resource.data.organizationName == request.auth.token.organizationName));
+      allow create: if isAdmin()
+                    || (isTrainer()
+                        && request.resource.data.organizationName == request.auth.token.organizationName);
+      allow update: if isAdmin()
+                    || (isTrainer()
+                        && resource.data.organizationName == request.auth.token.organizationName
+                        && request.resource.data.organizationName == request.auth.token.organizationName);
+      allow delete: if isAdmin()
+                    || (isTrainer()
+                        && resource.data.organizationName == request.auth.token.organizationName);
     }
 
     // ============================================

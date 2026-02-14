@@ -458,6 +458,7 @@
                                 <option value="premium">Premium会員のみ</option>
                                 <option value="affiliation">所属名利用者</option>
                                 <option value="billing">Google Play課金者</option>
+                                <option value="trainer">トレーナーのみ</option>
                             </select>
                         </label>
                         <button onclick="loadUsers()" class="btn-secondary">🔄 更新</button>
@@ -1172,6 +1173,9 @@
                     case 'billing':
                         filtered = allUsers.filter(u => u.isPremium === true && !u._hasOrganization);
                         break;
+                    case 'trainer':
+                        filtered = allUsers.filter(u => u.role === 'trainer');
+                        break;
                 }
 
                 // 登録日でソート（新しい順）
@@ -1203,6 +1207,9 @@
                 }
                 if (user._hasOrganization) {
                     status.push('<span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">🏢 ' + (user.organizationName || '所属') + '</span>');
+                }
+                if (user.role === 'trainer') {
+                    status.push('<span class="px-2 py-1 text-xs rounded-full bg-teal-100 text-teal-800">🏋️ トレーナー</span>');
                 }
                 if (status.length === 0) {
                     status.push('<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">無料</span>');
@@ -1249,20 +1256,71 @@
             const user = allUsers.find(u => u.id === userId);
             if (!user) return;
 
-            const details = [
-                `ID: ${user.id}`,
-                `メール: ${user.email || '未設定'}`,
-                `名前: ${user.displayName || user.nickname || '未設定'}`,
-                `登録日: ${user._regDate.toLocaleDateString('ja-JP')}`,
-                `---`,
-                `無料クレジット: ${user.freeCredits || 0}`,
-                `有償クレジット: ${user.paidCredits || 0}`,
-                `---`,
-                `Premium: ${user.isPremium ? 'はい' : 'いいえ'}`,
-                `所属名: ${user.organizationName || 'なし'}`,
-            ];
+            const isTrainer = user.role === 'trainer';
+            const hasOrg = user.organizationName && user.organizationName.trim();
+            let trainerSection = '';
+            if (isTrainer) {
+                trainerSection = `
+                    <div style="margin-top:12px;padding:12px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;">
+                        <div style="font-weight:600;color:#0d9488;margin-bottom:8px;">🏋️ トレーナー（${user.organizationName}）</div>
+                        <button onclick="toggleTrainerRole('${user.id}', false)" style="padding:6px 16px;background:#ef4444;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;">トレーナー解除</button>
+                    </div>`;
+            } else if (hasOrg) {
+                trainerSection = `
+                    <div style="margin-top:12px;padding:12px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;">
+                        <div style="font-size:12px;color:#6b7280;margin-bottom:8px;">所属: ${user.organizationName}</div>
+                        <button onclick="toggleTrainerRole('${user.id}', true)" style="padding:6px 16px;background:#0d9488;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;">トレーナーに設定</button>
+                    </div>`;
+            } else {
+                trainerSection = `
+                    <div style="margin-top:12px;padding:12px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;">
+                        <div style="font-size:12px;color:#92400e;">トレーナーに設定するにはorganizationNameが必要です</div>
+                    </div>`;
+            }
 
-            alert(details.join('\n'));
+            // モーダル表示
+            const overlay = document.createElement('div');
+            overlay.id = 'user-detail-overlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;display:flex;align-items:center;justify-content:center;';
+            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+            overlay.innerHTML = `
+                <div style="background:white;border-radius:16px;padding:24px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;">
+                    <button onclick="document.getElementById('user-detail-overlay').remove()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
+                    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;">ユーザー詳細</h3>
+                    <div style="font-size:13px;line-height:2;">
+                        <div><strong>ID:</strong> <span style="font-family:monospace;font-size:11px;">${user.id}</span></div>
+                        <div><strong>メール:</strong> ${user.email || '未設定'}</div>
+                        <div><strong>名前:</strong> ${user.displayName || user.nickname || '未設定'}</div>
+                        <div><strong>登録日:</strong> ${user._regDate.toLocaleDateString('ja-JP')}</div>
+                        <div><strong>無料クレジット:</strong> ${user.freeCredits || 0} / <strong>有償:</strong> ${user.paidCredits || 0}</div>
+                        <div><strong>Premium:</strong> ${user.isPremium ? 'はい' : 'いいえ'}</div>
+                        <div><strong>所属名:</strong> ${user.organizationName || 'なし'}</div>
+                        <div><strong>Role:</strong> ${user.role || 'なし'}</div>
+                    </div>
+                    ${trainerSection}
+                    <div id="trainer-toggle-msg" style="margin-top:8px;font-size:13px;"></div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        async function toggleTrainerRole(userId, setAsTrainer) {
+            const msgEl = document.getElementById('trainer-toggle-msg');
+            if (!msgEl) return;
+            msgEl.innerHTML = '<span style="color:#6b7280;">処理中...</span>';
+            try {
+                const setTrainerRole = functions.httpsCallable('setTrainerRole');
+                const result = await setTrainerRole({ userId, setAsTrainer });
+                msgEl.innerHTML = '<span style="color:#059669;">' + result.data.message + '</span>';
+                // ユーザー一覧を再読み込み
+                setTimeout(() => {
+                    const overlay = document.getElementById('user-detail-overlay');
+                    if (overlay) overlay.remove();
+                    loadUsers();
+                }, 1500);
+            } catch (e) {
+                msgEl.innerHTML = '<span style="color:#dc2626;">エラー: ' + (e.message || e) + '</span>';
+            }
         }
 
         // ===== COMY投稿管理機能 (comy_posts コレクション) =====
