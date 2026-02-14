@@ -928,7 +928,8 @@ exports.adminCreateContract = onCall({
             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
               <h3 style="margin-top: 0; color: #1e293b;">📱 アプリのダウンロード</h3>
               <p style="margin-bottom: 8px;">会員様に以下のリンクからアプリをダウンロードいただけます。</p>
-              <p style="margin-bottom: 0;"><a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" style="color: #4A9EFF; font-weight: bold;">Google Play でダウンロード →</a></p>
+              <p style="margin-bottom: 8px;"><a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" style="color: #4A9EFF; font-weight: bold;">Google Play（Android）→</a></p>
+              <p style="margin-bottom: 0;"><a href="https://apps.apple.com/jp/app/your-coach/id6757575338" style="color: #4A9EFF; font-weight: bold;">App Store（iPhone / iPad）→</a></p>
             </div>
 
             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
@@ -2316,7 +2317,8 @@ async function handleB2B2CCheckout(session) {
             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
               <h3 style="margin-top: 0; color: #1e293b;">📱 アプリのダウンロード</h3>
               <p style="margin-bottom: 8px;">会員様に以下のリンクからアプリをダウンロードいただけます。</p>
-              <p style="margin-bottom: 0;"><a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" style="color: #4A9EFF; font-weight: bold;">Google Play でダウンロード →</a></p>
+              <p style="margin-bottom: 8px;"><a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" style="color: #4A9EFF; font-weight: bold;">Google Play（Android）→</a></p>
+              <p style="margin-bottom: 0;"><a href="https://apps.apple.com/jp/app/your-coach/id6757575338" style="color: #4A9EFF; font-weight: bold;">App Store（iPhone / iPad）→</a></p>
             </div>
 
             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
