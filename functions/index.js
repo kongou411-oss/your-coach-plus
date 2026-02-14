@@ -925,17 +925,41 @@ exports.adminCreateContract = onCall({
 
             <p>所属名は会員様の数だけ共有いただけます（ライセンス数上限まで）。</p>
 
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+              <h3 style="margin-top: 0; color: #1e293b;">📱 アプリのダウンロード</h3>
+              <p style="margin-bottom: 8px;">会員様に以下のリンクからアプリをダウンロードいただけます。</p>
+              <p style="margin-bottom: 0;"><a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" style="color: #4A9EFF; font-weight: bold;">Google Play でダウンロード →</a></p>
+            </div>
+
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+              <h3 style="margin-top: 0; color: #1e293b;">📖 会員様向け — 所属名の入力手順</h3>
+              <p style="color: #6b7280; font-size: 13px; margin-bottom: 12px;">以下の手順をそのまま会員様にご共有ください。</p>
+              <ol style="margin: 0; padding-left: 20px; color: #374151;">
+                <li style="margin-bottom: 8px;">アプリを開き、画面下部の<strong>「設定」タブ</strong>をタップ</li>
+                <li style="margin-bottom: 8px;"><strong>「所属設定」</strong>をタップ</li>
+                <li style="margin-bottom: 8px;">所属名の入力欄に <strong style="color: #92400e;">「${companyName}」</strong> と入力</li>
+                <li style="margin-bottom: 8px;"><strong>「登録」</strong>ボタンをタップ</li>
+                <li style="margin-bottom: 0;">「Premium機能が利用可能になりました」と表示されれば完了です</li>
+              </ol>
+            </div>
+
             <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-              <h3 style="margin-top: 0; color: #065f46;">トレーナーポータル</h3>
-              <p style="margin-bottom: 8px;">会員様の記録データをリアルタイムで確認できるトレーナー専用ポータルもご利用いただけます。</p>
-              <p style="margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
-              <p style="color: #6b7280; font-size: 12px; margin-bottom: 0;">※ トレーナーアカウントの設定は管理者にお問い合わせください。</p>
+              <h3 style="margin-top: 0; color: #065f46;">🏋️ トレーナーポータル（任意）</h3>
+              <p style="margin-bottom: 8px;">会員様の食事・運動・コンディション記録をリアルタイムで確認できるトレーナー専用画面です。</p>
+              <p style="margin-bottom: 4px;"><strong>利用手順:</strong></p>
+              <ol style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px;">
+                <li style="margin-bottom: 4px;">トレーナー本人が Your Coach+ アプリでアカウントを作成し、所属名「${companyName}」を入力</li>
+                <li style="margin-bottom: 4px;">弊社にてトレーナー権限を付与いたします（<a href="mailto:official@your-coach-plus.com" style="color: #10b981;">メールでご連絡ください</a>）</li>
+                <li style="margin-bottom: 4px;">権限付与後、下記リンクからログインいただけます</li>
+              </ol>
+              <p style="margin-top: 12px; margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
             </div>
 
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
             <p style="color: #6b7280; font-size: 12px;">
+              ご不明な点がございましたらお気軽にお問い合わせください。<br>
               Your Coach+ サポートチーム<br>
-              official@your-coach-plus.com
+              <a href="mailto:official@your-coach-plus.com" style="color: #4A9EFF;">official@your-coach-plus.com</a>
             </p>
           </div>
         `,
@@ -2288,17 +2312,41 @@ async function handleB2B2CCheckout(session) {
 
             <p>所属名は会員様の数だけ共有いただけます（ライセンス数上限まで）。</p>
 
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+              <h3 style="margin-top: 0; color: #1e293b;">📱 アプリのダウンロード</h3>
+              <p style="margin-bottom: 8px;">会員様に以下のリンクからアプリをダウンロードいただけます。</p>
+              <p style="margin-bottom: 0;"><a href="https://play.google.com/store/apps/details?id=com.yourcoach.plus" style="color: #4A9EFF; font-weight: bold;">Google Play でダウンロード →</a></p>
+            </div>
+
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+              <h3 style="margin-top: 0; color: #1e293b;">📖 会員様向け — 所属名の入力手順</h3>
+              <p style="color: #6b7280; font-size: 13px; margin-bottom: 12px;">以下の手順をそのまま会員様にご共有ください。</p>
+              <ol style="margin: 0; padding-left: 20px; color: #374151;">
+                <li style="margin-bottom: 8px;">アプリを開き、画面下部の<strong>「設定」タブ</strong>をタップ</li>
+                <li style="margin-bottom: 8px;"><strong>「所属設定」</strong>をタップ</li>
+                <li style="margin-bottom: 8px;">所属名の入力欄に <strong style="color: #92400e;">「${companyName}」</strong> と入力</li>
+                <li style="margin-bottom: 8px;"><strong>「登録」</strong>ボタンをタップ</li>
+                <li style="margin-bottom: 0;">「Premium機能が利用可能になりました」と表示されれば完了です</li>
+              </ol>
+            </div>
+
             <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-              <h3 style="margin-top: 0; color: #065f46;">トレーナーポータル</h3>
-              <p style="margin-bottom: 8px;">会員様の記録データをリアルタイムで確認できるトレーナー専用ポータルもご利用いただけます。</p>
-              <p style="margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
-              <p style="color: #6b7280; font-size: 12px; margin-bottom: 0;">※ トレーナーアカウントの設定は管理者にお問い合わせください。</p>
+              <h3 style="margin-top: 0; color: #065f46;">🏋️ トレーナーポータル（任意）</h3>
+              <p style="margin-bottom: 8px;">会員様の食事・運動・コンディション記録をリアルタイムで確認できるトレーナー専用画面です。</p>
+              <p style="margin-bottom: 4px;"><strong>利用手順:</strong></p>
+              <ol style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px;">
+                <li style="margin-bottom: 4px;">トレーナー本人が Your Coach+ アプリでアカウントを作成し、所属名「${companyName}」を入力</li>
+                <li style="margin-bottom: 4px;">弊社にてトレーナー権限を付与いたします（<a href="mailto:official@your-coach-plus.com" style="color: #10b981;">メールでご連絡ください</a>）</li>
+                <li style="margin-bottom: 4px;">権限付与後、下記リンクからログインいただけます</li>
+              </ol>
+              <p style="margin-top: 12px; margin-bottom: 0;"><a href="https://your-coach-plus.web.app/trainer-login.html" style="color: #10b981; font-weight: bold;">トレーナーポータルはこちら →</a></p>
             </div>
 
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
             <p style="color: #6b7280; font-size: 12px;">
+              ご不明な点がございましたらお気軽にお問い合わせください。<br>
               Your Coach+ サポートチーム<br>
-              official@your-coach-plus.com
+              <a href="mailto:official@your-coach-plus.com" style="color: #4A9EFF;">official@your-coach-plus.com</a>
             </p>
           </div>
         `,
