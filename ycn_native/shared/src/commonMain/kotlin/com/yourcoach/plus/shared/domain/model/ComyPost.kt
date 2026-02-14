@@ -26,6 +26,7 @@ data class ComyPost(
     val title: String = "",
     val content: String = "",
     val category: ComyCategory = ComyCategory.QUESTION,
+    val authorLevel: Int = 1,
     val imageUrl: String? = null,  // 添付画像URL
     val likeCount: Int = 0,
     val commentCount: Int = 0,
@@ -54,4 +55,23 @@ data class ComyLike(
     val oderId: String = "",    // ユーザーID
     val postId: String = "",
     val likedAt: Long = 0
+)
+
+/**
+ * フォロー関係
+ */
+@Serializable
+data class Follow(
+    val followerId: String = "",
+    val followingId: String = "",
+    val createdAt: Long = 0
+)
+
+/**
+ * ブロック関係
+ */
+@Serializable
+data class Block(
+    val blockedUserId: String = "",
+    val createdAt: Long = 0
 )

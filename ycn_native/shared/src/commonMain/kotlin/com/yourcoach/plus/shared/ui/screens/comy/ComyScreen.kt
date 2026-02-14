@@ -1,6 +1,8 @@
 package com.yourcoach.plus.shared.ui.screens.comy
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -46,8 +49,11 @@ class ComyScreen : Screen {
         val snackbarHostState = remember { SnackbarHostState() }
         val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val createSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val myPageSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val scope = rememberCoroutineScope()
         var postIdToDelete by remember { mutableStateOf<String?>(null) }
+        var isFabExpanded by remember { mutableStateOf(false) }
+        var userIdToBlock by remember { mutableStateOf<String?>(null) }
 
         // エラー表示
         LaunchedEffect(uiState.error) {
@@ -60,17 +66,18 @@ class ComyScreen : Screen {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { screenModel.showCreatePost() },
-                    containerColor = AccentOrange,
-                    modifier = Modifier.padding(bottom = 72.dp) // ボトムナビ分
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "投稿作成",
-                        tint = Color.White
-                    )
-                }
+                ExpandableFab(
+                    isExpanded = isFabExpanded,
+                    onToggle = { isFabExpanded = !isFabExpanded },
+                    onCreatePost = {
+                        isFabExpanded = false
+                        screenModel.showCreatePost()
+                    },
+                    onMyPage = {
+                        isFabExpanded = false
+                        screenModel.showMyPage()
+                    }
+                )
             }
         ) { paddingValues ->
             PullToRefreshBox(
@@ -91,6 +98,15 @@ class ComyScreen : Screen {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
+                    // フィードモードタブ
+                    item {
+                        FeedModeSelector(
+                            currentMode = uiState.feedMode,
+                            onModeSelected = screenModel::setFeedMode
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
                     // カテゴリフィルター
                     item {
                         CategoryFilter(
@@ -107,6 +123,8 @@ class ComyScreen : Screen {
                             currentUserId = uiState.currentUserId,
                             onClick = { screenModel.selectPost(postWithLike.post.id) },
                             onLikeClick = { screenModel.toggleLike(postWithLike.post.id) },
+                            onFollowClick = { screenModel.toggleFollow(postWithLike.post.userId) },
+                            onBlockClick = { userIdToBlock = postWithLike.post.userId },
                             onDeleteClick = { postIdToDelete = postWithLike.post.id }
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -129,6 +147,7 @@ class ComyScreen : Screen {
                 isLiked = screenModel.isSelectedPostLiked(),
                 isLoading = uiState.isActionLoading,
                 isOwnPost = uiState.selectedPost!!.userId == uiState.currentUserId,
+                isFollowingAuthor = uiState.posts.find { it.post.id == uiState.selectedPost?.id }?.isFollowingAuthor ?: false,
                 onDismiss = {
                     scope.launch {
                         detailSheetState.hide()
@@ -145,6 +164,14 @@ class ComyScreen : Screen {
                 },
                 onDeleteClick = {
                     postIdToDelete = uiState.selectedPost?.id
+                },
+                onFollowClick = {
+                    uiState.selectedPost?.let { post ->
+                        screenModel.toggleFollow(post.userId)
+                    }
+                },
+                onBlockClick = {
+                    userIdToBlock = uiState.selectedPost?.userId
                 }
             )
         }
@@ -166,6 +193,31 @@ class ComyScreen : Screen {
             )
         }
 
+        // マイページBottomSheet
+        if (uiState.isMyPageVisible) {
+            MyPageSheet(
+                sheetState = myPageSheetState,
+                userName = uiState.currentUserName,
+                userPhotoUrl = uiState.currentUserPhotoUrl,
+                followerCount = uiState.myFollowerCount,
+                followingCount = uiState.myFollowingCount,
+                myPosts = screenModel.getMyPosts(),
+                onDismiss = {
+                    scope.launch {
+                        myPageSheetState.hide()
+                        screenModel.closeMyPage()
+                    }
+                },
+                onPostClick = { postId ->
+                    screenModel.closeMyPage()
+                    screenModel.selectPost(postId)
+                },
+                onLikeClick = { postId ->
+                    screenModel.toggleLike(postId)
+                }
+            )
+        }
+
         // 削除確認ダイアログ
         if (postIdToDelete != null) {
             AlertDialog(
@@ -182,6 +234,28 @@ class ComyScreen : Screen {
                 },
                 dismissButton = {
                     TextButton(onClick = { postIdToDelete = null }) {
+                        Text("キャンセル")
+                    }
+                }
+            )
+        }
+
+        // ブロック確認ダイアログ
+        if (userIdToBlock != null) {
+            AlertDialog(
+                onDismissRequest = { userIdToBlock = null },
+                title = { Text("ユーザーをブロック") },
+                text = { Text("このユーザーをブロックしますか？\nブロックすると、このユーザーの投稿はフィードに表示されなくなります。") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        screenModel.blockUser(userIdToBlock!!)
+                        userIdToBlock = null
+                    }) {
+                        Text("ブロック", color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { userIdToBlock = null }) {
                         Text("キャンセル")
                     }
                 }
@@ -228,6 +302,104 @@ private fun ComyHeader() {
                 )
             }
         }
+    }
+}
+
+/**
+ * 展開式FAB
+ */
+@Composable
+private fun ExpandableFab(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    onCreatePost: () -> Unit,
+    onMyPage: () -> Unit
+) {
+    val rotation by animateFloatAsState(targetValue = if (isExpanded) 45f else 0f, label = "fab_rotation")
+
+    Column(
+        horizontalAlignment = Alignment.End,
+        modifier = Modifier.padding(bottom = 16.dp)
+    ) {
+        // 展開時のサブボタン
+        if (isExpanded) {
+            ExtendedFloatingActionButton(
+                onClick = onMyPage,
+                containerColor = Primary,
+                modifier = Modifier.padding(bottom = 12.dp),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                },
+                text = {
+                    Text("マイページ", color = Color.White)
+                }
+            )
+            ExtendedFloatingActionButton(
+                onClick = onCreatePost,
+                containerColor = AccentOrange,
+                modifier = Modifier.padding(bottom = 12.dp),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                },
+                text = {
+                    Text("投稿", color = Color.White)
+                }
+            )
+        }
+
+        // メインFAB
+        FloatingActionButton(
+            onClick = onToggle,
+            containerColor = AccentOrange
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = if (isExpanded) "閉じる" else "メニュー",
+                tint = Color.White,
+                modifier = Modifier.rotate(rotation)
+            )
+        }
+    }
+}
+
+/**
+ * フィードモードタブ
+ */
+@Composable
+private fun FeedModeSelector(
+    currentMode: ComyFeedMode,
+    onModeSelected: (ComyFeedMode) -> Unit
+) {
+    val selectedIndex = if (currentMode == ComyFeedMode.ALL) 0 else 1
+
+    TabRow(
+        selectedTabIndex = selectedIndex,
+        containerColor = Color.Transparent,
+        contentColor = AccentOrange,
+        divider = {}
+    ) {
+        Tab(
+            selected = selectedIndex == 0,
+            onClick = { onModeSelected(ComyFeedMode.ALL) },
+            text = { Text("すべて") },
+            selectedContentColor = AccentOrange,
+            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Tab(
+            selected = selectedIndex == 1,
+            onClick = { onModeSelected(ComyFeedMode.FOLLOWING) },
+            text = { Text("フォロー中") },
+            selectedContentColor = AccentOrange,
+            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -280,9 +452,13 @@ private fun PostCard(
     currentUserId: String,
     onClick: () -> Unit,
     onLikeClick: () -> Unit,
+    onFollowClick: () -> Unit,
+    onBlockClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     val post = postWithLike.post
+    val isOwnPost = post.userId == currentUserId
+    var showMenu by remember { mutableStateOf(false) }
 
     Card(
         onClick = onClick,
@@ -301,53 +477,123 @@ private fun PostCard(
             // ヘッダー（著者情報）
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // アバター
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Primary.copy(alpha = 0.2f), CircleShape),
-                        contentAlignment = Alignment.Center
+                // アバター
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Primary.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = Primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
                         Text(
                             text = post.authorName,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
+                        Spacer(modifier = Modifier.weight(1f))
                         Text(
                             text = formatRelativeTime(post.createdAt),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-
-                // カテゴリタグ
-                Box(
-                    modifier = Modifier
-                        .background(
-                            AccentOrange.copy(alpha = 0.1f),
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
                     Text(
-                        text = "${post.category.emoji} ${post.category.displayName}",
+                        text = "Lv.${post.authorLevel}",
                         style = MaterialTheme.typography.labelSmall,
                         color = AccentOrange
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // フォロー・カテゴリ・メニュー行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // カテゴリタグ
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                AccentOrange.copy(alpha = 0.1f),
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "${post.category.emoji} ${post.category.displayName}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentOrange
+                        )
+                    }
+
+                    // フォローボタン（他人の投稿のみ）
+                    if (!isOwnPost) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(
+                            onClick = onFollowClick,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text(
+                                text = if (postWithLike.isFollowingAuthor) "フォロー中" else "フォロー",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (postWithLike.isFollowingAuthor) MaterialTheme.colorScheme.onSurfaceVariant else AccentOrange
+                            )
+                        }
+                    }
+                }
+
+                // メニュー（他人の投稿のみ）
+                if (!isOwnPost) {
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "メニュー",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("ブロック", color = Color.Red) },
+                                onClick = {
+                                    showMenu = false
+                                    onBlockClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Block,
+                                        contentDescription = null,
+                                        tint = Color.Red
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -439,7 +685,7 @@ private fun PostCard(
                 }
 
                 // 削除（自分の投稿のみ）
-                if (post.userId == currentUserId) {
+                if (isOwnPost) {
                     Spacer(modifier = Modifier.weight(1f))
                     IconButton(
                         onClick = onDeleteClick,

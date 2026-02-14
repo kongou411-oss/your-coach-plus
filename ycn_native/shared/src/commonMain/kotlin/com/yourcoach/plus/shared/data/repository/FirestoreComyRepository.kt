@@ -235,6 +235,111 @@ class FirestoreComyRepository : ComyRepository {
         }
     }
 
+    // ===== フォロー =====
+
+    private val followsCollection = firestore.collection("follows")
+
+    private fun userBlocksCollection(userId: String) =
+        firestore.collection("users").document(userId).collection("blocks")
+
+    override suspend fun followUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            val docId = "${currentUserId}_${targetUserId}"
+            followsCollection.document(docId).set(
+                mapOf(
+                    "followerId" to currentUserId,
+                    "followingId" to targetUserId,
+                    "createdAt" to DateUtil.currentTimestamp()
+                )
+            )
+            // followingCount を更新
+            firestore.collection("users").document(currentUserId).update(
+                mapOf("followingCount" to FieldValue.increment(1))
+            )
+            // followerCount を更新
+            firestore.collection("users").document(targetUserId).update(
+                mapOf("followerCount" to FieldValue.increment(1))
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("フォローに失敗しました", e))
+        }
+    }
+
+    override suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            val docId = "${currentUserId}_${targetUserId}"
+            followsCollection.document(docId).delete()
+            // followingCount を更新
+            firestore.collection("users").document(currentUserId).update(
+                mapOf("followingCount" to FieldValue.increment(-1))
+            )
+            // followerCount を更新
+            firestore.collection("users").document(targetUserId).update(
+                mapOf("followerCount" to FieldValue.increment(-1))
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("フォロー解除に失敗しました", e))
+        }
+    }
+
+    override suspend fun getFollowingUserIds(userId: String): Result<Set<String>> {
+        return try {
+            val snapshot = followsCollection
+                .where { "followerId" equalTo userId }
+                .get()
+            val ids = snapshot.documents.mapNotNull { doc ->
+                doc.get<String?>("followingId")
+            }.toSet()
+            Result.success(ids)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("フォロー情報の取得に失敗しました", e))
+        }
+    }
+
+    override fun observeFollowingUserIds(userId: String): Flow<Set<String>> {
+        return followsCollection
+            .where { "followerId" equalTo userId }
+            .snapshots
+            .map { snapshot ->
+                snapshot.documents.mapNotNull { doc ->
+                    doc.get<String?>("followingId")
+                }.toSet()
+            }
+    }
+
+    // ===== ブロック =====
+
+    override suspend fun blockUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            userBlocksCollection(currentUserId).document(targetUserId).set(
+                mapOf(
+                    "blockedUserId" to targetUserId,
+                    "createdAt" to DateUtil.currentTimestamp()
+                )
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("ブロックに失敗しました", e))
+        }
+    }
+
+    override suspend fun unblockUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            userBlocksCollection(currentUserId).document(targetUserId).delete()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("ブロック解除に失敗しました", e))
+        }
+    }
+
+    override fun observeBlockedUserIds(userId: String): Flow<Set<String>> {
+        return userBlocksCollection(userId).snapshots.map { snapshot ->
+            snapshot.documents.map { it.id }.toSet()
+        }
+    }
+
     // ========== Mapping Functions ==========
 
     private fun postToMap(post: ComyPost): Map<String, Any?> = mapOf(
@@ -242,6 +347,7 @@ class FirestoreComyRepository : ComyRepository {
         "userId" to post.userId,
         "authorName" to post.authorName,
         "authorPhotoUrl" to post.authorPhotoUrl,
+        "authorLevel" to post.authorLevel,
         "title" to post.title,
         "content" to post.content,
         "category" to post.category.name,
@@ -274,6 +380,7 @@ class FirestoreComyRepository : ComyRepository {
             userId = get<String?>("userId") ?: "",
             authorName = get<String?>("authorName") ?: "",
             authorPhotoUrl = get<String?>("authorPhotoUrl"),
+            authorLevel = get<Long?>("authorLevel")?.toInt() ?: 1,
             title = get<String?>("title") ?: "",
             content = get<String?>("content") ?: "",
             category = category,

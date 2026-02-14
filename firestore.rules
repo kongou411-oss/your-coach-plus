@@ -182,6 +182,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // サブコレクション: blocks（ブロック）
+      match /blocks/{blockedUserId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // サブコレクション: analyses（AI分析結果）
       match /analyses/{analysisId} {
         allow read, write: if isOwner(userId);

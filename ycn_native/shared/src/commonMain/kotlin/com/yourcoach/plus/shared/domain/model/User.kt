@@ -21,7 +21,10 @@ data class User(
     val b2b2cOrgId: String? = null,
     val b2b2cOrgName: String? = null,
     val organizationName: String? = null,  // 新システム: 所属名
-    val role: String? = null                // ロール: "trainer" = カスタムクエスト管理者
+    val role: String? = null,               // ロール: "trainer" = カスタムクエスト管理者
+    // フォロー機能
+    val followerCount: Int = 0,
+    val followingCount: Int = 0
 ) {
     // 所属による Premium 判定
     val hasCorporatePremium: Boolean get() = !organizationName.isNullOrEmpty() || !b2b2cOrgId.isNullOrEmpty()

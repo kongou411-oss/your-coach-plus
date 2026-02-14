@@ -80,4 +80,43 @@ interface ComyRepository {
      * コメントを削除
      */
     suspend fun deleteComment(postId: String, commentId: String): Result<Unit>
+
+    // ===== フォロー =====
+
+    /**
+     * フォローする
+     */
+    suspend fun followUser(currentUserId: String, targetUserId: String): Result<Unit>
+
+    /**
+     * フォロー解除
+     */
+    suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<Unit>
+
+    /**
+     * フォロー中ユーザーIDのセットを取得
+     */
+    suspend fun getFollowingUserIds(userId: String): Result<Set<String>>
+
+    /**
+     * フォロー中ユーザーIDをリアルタイム監視
+     */
+    fun observeFollowingUserIds(userId: String): Flow<Set<String>>
+
+    // ===== ブロック =====
+
+    /**
+     * ユーザーをブロック
+     */
+    suspend fun blockUser(currentUserId: String, targetUserId: String): Result<Unit>
+
+    /**
+     * ブロック解除
+     */
+    suspend fun unblockUser(currentUserId: String, targetUserId: String): Result<Unit>
+
+    /**
+     * ブロック中ユーザーIDをリアルタイム監視
+     */
+    fun observeBlockedUserIds(userId: String): Flow<Set<String>>
 }

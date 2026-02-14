@@ -19,11 +19,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
+ * フィードモード
+ */
+enum class ComyFeedMode {
+    ALL,        // すべて
+    FOLLOWING   // フォロー中
+}
+
+/**
  * リスト表示用の投稿データ（いいね状態を含む）
  */
 data class ComyPostWithLike(
     val post: ComyPost,
-    val isLiked: Boolean = false
+    val isLiked: Boolean = false,
+    val isFollowingAuthor: Boolean = false
 )
 
 /**
@@ -32,6 +41,7 @@ data class ComyPostWithLike(
 data class ComyUiState(
     val isLoading: Boolean = false,
     val selectedCategory: ComyCategory? = null,
+    val feedMode: ComyFeedMode = ComyFeedMode.ALL,
     val posts: List<ComyPostWithLike> = emptyList(),
     val error: String? = null,
     // 投稿詳細用
@@ -40,12 +50,17 @@ data class ComyUiState(
     val isPostDetailVisible: Boolean = false,
     // 投稿作成用
     val isCreatePostVisible: Boolean = false,
+    // マイページ用
+    val isMyPageVisible: Boolean = false,
+    val myFollowerCount: Int = 0,
+    val myFollowingCount: Int = 0,
     // アクション状態
     val isActionLoading: Boolean = false,
     // 現在のユーザー情報
     val currentUserName: String = "",
     val currentUserPhotoUrl: String? = null,
-    val currentUserId: String = ""
+    val currentUserId: String = "",
+    val currentUserLevel: Int = 1
 )
 
 /**
@@ -64,6 +79,8 @@ class ComyViewModel(
     // キャッシュ
     private var allPosts: List<ComyPost> = emptyList()
     private var likedPostIds: Set<String> = emptySet()
+    private var followingUserIds: Set<String> = emptySet()
+    private var blockedUserIds: Set<String> = emptySet()
 
     init {
         _uiState.update { it.copy(currentUserId = authRepository.getCurrentUserId() ?: "") }
@@ -86,7 +103,10 @@ class ComyViewModel(
                             ?: user?.displayName
                             ?: user?.email?.substringBefore("@")
                             ?: "ユーザー",
-                        currentUserPhotoUrl = user?.photoUrl
+                        currentUserPhotoUrl = user?.photoUrl,
+                        currentUserLevel = user?.profile?.calculateLevel() ?: 1,
+                        myFollowerCount = user?.followerCount ?: 0,
+                        myFollowingCount = user?.followingCount ?: 0
                     )
                 }
             }
@@ -96,20 +116,31 @@ class ComyViewModel(
     /**
      * データをリアルタイム監視
      */
+    private data class CombinedData(
+        val posts: List<ComyPost>,
+        val likedIds: Set<String>,
+        val followingIds: Set<String>,
+        val blockedIds: Set<String>
+    )
+
     private fun observeData() {
         val userId = authRepository.getCurrentUserId() ?: return
         _uiState.update { it.copy(currentUserId = userId) }
 
         viewModelScope.launch {
-            // 投稿といいね状態を組み合わせて監視
+            // 投稿・いいね・フォロー・ブロックを組み合わせて監視
             combine(
                 comyRepository.observePosts(limit = 50),
-                comyRepository.observeLikedPostIds(userId)
-            ) { posts, likedIds ->
-                Pair(posts, likedIds)
-            }.collectLatest { (posts, likedIds) ->
-                allPosts = posts
-                likedPostIds = likedIds
+                comyRepository.observeLikedPostIds(userId),
+                comyRepository.observeFollowingUserIds(userId),
+                comyRepository.observeBlockedUserIds(userId)
+            ) { posts, likedIds, followingIds, blockedIds ->
+                CombinedData(posts, likedIds, followingIds, blockedIds)
+            }.collectLatest { data ->
+                allPosts = data.posts
+                likedPostIds = data.likedIds
+                followingUserIds = data.followingIds
+                blockedUserIds = data.blockedIds
                 updatePostList()
             }
         }
@@ -164,16 +195,27 @@ class ComyViewModel(
      */
     private fun updatePostList() {
         val selectedCategory = _uiState.value.selectedCategory
-        val filteredPosts = if (selectedCategory != null) {
-            allPosts.filter { it.category == selectedCategory }
-        } else {
-            allPosts
+        val feedMode = _uiState.value.feedMode
+
+        // 1. ブロックユーザー除外（常時）
+        var filteredPosts = allPosts.filter { it.userId !in blockedUserIds }
+
+        // 2. フォロー中フィルター（FOLLOWINGモード時）
+        if (feedMode == ComyFeedMode.FOLLOWING) {
+            filteredPosts = filteredPosts.filter { it.userId in followingUserIds }
         }
 
+        // 3. カテゴリフィルター
+        if (selectedCategory != null) {
+            filteredPosts = filteredPosts.filter { it.category == selectedCategory }
+        }
+
+        // 4. いいね + フォロー状態マッピング
         val postsWithLike = filteredPosts.map { post ->
             ComyPostWithLike(
                 post = post,
-                isLiked = post.id in likedPostIds
+                isLiked = post.id in likedPostIds,
+                isFollowingAuthor = post.userId in followingUserIds
             )
         }
 
@@ -267,6 +309,7 @@ class ComyViewModel(
         val userId = authRepository.getCurrentUserId() ?: return
         val userName = _uiState.value.currentUserName
         val userPhotoUrl = _uiState.value.currentUserPhotoUrl
+        val userLevel = _uiState.value.currentUserLevel
 
         viewModelScope.launch {
             _uiState.update { it.copy(isActionLoading = true) }
@@ -291,6 +334,7 @@ class ComyViewModel(
                     userId = userId,
                     authorName = userName,
                     authorPhotoUrl = userPhotoUrl,
+                    authorLevel = userLevel,
                     title = title,
                     content = content,
                     category = category,
@@ -469,6 +513,86 @@ class ComyViewModel(
     fun isSelectedPostLiked(): Boolean {
         val postId = _uiState.value.selectedPost?.id ?: return false
         return postId in likedPostIds
+    }
+
+    // ===== フィードモード =====
+
+    fun setFeedMode(mode: ComyFeedMode) {
+        _uiState.update { it.copy(feedMode = mode) }
+        updatePostList()
+    }
+
+    // ===== フォロー =====
+
+    fun toggleFollow(targetUserId: String) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        if (targetUserId == userId) return
+
+        viewModelScope.launch {
+            try {
+                val isFollowing = targetUserId in followingUserIds
+                if (isFollowing) {
+                    comyRepository.unfollowUser(userId, targetUserId)
+                    followingUserIds = followingUserIds - targetUserId
+                } else {
+                    comyRepository.followUser(userId, targetUserId)
+                    followingUserIds = followingUserIds + targetUserId
+                }
+                updatePostList()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "フォロー操作に失敗しました") }
+            }
+        }
+    }
+
+    // ===== ブロック =====
+
+    fun blockUser(targetUserId: String) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        if (targetUserId == userId) return
+
+        viewModelScope.launch {
+            try {
+                comyRepository.blockUser(userId, targetUserId)
+                blockedUserIds = blockedUserIds + targetUserId
+                if (targetUserId in followingUserIds) {
+                    comyRepository.unfollowUser(userId, targetUserId)
+                    followingUserIds = followingUserIds - targetUserId
+                }
+                updatePostList()
+                _uiState.update {
+                    it.copy(
+                        isPostDetailVisible = false,
+                        selectedPost = null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "ブロックに失敗しました") }
+            }
+        }
+    }
+
+    // ===== マイページ =====
+
+    fun showMyPage() {
+        _uiState.update { it.copy(isMyPageVisible = true) }
+    }
+
+    fun closeMyPage() {
+        _uiState.update { it.copy(isMyPageVisible = false) }
+    }
+
+    fun getMyPosts(): List<ComyPostWithLike> {
+        val userId = _uiState.value.currentUserId
+        return allPosts
+            .filter { it.userId == userId }
+            .map { post ->
+                ComyPostWithLike(
+                    post = post,
+                    isLiked = post.id in likedPostIds,
+                    isFollowingAuthor = false
+                )
+            }
     }
 
     /**

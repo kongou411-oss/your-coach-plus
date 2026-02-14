@@ -23,6 +23,8 @@ import com.yourcoach.plus.shared.ui.components.PlatformAsyncImage
 import com.yourcoach.plus.shared.ui.theme.AccentOrange
 import com.yourcoach.plus.shared.ui.theme.Primary
 
+// Note: PaddingValues is included via import androidx.compose.foundation.layout.*
+
 /**
  * 投稿詳細BottomSheet
  */
@@ -35,10 +37,13 @@ fun PostDetailSheet(
     isLiked: Boolean,
     isLoading: Boolean,
     isOwnPost: Boolean = false,
+    isFollowingAuthor: Boolean = false,
     onDismiss: () -> Unit,
     onLikeClick: () -> Unit,
     onAddComment: (String) -> Unit,
-    onDeleteClick: () -> Unit = {}
+    onDeleteClick: () -> Unit = {},
+    onFollowClick: () -> Unit = {},
+    onBlockClick: () -> Unit = {}
 ) {
     var commentText by remember { mutableStateOf("") }
 
@@ -58,8 +63,11 @@ fun PostDetailSheet(
                 post = post,
                 isLiked = isLiked,
                 isOwnPost = isOwnPost,
+                isFollowingAuthor = isFollowingAuthor,
                 onLikeClick = onLikeClick,
-                onDeleteClick = onDeleteClick
+                onDeleteClick = onDeleteClick,
+                onFollowClick = onFollowClick,
+                onBlockClick = onBlockClick
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -159,9 +167,14 @@ private fun PostDetailContent(
     post: ComyPost,
     isLiked: Boolean,
     isOwnPost: Boolean,
+    isFollowingAuthor: Boolean,
     onLikeClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onFollowClick: () -> Unit,
+    onBlockClick: () -> Unit
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         // ヘッダー（著者情報）
         Row(
@@ -169,7 +182,10 @@ private fun PostDetailContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
                 // アバター
                 Box(
                     modifier = Modifier
@@ -185,17 +201,42 @@ private fun PostDetailContent(
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = post.authorName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = formatRelativeTime(post.createdAt),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Text(
-                        text = post.authorName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = formatRelativeTime(post.createdAt),
+                        text = "Lv.${post.authorLevel}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = AccentOrange
                     )
+                }
+                // フォローボタン（他人の投稿のみ）
+                if (!isOwnPost) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = onFollowClick,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Text(
+                            text = if (isFollowingAuthor) "フォロー中" else "フォロー",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isFollowingAuthor) MaterialTheme.colorScheme.onSurfaceVariant else AccentOrange
+                        )
+                    }
                 }
             }
 
@@ -227,6 +268,40 @@ private fun PostDetailContent(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
+                    }
+                }
+                if (!isOwnPost) {
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "メニュー",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("ブロック", color = Color.Red) },
+                                onClick = {
+                                    showMenu = false
+                                    onBlockClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Block,
+                                        contentDescription = null,
+                                        tint = Color.Red
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }

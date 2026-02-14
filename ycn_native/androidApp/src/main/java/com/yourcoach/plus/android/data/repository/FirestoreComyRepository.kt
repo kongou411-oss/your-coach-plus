@@ -123,6 +123,7 @@ class FirestoreComyRepository : ComyRepository {
                 "userId" to post.userId,
                 "authorName" to post.authorName,
                 "authorPhotoUrl" to post.authorPhotoUrl,
+                "authorLevel" to post.authorLevel,
                 "title" to post.title,
                 "content" to post.content,
                 "category" to post.category.name.lowercase(),
@@ -322,6 +323,120 @@ class FirestoreComyRepository : ComyRepository {
         }
     }
 
+    // ===== フォロー =====
+
+    private val followsCollection = firestore.collection("follows")
+
+    private fun userBlocksCollection(userId: String) =
+        firestore.collection("users").document(userId).collection("blocks")
+
+    override suspend fun followUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            val docId = "${currentUserId}_${targetUserId}"
+            val data = mapOf(
+                "followerId" to currentUserId,
+                "followingId" to targetUserId,
+                "createdAt" to System.currentTimeMillis()
+            )
+            firestore.runTransaction { transaction ->
+                val followRef = followsCollection.document(docId)
+                val currentUserRef = firestore.collection("users").document(currentUserId)
+                val targetUserRef = firestore.collection("users").document(targetUserId)
+
+                transaction.set(followRef, data)
+                transaction.update(currentUserRef, "followingCount", FieldValue.increment(1))
+                transaction.update(targetUserRef, "followerCount", FieldValue.increment(1))
+            }.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(com.yourcoach.plus.shared.util.AppError.DatabaseError("フォローに失敗しました", e))
+        }
+    }
+
+    override suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            val docId = "${currentUserId}_${targetUserId}"
+            firestore.runTransaction { transaction ->
+                val followRef = followsCollection.document(docId)
+                val currentUserRef = firestore.collection("users").document(currentUserId)
+                val targetUserRef = firestore.collection("users").document(targetUserId)
+
+                transaction.delete(followRef)
+                transaction.update(currentUserRef, "followingCount", FieldValue.increment(-1))
+                transaction.update(targetUserRef, "followerCount", FieldValue.increment(-1))
+            }.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(com.yourcoach.plus.shared.util.AppError.DatabaseError("フォロー解除に失敗しました", e))
+        }
+    }
+
+    override suspend fun getFollowingUserIds(userId: String): Result<Set<String>> {
+        return try {
+            val docs = followsCollection
+                .whereEqualTo("followerId", userId)
+                .get()
+                .await()
+            val ids = docs.documents.mapNotNull { it.getString("followingId") }.toSet()
+            Result.success(ids)
+        } catch (e: Exception) {
+            Result.failure(com.yourcoach.plus.shared.util.AppError.DatabaseError("フォロー情報の取得に失敗しました", e))
+        }
+    }
+
+    override fun observeFollowingUserIds(userId: String): Flow<Set<String>> = callbackFlow {
+        val listener = followsCollection
+            .whereEqualTo("followerId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreComy", "observeFollowingUserIds error", error)
+                    trySend(emptySet())
+                    return@addSnapshotListener
+                }
+                val ids = snapshot?.documents?.mapNotNull { it.getString("followingId") }?.toSet() ?: emptySet()
+                trySend(ids)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    // ===== ブロック =====
+
+    override suspend fun blockUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            val data = mapOf(
+                "blockedUserId" to targetUserId,
+                "createdAt" to System.currentTimeMillis()
+            )
+            userBlocksCollection(currentUserId).document(targetUserId).set(data).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(com.yourcoach.plus.shared.util.AppError.DatabaseError("ブロックに失敗しました", e))
+        }
+    }
+
+    override suspend fun unblockUser(currentUserId: String, targetUserId: String): Result<Unit> {
+        return try {
+            userBlocksCollection(currentUserId).document(targetUserId).delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(com.yourcoach.plus.shared.util.AppError.DatabaseError("ブロック解除に失敗しました", e))
+        }
+    }
+
+    override fun observeBlockedUserIds(userId: String): Flow<Set<String>> = callbackFlow {
+        val listener = userBlocksCollection(userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("FirestoreComy", "observeBlockedUserIds error", error)
+                    trySend(emptySet())
+                    return@addSnapshotListener
+                }
+                val ids = snapshot?.documents?.mapNotNull { it.id }?.toSet() ?: emptySet()
+                trySend(ids)
+            }
+        awaitClose { listener.remove() }
+    }
+
     // ===== ヘルパー関数 =====
 
     /**
@@ -340,6 +455,7 @@ class FirestoreComyRepository : ComyRepository {
             userId = data["userId"] as? String ?: "",
             authorName = data["authorName"] as? String ?: "",
             authorPhotoUrl = data["authorPhotoUrl"] as? String,
+            authorLevel = (data["authorLevel"] as? Number)?.toInt() ?: 1,
             title = data["title"] as? String ?: "",
             content = data["content"] as? String ?: "",
             category = category,
