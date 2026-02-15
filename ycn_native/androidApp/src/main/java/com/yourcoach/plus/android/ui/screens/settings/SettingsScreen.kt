@@ -1341,7 +1341,116 @@ private fun OtherSettingsTab(
             }
         }
 
+        item {
+            SectionHeader("出典・参考文献")
+        }
+
+        item {
+            SettingsCard {
+                ReferenceSectionItem(
+                    icon = Icons.Default.Restaurant,
+                    title = "栄養データ",
+                    references = listOf(
+                        "文部科学省「日本食品標準成分表 2023年版（八訂）」",
+                        "厚生労働省「日本人の食事摂取基準（2020年版）」",
+                        "FAO/WHO「Protein Quality Evaluation」— PDCAAS・DIAAS 算出基準",
+                        "Foster-Powell K, et al.「International Table of Glycemic Index」Am J Clin Nutr, 2002",
+                        "Jeukendrup A, Gleeson M「Sport Nutrition」3rd Ed, Human Kinetics, 2019"
+                    )
+                )
+                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+                ReferenceSectionItem(
+                    icon = Icons.Default.FitnessCenter,
+                    title = "運動科学",
+                    references = listOf(
+                        "NSCA「Essentials of Strength Training and Conditioning」4th Ed, Human Kinetics, 2016",
+                        "ACSM「ACSM's Guidelines for Exercise Testing and Prescription」11th Ed, Wolters Kluwer, 2022",
+                        "Schoenfeld BJ「Science and Development of Muscle Hypertrophy」2nd Ed, Human Kinetics, 2021",
+                        "Ainsworth BE, et al.「Compendium of Physical Activities」Med Sci Sports Exerc, 2011",
+                        "Helms ER, et al.「Evidence-based Recommendations for Natural Bodybuilding Contest Preparation」JISSN, 2014"
+                    )
+                )
+                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+                ReferenceSectionItem(
+                    icon = Icons.Default.SmartToy,
+                    title = "AI分析について",
+                    references = listOf(
+                        "本アプリのAI分析機能は Google Gemini（大規模言語モデル）を使用しています",
+                        "AIの回答は参考情報であり、医療・栄養指導の代替ではありません",
+                        "個別の健康上の判断は、必ず医師・管理栄養士等の専門家にご相談ください",
+                        "AI分析の精度向上のため、入力データが匿名化された形で処理されます",
+                        "食事写真解析にはGoogle Gemini Vision（gemini-2.5-flash）を使用しています"
+                    )
+                )
+            }
+        }
+
         item { Spacer(modifier = Modifier.height(60.dp)) }
+    }
+}
+
+/**
+ * 出典セクション内の展開可能な項目
+ */
+@Composable
+private fun ReferenceSectionItem(
+    icon: ImageVector,
+    title: String,
+    references: List<String>
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded }
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "閉じる" else "開く",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        if (expanded) {
+            Spacer(modifier = Modifier.height(12.dp))
+            references.forEachIndexed { index, ref ->
+                Row(
+                    modifier = Modifier.padding(start = 40.dp, bottom = if (index < references.size - 1) 8.dp else 0.dp)
+                ) {
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 8.dp, top = 1.dp)
+                    )
+                    Text(
+                        text = ref,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 
