@@ -77,9 +77,9 @@ data class UserProfile(
     // カロリー調整値
     val calorieAdjustment: Int = 0,
     // 食材設定
-    val preferredCarbSources: List<String> = listOf("白米", "玄米"),      // 優先炭水化物源
-    val preferredProteinSources: List<String> = listOf("鶏むね肉", "鮭"), // 優先タンパク源
-    val preferredFatSources: List<String> = listOf("オリーブオイル", "アボカド"), // 優先脂質源
+    val preferredCarbSources: List<String> = emptyList(),      // 優先炭水化物源
+    val preferredProteinSources: List<String> = emptyList(),   // 優先タンパク源
+    val preferredFatSources: List<String> = emptyList(),       // 優先脂質源
     val avoidFoods: List<String> = emptyList(),                          // 避けたい食材
     val dietaryPreferences: List<String> = emptyList(),
     val allergies: List<String> = emptyList(),

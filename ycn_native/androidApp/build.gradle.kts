@@ -86,7 +86,6 @@ dependencies {
     // AndroidX
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
-    implementation(libs.navigation.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
 
@@ -95,6 +94,9 @@ dependencies {
     implementation(libs.bundles.firebase)
     implementation(libs.firebase.appcheck.playintegrity)
     debugImplementation(libs.firebase.appcheck.debug)
+
+    // Voyager Navigation
+    implementation(libs.bundles.voyager)
 
     // Koin DI
     implementation(libs.bundles.koin)

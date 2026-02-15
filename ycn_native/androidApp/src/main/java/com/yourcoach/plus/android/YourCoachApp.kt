@@ -10,6 +10,7 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 import com.yourcoach.plus.android.di.appModule
 import com.yourcoach.plus.shared.di.platformModule
 import com.yourcoach.plus.shared.di.sharedModule
+import com.yourcoach.plus.shared.notification.PushNotificationHelper
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -22,6 +23,9 @@ class YourCoachApp : Application() {
 
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
+
+        // Initialize PushNotificationHelper context
+        PushNotificationHelper.applicationContext = this
 
         // Initialize Firebase App Check
         val firebaseAppCheck = FirebaseAppCheck.getInstance()

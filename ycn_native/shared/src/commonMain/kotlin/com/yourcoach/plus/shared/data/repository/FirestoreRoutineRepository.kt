@@ -1,7 +1,9 @@
 package com.yourcoach.plus.shared.data.repository
 
 import com.yourcoach.plus.shared.domain.model.*
+import com.yourcoach.plus.shared.domain.repository.MealRepository
 import com.yourcoach.plus.shared.domain.repository.RoutineRepository
+import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import com.yourcoach.plus.shared.util.DateUtil
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.Direction
@@ -13,7 +15,10 @@ import kotlinx.datetime.Clock
 /**
  * Firestore実装のルーティンリポジトリ (KMP共通)
  */
-class FirestoreRoutineRepository : RoutineRepository {
+class FirestoreRoutineRepository(
+    private val mealRepository: MealRepository,
+    private val workoutRepository: WorkoutRepository
+) : RoutineRepository {
 
     private val firestore by lazy { Firebase.firestore }
 
@@ -164,37 +169,181 @@ class FirestoreRoutineRepository : RoutineRepository {
         routineDay?.isRestDay ?: false
     }
 
-    // ========== ルーティン実行 (未実装 - 共通モジュールでは使用しない) ==========
+    // ========== ルーティン実行 ==========
 
     override suspend fun executeRoutine(
         userId: String,
         date: String,
         routineDay: RoutineDay
-    ): Result<Int> = Result.success(0)
+    ): Result<Int> = runCatching {
+        var count = 0
+
+        // 食事を記録
+        count += executeRoutineMeals(userId, date, routineDay).getOrDefault(0)
+
+        // 運動を記録
+        count += executeRoutineWorkouts(userId, date, routineDay).getOrDefault(0)
+
+        count
+    }
 
     override suspend fun executeRoutineMeals(
         userId: String,
         date: String,
         routineDay: RoutineDay
-    ): Result<Int> = Result.success(0)
+    ): Result<Int> = runCatching {
+        var count = 0
+        val now = Clock.System.now().toEpochMilliseconds()
+        val timestamp = DateUtil.dateStringToTimestamp(date)
+
+        routineDay.meals.forEach { mealTemplate ->
+            val mealType = when (mealTemplate.mealType.lowercase()) {
+                "breakfast" -> MealType.BREAKFAST
+                "lunch" -> MealType.LUNCH
+                "dinner" -> MealType.DINNER
+                "snack" -> MealType.SNACK
+                "supplement" -> MealType.SUPPLEMENT
+                else -> MealType.SNACK
+            }
+
+            val meal = Meal(
+                id = generateUUID(),
+                userId = userId,
+                name = mealTemplate.templateName,
+                type = mealType,
+                items = mealTemplate.items.map { item ->
+                    MealItem(
+                        name = item.name,
+                        amount = item.amount,
+                        unit = item.unit,
+                        calories = item.calories,
+                        protein = item.protein,
+                        carbs = item.carbs,
+                        fat = item.fat,
+                        fiber = item.fiber,
+                        sugar = item.sugar,
+                        saturatedFat = item.saturatedFat
+                    )
+                },
+                totalCalories = mealTemplate.totalCalories,
+                totalProtein = mealTemplate.totalProtein,
+                totalCarbs = mealTemplate.totalCarbs,
+                totalFat = mealTemplate.totalFat,
+                totalFiber = mealTemplate.items.sumOf { it.fiber.toDouble() }.toFloat(),
+                isRoutine = true,
+                routineName = routineDay.name,
+                timestamp = timestamp,
+                createdAt = now
+            )
+
+            mealRepository.addMeal(meal)
+            count++
+        }
+
+        count
+    }
 
     override suspend fun executeRoutineWorkouts(
         userId: String,
         date: String,
         routineDay: RoutineDay
-    ): Result<Int> = Result.success(0)
+    ): Result<Int> = runCatching {
+        var count = 0
+        val now = Clock.System.now().toEpochMilliseconds()
+        val timestamp = DateUtil.dateStringToTimestamp(date)
+
+        routineDay.workouts.forEach { workoutTemplate ->
+            val workout = Workout(
+                id = generateUUID(),
+                userId = userId,
+                name = workoutTemplate.templateName,
+                type = WorkoutType.STRENGTH,
+                exercises = workoutTemplate.exercises.map { exercise ->
+                    Exercise(
+                        name = exercise.name,
+                        category = mapCategoryString(exercise.category),
+                        sets = exercise.sets.takeIf { it > 0 },
+                        reps = exercise.reps.takeIf { it > 0 },
+                        weight = exercise.weight.takeIf { it > 0f },
+                        duration = exercise.duration.takeIf { it > 0 },
+                        caloriesBurned = 0  // 後で計算
+                    )
+                },
+                totalDuration = workoutTemplate.estimatedDuration,
+                totalCaloriesBurned = workoutTemplate.estimatedCaloriesBurned,
+                intensity = WorkoutIntensity.MODERATE,
+                isRoutine = true,
+                routineName = routineDay.name,
+                timestamp = timestamp,
+                createdAt = now
+            )
+
+            workoutRepository.addWorkout(workout)
+            count++
+        }
+
+        count
+    }
+
+    private fun mapCategoryString(category: String): ExerciseCategory {
+        return when (category.lowercase()) {
+            "chest" -> ExerciseCategory.CHEST
+            "back" -> ExerciseCategory.BACK
+            "shoulder" -> ExerciseCategory.SHOULDERS
+            "arm" -> ExerciseCategory.ARMS
+            "leg" -> ExerciseCategory.LEGS
+            "core" -> ExerciseCategory.CORE
+            else -> ExerciseCategory.OTHER
+        }
+    }
 
     // ========== プリセット ==========
 
     override suspend fun getPresetPatterns(): Result<List<RoutinePattern>> = runCatching {
-        emptyList() // プリセットはプラットフォーム固有の実装で提供
+        RoutinePresets.ALL
     }
 
     override suspend fun copyPresetToUser(
         userId: String,
         presetId: String,
         customName: String?
-    ): Result<String> = Result.failure(NotImplementedError("プリセット機能は未実装です"))
+    ): Result<String> = runCatching {
+        val preset = RoutinePresets.ALL.find { it.id == presetId }
+            ?: throw IllegalArgumentException("Preset not found: $presetId")
+
+        val now = Clock.System.now().toEpochMilliseconds()
+        val userPattern = preset.copy(
+            id = generateUUID(),
+            userId = userId,
+            name = customName ?: preset.name,
+            isPreset = false,
+            isActive = true,
+            createdAt = now,
+            updatedAt = now
+        )
+
+        // 既存のアクティブパターンを非アクティブに
+        val activePatterns = firestore.collection("users")
+            .document(userId)
+            .collection("routinePatterns")
+            .where { "isActive" equalTo true }
+            .get()
+
+        firestore.batch().apply {
+            activePatterns.documents.forEach { doc ->
+                update(doc.reference, "isActive" to false)
+            }
+            set(
+                firestore.collection("users")
+                    .document(userId)
+                    .collection("routinePatterns")
+                    .document(userPattern.id),
+                patternToMap(userPattern)
+            )
+        }.commit()
+
+        userPattern.id
+    }
 
     // ========== ヘルパー関数 ==========
 

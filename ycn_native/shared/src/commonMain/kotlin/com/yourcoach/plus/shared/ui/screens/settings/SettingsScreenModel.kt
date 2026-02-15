@@ -35,7 +35,7 @@ data class SettingsUiState(
     val user: User? = null,
     val isPremium: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val appVersion: String = "1.0.0",
+    val appVersion: String = "2.0.6",
     val error: String? = null,
     val isLoggedOut: Boolean = false,
     val isAccountDeleted: Boolean = false,
@@ -118,13 +118,27 @@ class SettingsScreenModel(
                 if (userId != null) {
                     val result = userRepository.getUser(userId)
                     result.onSuccess { user ->
+                        // displayNameが未設定の場合、Auth情報から補完
+                        val enrichedUser = if (user != null && user.displayName.isNullOrBlank()) {
+                            val authUser = authRepository.getCurrentUser()
+                            val authDisplayName = authUser?.displayName?.takeIf { it.isNotBlank() }
+                                ?: authUser?.email?.takeIf { it.isNotBlank() }?.substringBefore("@")
+                            if (authDisplayName != null) {
+                                user.copy(displayName = authDisplayName)
+                            } else {
+                                user
+                            }
+                        } else {
+                            user
+                        }
+
                         _uiState.update {
                             it.copy(
-                                user = user,
-                                isPremium = user?.isPremium ?: false,
-                                freeCredits = user?.freeCredits ?: 0,
-                                paidCredits = user?.paidCredits ?: 0,
-                                organizationName = user?.organizationName ?: user?.b2b2cOrgName,
+                                user = enrichedUser,
+                                isPremium = enrichedUser?.isPremium ?: false,
+                                freeCredits = enrichedUser?.freeCredits ?: 0,
+                                paidCredits = enrichedUser?.paidCredits ?: 0,
+                                organizationName = enrichedUser?.organizationName ?: enrichedUser?.b2b2cOrgName,
                                 isLoading = false
                             )
                         }
@@ -164,12 +178,21 @@ class SettingsScreenModel(
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                authRepository.signOut()
-                _uiState.update { it.copy(isLoggedOut = true, isLoading = false) }
+                val result = authRepository.signOut()
+                if (result.isSuccess) {
+                    _uiState.update { it.copy(isLoggedOut = true, isLoading = false) }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            error = result.exceptionOrNull()?.message ?: "ログアウトに失敗しました",
+                            isLoading = false
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        error = e.message ?: "Logout failed",
+                        error = e.message ?: "ログアウトに失敗しました",
                         isLoading = false
                     )
                 }
@@ -377,6 +400,39 @@ class SettingsScreenModel(
      */
     fun getTotalCredits(): Int {
         return _uiState.value.freeCredits + _uiState.value.paidCredits
+    }
+
+    /**
+     * デバッグ用: 無料クレジット100追加
+     */
+    fun addFreeCredits() {
+        screenModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isAddingCredits = true) }
+            try {
+                val functions = Firebase.functions("asia-northeast1")
+                val data = hashMapOf("amount" to 100)
+
+                val result = functions.httpsCallable("debugAddCredits").invoke(data)
+                val response = result.data() as? Map<*, *>
+                val newTotal = (response?.get("newTotal") as? Number)?.toInt() ?: 0
+                val message = response?.get("message") as? String ?: "クレジットを追加しました"
+
+                _uiState.update {
+                    it.copy(
+                        isAddingCredits = false,
+                        creditsAddedMessage = "$message（合計: $newTotal）"
+                    )
+                }
+                loadUserInfo()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isAddingCredits = false,
+                        error = "クレジットの追加に失敗しました: ${e.message}"
+                    )
+                }
+            }
+        }
     }
 
     // ========== Organization ==========

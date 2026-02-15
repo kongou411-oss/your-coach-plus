@@ -152,37 +152,43 @@ class FirestoreScoreRepository : ScoreRepository {
 
     override suspend fun useStreakFreeze(userId: String): Result<Boolean> {
         return try {
-            val doc = userDocument(userId).get()
-            val currentFreezes = doc.get<Long?>("streakFreezeAvailable")?.toInt() ?: 0
-
-            if (currentFreezes > 0) {
-                userDocument(userId).update(
-                    mapOf(
-                        "streakFreezeAvailable" to FieldValue.increment(-1),
+            val docRef = userDocument(userId)
+            val result = firestore.runTransaction {
+                val doc = get(docRef)
+                val freezes = doc.get<Long?>("streakFreezeAvailable")?.toInt() ?: 0
+                if (freezes > 0) {
+                    update(docRef, mapOf(
+                        "streakFreezeAvailable" to (freezes - 1),
                         "streakFreezeUsedToday" to true
-                    )
-                )
-                Result.success(true)
-            } else {
-                Result.success(false)
+                    ))
+                    true
+                } else {
+                    false
+                }
             }
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("ストリークフリーズの使用に失敗しました", e))
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     override suspend fun getBadges(userId: String): Result<List<Badge>> {
         return try {
             val doc = userDocument(userId).get()
             if (doc.exists) {
-                val badgeIds = try {
-                    doc.get<List<String>?>("earnedBadges") ?: emptyList()
+                val earnedBadges = try {
+                    doc.get<List<Map<String, Any?>>?>("badges") ?: emptyList()
                 } catch (e: Exception) {
                     emptyList()
                 }
-                // バッジ定義からIDに一致するものを取得
-                val badges = badgeIds.mapNotNull { id ->
-                    com.yourcoach.plus.shared.domain.repository.BadgeDefinitions.getBadgeById(id)?.copy(isEarned = true)
+                val badges = earnedBadges.mapNotNull { badgeData ->
+                    val badgeId = badgeData["badgeId"] as? String ?: return@mapNotNull null
+                    val earnedAt = (badgeData["earnedAt"] as? Number)?.toLong()
+                    com.yourcoach.plus.shared.domain.repository.BadgeDefinitions.getBadgeById(badgeId)?.copy(
+                        isEarned = true,
+                        earnedAt = earnedAt
+                    )
                 }
                 Result.success(badges)
             } else {
@@ -195,9 +201,13 @@ class FirestoreScoreRepository : ScoreRepository {
 
     override suspend fun awardBadge(userId: String, badgeId: String): Result<Unit> {
         return try {
+            val badgeData = mapOf(
+                "badgeId" to badgeId,
+                "earnedAt" to DateUtil.currentTimestamp()
+            )
             userDocument(userId).update(
                 mapOf(
-                    "earnedBadges" to FieldValue.arrayUnion(badgeId)
+                    "badges" to FieldValue.arrayUnion(badgeData)
                 )
             )
             Result.success(Unit)
@@ -208,13 +218,18 @@ class FirestoreScoreRepository : ScoreRepository {
 
     override suspend fun addXp(userId: String, amount: Int, reason: String): Result<Int> {
         return try {
-            userDocument(userId).update(
-                mapOf(
-                    "experience" to FieldValue.increment(amount)
-                )
-            )
-            val doc = userDocument(userId).get()
-            val newXp = doc.get<Long?>("experience")?.toInt() ?: amount
+            val docRef = userDocument(userId)
+            val newXp = firestore.runTransaction {
+                val doc = get(docRef)
+                val currentXp = doc.get<Long?>("experience")?.toInt() ?: 0
+                val newTotal = currentXp + amount
+                update(docRef, mapOf(
+                    "experience" to newTotal,
+                    "lastXpReason" to reason,
+                    "lastXpAt" to DateUtil.currentTimestamp()
+                ))
+                newTotal
+            }
             Result.success(newXp)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("XPの追加に失敗しました", e))
@@ -254,6 +269,16 @@ class FirestoreScoreRepository : ScoreRepository {
                     worstDay = worstDay,
                     scoresByAxis = mapOf(
                         "food" to scores.map { it.foodScore }.average().toFloat(),
+                        "calorie" to scores.map { it.calorieScore }.average().toFloat(),
+                        "protein" to scores.map { it.proteinScore }.average().toFloat(),
+                        "fat" to scores.map { it.fatScore }.average().toFloat(),
+                        "carbs" to scores.map { it.carbsScore }.average().toFloat(),
+                        "diaas" to scores.map { it.diaasScore }.average().toFloat(),
+                        "fattyAcid" to scores.map { it.fattyAcidScore }.average().toFloat(),
+                        "gl" to scores.map { it.glScore }.average().toFloat(),
+                        "fiber" to scores.map { it.fiberScore }.average().toFloat(),
+                        "vitamin" to scores.map { it.vitaminScore }.average().toFloat(),
+                        "mineral" to scores.map { it.mineralScore }.average().toFloat(),
                         "exercise" to scores.map { it.exerciseScore }.average().toFloat(),
                         "condition" to scores.map { it.conditionScore }.average().toFloat()
                     )
@@ -270,18 +295,35 @@ class FirestoreScoreRepository : ScoreRepository {
         override: CalorieOverride
     ): Result<Unit> {
         return try {
-            scoresCollection(userId).document(date).update(
-                mapOf(
-                    "calorieOverride" to mapOf(
-                        "templateName" to override.templateName,
-                        "calorieAdjustment" to override.calorieAdjustment,
-                        "pfcOverride" to override.pfcOverride?.let {
-                            mapOf("protein" to it.protein, "fat" to it.fat, "carbs" to it.carbs)
-                        },
-                        "appliedAt" to DateUtil.currentTimestamp()
-                    )
-                )
+            val overrideMap = mutableMapOf<String, Any?>(
+                "templateName" to override.templateName,
+                "calorieAdjustment" to override.calorieAdjustment,
+                "appliedAt" to DateUtil.currentTimestamp()
             )
+            override.pfcOverride?.let { pfc ->
+                overrideMap["pfcOverride"] = mapOf(
+                    "protein" to pfc.protein,
+                    "fat" to pfc.fat,
+                    "carbs" to pfc.carbs
+                )
+            }
+
+            try {
+                scoresCollection(userId).document(date).update(
+                    mapOf("calorieOverride" to overrideMap)
+                )
+            } catch (e: Exception) {
+                // ドキュメントが存在しない場合は新規作成
+                scoresCollection(userId).document(date).set(
+                    mapOf(
+                        "userId" to userId,
+                        "date" to date,
+                        "calorieOverride" to overrideMap,
+                        "updatedAt" to DateUtil.currentTimestamp()
+                    ),
+                    merge = true
+                )
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("カロリー調整の適用に失敗しました", e))
@@ -315,9 +357,22 @@ class FirestoreScoreRepository : ScoreRepository {
 
     override suspend fun updateRestDayStatus(userId: String, date: String, isRestDay: Boolean): Result<Unit> {
         return try {
-            scoresCollection(userId).document(date).update(
-                mapOf("isManualRestDay" to isRestDay)
-            )
+            try {
+                scoresCollection(userId).document(date).update(
+                    mapOf("isManualRestDay" to isRestDay)
+                )
+            } catch (e: Exception) {
+                // ドキュメントが存在しない場合は新規作成
+                scoresCollection(userId).document(date).set(
+                    mapOf(
+                        "userId" to userId,
+                        "date" to date,
+                        "isManualRestDay" to isRestDay,
+                        "updatedAt" to DateUtil.currentTimestamp()
+                    ),
+                    merge = true
+                )
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("休養日ステータスの更新に失敗しました", e))

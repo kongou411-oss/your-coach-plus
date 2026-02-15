@@ -43,6 +43,7 @@ class FirestoreCustomExerciseRepository : CustomExerciseRepository {
         return try {
             val snapshot = customExercisesCollection(userId)
                 .orderBy("usageCount", Direction.DESCENDING)
+                .limit(100)
                 .get()
 
             val exercises = snapshot.documents.mapNotNull { doc ->
@@ -120,7 +121,6 @@ class FirestoreCustomExerciseRepository : CustomExerciseRepository {
     // ========== Mapping Functions ==========
 
     private fun exerciseToMap(exercise: CustomExercise): Map<String, Any?> = mapOf(
-        "id" to exercise.id,
         "userId" to exercise.userId,
         "name" to exercise.name,
         "category" to exercise.category.name,

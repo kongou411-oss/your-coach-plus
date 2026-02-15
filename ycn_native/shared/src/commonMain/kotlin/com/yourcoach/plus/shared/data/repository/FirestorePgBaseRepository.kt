@@ -64,7 +64,7 @@ class FirestorePgBaseRepository : PgBaseRepository {
     override suspend fun getArticlesByCategory(category: PgBaseCategory): Result<List<PgBaseArticle>> {
         return try {
             val snapshot = articlesCollection
-                .where { "category" equalTo category.name }
+                .where { "category" equalTo category.name.lowercase() }
                 .orderBy("order", Direction.ASCENDING)
                 .get()
 
@@ -119,7 +119,8 @@ class FirestorePgBaseRepository : PgBaseRepository {
                     "articleId" to articleId,
                     "isCompleted" to true,
                     "completedAt" to DateUtil.currentTimestamp()
-                )
+                ),
+                merge = true
             )
             Result.success(Unit)
         } catch (e: Exception) {

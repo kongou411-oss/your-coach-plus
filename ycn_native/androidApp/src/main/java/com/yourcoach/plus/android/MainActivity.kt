@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.yourcoach.plus.android.ui.navigation.YourCoachNavHost
+import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.transitions.SlideTransition
 import com.yourcoach.plus.android.ui.theme.YourCoachTheme
+import com.yourcoach.plus.shared.notification.PushNotificationHelper
+import com.yourcoach.plus.shared.ui.screens.splash.SplashScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -18,6 +21,9 @@ class MainActivity : ComponentActivity() {
         // installSplashScreen()
 
         super.onCreate(savedInstanceState)
+
+        // Provide activity reference for notification permission requests
+        PushNotificationHelper.currentActivity = this
 
         // Enable edge-to-edge display
         enableEdgeToEdge()
@@ -28,7 +34,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    YourCoachNavHost()
+                    Navigator(screen = SplashScreen()) { navigator ->
+                        SlideTransition(navigator)
+                    }
                 }
             }
         }

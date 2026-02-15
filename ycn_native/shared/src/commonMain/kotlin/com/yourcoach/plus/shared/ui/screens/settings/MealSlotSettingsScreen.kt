@@ -1,9 +1,11 @@
 package com.yourcoach.plus.shared.ui.screens.settings
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -11,12 +13,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.yourcoach.plus.shared.domain.model.TrainingStyle
 import com.yourcoach.plus.shared.ui.theme.*
 
 class MealSlotSettingsScreen : Screen {
@@ -28,11 +32,19 @@ class MealSlotSettingsScreen : Screen {
         val uiState by screenModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val snackbarHostState = remember { SnackbarHostState() }
+        var showResetDialog by remember { mutableStateOf(false) }
 
         LaunchedEffect(uiState.saveSuccess) {
             if (uiState.saveSuccess) {
                 snackbarHostState.showSnackbar("設定を保存しました")
                 navigator.pop()
+            }
+        }
+
+        LaunchedEffect(uiState.successMessage) {
+            uiState.successMessage?.let {
+                snackbarHostState.showSnackbar(it)
+                screenModel.clearSuccessMessage()
             }
         }
 
@@ -54,6 +66,9 @@ class MealSlotSettingsScreen : Screen {
                         }
                     },
                     actions = {
+                        IconButton(onClick = { showResetDialog = true }) {
+                            Icon(Icons.Default.Refresh, contentDescription = "リセット")
+                        }
                         TextButton(
                             onClick = { screenModel.saveSettings() },
                             enabled = !uiState.isSaving
@@ -69,110 +84,222 @@ class MealSlotSettingsScreen : Screen {
             }
         ) { paddingValues ->
             if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else {
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .verticalScroll(rememberScrollState())
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 食事回数
-                    MealSlotSectionCard(title = "食事回数") {
-                        Text("1日の食事回数", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            (2..8).forEach { count ->
-                                FilterChip(
-                                    onClick = { screenModel.updateMealsPerDay(count) },
-                                    label = { Text("$count") },
-                                    selected = uiState.mealsPerDay == count,
-                                    modifier = Modifier.weight(1f)
+                    // 説明カード
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Info, null, tint = Primary, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("クエスト連動設定", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Primary)
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "タイムラインの時刻設定とトレーニング連動テンプレートを管理できます。",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
                     }
 
-                    // タイムライン
-                    MealSlotSectionCard(title = "タイムライン") {
-                        TimePickerRow(
-                            label = "起床時刻",
-                            icon = Icons.Default.WbSunny,
-                            currentTime = uiState.wakeUpTime,
-                            onTimeChanged = { screenModel.updateWakeUpTime(it) }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TimePickerRow(
-                            label = "就寝時刻",
-                            icon = Icons.Default.Bedtime,
-                            currentTime = uiState.sleepTime,
-                            onTimeChanged = { screenModel.updateSleepTime(it) }
-                        )
-                        Text(
-                            text = "睡眠は8〜9時間を推奨",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 40.dp, top = 4.dp)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TimePickerRow(
-                            label = "トレーニング時刻",
-                            icon = Icons.Default.FitnessCenter,
-                            currentTime = uiState.trainingTime,
-                            onTimeChanged = { screenModel.updateTrainingTime(it) }
+                    // タイムライン設定セクション
+                    item {
+                        TimelineSettingsSection(
+                            wakeUpTime = uiState.wakeUpTime,
+                            sleepTime = uiState.sleepTime,
+                            trainingTime = uiState.trainingTime,
+                            trainingAfterMeal = uiState.trainingAfterMeal,
+                            trainingDuration = uiState.trainingDuration,
+                            trainingStyle = uiState.trainingStyle,
+                            mealsPerDay = uiState.mealsPerDay,
+                            onWakeUpTimeChange = { screenModel.updateWakeUpTime(it) },
+                            onSleepTimeChange = { screenModel.updateSleepTime(it) },
+                            onTrainingTimeChange = { screenModel.updateTrainingTime(it) },
+                            onTrainingAfterMealChange = { screenModel.updateTrainingAfterMeal(it) },
+                            onTrainingDurationChange = { screenModel.updateTrainingDuration(it) },
+                            onTrainingStyleChange = { screenModel.updateTrainingStyle(it) },
+                            onGenerateTimeline = { screenModel.generateTimelineRoutine() }
                         )
                     }
 
-                    // トレーニング設定
-                    MealSlotSectionCard(title = "トレーニング設定") {
-                        Text(
-                            "トレーニング所要時間: ${uiState.trainingDuration}分",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Slider(
-                            value = uiState.trainingDuration.toFloat(),
-                            onValueChange = { screenModel.updateTrainingDuration(it.toInt()) },
-                            valueRange = 30f..240f,
-                            steps = 13,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("30分", style = MaterialTheme.typography.labelSmall)
-                            Text("240分", style = MaterialTheme.typography.labelSmall)
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text("何食目の後にトレーニング", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            (1..uiState.mealsPerDay).forEach { meal ->
-                                FilterChip(
-                                    onClick = {
-                                        screenModel.updateTrainingAfterMeal(
-                                            if (uiState.trainingAfterMeal == meal) null else meal
-                                        )
-                                    },
-                                    label = { Text("$meal") },
-                                    selected = uiState.trainingAfterMeal == meal,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                        Text(
-                            "※ 選択すると食事スロットがトレーニング前後に最適化されます",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(80.dp))
+                    item { Spacer(modifier = Modifier.height(60.dp)) }
                 }
+            }
+        }
+
+        // リセット確認ダイアログ
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                title = { Text("デフォルトに戻す") },
+                text = { Text("設定をデフォルトに戻しますか？\n\n現在の設定は失われます。") },
+                confirmButton = {
+                    TextButton(onClick = { screenModel.resetToDefault(); showResetDialog = false }) {
+                        Text("リセット", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResetDialog = false }) { Text("キャンセル") }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun TimelineSettingsSection(
+    wakeUpTime: String,
+    sleepTime: String,
+    trainingTime: String,
+    trainingAfterMeal: Int?,
+    trainingDuration: Int,
+    trainingStyle: TrainingStyle,
+    mealsPerDay: Int,
+    onWakeUpTimeChange: (String) -> Unit,
+    onSleepTimeChange: (String) -> Unit,
+    onTrainingTimeChange: (String) -> Unit,
+    onTrainingAfterMealChange: (Int?) -> Unit,
+    onTrainingDurationChange: (Int) -> Unit,
+    onTrainingStyleChange: (TrainingStyle) -> Unit,
+    onGenerateTimeline: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Schedule, null, tint = Primary, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("タイムライン設定", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            }
+
+            Text(
+                "起床・就寝・トレーニング時刻を設定すると、食事の推奨タイミングが自動生成されます。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // 起床時刻
+            TimePickerRow(label = "起床", icon = Icons.Default.WbSunny, currentTime = wakeUpTime, onTimeChanged = onWakeUpTimeChange)
+
+            // 就寝時刻
+            TimePickerRow(label = "就寝", icon = Icons.Default.Bedtime, currentTime = sleepTime, onTimeChanged = onSleepTimeChange)
+            Text("睡眠は8〜9時間を推奨", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 40.dp, top = 4.dp))
+
+            // トレーニング時刻
+            TimePickerRow(label = "トレーニング", icon = Icons.Default.FitnessCenter, currentTime = trainingTime, onTimeChanged = onTrainingTimeChange)
+
+            // トレーニング前食事
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                var showTrainingMealHelp by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("トレーニング前の食事番号は？", style = MaterialTheme.typography.bodyMedium)
+                    IconButton(onClick = { showTrainingMealHelp = true }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (showTrainingMealHelp) {
+                    AlertDialog(
+                        onDismissRequest = { showTrainingMealHelp = false },
+                        confirmButton = { TextButton(onClick = { showTrainingMealHelp = false }) { Text("OK") } },
+                        title = { Text("トレーニング前の食事番号は？") },
+                        text = { Text("何食目の後にトレーニングを行うかを選択します。\n\n例: 「3」を選択 → 3食目がトレーニング2時間前の食事として配置され、4食目がトレーニング直後に自動配置されます。\n\nタイムラインの食事タイミングとトレーニング前後の栄養配分に影響します。") }
+                    )
+                }
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    (1..mealsPerDay).forEach { mealNum ->
+                        FilterChip(
+                            selected = trainingAfterMeal == mealNum,
+                            onClick = { onTrainingAfterMealChange(if (trainingAfterMeal == mealNum) null else mealNum) },
+                            label = { Text("$mealNum") }
+                        )
+                    }
+                }
+            }
+
+            // トレーニング時間
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("トレーニング時間", style = MaterialTheme.typography.bodyMedium)
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(60 to "1h", 90 to "1.5h", 120 to "2h", 150 to "2.5h", 180 to "3h").forEach { (minutes, label) ->
+                        FilterChip(
+                            selected = trainingDuration == minutes,
+                            onClick = { onTrainingDurationChange(minutes) },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+            }
+
+            // トレーニングスタイル
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                var showStyleHelp by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("トレーニングスタイル", style = MaterialTheme.typography.bodyMedium)
+                    IconButton(onClick = { showStyleHelp = true }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Info, "ヘルプ", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                if (showStyleHelp) {
+                    AlertDialog(
+                        onDismissRequest = { showStyleHelp = false },
+                        confirmButton = { TextButton(onClick = { showStyleHelp = false }) { Text("OK") } },
+                        title = { Text("トレーニングスタイル") },
+                        text = { Text("クエストで生成されるワークアウトのレップ数に反映されます。\n\nパワー - 高重量・低レップ（5回/セット）。筋力向上向け\nパンプ - 中重量・高レップ（10回/セット）。筋肥大・ボディメイク向け") }
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TrainingStyle.entries.forEach { style ->
+                        FilterChip(
+                            selected = trainingStyle == style,
+                            onClick = { onTrainingStyleChange(style) },
+                            label = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(style.displayName)
+                                    Text("${style.repsPerSet}回/セット", style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            // タイムライン生成ボタン
+            Button(
+                onClick = onGenerateTimeline,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("タイムラインを自動生成")
             }
         }
     }
@@ -190,22 +317,22 @@ private fun TimePickerRow(
     val minutes = currentTime.substringAfter(":").toIntOrNull() ?: 0
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { showTimePicker = true }
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = Primary, modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = Primary, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Text(label, style = MaterialTheme.typography.bodyMedium)
         }
-        FilledTonalButton(onClick = { showTimePicker = true }) {
-            Text(currentTime)
-        }
+        Text(currentTime, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Primary)
     }
 
     if (showTimePicker) {
-        // Simple time picker using dialog with hour/minute selection
         var selectedHour by remember { mutableStateOf(hours) }
         var selectedMinute by remember { mutableStateOf(minutes / 30 * 30) }
 
@@ -215,24 +342,18 @@ private fun TimePickerRow(
             text = {
                 Column {
                     Text("時", style = MaterialTheme.typography.labelMedium)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        // Show common hours in rows
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            for (row in 0..2) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    for (col in 0..7) {
-                                        val h = row * 8 + col
-                                        if (h < 24) {
-                                            FilterChip(
-                                                onClick = { selectedHour = h },
-                                                label = { Text("$h", style = MaterialTheme.typography.labelSmall) },
-                                                selected = selectedHour == h,
-                                                modifier = Modifier.width(44.dp)
-                                            )
-                                        }
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        for (row in 0..2) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                for (col in 0..7) {
+                                    val h = row * 8 + col
+                                    if (h < 24) {
+                                        FilterChip(
+                                            onClick = { selectedHour = h },
+                                            label = { Text("$h", style = MaterialTheme.typography.labelSmall) },
+                                            selected = selectedHour == h,
+                                            modifier = Modifier.width(44.dp)
+                                        )
                                     }
                                 }
                             }
@@ -255,30 +376,11 @@ private fun TimePickerRow(
                 TextButton(onClick = {
                     onTimeChanged("${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}")
                     showTimePicker = false
-                }) {
-                    Text("OK")
-                }
+                }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text("キャンセル")
-                }
+                TextButton(onClick = { showTimePicker = false }) { Text("キャンセル") }
             }
         )
-    }
-}
-
-@Composable
-private fun MealSlotSectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
-            content()
-        }
     }
 }

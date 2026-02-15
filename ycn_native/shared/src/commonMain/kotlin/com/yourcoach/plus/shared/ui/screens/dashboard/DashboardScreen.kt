@@ -1,36 +1,33 @@
 package com.yourcoach.plus.shared.ui.screens.dashboard
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
+import com.yourcoach.plus.shared.data.database.ExerciseDatabase
+import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.ui.components.*
+import com.yourcoach.plus.shared.ui.screens.main.LocalBottomBarStateUpdater
 import com.yourcoach.plus.shared.ui.screens.main.LocalMainNavigator
 import com.yourcoach.plus.shared.ui.screens.analysis.AnalysisScreen
 import com.yourcoach.plus.shared.ui.screens.meal.AddMealScreen
@@ -57,6 +54,26 @@ class DashboardScreen : Screen {
         val navigator = LocalMainNavigator.current
         val snackbarHostState = remember { SnackbarHostState() }
         var showMicroDetailDialog by remember { mutableStateOf(false) }
+        val updateBottomBar = LocalBottomBarStateUpdater.current
+
+        // MainScreenのExpandableBottomBarに状態を反映
+        val expProgress = uiState.user?.profile?.calculateExpProgress()
+        LaunchedEffect(
+            expProgress, uiState.isGeneratingQuest, uiState.customQuest
+        ) {
+            updateBottomBar(BottomBarState(
+                level = expProgress?.level ?: 1,
+                expCurrent = expProgress?.expCurrent ?: 0,
+                expRequired = expProgress?.expRequired ?: 100,
+                progressPercent = expProgress?.progressPercent ?: 0,
+                freeCredits = uiState.user?.freeCredits ?: 0,
+                paidCredits = uiState.user?.paidCredits ?: 0,
+                onAnalysisClick = { navigator?.push(AnalysisScreen()) },
+                onGenerateQuestClick = { screenModel.generateQuest() },
+                isGeneratingQuest = uiState.isGeneratingQuest,
+                hasCustomQuest = uiState.customQuest != null
+            ))
+        }
 
         // エラー表示
         LaunchedEffect(uiState.error) {
@@ -270,24 +287,21 @@ class DashboardScreen : Screen {
                                         date = uiState.date
                                     )
 
+                                    // RM記録セクション
+                                    if (uiState.latestRmRecords.isNotEmpty() || uiState.workouts.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        RmRecordSection(
+                                            rmRecords = uiState.latestRmRecords,
+                                            onEditRm = { screenModel.showRmEditDialog(it) },
+                                            onDeleteRm = { screenModel.deleteRmRecord(it) },
+                                            onAddRm = { screenModel.showRmAddDialog() }
+                                        )
+                                    }
+
                                     Spacer(modifier = Modifier.height(100.dp))
                                 }
                             }
                         }
-
-                        // 展開可能なボトムセクション
-                        val expProgress = uiState.user?.profile?.calculateExpProgress()
-                        ExpandableBottomSection(
-                            level = expProgress?.level,
-                            expCurrent = expProgress?.expCurrent,
-                            expRequired = expProgress?.expRequired,
-                            progressPercent = expProgress?.progressPercent,
-                            freeCredits = uiState.user?.freeCredits,
-                            paidCredits = uiState.user?.paidCredits,
-                            onAnalysisClick = { navigator?.push(AnalysisScreen()) },
-                            onGenerateQuestClick = { screenModel.generateQuest() },
-                            isGeneratingQuest = uiState.isGeneratingQuest
-                        )
                     }
                 }
 
@@ -472,294 +486,844 @@ class DashboardScreen : Screen {
                 }
             )
         }
+
+        // 食事編集ダイアログ
+        if (uiState.showMealEditDialog && uiState.editingMeal != null) {
+            MealEditDialog(
+                meal = uiState.editingMeal!!,
+                onDismiss = { screenModel.hideMealEditDialog() },
+                onSave = { updatedMeal -> screenModel.updateMeal(updatedMeal) },
+                onDelete = {
+                    screenModel.deleteMeal(uiState.editingMeal!!)
+                    screenModel.hideMealEditDialog()
+                }
+            )
+        }
+
+        // 運動編集ダイアログ
+        if (uiState.showWorkoutEditDialog && uiState.editingWorkout != null) {
+            WorkoutEditDialog(
+                workout = uiState.editingWorkout!!,
+                onDismiss = { screenModel.hideWorkoutEditDialog() },
+                onSave = { updatedWorkout -> screenModel.updateWorkout(updatedWorkout) },
+                onDelete = {
+                    screenModel.deleteWorkout(uiState.editingWorkout!!)
+                    screenModel.hideWorkoutEditDialog()
+                }
+            )
+        }
+
+        // RM編集ダイアログ
+        if (uiState.showRmEditDialog && uiState.editingRmRecord != null) {
+            RmEditDialog(
+                record = uiState.editingRmRecord!!,
+                onDismiss = { screenModel.hideRmEditDialog() },
+                onSave = { name, cat, w, r -> screenModel.updateRmRecord(name, cat, w, r) },
+                onDelete = { screenModel.deleteRmRecord(uiState.editingRmRecord!!) }
+            )
+        }
+
+        // RM追加ダイアログ
+        if (uiState.showRmAddDialog) {
+            RmAddDialog(
+                onDismiss = { screenModel.hideRmAddDialog() },
+                onSave = { name, cat, w, r -> screenModel.addRmRecord(name, cat, w, r) }
+            )
+        }
+
+        // 運動クエスト完了シート
+        if (uiState.showWorkoutCompletionSheet && uiState.workoutCompletionItem != null) {
+            WorkoutCompletionSheet(
+                item = uiState.workoutCompletionItem!!,
+                exercises = uiState.workoutCompletionExercises,
+                onConfirm = { screenModel.confirmWorkoutCompletion() },
+                onDismiss = { screenModel.dismissWorkoutCompletionSheet() }
+            )
+        }
+
+        // 指示書編集ダイアログ
+        if (uiState.showDirectiveEditDialog && uiState.directive != null) {
+            DirectiveEditDialog(
+                currentMessage = uiState.directive!!.message,
+                onDismiss = { screenModel.hideDirectiveEditDialog() },
+                onSave = { newMessage -> screenModel.updateDirective(newMessage) }
+            )
+        }
+
+        // カロリーオーバーライドダイアログ
+        if (uiState.showCalorieOverrideDialog) {
+            CalorieOverrideDialog(
+                onDismiss = { screenModel.hideCalorieOverrideDialog() },
+                onApply = { override -> screenModel.applyCalorieOverride(override) },
+                onClear = if (uiState.calorieOverride != null) {{ screenModel.clearCalorieOverride() }} else null
+            )
+        }
     }
 }
 
-/**
- * 展開可能な統合ボトムバー
- * - 格納時: シェブロンのみ
- * - 展開時: レベル・クレジット・アクションボタン
- */
+// ========== 食事編集ダイアログ ==========
+
 @Composable
-private fun ExpandableBottomSection(
-    // レベル情報（null = 非表示）
-    level: Int? = null,
-    expCurrent: Int? = null,
-    expRequired: Int? = null,
-    progressPercent: Int? = null,
-    freeCredits: Int? = null,
-    paidCredits: Int? = null,
-    // アクションボタン
-    onAnalysisClick: (() -> Unit)? = null,
-    onGenerateQuestClick: (() -> Unit)? = null,
-    isGeneratingQuest: Boolean = false
+private fun MealEditDialog(
+    meal: Meal,
+    onDismiss: () -> Unit,
+    onSave: (Meal) -> Unit,
+    onDelete: () -> Unit
 ) {
-    var isExpanded by rememberSaveable { mutableStateOf(true) }  // デフォルト展開
+    var editedItems by remember { mutableStateOf(meal.items.toMutableList()) }
+    var mealName by remember { mutableStateOf(meal.name ?: "") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-        // 上部の区切り線
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant,
-            thickness = 0.5.dp
-        )
+    val totalCalories = editedItems.sumOf { it.calories }
+    val totalProtein = editedItems.sumOf { it.protein.toDouble() }.toFloat()
+    val totalCarbs = editedItems.sumOf { it.carbs.toDouble() }.toFloat()
+    val totalFat = editedItems.sumOf { it.fat.toDouble() }.toFloat()
+    val totalFiber = editedItems.sumOf { it.fiber.toDouble() }.toFloat()
 
-        // シェブロンハンドル
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { isExpanded = !isExpanded }
-                .padding(top = 4.dp, bottom = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isExpanded)
-                        Icons.Default.KeyboardArrowDown
-                    else
-                        Icons.Default.KeyboardArrowUp,
-                    contentDescription = if (isExpanded) "格納" else "展開",
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // 展開コンテンツ（格納時はシェブロンのみになる）
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                ) + fadeIn(animationSpec = tween(150)),
-                exit = shrinkVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessHigh
-                    )
-                ) + fadeOut(animationSpec = tween(100))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    // レベルバナー
-                    if (level != null) {
-                        LevelSection(
-                            level = level,
-                            expCurrent = expCurrent ?: 0,
-                            expRequired = expRequired ?: 100,
-                            progressPercent = progressPercent ?: 0,
-                            freeCredits = freeCredits ?: 0,
-                            paidCredits = paidCredits ?: 0
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    // アクションボタン
-                    if (onAnalysisClick != null || onGenerateQuestClick != null) {
-                        ActionButtonsSection(
-                            onAnalysisClick = onAnalysisClick,
-                            onGenerateQuestClick = onGenerateQuestClick,
-                            isGeneratingQuest = isGeneratingQuest
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                }
-            }
-    }
-}
-
-/**
- * レベル・XP・クレジットセクション
- */
-@Composable
-private fun LevelSection(
-    level: Int,
-    expCurrent: Int,
-    expRequired: Int,
-    progressPercent: Int,
-    freeCredits: Int,
-    paidCredits: Int
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        // 左側: レベル・XP
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            // レベルバッジ
-            Surface(
-                shape = CircleShape,
-                color = Primary,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "$level",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-
-            // XP情報
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("食事を編集", fontWeight = FontWeight.Bold) },
+        text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                modifier = Modifier.fillMaxWidth().height(400.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Level $level",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                OutlinedTextField(
+                    value = mealName,
+                    onValueChange = { mealName = it },
+                    label = { Text("食事名") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 )
-                LinearProgressIndicator(
-                    progress = { progressPercent / 100f },
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp)),
-                    color = Primary,
-                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                )
-                Text(
-                    text = "$expCurrent / $expRequired XP",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Primary.copy(alpha = 0.1f))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("$totalCalories", fontWeight = FontWeight.Bold, color = ScoreCalories)
+                            Text("kcal", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("${totalProtein.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreProtein)
+                            Text("P", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("${totalCarbs.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreCarbs)
+                            Text("C", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("${totalFat.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreFat)
+                            Text("F", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+
+                Text("食品 (${editedItems.size}品)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+
+                Column(
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    editedItems.forEachIndexed { index, mealItem ->
+                        MealItemEditCard(
+                            item = mealItem,
+                            onQuantityChange = { newAmount ->
+                                val ratio = newAmount / mealItem.amount
+                                val updatedItem = mealItem.copy(
+                                    amount = newAmount,
+                                    calories = (mealItem.calories * ratio).toInt(),
+                                    protein = mealItem.protein * ratio,
+                                    carbs = mealItem.carbs * ratio,
+                                    fat = mealItem.fat * ratio,
+                                    fiber = mealItem.fiber * ratio
+                                )
+                                editedItems = editedItems.toMutableList().apply { set(index, updatedItem) }
+                            },
+                            onDelete = {
+                                editedItems = editedItems.toMutableList().apply { removeAt(index) }
+                            }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val updatedMeal = meal.copy(
+                        name = mealName.ifBlank { null },
+                        items = editedItems,
+                        totalCalories = totalCalories,
+                        totalProtein = totalProtein,
+                        totalCarbs = totalCarbs,
+                        totalFat = totalFat,
+                        totalFiber = totalFiber
+                    )
+                    onSave(updatedMeal)
+                },
+                enabled = editedItems.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+            ) { Text("保存") }
+        },
+        dismissButton = {
+            Row {
+                TextButton(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))
+                ) { Text("削除") }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onDismiss) { Text("キャンセル") }
             }
         }
+    )
+}
 
-        // 右側: クレジット
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.padding(start = 8.dp)
+@Composable
+private fun MealItemEditCard(
+    item: MealItem,
+    onQuantityChange: (Float) -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocalFireDepartment,
-                    contentDescription = "クレジット",
-                    modifier = Modifier.size(16.dp),
-                    tint = AccentOrange
-                )
-                Text(
-                    text = "$freeCredits",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Primary
-                )
-                Text(
-                    text = "+",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "$paidCredits",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AccentOrange
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(item.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, maxLines = 1)
+                Text("${item.calories}kcal P${item.protein.toInt()} C${item.carbs.toInt()} F${item.fat.toInt()}",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { if (item.amount > 10) onQuantityChange(item.amount - 10f) }, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
+                }
+                Text("${item.amount.toInt()}${item.unit}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                IconButton(onClick = { onQuantityChange(item.amount + 10f) }, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Close, null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                }
             }
         }
     }
 }
 
-/**
- * アクションボタンセクション
- */
+// ========== 運動編集ダイアログ ==========
+
 @Composable
-private fun ActionButtonsSection(
-    onAnalysisClick: (() -> Unit)?,
-    onGenerateQuestClick: (() -> Unit)?,
-    isGeneratingQuest: Boolean
+private fun WorkoutEditDialog(
+    workout: Workout,
+    onDismiss: () -> Unit,
+    onSave: (Workout) -> Unit,
+    onDelete: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    var workoutName by remember { mutableStateOf(workout.name ?: "") }
+    var workoutNote by remember { mutableStateOf(workout.note ?: "") }
+    var editedExercises by remember { mutableStateOf(workout.exercises.toMutableList()) }
+
+    val totalDuration = editedExercises.sumOf { it.duration ?: 0 }
+    val totalCaloriesBurned = editedExercises.sumOf { it.caloriesBurned }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("運動を編集", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().height(450.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = workoutName,
+                    onValueChange = { workoutName = it },
+                    label = { Text("運動名") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = AccentOrange.copy(alpha = 0.1f))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("$totalDuration", fontWeight = FontWeight.Bold, color = AccentOrange)
+                            Text("分", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("$totalCaloriesBurned", fontWeight = FontWeight.Bold, color = AccentOrange)
+                            Text("kcal", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("${editedExercises.size}", fontWeight = FontWeight.Bold, color = AccentOrange)
+                            Text("種目", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+
+                Text("種目 (${editedExercises.size})", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+
+                Column(
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    editedExercises.forEachIndexed { index, exercise ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(exercise.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                    val details = buildString {
+                                        exercise.sets?.let { append("${it}セット ") }
+                                        exercise.reps?.let { append("${it}回 ") }
+                                        exercise.weight?.let { append("${it.toInt()}kg ") }
+                                        append("${exercise.caloriesBurned}kcal")
+                                    }
+                                    Text(details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                IconButton(
+                                    onClick = { editedExercises = editedExercises.toMutableList().apply { removeAt(index) } },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = workoutNote,
+                    onValueChange = { workoutNote = it },
+                    label = { Text("メモ") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 2
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val updatedWorkout = workout.copy(
+                        name = workoutName.ifBlank { null },
+                        note = workoutNote.ifBlank { null },
+                        exercises = editedExercises,
+                        totalDuration = totalDuration,
+                        totalCaloriesBurned = totalCaloriesBurned
+                    )
+                    onSave(updatedWorkout)
+                },
+                enabled = editedExercises.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
+            ) { Text("保存") }
+        },
+        dismissButton = {
+            Row {
+                TextButton(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))
+                ) { Text("削除") }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onDismiss) { Text("キャンセル") }
+            }
+        }
+    )
+}
+
+// ========== RM記録セクション ==========
+
+@Composable
+private fun RmRecordSection(
+    rmRecords: Map<String, RmRecord>,
+    onEditRm: (RmRecord) -> Unit,
+    onDeleteRm: (RmRecord) -> Unit,
+    onAddRm: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.FitnessCenter, null, tint = AccentOrange, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("RM記録", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                if (rmRecords.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("${rmRecords.size}種目", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            IconButton(onClick = onAddRm, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.Add, "RM追加", tint = AccentOrange, modifier = Modifier.size(20.dp))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (rmRecords.isEmpty()) {
+            Text("RM記録がありません。＋ボタンで追加できます", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            rmRecords.values.sortedBy { it.exerciseName }.forEach { record ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = AccentOrange.copy(alpha = 0.08f))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { onEditRm(record) }.padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(record.exerciseName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text("${record.weight.toInt()}kg × ${record.reps}rep",
+                                style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                        }
+                        Row {
+                            IconButton(onClick = { onEditRm(record) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Edit, "編集", tint = AccentOrange, modifier = Modifier.size(18.dp))
+                            }
+                            IconButton(onClick = { onDeleteRm(record) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Delete, "削除", tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+        }
+    }
+}
+
+// ========== RM編集ダイアログ ==========
+
+@Composable
+private fun RmEditDialog(
+    record: RmRecord,
+    onDismiss: () -> Unit,
+    onSave: (exerciseName: String, category: String, weight: Float, reps: Int) -> Unit,
+    onDelete: () -> Unit
+) {
+    var weight by remember { mutableStateOf(record.weight.toInt().toString()) }
+    var reps by remember { mutableStateOf(record.reps.toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("RM記録を編集", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(record.exerciseName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                OutlinedTextField(
+                    value = weight, onValueChange = { weight = it }, label = { Text("重量 (kg)") },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)
+                )
+                OutlinedTextField(
+                    value = reps, onValueChange = { reps = it }, label = { Text("回数") },
+                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val w = weight.toFloatOrNull(); val r = reps.toIntOrNull()
+                    if (w != null && w > 0f && r != null && r > 0) onSave(record.exerciseName, record.category, w, r)
+                },
+                enabled = weight.toFloatOrNull()?.let { it > 0f } == true && reps.toIntOrNull()?.let { it > 0 } == true,
+                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
+            ) { Text("更新") }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))) { Text("削除") }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onDismiss) { Text("キャンセル") }
+            }
+        }
+    )
+}
+
+// ========== RM追加ダイアログ ==========
+
+@Composable
+private fun RmAddDialog(
+    onDismiss: () -> Unit,
+    onSave: (exerciseName: String, category: String, weight: Float, reps: Int) -> Unit
+) {
+    var selectedExerciseName by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("") }
+    var weight by remember { mutableStateOf("") }
+    var reps by remember { mutableStateOf("") }
+
+    val strengthCategories = listOf("胸", "背中", "肩", "腕", "脚", "体幹")
+    var selectedTab by remember { mutableStateOf(strengthCategories[0]) }
+    val exercisesForCategory = remember(selectedTab) { ExerciseDatabase.getExercisesByCategory(selectedTab) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f),
+        title = {
+            Text(
+                text = if (selectedExerciseName.isBlank()) "RM記録を追加" else selectedExerciseName,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (selectedExerciseName.isBlank()) {
+                    ScrollableTabRow(
+                        selectedTabIndex = strengthCategories.indexOf(selectedTab),
+                        containerColor = Color.Transparent,
+                        contentColor = AccentOrange,
+                        edgePadding = 0.dp
+                    ) {
+                        strengthCategories.forEach { cat ->
+                            Tab(
+                                selected = selectedTab == cat,
+                                onClick = { selectedTab = cat },
+                                text = { Text(cat, fontWeight = if (selectedTab == cat) FontWeight.Bold else FontWeight.Normal) }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(exercisesForCategory.size) { index ->
+                            val exercise = exercisesForCategory[index]
+                            Card(
+                                onClick = { selectedExerciseName = exercise.name; selectedCategory = exercise.category },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            ) {
+                                Text(exercise.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp))
+                            }
+                        }
+                    }
+                } else {
+                    Text(selectedCategory, style = MaterialTheme.typography.labelMedium, color = AccentOrange)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = weight, onValueChange = { weight = it }, label = { Text("重量 (kg)") },
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = reps, onValueChange = { reps = it }, label = { Text("回数") },
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (selectedExerciseName.isNotBlank()) {
+                Button(
+                    onClick = {
+                        val w = weight.toFloatOrNull(); val r = reps.toIntOrNull()
+                        if (w != null && w > 0f && r != null && r > 0) onSave(selectedExerciseName, selectedCategory, w, r)
+                    },
+                    enabled = weight.toFloatOrNull()?.let { it > 0f } == true && reps.toIntOrNull()?.let { it > 0 } == true,
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
+                ) { Text("記録") }
+            }
+        },
+        dismissButton = {
+            Row {
+                if (selectedExerciseName.isNotBlank()) {
+                    TextButton(onClick = { selectedExerciseName = ""; selectedCategory = ""; weight = ""; reps = "" }) { Text("種目を変更") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                TextButton(onClick = onDismiss) { Text("キャンセル") }
+            }
+        }
+    )
+}
+
+// ========== 運動クエスト完了シート ==========
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WorkoutCompletionSheet(
+    item: UnifiedTimelineItem,
+    exercises: List<WorkoutCompletionExercise>,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val totalDuration = exercises.sumOf { it.duration }
+    val totalCalories = exercises.sumOf { it.calories }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
-        // 分析ボタン
-        if (onAnalysisClick != null) {
-            OutlinedButton(
-                onClick = onAnalysisClick,
-                modifier = Modifier.weight(1f),
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp)
+        ) {
+            Text(item.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${totalDuration}分", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("時間", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${totalCalories}kcal", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                    Text("消費", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${exercises.size}種目", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("種目", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("種目 (${exercises.size})", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+                Icon(Icons.Outlined.Info, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("各種目メインセットの平均重量を入力", style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+            }
+
+            Column(
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                exercises.forEach { exercise ->
+                    WorkoutCompletionExerciseCard(exercise = exercise)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Analytics,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(Icons.Filled.FitnessCenter, null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = "分析",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "夜に実行",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        // 明日の指示書ボタン
-        if (onGenerateQuestClick != null) {
-            Button(
-                onClick = onGenerateQuestClick,
-                enabled = !isGeneratingQuest,
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
-            ) {
-                if (isGeneratingQuest) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = "明日の指示書",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "クエスト生成",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                }
+                Text("記録 (${totalCalories}kcal / ${totalDuration}分)", fontWeight = FontWeight.Bold)
             }
         }
     }
+}
+
+@Composable
+private fun WorkoutCompletionExerciseCard(exercise: WorkoutCompletionExercise) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Text(exercise.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (exercise.category.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(exercise.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (exercise.isWeightEstimated) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(shape = RoundedCornerShape(4.dp), color = AccentOrange.copy(alpha = 0.15f)) {
+                            Text("推定", style = MaterialTheme.typography.labelSmall, color = AccentOrange,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                        }
+                    }
+                }
+                Text("${exercise.calories}kcal", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            val details = buildString {
+                append("${exercise.sets}セット × ${exercise.reps}回")
+                exercise.weight?.let { append(" / ${it.toInt()}kg") }
+                append(" = ${exercise.duration}分")
+            }
+            Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            val hasRmPercent = exercise.rmPercentMin != null || exercise.rmPercentMax != null
+            if (hasRmPercent) {
+                val rmStr = when {
+                    exercise.rmPercentMin != null && exercise.rmPercentMax != null ->
+                        "1RM ${exercise.rmPercentMin.toInt()}-${exercise.rmPercentMax.toInt()}%"
+                    exercise.rmPercentMin != null -> "1RM ${exercise.rmPercentMin.toInt()}%"
+                    else -> "1RM ${exercise.rmPercentMax!!.toInt()}%"
+                }
+                Text(rmStr, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+// ========== 指示書編集ダイアログ ==========
+
+@Composable
+private fun DirectiveEditDialog(
+    currentMessage: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var editedMessage by remember { mutableStateOf(currentMessage) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("指示書を編集", fontWeight = FontWeight.Bold) },
+        text = {
+            OutlinedTextField(
+                value = editedMessage,
+                onValueChange = { editedMessage = it },
+                label = { Text("指示書内容") },
+                modifier = Modifier.fillMaxWidth().height(300.dp),
+                shape = RoundedCornerShape(12.dp),
+                maxLines = 20
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(editedMessage) },
+                enabled = editedMessage.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+            ) { Text("保存") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("キャンセル") }
+        }
+    )
+}
+
+// ========== カロリーオーバーライドダイアログ ==========
+
+@Composable
+private fun CalorieOverrideDialog(
+    onDismiss: () -> Unit,
+    onApply: (CalorieOverride) -> Unit,
+    onClear: (() -> Unit)?
+) {
+    val presets = listOf(
+        "チートデー" to 500,
+        "リフィード" to 300,
+        "軽量制限" to -300,
+        "カーボロード" to 400
+    )
+    var customAdjustment by remember { mutableStateOf("") }
+    var selectedPreset by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("カロリー調整", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("プリセット", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                presets.forEach { (name, adjustment) ->
+                    Card(
+                        onClick = { selectedPreset = name; customAdjustment = adjustment.toString() },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedPreset == name) Primary.copy(alpha = 0.15f)
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(name, fontWeight = FontWeight.Medium)
+                            Text(
+                                text = if (adjustment > 0) "+${adjustment}kcal" else "${adjustment}kcal",
+                                color = if (adjustment > 0) AccentOrange else Primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = customAdjustment,
+                    onValueChange = { customAdjustment = it; selectedPreset = "カスタム" },
+                    label = { Text("カスタム調整 (kcal)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val adj = customAdjustment.toIntOrNull() ?: return@Button
+                    onApply(CalorieOverride(
+                        templateName = selectedPreset ?: "カスタム",
+                        calorieAdjustment = adj,
+                        appliedAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                    ))
+                },
+                enabled = customAdjustment.toIntOrNull() != null,
+                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+            ) { Text("適用") }
+        },
+        dismissButton = {
+            Row {
+                if (onClear != null) {
+                    TextButton(onClick = { onClear(); onDismiss() },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))
+                    ) { Text("リセット") }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                TextButton(onClick = onDismiss) { Text("キャンセル") }
+            }
+        }
+    )
 }

@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +21,9 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.MealTemplate
 import com.yourcoach.plus.shared.domain.model.WorkoutTemplate
+import com.yourcoach.plus.shared.ui.screens.main.LocalMainNavigator
+import com.yourcoach.plus.shared.ui.screens.meal.AddMealScreen
+import com.yourcoach.plus.shared.ui.screens.workout.AddWorkoutScreen
 import com.yourcoach.plus.shared.ui.theme.*
 
 class TemplateSettingsScreen : Screen {
@@ -30,6 +34,7 @@ class TemplateSettingsScreen : Screen {
         val screenModel = koinScreenModel<TemplateSettingsScreenModel>()
         val uiState by screenModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
+        val mainNavigator = LocalMainNavigator.current
         val snackbarHostState = remember { SnackbarHostState() }
 
         LaunchedEffect(uiState.actionMessage) {
@@ -68,14 +73,26 @@ class TemplateSettingsScreen : Screen {
                     Tab(
                         selected = uiState.selectedTabIndex == 0,
                         onClick = { screenModel.selectTab(0) },
-                        text = { Text("食事テンプレート") },
-                        icon = { Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(20.dp)) }
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Restaurant, null, modifier = Modifier.size(18.dp),
+                                    tint = if (uiState.selectedTabIndex == 0) ScoreCarbs else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("食事 (${uiState.mealTemplates.size})")
+                            }
+                        }
                     )
                     Tab(
                         selected = uiState.selectedTabIndex == 1,
                         onClick = { screenModel.selectTab(1) },
-                        text = { Text("運動テンプレート") },
-                        icon = { Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(20.dp)) }
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.FitnessCenter, null, modifier = Modifier.size(18.dp),
+                                    tint = if (uiState.selectedTabIndex == 1) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("運動 (${uiState.workoutTemplates.size})")
+                            }
+                        }
                     )
                 }
 
@@ -87,11 +104,13 @@ class TemplateSettingsScreen : Screen {
                     when (uiState.selectedTabIndex) {
                         0 -> MealTemplateList(
                             templates = uiState.mealTemplates,
-                            onDelete = { screenModel.deleteMealTemplate(it) }
+                            onDelete = { screenModel.deleteMealTemplate(it) },
+                            onAdd = { mainNavigator?.push(AddMealScreen()) }
                         )
                         1 -> WorkoutTemplateList(
                             templates = uiState.workoutTemplates,
-                            onDelete = { screenModel.deleteWorkoutTemplate(it) }
+                            onDelete = { screenModel.deleteWorkoutTemplate(it) },
+                            onAdd = { mainNavigator?.push(AddWorkoutScreen()) }
                         )
                     }
                 }
@@ -103,7 +122,8 @@ class TemplateSettingsScreen : Screen {
 @Composable
 private fun MealTemplateList(
     templates: List<MealTemplate>,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
+    onAdd: () -> Unit
 ) {
     var deletingId by remember { mutableStateOf<String?>(null) }
 
@@ -124,51 +144,126 @@ private fun MealTemplateList(
         )
     }
 
-    if (templates.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("食事テンプレートがありません", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("食事記録時にテンプレートを保存できます", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 作成ボタン
+        item {
+            Button(
+                onClick = onAdd,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = ScoreCarbs)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("食事テンプレートを作成")
             }
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(templates) { template ->
+
+        if (templates.isEmpty()) {
+            item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(template.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("${template.totalCalories}kcal", style = MaterialTheme.typography.bodySmall, color = ScoreCalories)
-                                Text("P${template.totalProtein.toInt()}g", style = MaterialTheme.typography.bodySmall, color = ScoreProtein)
-                                Text("F${template.totalFat.toInt()}g", style = MaterialTheme.typography.bodySmall, color = ScoreFat)
-                                Text("C${template.totalCarbs.toInt()}g", style = MaterialTheme.typography.bodySmall, color = ScoreCarbs)
+                        Icon(Icons.Default.Restaurant, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("食事テンプレートがありません", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("上の＋ボタンから作成するのがおすすめです", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("食事記録画面の「テンプレート保存」からも作成できます", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        } else {
+            items(templates, key = { it.id }) { template ->
+                MealTemplateCard(template = template, onDelete = { deletingId = template.id })
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(60.dp)) }
+    }
+}
+
+@Composable
+private fun MealTemplateCard(template: MealTemplate, onDelete: () -> Unit) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(template.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("${template.items.size}品目", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, "削除", tint = MaterialTheme.colorScheme.error)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 栄養素サマリー
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .background(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                NutrientChip("Cal", "${template.totalCalories}", ScoreCalories)
+                NutrientChip("P", "${template.totalProtein.toInt()}g", ScoreProtein)
+                NutrientChip("F", "${template.totalFat.toInt()}g", ScoreFat)
+                NutrientChip("C", "${template.totalCarbs.toInt()}g", ScoreCarbs)
+            }
+
+            // 展開ボタン
+            if (template.items.isNotEmpty()) {
+                TextButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    Text(if (isExpanded) "内容を閉じる" else "内容を表示", style = MaterialTheme.typography.labelMedium)
+                    Icon(if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, modifier = Modifier.size(18.dp))
+                }
+
+                if (isExpanded) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .background(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        template.items.forEachIndexed { index, item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(item.name, style = MaterialTheme.typography.bodyMedium)
+                                    Text("${item.amount.toInt()}g", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("P${item.protein.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreProtein)
+                                    Text("F${item.fat.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreFat)
+                                    Text("C${item.carbs.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreCarbs)
+                                }
                             }
-                            if (template.usageCount > 0) {
-                                Text("${template.usageCount}回使用", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (index < template.items.size - 1) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             }
-                        }
-                        IconButton(onClick = { deletingId = template.id }) {
-                            Icon(Icons.Default.Delete, "削除", tint = Color.Red)
                         }
                     }
                 }
             }
-            item { Spacer(modifier = Modifier.height(60.dp)) }
         }
     }
 }
@@ -176,7 +271,8 @@ private fun MealTemplateList(
 @Composable
 private fun WorkoutTemplateList(
     templates: List<WorkoutTemplate>,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
+    onAdd: () -> Unit
 ) {
     var deletingId by remember { mutableStateOf<String?>(null) }
 
@@ -197,50 +293,141 @@ private fun WorkoutTemplateList(
         )
     }
 
-    if (templates.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.FitnessCenter, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("運動テンプレートがありません", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("運動記録時にテンプレートを保存できます", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 作成ボタン
+        item {
+            Button(
+                onClick = onAdd,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("運動テンプレートを作成")
             }
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(templates) { template ->
+
+        if (templates.isEmpty()) {
+            item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(template.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("${template.estimatedDuration}分", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${template.estimatedCalories}kcal消費", style = MaterialTheme.typography.bodySmall, color = AccentOrange)
-                                Text("${template.exercises.size}種目", style = MaterialTheme.typography.bodySmall, color = Primary)
+                        Icon(Icons.Default.FitnessCenter, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("運動テンプレートがありません", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("上の＋ボタンから作成するのがおすすめです", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("運動記録画面の「テンプレート保存」からも作成できます", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        } else {
+            items(templates, key = { it.id }) { template ->
+                WorkoutTemplateCard(template = template, onDelete = { deletingId = template.id })
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(60.dp)) }
+    }
+}
+
+@Composable
+private fun WorkoutTemplateCard(template: WorkoutTemplate, onDelete: () -> Unit) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(template.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("${template.exercises.size}種目", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, "削除", tint = MaterialTheme.colorScheme.error)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // サマリー
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .background(color = AccentOrange.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${template.estimatedDuration}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                    Text("分", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${template.estimatedCalories}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                    Text("kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            // 展開ボタン
+            if (template.exercises.isNotEmpty()) {
+                TextButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    Text(if (isExpanded) "内容を閉じる" else "内容を表示", style = MaterialTheme.typography.labelMedium)
+                    Icon(if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, modifier = Modifier.size(18.dp))
+                }
+
+                if (isExpanded) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .background(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        template.exercises.forEachIndexed { index, exercise ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(exercise.name, style = MaterialTheme.typography.bodyMedium)
+                                    val detail = when {
+                                        exercise.sets != null && exercise.sets > 0 -> "${exercise.sets}セット"
+                                        exercise.duration != null && exercise.duration > 0 -> "${exercise.duration}分"
+                                        else -> ""
+                                    }
+                                    if (detail.isNotEmpty()) {
+                                        Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                Text("${exercise.caloriesBurned}kcal", style = MaterialTheme.typography.labelMedium, color = AccentOrange)
                             }
-                            if (template.usageCount > 0) {
-                                Text("${template.usageCount}回使用", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (index < template.exercises.size - 1) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             }
-                        }
-                        IconButton(onClick = { deletingId = template.id }) {
-                            Icon(Icons.Default.Delete, "削除", tint = Color.Red)
                         }
                     }
                 }
             }
-            item { Spacer(modifier = Modifier.height(60.dp)) }
         }
+    }
+}
+
+@Composable
+private fun NutrientChip(label: String, value: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = color)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

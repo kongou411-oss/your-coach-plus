@@ -77,9 +77,14 @@ class FirestoreDirectiveRepository : DirectiveRepository {
 
     override suspend fun updateDirective(directive: Directive): Result<Unit> {
         return try {
+            val data = mapOf(
+                "message" to directive.message,
+                "type" to directive.type.name.lowercase(),
+                "completed" to directive.completed
+            )
             directivesCollection(directive.userId)
                 .document(directive.date)
-                .set(directiveToMap(directive))
+                .update(data)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("指示書の更新に失敗しました", e))
@@ -147,22 +152,21 @@ class FirestoreDirectiveRepository : DirectiveRepository {
     // ========== Mapping Functions ==========
 
     private fun directiveToMap(directive: Directive): Map<String, Any?> = mapOf(
-        "id" to directive.id,
         "userId" to directive.userId,
         "date" to directive.date,
         "message" to directive.message,
-        "type" to directive.type.name,
+        "type" to directive.type.name.lowercase(),
         "completed" to directive.completed,
         "deadline" to directive.deadline,
-        "createdAt" to directive.createdAt,
+        "createdAt" to if (directive.createdAt > 0) directive.createdAt else DateUtil.currentTimestamp(),
         "executedItems" to directive.executedItems
     )
 
     @Suppress("UNCHECKED_CAST")
     private fun DocumentSnapshot.toDirective(): Directive {
-        val typeStr = get<String?>("type") ?: "MEAL"
+        val typeStr = get<String?>("type") ?: "meal"
         val type = try {
-            DirectiveType.valueOf(typeStr)
+            DirectiveType.valueOf(typeStr.uppercase())
         } catch (e: Exception) {
             DirectiveType.MEAL
         }

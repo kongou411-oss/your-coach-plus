@@ -1,6 +1,7 @@
 package com.yourcoach.plus.shared.ui.screens.auth
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,12 +26,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
+import com.yourcoach.plus.shared.generated.resources.Res
+import com.yourcoach.plus.shared.generated.resources.icon_512
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -275,24 +282,24 @@ private fun IntroStep() {
         verticalArrangement = Arrangement.Center
     ) {
         // ロゴアイコン
-        Box(
+        Image(
+            painter = painterResource(Res.drawable.icon_512),
+            contentDescription = "Your Coach+",
             modifier = Modifier
                 .size(120.dp)
-                .background(Primary.copy(alpha = 0.1f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.FitnessCenter,
-                contentDescription = null,
-                modifier = Modifier.size(60.dp),
-                tint = Primary
-            )
-        }
+                .clip(CircleShape)
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Your Coach+ へようこそ",
+            text = buildAnnotatedString {
+                append("Your Coach")
+                withStyle(SpanStyle(color = Color(0xFF4A9EFF))) {
+                    append("+")
+                }
+                append(" へようこそ")
+            },
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -586,11 +593,40 @@ private fun ProfileStep(state: ProfileSetupState, screenModel: ProfileSetupScree
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // 食事回数
-                Text(
-                    text = "1日の食事回数",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "1日の食事回数",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    var showMealInfo by remember { mutableStateOf(false) }
+                    IconButton(
+                        onClick = { showMealInfo = !showMealInfo },
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = "食事回数の説明",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (showMealInfo) {
+                        AlertDialog(
+                            onDismissRequest = { showMealInfo = false },
+                            confirmButton = {
+                                TextButton(onClick = { showMealInfo = false }) { Text("OK") }
+                            },
+                            title = { Text("総食事回数について") },
+                            text = {
+                                Text("トレーニング前後のプロテインシェイクも1食としてカウントします。\n\n例: 朝食・昼食・トレ前プロテイン・トレ後プロテイン・夕食 = 5食")
+                            }
+                        )
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -1025,9 +1061,9 @@ private fun RmEducationStep(
                         )
                     }
                     Text(
-                        "RMとは、ある回数で持ち上げられる最大の重量です。\n\n" +
-                        "例えばベンチプレスで3回がギリギリ120kgなら、それがあなたの3RMです。\n\n" +
-                        "記録しておくと、トレーナーが「3RM70%」のように強度を指定でき、" +
+                        "1RM（1レップマックス）とは、1回だけギリギリ持ち上げられる最大重量です。\n\n" +
+                        "例えばベンチプレスで1回がギリギリ100kgなら、あなたの1RMは100kgです。\n\n" +
+                        "記録しておくと、トレーナーが「1RM70%」のように強度を指定でき、" +
                         "あなたに最適なトレーニング重量が自動計算されます。",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
@@ -1039,7 +1075,7 @@ private fun RmEducationStep(
         // RM入力セクション
         item {
             Text(
-                "主要種目のRM記録（任意）",
+                "主要種目の1RM記録（任意）",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
@@ -1051,7 +1087,7 @@ private fun RmEducationStep(
             )
         }
 
-        // 各種目の入力
+        // 各種目の入力（1RM: 重量のみ）
         itemsIndexed(state.rmEntries) { index, entry ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -1069,41 +1105,26 @@ private fun RmEducationStep(
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = entry.reps,
-                            onValueChange = { screenModel.updateRmEntryReps(index, it) },
-                            label = { Text("回数") },
-                            placeholder = { Text("例: 3") },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Next
-                            ),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = entry.weight,
-                            onValueChange = { screenModel.updateRmEntryWeight(index, it) },
-                            label = { Text("重量(kg)") },
-                            placeholder = { Text("例: 120") },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Decimal,
-                                imeAction = ImeAction.Done
-                            ),
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    // 入力済みの場合、RMラベル表示
-                    val reps = entry.reps.toIntOrNull()
+                    OutlinedTextField(
+                        value = entry.weight,
+                        onValueChange = {
+                            screenModel.updateRmEntryWeight(index, it)
+                            screenModel.updateRmEntryReps(index, "1")
+                        },
+                        label = { Text("1RM 重量(kg)") },
+                        placeholder = { Text("例: 100") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    // 入力済みの場合、1RMラベル表示
                     val weight = entry.weight.toFloatOrNull()
-                    if (reps != null && reps > 0 && weight != null && weight > 0f) {
+                    if (weight != null && weight > 0f) {
                         Text(
-                            "${reps}RM = ${weight.toInt()}kg",
+                            "1RM = ${weight.toInt()}kg",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary

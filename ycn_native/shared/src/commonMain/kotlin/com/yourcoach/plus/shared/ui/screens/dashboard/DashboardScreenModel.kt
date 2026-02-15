@@ -92,15 +92,26 @@ data class DashboardUiState(
     // コンディション
     val condition: Condition? = null,
 
+    // スコア・ストリーク
+    val score: DailyScore? = null,
+    val streakInfo: StreakInfo = StreakInfo(),
+
     // ルーティン
     val todayRoutine: RoutineDay? = null,
     val isManualRestDay: Boolean = false,
     val isExecutingRoutine: Boolean = false,
+    val routineSuccessMessage: String? = null,
 
     // タイムライン
     val unifiedTimeline: List<UnifiedTimelineItem> = emptyList(),
     val microIndicators: List<MicroIndicator> = emptyList(),
     val currentTimeMinutes: Int = 0,
+    val timelineSlots: List<TimelineSlotInfo> = emptyList(),
+    val nextMealSlot: TimelineSlotInfo? = null,
+    val timeUntilNextMeal: Int = 0,
+    val trainingTimeMinutes: Int? = null,
+    val hasTimelineConfig: Boolean = false,
+    val showMicroDetailSheet: Boolean = false,
 
     // ダイアログ状態
     val editingMeal: Meal? = null,
@@ -110,9 +121,29 @@ data class DashboardUiState(
 
     // クエスト（指示書）
     val directive: Directive? = null,
+    val customQuest: CustomQuest? = null,
     val isGeneratingQuest: Boolean = false,
     val isExecutingDirectiveItem: Boolean = false,
     val questGenerationError: String? = null,
+    val showDirectiveEditDialog: Boolean = false,
+    val showQuestSettingsDialog: Boolean = false,
+    val executedDirectiveItems: Set<Int> = emptySet(),
+    val editedDirectiveTexts: Map<Int, String> = emptyMap(),
+
+    // ピンポイントカロリー調整
+    val calorieOverride: CalorieOverride? = null,
+    val showCalorieOverrideDialog: Boolean = false,
+
+    // RM記録
+    val latestRmRecords: Map<String, RmRecord> = emptyMap(),
+    val editingRmRecord: RmRecord? = null,
+    val showRmEditDialog: Boolean = false,
+    val showRmAddDialog: Boolean = false,
+
+    // 運動クエスト完了シート
+    val showWorkoutCompletionSheet: Boolean = false,
+    val workoutCompletionItem: UnifiedTimelineItem? = null,
+    val workoutCompletionExercises: List<WorkoutCompletionExercise> = emptyList(),
 
     // お祝いモーダル
     val celebrationQueue: List<CelebrationInfo> = emptyList(),
@@ -131,7 +162,10 @@ class DashboardScreenModel(
     private val conditionRepository: ConditionRepository? = null,
     private val routineRepository: RoutineRepository? = null,
     private val scoreRepository: ScoreRepository? = null,
-    private val directiveRepository: DirectiveRepository? = null
+    private val directiveRepository: DirectiveRepository? = null,
+    private val customQuestRepository: CustomQuestRepository? = null,
+    private val badgeRepository: BadgeRepository? = null,
+    private val rmRepository: RmRepository? = null
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -143,10 +177,14 @@ class DashboardScreenModel(
         _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
     }
 
+    // RM記録キャッシュ（種目名→最新RM記録）
+    private var rmRecordCache: Map<String, RmRecord> = emptyMap()
+
     init {
         observeUser()
         loadDataForDate(_uiState.value.date)
         updateCurrentTime()
+        checkLoginBonus()
     }
 
     /**
@@ -192,7 +230,7 @@ class DashboardScreenModel(
     }
 
     /**
-     * 指定日のデータを読み込む
+     * 指定日のデータを読み込む（Android版loadDashboardDataと同等の完全版）
      */
     fun loadDataForDate(date: String) {
         _uiState.update { it.copy(isLoading = true, error = null) }
@@ -205,8 +243,11 @@ class DashboardScreenModel(
                     return@launch
                 }
 
-                // データを並列取得
+                // データを並列取得（Android版と同等の全データ取得）
                 coroutineScope {
+                    val userDeferred = async {
+                        userRepository.getUser(userId).getOrNull()
+                    }
                     val mealsDeferred = async {
                         mealRepository.getMealsForDate(userId, date).getOrDefault(emptyList())
                     }
@@ -222,12 +263,42 @@ class DashboardScreenModel(
                     val directiveDeferred = async {
                         directiveRepository?.getDirective(userId, date)?.getOrNull()
                     }
+                    val customQuestDeferred = async {
+                        customQuestRepository?.getCustomQuest(userId, date)?.getOrNull()
+                    }
+                    val scoreDeferred = async {
+                        scoreRepository?.getScoreForDate(userId, date)?.getOrNull()
+                    }
+                    val streakDeferred = async {
+                        scoreRepository?.getStreakInfo(userId)?.getOrDefault(StreakInfo()) ?: StreakInfo()
+                    }
+                    val calorieOverrideDeferred = async {
+                        scoreRepository?.getCalorieOverride(userId, date)?.getOrNull()
+                    }
+                    val restDayDeferred = async {
+                        scoreRepository?.getRestDayStatus(userId, date)?.getOrDefault(false) ?: false
+                    }
 
+                    val user = userDeferred.await()
                     val meals = mealsDeferred.await()
                     val workouts = workoutsDeferred.await()
                     val condition = conditionDeferred.await()
                     val todayRoutine = routineDeferred.await()
                     val directive = directiveDeferred.await()
+                    val customQuest = customQuestDeferred.await()
+                    val score = scoreDeferred.await()
+                    val streakInfo = streakDeferred.await()
+                    val calorieOverride = calorieOverrideDeferred.await()
+                    val isManualRestDay = restDayDeferred.await()
+
+                    // RM記録を読み込み
+                    rmRepository?.getLatestRmByExercise(userId)?.onSuccess { records ->
+                        rmRecordCache = records
+                        _uiState.update { it.copy(latestRmRecords = records) }
+                    }
+
+                    // TDEEと目標PFCを計算
+                    val (targetCalories, targetProtein, targetCarbs, targetFat) = calculateTargets(user, todayRoutine, isManualRestDay)
 
                     // 栄養素を計算
                     val totalCalories = meals.sumOf { it.totalCalories }
@@ -263,10 +334,20 @@ class DashboardScreenModel(
                             date = date,
                             dateDisplay = DateUtil.formatDateForDisplay(date),
                             isToday = DateUtil.isToday(date),
+                            user = user,
                             meals = meals,
                             workouts = workouts,
                             condition = condition,
                             todayRoutine = todayRoutine,
+                            score = score,
+                            streakInfo = streakInfo,
+                            customQuest = customQuest,
+                            calorieOverride = calorieOverride,
+                            isManualRestDay = isManualRestDay,
+                            targetCalories = targetCalories,
+                            targetProtein = targetProtein.toFloat(),
+                            targetCarbs = targetCarbs.toFloat(),
+                            targetFat = targetFat.toFloat(),
                             totalCalories = totalCalories,
                             totalProtein = totalProtein,
                             totalFat = totalFat,
@@ -274,6 +355,7 @@ class DashboardScreenModel(
                             totalWorkoutDuration = workouts.sumOf { it.totalDuration },
                             totalCaloriesBurned = workouts.sumOf { it.totalCaloriesBurned },
                             workoutCount = workouts.size,
+                            executedDirectiveItems = directive?.executedItems?.toSet() ?: emptySet(),
                             // 詳細栄養素
                             averageDiaas = detailedNutrition.averageDiaas,
                             saturatedFat = detailedNutrition.saturatedFat,
@@ -2107,6 +2189,560 @@ class DashboardScreenModel(
 
     fun onTimelineRecordClick(item: UnifiedTimelineItem) {
         // タイムラインからの記録は外部ナビゲーションで処理
+    }
+
+    // ========== 食事・運動 更新 ==========
+
+    fun updateMeal(updatedMeal: Meal) {
+        screenModelScope.launch(exceptionHandler) {
+            mealRepository.updateMeal(updatedMeal)
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            showMealEditDialog = false,
+                            editingMeal = null,
+                            successMessage = "食事を更新しました"
+                        )
+                    }
+                    loadDataForDate(_uiState.value.date)
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+        }
+    }
+
+    fun updateWorkout(updatedWorkout: Workout) {
+        screenModelScope.launch(exceptionHandler) {
+            workoutRepository.updateWorkout(updatedWorkout)
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            showWorkoutEditDialog = false,
+                            editingWorkout = null,
+                            successMessage = "運動を更新しました"
+                        )
+                    }
+                    loadDataForDate(_uiState.value.date)
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+        }
+    }
+
+    // ========== RM記録 CRUD ==========
+
+    fun showRmEditDialog(record: RmRecord) {
+        _uiState.update { it.copy(editingRmRecord = record, showRmEditDialog = true) }
+    }
+
+    fun hideRmEditDialog() {
+        _uiState.update { it.copy(editingRmRecord = null, showRmEditDialog = false) }
+    }
+
+    fun showRmAddDialog() {
+        _uiState.update { it.copy(showRmAddDialog = true) }
+    }
+
+    fun hideRmAddDialog() {
+        _uiState.update { it.copy(showRmAddDialog = false) }
+    }
+
+    fun addRmRecord(exerciseName: String, category: String, weight: Float, reps: Int) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            val record = RmRecord(
+                exerciseName = exerciseName,
+                category = category,
+                weight = weight,
+                reps = reps,
+                timestamp = Clock.System.now().toEpochMilliseconds(),
+                createdAt = Clock.System.now().toEpochMilliseconds()
+            )
+            rmRepository?.addRmRecord(userId, record)
+                ?.onSuccess {
+                    rmRecordCache = rmRecordCache.toMutableMap().apply { put(exerciseName, record) }
+                    _uiState.update { it.copy(
+                        latestRmRecords = rmRecordCache,
+                        showRmAddDialog = false,
+                        successMessage = "${exerciseName}のRM記録を追加しました"
+                    ) }
+                }
+                ?.onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "RM記録の追加に失敗しました") }
+                }
+        }
+    }
+
+    fun updateRmRecord(exerciseName: String, category: String, weight: Float, reps: Int) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            val record = RmRecord(
+                exerciseName = exerciseName,
+                category = category,
+                weight = weight,
+                reps = reps,
+                timestamp = Clock.System.now().toEpochMilliseconds(),
+                createdAt = Clock.System.now().toEpochMilliseconds()
+            )
+            rmRepository?.addRmRecord(userId, record)
+                ?.onSuccess {
+                    rmRecordCache = rmRecordCache.toMutableMap().apply { put(exerciseName, record) }
+                    _uiState.update { it.copy(
+                        latestRmRecords = rmRecordCache,
+                        editingRmRecord = null,
+                        showRmEditDialog = false,
+                        successMessage = "${exerciseName}のRM記録を更新しました"
+                    ) }
+                }
+                ?.onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "RM記録の更新に失敗しました") }
+                }
+        }
+    }
+
+    fun deleteRmRecord(record: RmRecord) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        if (record.id.isEmpty()) return
+        screenModelScope.launch(exceptionHandler) {
+            rmRepository?.deleteRmRecord(userId, record.id)
+                ?.onSuccess {
+                    rmRecordCache = rmRecordCache.toMutableMap().apply { remove(record.exerciseName) }
+                    _uiState.update { it.copy(
+                        latestRmRecords = rmRecordCache,
+                        editingRmRecord = null,
+                        showRmEditDialog = false
+                    ) }
+                }
+                ?.onFailure { e ->
+                    _uiState.update { it.copy(error = e.message ?: "RM記録の削除に失敗しました") }
+                }
+        }
+    }
+
+    // ========== カロリーオーバーライド ==========
+
+    fun showCalorieOverrideDialog() {
+        _uiState.update { it.copy(showCalorieOverrideDialog = true) }
+    }
+
+    fun hideCalorieOverrideDialog() {
+        _uiState.update { it.copy(showCalorieOverrideDialog = false) }
+    }
+
+    fun applyCalorieOverride(override: CalorieOverride) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            val date = _uiState.value.date
+            scoreRepository?.applyCalorieOverride(userId, date, override)
+                ?.onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            calorieOverride = override,
+                            showCalorieOverrideDialog = false
+                        )
+                    }
+                    recalculateTargetsWithOverride(override)
+                }
+                ?.onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+        }
+    }
+
+    fun clearCalorieOverride() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            val date = _uiState.value.date
+            scoreRepository?.clearCalorieOverride(userId, date)
+                ?.onSuccess {
+                    _uiState.update { it.copy(calorieOverride = null) }
+                    val state = _uiState.value
+                    val user = state.user
+                    val (targetCalories, targetProtein, targetCarbs, targetFat) = calculateTargets(user, state.todayRoutine, state.isManualRestDay)
+                    _uiState.update { s ->
+                        s.copy(
+                            targetCalories = targetCalories,
+                            targetProtein = targetProtein,
+                            targetCarbs = targetCarbs,
+                            targetFat = targetFat
+                        )
+                    }
+                }
+                ?.onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+        }
+    }
+
+    private fun recalculateTargetsWithOverride(override: CalorieOverride) {
+        val state = _uiState.value
+        val user = state.user
+        val (baseCalories, _, _, _) = calculateTargets(user, state.todayRoutine, state.isManualRestDay)
+
+        val adjustedCalories = baseCalories + override.calorieAdjustment
+
+        val pfcRatio = override.pfcOverride
+        val targetProtein: Float
+        val targetFat: Float
+        val targetCarbs: Float
+
+        if (pfcRatio != null) {
+            targetProtein = (adjustedCalories * pfcRatio.protein / 100f / 4f)
+            targetFat = (adjustedCalories * pfcRatio.fat / 100f / 9f)
+            targetCarbs = (adjustedCalories * pfcRatio.carbs / 100f / 4f)
+        } else {
+            targetProtein = (adjustedCalories * 0.30f / 4f)
+            targetFat = (adjustedCalories * 0.25f / 9f)
+            targetCarbs = (adjustedCalories * 0.45f / 4f)
+        }
+
+        _uiState.update { s ->
+            s.copy(
+                targetCalories = adjustedCalories,
+                targetProtein = targetProtein,
+                targetCarbs = targetCarbs,
+                targetFat = targetFat
+            )
+        }
+    }
+
+    // ========== 指示書（Directive）編集 ==========
+
+    fun showDirectiveEditDialog() {
+        _uiState.update { it.copy(showDirectiveEditDialog = true) }
+    }
+
+    fun hideDirectiveEditDialog() {
+        _uiState.update { it.copy(showDirectiveEditDialog = false) }
+    }
+
+    fun updateDirective(newMessage: String) {
+        screenModelScope.launch(exceptionHandler) {
+            val currentDirective = _uiState.value.directive ?: return@launch
+            val updatedDirective = currentDirective.copy(message = newMessage)
+            directiveRepository?.updateDirective(updatedDirective)
+                ?.onSuccess {
+                    _uiState.update { it.copy(directive = updatedDirective, showDirectiveEditDialog = false) }
+                }
+                ?.onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+        }
+    }
+
+    // ========== Microディテールシート ==========
+
+    fun toggleMicroDetailSheet(show: Boolean) {
+        _uiState.update { it.copy(showMicroDetailSheet = show) }
+    }
+
+    // ========== カスタムクエスト ==========
+
+    private suspend fun markCustomQuestSlotCompleted(slotKey: String) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        val selectedDate = _uiState.value.date
+        val customQuest = _uiState.value.customQuest ?: return
+        val docDate = if (customQuest.date == "_default") "_default" else selectedDate
+
+        val itemIndices = customQuest.slots[slotKey]?.items?.indices?.toList() ?: listOf(0)
+        customQuestRepository?.updateExecutedItems(userId, docDate, slotKey, itemIndices)
+            ?.onSuccess {
+                println("DashboardScreenModel: CustomQuest slot $slotKey marked completed")
+            }
+            ?.onFailure { e ->
+                println("DashboardScreenModel: Failed to mark custom quest slot: ${e.message}")
+            }
+    }
+
+    private suspend fun undoCustomQuestSlot(slotKey: String) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        val selectedDate = _uiState.value.date
+        val customQuest = _uiState.value.customQuest ?: return
+        val docDate = if (customQuest.date == "_default") "_default" else selectedDate
+
+        customQuestRepository?.updateExecutedItems(userId, docDate, slotKey, emptyList())
+    }
+
+    // ========== 運動クエスト完了シート ==========
+
+    fun showWorkoutCompletionSheet(item: UnifiedTimelineItem) {
+        val exercises = mutableListOf<WorkoutCompletionExercise>()
+
+        if (item.isCustomQuest && item.customQuestItems != null) {
+            for (cqItem in item.customQuestItems) {
+                val rmRecord = rmRecordCache[cqItem.foodName]
+                val rmMin = cqItem.rmPercentMin
+                val rmMax = cqItem.rmPercentMax
+
+                val estimatedWeight: Float?
+                val isEstimated: Boolean
+                if (rmRecord != null && (rmMin != null || rmMax != null)) {
+                    val avgPercent = ((rmMin ?: rmMax!!) + (rmMax ?: rmMin!!)) / 2f
+                    estimatedWeight = (rmRecord.weight * avgPercent / 100f)
+                    isEstimated = true
+                } else if (cqItem.weight != null && (cqItem.weight ?: 0f) > 0f) {
+                    estimatedWeight = cqItem.weight!!
+                    isEstimated = false
+                } else {
+                    estimatedWeight = null
+                    isEstimated = false
+                }
+
+                exercises.add(WorkoutCompletionExercise(
+                    name = cqItem.foodName,
+                    category = cqItem.category ?: "",
+                    sets = cqItem.sets ?: 6,
+                    reps = cqItem.reps ?: 10,
+                    weight = estimatedWeight,
+                    isWeightEstimated = isEstimated,
+                    rmPercentMin = rmMin,
+                    rmPercentMax = rmMax
+                ))
+            }
+        } else if (item.id.startsWith("directive_")) {
+            val workoutText = item.subtitle ?: ""
+            val bulletLines = workoutText.split("\n").filter { it.trimStart().startsWith("・") }
+
+            for (line in bulletLines) {
+                val name = line.removePrefix("・").substringBefore(" ").trim()
+                val setsMatch = Regex("(\\d+)セット").find(line)
+                val repsMatch = Regex("(\\d+)回/セット").find(line)
+                val sets = setsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 6
+                val reps = repsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 10
+
+                val rmRecord = rmRecordCache[name]
+                val estimatedWeight = rmRecord?.weight
+                val isEstimated = rmRecord != null
+
+                exercises.add(WorkoutCompletionExercise(
+                    name = name,
+                    category = "",
+                    sets = sets,
+                    reps = reps,
+                    weight = estimatedWeight,
+                    isWeightEstimated = isEstimated
+                ))
+            }
+
+            if (exercises.isEmpty()) {
+                exercises.add(WorkoutCompletionExercise(
+                    name = item.title,
+                    category = "",
+                    sets = 6,
+                    reps = 10,
+                    weight = null
+                ))
+            }
+        }
+
+        _uiState.update { it.copy(
+            showWorkoutCompletionSheet = true,
+            workoutCompletionItem = item,
+            workoutCompletionExercises = exercises
+        ) }
+    }
+
+    fun dismissWorkoutCompletionSheet() {
+        _uiState.update { it.copy(
+            showWorkoutCompletionSheet = false,
+            workoutCompletionItem = null,
+            workoutCompletionExercises = emptyList()
+        ) }
+    }
+
+    fun confirmWorkoutCompletion() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        val item = _uiState.value.workoutCompletionItem ?: return
+        val exercises = _uiState.value.workoutCompletionExercises
+
+        screenModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isExecutingDirectiveItem = true) }
+            try {
+                val selectedDate = _uiState.value.date
+                val baseTimestamp = DateUtil.dateStringToTimestamp(selectedDate)
+                val targetTimestamp = baseTimestamp + (item.timeMinutes * 60 * 1000L)
+
+                val exerciseModels = exercises.map { ex ->
+                    Exercise(
+                        name = ex.name,
+                        category = MetCalorieCalculator.inferExerciseCategory(ex.name, _uiState.value.todayRoutine?.splitType),
+                        sets = ex.sets,
+                        reps = ex.reps,
+                        weight = ex.weight,
+                        duration = ex.duration,
+                        caloriesBurned = ex.calories
+                    )
+                }
+
+                val totalDuration = exercises.sumOf { it.duration }
+                val totalCalories = exercises.sumOf { it.calories }
+
+                val workout = Workout(
+                    id = "",
+                    userId = userId,
+                    name = item.title,
+                    type = WorkoutType.STRENGTH,
+                    exercises = exerciseModels,
+                    totalDuration = totalDuration,
+                    totalCaloriesBurned = totalCalories,
+                    intensity = WorkoutIntensity.MODERATE,
+                    note = if (item.isCustomQuest) "カスタムクエスト" else (item.subtitle ?: ""),
+                    timestamp = targetTimestamp,
+                    createdAt = Clock.System.now().toEpochMilliseconds()
+                )
+
+                workoutRepository.addWorkout(workout)
+                    .onSuccess {
+                        if (item.isCustomQuest && item.customQuestSlotKey != null) {
+                            markCustomQuestSlotCompleted(item.customQuestSlotKey)
+                        } else if (item.id.startsWith("directive_")) {
+                            markDirectiveItemCompleted(item)
+                        }
+                        updateBadgeStats("workout_recorded", mapOf("duration" to totalDuration))
+                        _uiState.update { it.copy(
+                            successMessage = "${item.title}を記録しました（${totalCalories}kcal）",
+                            showWorkoutCompletionSheet = false,
+                            workoutCompletionItem = null,
+                            workoutCompletionExercises = emptyList()
+                        ) }
+                        loadDataForDate(_uiState.value.date)
+                    }
+                    .onFailure { e ->
+                        _uiState.update { it.copy(error = "記録に失敗しました: ${e.message}") }
+                    }
+            } finally {
+                _uiState.update { it.copy(isExecutingDirectiveItem = false) }
+            }
+        }
+    }
+
+    /**
+     * UnifiedTimelineItemからDirective完了マークを設定
+     */
+    private suspend fun markDirectiveItemCompleted(item: UnifiedTimelineItem) {
+        val userId = authRepository.getCurrentUserId() ?: return
+        val directive = _uiState.value.directive ?: return
+
+        val index = when {
+            item.id.startsWith("directive_meal_") -> {
+                item.id.removePrefix("directive_meal_").toIntOrNull()?.minus(1) ?: return
+            }
+            item.id == "directive_workout" -> {
+                directive.message.lines().filter { it.startsWith("【食事") }.size
+            }
+            item.id == "directive_sleep" -> {
+                val mealCount = directive.message.lines().filter { it.startsWith("【食事") }.size
+                val hasWorkout = directive.message.lines().any { it.startsWith("【運動") }
+                mealCount + (if (hasWorkout) 1 else 0)
+            }
+            else -> return
+        }
+
+        val updatedExecutedItems = directive.executedItems.toMutableList()
+        if (!updatedExecutedItems.contains(index)) {
+            updatedExecutedItems.add(index)
+        }
+
+        val mealPattern = Regex("""【食事(\d+)】""")
+        val totalMealSlots = directive.getMessageLines().count { mealPattern.containsMatchIn(it) }
+
+        directiveRepository?.updateExecutedItems(userId, directive.date, updatedExecutedItems)
+            ?.onSuccess {
+                val updatedDirective = directive.copy(
+                    executedItems = updatedExecutedItems,
+                    completed = updatedExecutedItems.size >= totalMealSlots
+                )
+                _uiState.update { state ->
+                    state.copy(
+                        directive = updatedDirective,
+                        unifiedTimeline = buildUnifiedTimeline(
+                            meals = state.meals,
+                            workouts = state.workouts,
+                            currentTimeMinutes = state.currentTimeMinutes,
+                            directive = updatedDirective
+                        )
+                    )
+                }
+            }
+
+        grantExperience("クエスト達成")
+    }
+
+    // ========== バッジ・ログインボーナス ==========
+
+    private fun checkLoginBonus() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            userRepository.checkAndGrantLoginBonus(userId)
+                .onSuccess { granted ->
+                    if (granted) {
+                        println("DashboardScreenModel: ログインボーナス付与: +10XP")
+                    }
+                    checkBadges()
+                }
+                .onFailure { e ->
+                    println("DashboardScreenModel: ログインボーナス確認エラー: ${e.message}")
+                }
+        }
+    }
+
+    private fun checkBadges() {
+        screenModelScope.launch(exceptionHandler) {
+            badgeRepository?.checkAndAwardBadges()
+                ?.onSuccess { awardedBadges ->
+                    if (awardedBadges.isNotEmpty()) {
+                        println("DashboardScreenModel: 新規バッジ獲得: $awardedBadges")
+                        awardedBadges.forEach { badgeId ->
+                            queueCelebration(CelebrationInfo(
+                                type = CelebrationInfoType.BADGE_EARNED,
+                                badgeId = badgeId,
+                                badgeName = getBadgeName(badgeId)
+                            ))
+                        }
+                    }
+                }
+                ?.onFailure { e ->
+                    println("DashboardScreenModel: バッジチェックエラー: ${e.message}")
+                }
+        }
+    }
+
+    private fun updateBadgeStats(action: String, data: Map<String, Any>? = null) {
+        screenModelScope.launch(exceptionHandler) {
+            badgeRepository?.updateBadgeStats(action, data)
+                ?.onSuccess {
+                    checkBadges()
+                }
+                ?.onFailure { e ->
+                    println("DashboardScreenModel: updateBadgeStats失敗: ${e.message}")
+                }
+        }
+    }
+
+    private fun getBadgeName(badgeId: String): String {
+        return when (badgeId) {
+            "streak_3" -> "3日連続"
+            "streak_7" -> "1週間連続"
+            "streak_14" -> "2週間連続"
+            "streak_30" -> "1ヶ月連続"
+            "streak_100" -> "100日連続"
+            "nutrition_perfect_day" -> "パーフェクトデイ"
+            "nutrition_protein_master" -> "プロテインマスター"
+            "nutrition_balanced" -> "バランス上手"
+            "exercise_first" -> "はじめの一歩"
+            "exercise_60min" -> "60分達成"
+            "exercise_variety" -> "多彩なトレーニング"
+            "milestone_first_meal" -> "最初の一食"
+            "milestone_10_meals" -> "10食達成"
+            "milestone_100_meals" -> "100食達成"
+            "milestone_first_analysis" -> "初めてのAI分析"
+            "special_early_bird" -> "早起き鳥"
+            "special_weekend_warrior" -> "週末戦士"
+            "special_score_100" -> "パーフェクトスコア"
+            else -> badgeId
+        }
     }
 }
 

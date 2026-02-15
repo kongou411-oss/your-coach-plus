@@ -7,6 +7,7 @@ import com.yourcoach.plus.shared.util.AppError
 import com.yourcoach.plus.shared.util.DateUtil
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.Direction
+import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
@@ -201,12 +202,9 @@ class FirestoreWorkoutRepository : WorkoutRepository {
      */
     override suspend fun incrementTemplateUsage(userId: String, templateId: String): Result<Unit> {
         return try {
-            val docRef = templatesCollection(userId).document(templateId)
-            val doc = docRef.get()
-            val currentCount = doc.get<Long?>("usageCount")?.toInt() ?: 0
-            docRef.update(
+            templatesCollection(userId).document(templateId).update(
                 mapOf(
-                    "usageCount" to currentCount + 1,
+                    "usageCount" to FieldValue.increment(1),
                     "lastUsedAt" to DateUtil.currentTimestamp()
                 )
             )
@@ -458,7 +456,18 @@ class FirestoreWorkoutRepository : WorkoutRepository {
         "caloriesBurned" to exercise.caloriesBurned,
         "warmupSets" to exercise.warmupSets,
         "mainSets" to exercise.mainSets,
-        "totalVolume" to exercise.totalVolume
+        "totalVolume" to exercise.totalVolume,
+        "setDetails" to exercise.setDetails.map { setDetailToMap(it) }
+    )
+
+    private fun setDetailToMap(set: ExerciseSet): Map<String, Any?> = mapOf(
+        "setNumber" to set.setNumber,
+        "type" to set.type.name,
+        "weight" to set.weight,
+        "reps" to set.reps,
+        "rpe" to set.rpe,
+        "isCompleted" to set.isCompleted,
+        "completedAt" to set.completedAt
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -494,6 +503,7 @@ class FirestoreWorkoutRepository : WorkoutRepository {
         )
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun mapToExercise(data: Map<String, Any?>): Exercise = Exercise(
         name = data["name"] as? String ?: "",
         category = (data["category"] as? String)?.let {
@@ -507,7 +517,18 @@ class FirestoreWorkoutRepository : WorkoutRepository {
         caloriesBurned = (data["caloriesBurned"] as? Number)?.toInt() ?: 0,
         warmupSets = (data["warmupSets"] as? Number)?.toInt() ?: 0,
         mainSets = (data["mainSets"] as? Number)?.toInt() ?: 0,
-        totalVolume = (data["totalVolume"] as? Number)?.toInt() ?: 0
+        totalVolume = (data["totalVolume"] as? Number)?.toInt() ?: 0,
+        setDetails = (data["setDetails"] as? List<Map<String, Any?>>)?.map { mapToSetDetail(it) } ?: emptyList()
+    )
+
+    private fun mapToSetDetail(data: Map<String, Any?>): ExerciseSet = ExerciseSet(
+        setNumber = (data["setNumber"] as? Number)?.toInt() ?: 0,
+        type = try { SetType.valueOf(data["type"] as? String ?: "MAIN") } catch (e: Exception) { SetType.MAIN },
+        weight = (data["weight"] as? Number)?.toFloat() ?: 0f,
+        reps = (data["reps"] as? Number)?.toInt() ?: 0,
+        rpe = (data["rpe"] as? Number)?.toInt(),
+        isCompleted = data["isCompleted"] as? Boolean ?: false,
+        completedAt = (data["completedAt"] as? Number)?.toLong()
     )
 
     private fun templateToMap(template: WorkoutTemplate): Map<String, Any?> = mapOf(

@@ -2,6 +2,6 @@ package com.yourcoach.plus.shared.auth
 
 /**
  * Apple Sign-Inが利用可能かどうかを返す
- * Androidでは常にfalse
+ * AndroidでもFirebase OAuthProvider Webフローで利用可能
  */
-actual fun isAppleSignInAvailable(): Boolean = false
+actual fun isAppleSignInAvailable(): Boolean = true

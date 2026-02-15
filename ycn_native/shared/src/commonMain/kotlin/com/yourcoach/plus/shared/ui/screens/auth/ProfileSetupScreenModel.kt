@@ -123,7 +123,10 @@ class ProfileSetupScreenModel(
         screenModelScope.launch(exceptionHandler) {
             try {
                 val currentUser = authRepository.getCurrentUser()
-                val initialNickname = currentUser?.email?.substringBefore("@") ?: ""
+                // displayName → email の順でニックネームを自動取得
+                val initialNickname = currentUser?.displayName?.takeIf { it.isNotBlank() }
+                    ?: currentUser?.email?.takeIf { it.isNotBlank() }?.substringBefore("@")
+                    ?: ""
                 if (initialNickname.isNotEmpty()) {
                     _state.update { it.copy(nickname = initialNickname) }
                 }
@@ -420,9 +423,14 @@ class ProfileSetupScreenModel(
                 val calcTargetFat = s.targetCalories?.let { cal -> (cal * s.fatRatio / 100f / 9f) }
                 val calcTargetCarbs = s.targetCalories?.let { cal -> (cal * s.carbRatio / 100f / 4f) }
 
+                // ニックネームが空の場合、Auth情報から自動取得
+                val effectiveNickname = s.nickname.takeIf { it.isNotBlank() }
+                    ?: authRepository.getCurrentUser()?.displayName?.takeIf { it.isNotBlank() }
+                    ?: authRepository.getCurrentUser()?.email?.takeIf { it.isNotBlank() }?.substringBefore("@")
+
                 // プロフィール保存
                 val profile = UserProfile(
-                    nickname = s.nickname.takeIf { it.isNotBlank() },
+                    nickname = effectiveNickname,
                     gender = s.gender,
                     age = s.age.toIntOrNull(),
                     height = s.height.toFloatOrNull(),
@@ -450,12 +458,12 @@ class ProfileSetupScreenModel(
                     onboardingCompleted = true
                 )
 
-                // プロフィール保存（エラーをキャッチ）
-                try {
-                    userRepository.updateProfile(userId, profile)
-                } catch (profileError: Throwable) {
-                    println("Profile save error: ${profileError.message}")
-                    throw Exception("プロフィール保存エラー: ${profileError.message ?: "不明なエラー"}")
+                // プロフィール保存（Resultを確認）
+                val profileResult = userRepository.updateProfile(userId, profile)
+                if (profileResult.isFailure) {
+                    val error = profileResult.exceptionOrNull()
+                    println("Profile save error: ${error?.message}")
+                    throw Exception("プロフィール保存エラー: ${error?.message ?: "不明なエラー"}")
                 }
 
                 // ルーティン保存（エラーをキャッチ）
@@ -520,8 +528,19 @@ class ProfileSetupScreenModel(
     fun skipOnboarding(userId: String, onComplete: () -> Unit) {
         screenModelScope.launch(exceptionHandler) {
             try {
-                val profile = UserProfile(onboardingCompleted = true)
-                userRepository.updateProfile(userId, profile)
+                // Auth情報からニックネームを自動取得
+                val currentUser = authRepository.getCurrentUser()
+                val autoNickname = currentUser?.displayName?.takeIf { it.isNotBlank() }
+                    ?: currentUser?.email?.takeIf { it.isNotBlank() }?.substringBefore("@")
+
+                val profile = UserProfile(
+                    nickname = autoNickname,
+                    onboardingCompleted = true
+                )
+                val result = userRepository.updateProfile(userId, profile)
+                if (result.isFailure) {
+                    println("skipOnboarding: updateProfile failed: ${result.exceptionOrNull()?.message}")
+                }
                 onComplete()
             } catch (_: Exception) {
                 onComplete()

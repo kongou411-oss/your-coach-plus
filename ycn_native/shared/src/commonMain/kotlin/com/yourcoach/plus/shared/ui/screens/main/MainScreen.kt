@@ -3,6 +3,7 @@ package com.yourcoach.plus.shared.ui.screens.main
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -18,6 +19,9 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
+import com.yourcoach.plus.shared.ui.components.BottomBarState
+import com.yourcoach.plus.shared.ui.components.BottomNavItem
+import com.yourcoach.plus.shared.ui.components.ExpandableBottomBar
 import com.yourcoach.plus.shared.ui.screens.auth.LoginScreen
 import com.yourcoach.plus.shared.ui.screens.badges.BadgesScreen
 import com.yourcoach.plus.shared.ui.screens.comy.ComyScreen
@@ -36,6 +40,7 @@ import org.koin.compose.koinInject
 /**
  * Main Screen with Bottom Navigation (Compose Multiplatform)
  * 5 tabs: Home, History, PGBASE, COMY, Settings
+ * ExpandableBottomBar: ダッシュボード時にレベル・クレジット・アクションボタンを表示
  */
 class MainScreen : Screen {
 
@@ -44,19 +49,68 @@ class MainScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
 
         TabNavigator(HomeTab) { tabNavigator ->
-            val safeAreaInsets = getSafeAreaInsets()
+            // ボトムバーの共有状態（DashboardScreenから更新）
+            var bottomBarState by remember { mutableStateOf(BottomBarState()) }
 
-            // Provide navigator to Settings tab via CompositionLocal
-            CompositionLocalProvider(LocalMainNavigator provides navigator) {
+            // Provide navigator and bottomBarState updater to tabs via CompositionLocal
+            CompositionLocalProvider(
+                LocalMainNavigator provides navigator,
+                LocalBottomBarStateUpdater provides { state -> bottomBarState = state },
+                LocalLogoutHandler provides { navigator.replaceAll(LoginScreen()) }
+            ) {
+                val isDashboard = tabNavigator.current == HomeTab
+
+                // ナビゲーションアイテム
+                val navItems = remember {
+                    listOf(
+                        BottomNavItem("home", "ホーム", Icons.Filled.Home, Icons.Outlined.Home),
+                        BottomNavItem("history", "履歴", Icons.Filled.History, Icons.Outlined.History),
+                        BottomNavItem("pgbase", "PGBASE", Icons.Filled.Storage, Icons.Outlined.Storage),
+                        BottomNavItem("comy", "COMY", Icons.Filled.Forum, Icons.Outlined.Forum),
+                        BottomNavItem("settings", "設定", Icons.Filled.Settings, Icons.Outlined.Settings)
+                    )
+                }
+
+                val currentRoute = when (tabNavigator.current) {
+                    HomeTab -> "home"
+                    HistoryTab -> "history"
+                    PgBaseTab -> "pgbase"
+                    ComyTab -> "comy"
+                    SettingsTab -> "settings"
+                    else -> "home"
+                }
+
                 Column(modifier = Modifier.fillMaxSize()) {
                     // タブコンテンツ（残りスペースを占有）
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         CurrentTab()
                     }
-                    // ボトムナビゲーション（常に画面下部に表示）
-                    BottomNavigation(
-                        tabNavigator = tabNavigator,
-                        bottomPadding = safeAreaInsets.bottom
+                    // ExpandableBottomBar（常に画面下部に表示）
+                    ExpandableBottomBar(
+                        navItems = navItems,
+                        currentRoute = currentRoute,
+                        onNavItemClick = { route ->
+                            val tab = when (route) {
+                                "home" -> HomeTab
+                                "history" -> HistoryTab
+                                "pgbase" -> PgBaseTab
+                                "comy" -> ComyTab
+                                "settings" -> SettingsTab
+                                else -> HomeTab
+                            }
+                            tabNavigator.current = tab
+                        },
+                        // ダッシュボード時のみレベル・アクション表示
+                        level = if (isDashboard) bottomBarState.level else null,
+                        expCurrent = if (isDashboard) bottomBarState.expCurrent else null,
+                        expRequired = if (isDashboard) bottomBarState.expRequired else null,
+                        progressPercent = if (isDashboard) bottomBarState.progressPercent else null,
+                        freeCredits = if (isDashboard) bottomBarState.freeCredits else null,
+                        paidCredits = if (isDashboard) bottomBarState.paidCredits else null,
+                        onAnalysisClick = if (isDashboard) bottomBarState.onAnalysisClick else null,
+                        onGenerateQuestClick = if (isDashboard) bottomBarState.onGenerateQuestClick else null,
+                        isGeneratingQuest = if (isDashboard) bottomBarState.isGeneratingQuest else false,
+                        hasCustomQuest = if (isDashboard) bottomBarState.hasCustomQuest else false
                     )
                 }
             }
@@ -70,51 +124,16 @@ class MainScreen : Screen {
 val LocalMainNavigator = staticCompositionLocalOf<cafe.adriel.voyager.navigator.Navigator?> { null }
 
 /**
- * Bottom Navigation Bar
+ * CompositionLocal to provide BottomBarState updater
+ * DashboardScreenからボトムバーの状態を更新するために使用
  */
-@Composable
-private fun BottomNavigation(
-    tabNavigator: TabNavigator,
-    bottomPadding: androidx.compose.ui.unit.Dp
-) {
-    NavigationBar(
-        modifier = Modifier.height(80.dp + bottomPadding),
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
-    ) {
-        val tabs = listOf(HomeTab, HistoryTab, PgBaseTab, ComyTab, SettingsTab)
+val LocalBottomBarStateUpdater = staticCompositionLocalOf<(BottomBarState) -> Unit> { {} }
 
-        tabs.forEach { tab ->
-            NavigationBarItem(
-                selected = tabNavigator.current == tab,
-                onClick = { tabNavigator.current = tab },
-                icon = {
-                    tab.options.icon?.let { painter ->
-                        Icon(
-                            painter = painter,
-                            contentDescription = tab.options.title,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                },
-                label = {
-                    Text(
-                        text = tab.options.title,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = if (tabNavigator.current == tab) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Primary,
-                    selectedTextColor = Primary,
-                    indicatorColor = Primary.copy(alpha = 0.1f),
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-        }
-    }
-}
+/**
+ * CompositionLocal to provide logout/account-deleted handler
+ * TabNavigator外でナビゲーションを実行するためのコールバック
+ */
+val LocalLogoutHandler = staticCompositionLocalOf<() -> Unit> { {} }
 
 /**
  * Home Tab (Dashboard)
@@ -202,43 +221,8 @@ object SettingsTab : Tab {
 
     @Composable
     override fun Content() {
-        val mainNavigator = LocalMainNavigator.current
-        val authRepository: AuthRepository = koinInject()
-        val userRepository: UserRepository = koinInject()
-        val openUrl = rememberOpenUrl()
-        val scope = rememberCoroutineScope()
-
-        SettingsScreen(
-            onNavigateToProfile = { mainNavigator?.push(ProfileEditScreen()) },
-            onNavigateToNotifications = { mainNavigator?.push(NotificationSettingsScreen()) },
-            onNavigateToBadges = { mainNavigator?.push(BadgesScreen()) },
-            onNavigateToPremium = {
-                scope.launch {
-                    val userId = authRepository.getCurrentUserId() ?: return@launch
-                    userRepository.getUser(userId).onSuccess { user ->
-                        if (user != null) {
-                            mainNavigator?.push(
-                                SubscriptionScreen(
-                                    userId = user.uid,
-                                    registrationDate = user.profile?.registrationDate,
-                                    subscriptionStatus = if (user.isPremium) "premium" else "free"
-                                )
-                            )
-                        }
-                    }
-                }
-            },
-            onNavigateToRoutine = { mainNavigator?.push(RoutineSettingsScreen()) },
-            onNavigateToTemplates = { mainNavigator?.push(TemplateSettingsScreen()) },
-            onNavigateToMealSlots = { mainNavigator?.push(MealSlotSettingsScreen()) },
-            onNavigateToHelp = { mainNavigator?.push(HelpScreen()) },
-            onNavigateToFeedback = { mainNavigator?.push(FeedbackScreen()) },
-            onNavigateToAbout = { openUrl("https://your-coach-plus.web.app/home.html") },
-            onNavigateToTerms = { openUrl("https://your-coach-plus.web.app/terms.html") },
-            onNavigateToPrivacy = { openUrl("https://your-coach-plus.web.app/privacy.html") },
-            onLoggedOut = {
-                mainNavigator?.replace(LoginScreen())
-            }
-        ).Content()
+        // SettingsScreenは内部でLocalNavigator経由のナビゲーションを行う
+        // mainNavigatorをCompositionLocal経由で提供済み
+        SettingsScreen().Content()
     }
 }

@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -11,11 +12,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
+import com.yourcoach.plus.shared.generated.resources.Res
+import com.yourcoach.plus.shared.generated.resources.icon_512
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -57,24 +65,24 @@ private fun OnboardingContent(
             verticalArrangement = Arrangement.Center
         ) {
             // ロゴ
-            Box(
+            Image(
+                painter = painterResource(Res.drawable.icon_512),
+                contentDescription = "Your Coach+",
                 modifier = Modifier
                     .size(120.dp)
-                    .background(Primary, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FitnessCenter,
-                    contentDescription = null,
-                    modifier = Modifier.size(60.dp),
-                    tint = Color.White
-                )
-            }
+                    .clip(CircleShape)
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Your Coach+ へようこそ",
+                text = buildAnnotatedString {
+                    append("Your Coach")
+                    withStyle(SpanStyle(color = Color(0xFF4A9EFF))) {
+                        append("+")
+                    }
+                    append(" へようこそ")
+                },
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center

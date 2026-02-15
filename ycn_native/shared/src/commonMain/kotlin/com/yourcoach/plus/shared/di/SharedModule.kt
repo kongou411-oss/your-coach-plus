@@ -64,7 +64,7 @@ val sharedModule = module {
     single<UserRepository> { FirestoreUserRepository() }
     single<MealRepository> { FirestoreMealRepository() }
     single<WorkoutRepository> { FirestoreWorkoutRepository() }
-    single<RoutineRepository> { FirestoreRoutineRepository() }
+    single<RoutineRepository> { FirestoreRoutineRepository(get(), get()) }
 
     // Additional Repositories
     single<CustomFoodRepository> { FirestoreCustomFoodRepository() }
@@ -93,7 +93,10 @@ val sharedModule = module {
             conditionRepository = get(),
             routineRepository = get(),
             scoreRepository = get(),
-            directiveRepository = get()
+            directiveRepository = get(),
+            customQuestRepository = get(),
+            badgeRepository = get(),
+            rmRepository = get()
         )
     }
     // History
@@ -101,7 +104,7 @@ val sharedModule = module {
     // Settings
     factory { SettingsScreenModel(get(), get(), get(), get(), getOrNull<GeminiService>()) }
     factory { ProfileEditScreenModel(get(), get()) }
-    factory { RoutineSettingsScreenModel(get(), get()) }
+    factory { RoutineSettingsScreenModel(get(), get(), get(), get()) }
     factory { TemplateSettingsScreenModel(get(), get(), get()) }
     factory { MealSlotSettingsScreenModel(get(), get()) }
     // Notification
@@ -116,6 +119,8 @@ val sharedModule = module {
     factory { PgBaseScreenModel(get(), get(), get()) }
     // COMY
     factory { ComyScreenModel(get(), get(), get(), get()) }
+    // Workout
+    factory { com.yourcoach.plus.shared.ui.screens.workout.WorkoutRecorderScreenModel(get(), get()) }
     // Analysis
     factory {
         AnalysisScreenModel(

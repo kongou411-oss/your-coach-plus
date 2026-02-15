@@ -201,7 +201,7 @@ class FirebaseAuthRepository : AuthRepository {
     /**
      * Googleで再認証してアカウント削除
      */
-    suspend fun reauthenticateWithGoogleAndDelete(idToken: String): Result<Unit> {
+    override suspend fun reauthenticateWithGoogleAndDelete(idToken: String): Result<Unit> {
         return try {
             val currentUser = auth.currentUser
                 ?: return Result.failure(AppError.AuthenticationError("ログインしていません"))

@@ -882,8 +882,8 @@ function resetAllProfileDefaults() {
     document.getElementById('cq-prof-carb-ratio').value = '50';
     document.getElementById('cq-prof-pre-p').value = '20'; document.getElementById('cq-prof-pre-f').value = '1'; document.getElementById('cq-prof-pre-c').value = '25';
     document.getElementById('cq-prof-post-p').value = '20'; document.getElementById('cq-prof-post-f').value = '1'; document.getElementById('cq-prof-post-c').value = '25';
-    document.getElementById('cq-prof-prot-sources').value = '鶏むね肉, 鮭'; document.getElementById('cq-prof-carb-sources').value = '白米, 玄米';
-    document.getElementById('cq-prof-fat-sources').value = 'オリーブオイル, アボカド'; document.getElementById('cq-prof-avoid-foods').value = '';
+    document.getElementById('cq-prof-prot-sources').value = ''; document.getElementById('cq-prof-carb-sources').value = '';
+    document.getElementById('cq-prof-fat-sources').value = ''; document.getElementById('cq-prof-avoid-foods').value = '';
     document.getElementById('cq-prof-allergies').value = ''; document.getElementById('cq-prof-fav-foods').value = ''; document.getElementById('cq-prof-ng-foods').value = '';
     toggleTrainingFields(); onMealsPerDayChange();
 }

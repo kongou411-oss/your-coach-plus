@@ -29,11 +29,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.CustomFood
 import com.yourcoach.plus.shared.domain.model.CustomQuestSlot
 import com.yourcoach.plus.shared.domain.model.CustomQuestSlotType
+import com.yourcoach.plus.shared.ui.screens.badges.BadgesScreen
+import com.yourcoach.plus.shared.ui.screens.main.LocalLogoutHandler
+import com.yourcoach.plus.shared.ui.screens.main.LocalMainNavigator
+import com.yourcoach.plus.shared.ui.screens.notification.NotificationSettingsScreen
+import com.yourcoach.plus.shared.ui.screens.subscription.SubscriptionScreen
 import com.yourcoach.plus.shared.ui.theme.*
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -53,22 +56,9 @@ enum class SettingsTab(
 
 /**
  * Settings Screen (Compose Multiplatform)
+ * Voyager Navigatorで直接ナビゲーション
  */
-class SettingsScreen(
-    private val onNavigateToProfile: () -> Unit = {},
-    private val onNavigateToNotifications: () -> Unit = {},
-    private val onNavigateToBadges: () -> Unit = {},
-    private val onNavigateToPremium: () -> Unit = {},
-    private val onNavigateToRoutine: () -> Unit = {},
-    private val onNavigateToTemplates: () -> Unit = {},
-    private val onNavigateToMealSlots: () -> Unit = {},
-    private val onNavigateToHelp: () -> Unit = {},
-    private val onNavigateToAbout: () -> Unit = {},
-    private val onNavigateToTerms: () -> Unit = {},
-    private val onNavigateToPrivacy: () -> Unit = {},
-    private val onNavigateToFeedback: () -> Unit = {},
-    private val onLoggedOut: () -> Unit = {}
-) : Screen {
+class SettingsScreen : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -78,21 +68,24 @@ class SettingsScreen(
         val snackbarHostState = remember { SnackbarHostState() }
         var showLogoutDialog by remember { mutableStateOf(false) }
         var showDeleteAccountDialog by remember { mutableStateOf(false) }
+        // TabNavigator内ではLocalNavigatorがTabNavigatorになるため、
+        // メインナビゲーターを使用してサブ画面遷移する
+        val mainNavigator = LocalMainNavigator.current
 
         val pagerState = rememberPagerState(pageCount = { SettingsTab.entries.size })
         val scope = rememberCoroutineScope()
 
-        // Logout completed
+        // Logout/Account deletion → TabNavigator外でナビゲーション
+        val logoutHandler = LocalLogoutHandler.current
         LaunchedEffect(uiState.isLoggedOut) {
             if (uiState.isLoggedOut) {
-                onLoggedOut()
+                logoutHandler()
             }
         }
 
-        // Account deletion completed
         LaunchedEffect(uiState.isAccountDeleted) {
             if (uiState.isAccountDeleted) {
-                onLoggedOut()
+                logoutHandler()
             }
         }
 
@@ -123,21 +116,33 @@ class SettingsScreen(
         // Logout confirmation dialog
         if (showLogoutDialog) {
             AlertDialog(
-                onDismissRequest = { showLogoutDialog = false },
+                onDismissRequest = {
+                    if (!uiState.isLoading) {
+                        showLogoutDialog = false
+                    }
+                },
                 title = { Text("ログアウト") },
                 text = { Text("ログアウトしますか？") },
                 confirmButton = {
                     TextButton(
-                        onClick = {
-                            showLogoutDialog = false
-                            screenModel.logout()
-                        }
+                        onClick = { screenModel.logout() },
+                        enabled = !uiState.isLoading
                     ) {
-                        Text("ログアウト", color = Color.Red)
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("ログアウト", color = Color.Red)
+                        }
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showLogoutDialog = false }) {
+                    TextButton(
+                        onClick = { showLogoutDialog = false },
+                        enabled = !uiState.isLoading
+                    ) {
                         Text("キャンセル")
                     }
                 }
@@ -202,10 +207,10 @@ class SettingsScreen(
             ) {
                 // Profile/Account section (expandable)
                 ProfileAccountSection(
-                    userName = uiState.user?.profile?.nickname
-                        ?: uiState.user?.displayName
-                        ?: uiState.user?.email?.substringBefore("@")
-                        ?: "Guest",
+                    userName = uiState.user?.profile?.nickname?.takeIf { it.isNotBlank() }
+                        ?: uiState.user?.displayName?.takeIf { it.isNotBlank() }
+                        ?: uiState.user?.email?.takeIf { it.isNotBlank() }?.substringBefore("@")
+                        ?: "ユーザー",
                     email = uiState.user?.email ?: "",
                     userId = uiState.user?.uid ?: "",
                     photoUrl = uiState.user?.photoUrl,
@@ -261,16 +266,19 @@ class SettingsScreen(
                 ) { page ->
                     when (SettingsTab.entries[page]) {
                         SettingsTab.BASIC -> BasicSettingsTab(
-                            onNavigateToProfile = onNavigateToProfile,
-                            onNavigateToNotifications = onNavigateToNotifications,
-                            onNavigateToBadges = onNavigateToBadges,
-                            onNavigateToPremium = onNavigateToPremium,
+                            onNavigateToProfile = { mainNavigator?.push(ProfileEditScreen()) },
+                            onNavigateToNotifications = { mainNavigator?.push(NotificationSettingsScreen()) },
+                            onNavigateToBadges = { mainNavigator?.push(BadgesScreen()) },
+                            onNavigateToPremium = {
+                                val userId = uiState.user?.uid ?: ""
+                                mainNavigator?.push(SubscriptionScreen(userId = userId))
+                            },
                             isPremium = uiState.isPremium
                         )
                         SettingsTab.FEATURES -> FeaturesSettingsTab(
-                            onNavigateToRoutine = onNavigateToRoutine,
-                            onNavigateToTemplates = onNavigateToTemplates,
-                            onNavigateToMealSlots = onNavigateToMealSlots,
+                            onNavigateToRoutine = { mainNavigator?.push(RoutineSettingsScreen()) },
+                            onNavigateToTemplates = { mainNavigator?.push(TemplateSettingsScreen()) },
+                            onNavigateToMealSlots = { mainNavigator?.push(MealSlotSettingsScreen()) },
                             customQuestSlots = uiState.customQuestSlots,
                             customQuestDate = uiState.customQuestDate
                         )
@@ -288,11 +296,10 @@ class SettingsScreen(
                         )
                         SettingsTab.OTHER -> OtherSettingsTab(
                             appVersion = uiState.appVersion,
-                            onNavigateToHelp = onNavigateToHelp,
-                            onNavigateToFeedback = onNavigateToFeedback,
-                            onNavigateToAbout = onNavigateToAbout,
-                            onNavigateToTerms = onNavigateToTerms,
-                            onNavigateToPrivacy = onNavigateToPrivacy
+                            onNavigateToHelp = { mainNavigator?.push(HelpScreen()) },
+                            onNavigateToFeedback = { mainNavigator?.push(FeedbackScreen()) },
+                            onNavigateToTerms = { mainNavigator?.push(LegalWebViewScreen(LegalPageType.TERMS)) },
+                            onNavigateToPrivacy = { mainNavigator?.push(LegalWebViewScreen(LegalPageType.PRIVACY)) }
                         )
                     }
                 }
@@ -1081,7 +1088,6 @@ private fun OtherSettingsTab(
     appVersion: String,
     onNavigateToHelp: () -> Unit,
     onNavigateToFeedback: () -> Unit,
-    onNavigateToAbout: () -> Unit,
     onNavigateToTerms: () -> Unit,
     onNavigateToPrivacy: () -> Unit
 ) {
@@ -1131,49 +1137,168 @@ private fun OtherSettingsTab(
                     onClick = onNavigateToPrivacy
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-                SettingsRow(
-                    icon = Icons.Default.Info,
-                    title = "このアプリについて",
-                    subtitle = "バージョン $appVersion",
-                    onClick = onNavigateToAbout
-                )
-            }
-        }
-
-        item {
-            SectionHeader("栄養評価の参考文献")
-        }
-
-        item {
-            SettingsCard {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "本アプリの栄養評価は以下の文献・基準に基づいています：",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "• 厚生労働省「日本人の食事摂取基準（2020年版）」",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "• FAO「Dietary protein quality evaluation in human nutrition」(DIAAS)",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "• Harvard T.H. Chan School of Public Health - Glycemic Index/Load",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "• WHO「Healthy diet」Guidelines",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                AboutAppSection(appVersion = appVersion)
             }
         }
 
         item { Spacer(modifier = Modifier.height(60.dp)) }
+    }
+}
+
+/**
+ * このアプリについて（出典・参考文献を統合）
+ */
+@Composable
+private fun AboutAppSection(appVersion: String) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded }
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "このアプリについて",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "バージョン $appVersion",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        AnimatedVisibility(visible = expanded) {
+            Column(
+                modifier = Modifier.padding(top = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(4.dp))
+
+                ReferenceSectionItem(
+                    icon = Icons.Default.Restaurant,
+                    title = "栄養データ",
+                    references = listOf(
+                        "文部科学省「日本食品標準成分表 2023年版（八訂）」",
+                        "厚生労働省「日本人の食事摂取基準（2020年版）」",
+                        "FAO/WHO「Protein Quality Evaluation」— PDCAAS・DIAAS 算出基準",
+                        "Foster-Powell K, et al.「International Table of Glycemic Index」Am J Clin Nutr, 2002",
+                        "Jeukendrup A, Gleeson M「Sport Nutrition」3rd Ed, Human Kinetics, 2019"
+                    )
+                )
+                ReferenceSectionItem(
+                    icon = Icons.Default.FitnessCenter,
+                    title = "運動科学",
+                    references = listOf(
+                        "NSCA「Essentials of Strength Training and Conditioning」4th Ed, Human Kinetics, 2016",
+                        "ACSM「ACSM's Guidelines for Exercise Testing and Prescription」11th Ed, Wolters Kluwer, 2022",
+                        "Schoenfeld BJ「Science and Development of Muscle Hypertrophy」2nd Ed, Human Kinetics, 2021",
+                        "Ainsworth BE, et al.「Compendium of Physical Activities」Med Sci Sports Exerc, 2011",
+                        "Helms ER, et al.「Evidence-based Recommendations for Natural Bodybuilding Contest Preparation」JISSN, 2014"
+                    )
+                )
+                ReferenceSectionItem(
+                    icon = Icons.Default.SmartToy,
+                    title = "AI分析について",
+                    references = listOf(
+                        "本アプリのAI分析機能は Google Gemini（大規模言語モデル）を使用しています",
+                        "AIの回答は参考情報であり、医療・栄養指導の代替ではありません",
+                        "個別の健康上の判断は、必ず医師・管理栄養士等の専門家にご相談ください",
+                        "AI分析の精度向上のため、入力データが匿名化された形で処理されます",
+                        "食事写真解析にはGoogle Gemini Vision（gemini-2.5-flash）を使用しています"
+                    )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 出典セクション内の展開可能な項目
+ */
+@Composable
+private fun ReferenceSectionItem(
+    icon: ImageVector,
+    title: String,
+    references: List<String>
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded }
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (expanded) "閉じる" else "開く",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        if (expanded) {
+            Spacer(modifier = Modifier.height(12.dp))
+            references.forEachIndexed { index, ref ->
+                Row(
+                    modifier = Modifier.padding(
+                        start = 40.dp,
+                        bottom = if (index < references.size - 1) 8.dp else 0.dp
+                    )
+                ) {
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 8.dp, top = 1.dp)
+                    )
+                    Text(
+                        text = ref,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }
 

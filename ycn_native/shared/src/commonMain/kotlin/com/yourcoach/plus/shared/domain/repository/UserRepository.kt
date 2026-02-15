@@ -1,7 +1,10 @@
 package com.yourcoach.plus.shared.domain.repository
 
+import com.yourcoach.plus.shared.domain.model.MealSlotConfig
+import com.yourcoach.plus.shared.domain.model.RoutineTemplateConfig
 import com.yourcoach.plus.shared.domain.model.User
 import com.yourcoach.plus.shared.domain.model.UserProfile
+import com.yourcoach.plus.shared.domain.model.WorkoutSlotConfig
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -27,6 +30,11 @@ interface UserRepository {
      * ユーザー情報を更新
      */
     suspend fun updateUser(userId: String, user: User): Result<Unit>
+
+    /**
+     * プロフィールを取得
+     */
+    suspend fun getUserProfile(userId: String): Result<UserProfile?>
 
     /**
      * プロフィールを更新
@@ -79,4 +87,27 @@ interface UserRepository {
      * @return 付与された場合はtrue
      */
     suspend fun checkAndGrantLoginBonus(userId: String): Result<Boolean>
+
+    /**
+     * スロット設定を更新（食事スロット・運動スロット・ルーティンテンプレート）
+     */
+    suspend fun updateSlotConfig(
+        userId: String,
+        mealSlotConfig: MealSlotConfig,
+        workoutSlotConfig: WorkoutSlotConfig,
+        routineTemplateConfig: RoutineTemplateConfig
+    ): Result<Unit>
+
+    /**
+     * タイムライン設定を更新（起床・就寝・トレーニング時刻）
+     */
+    suspend fun updateTimelineConfig(
+        userId: String,
+        wakeUpTime: String,
+        sleepTime: String,
+        trainingTime: String?,
+        trainingAfterMeal: Int?,
+        trainingDuration: Int = 120,
+        trainingStyle: String = "PUMP"
+    ): Result<Unit>
 }

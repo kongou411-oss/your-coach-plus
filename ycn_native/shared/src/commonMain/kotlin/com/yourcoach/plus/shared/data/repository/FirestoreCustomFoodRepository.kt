@@ -42,6 +42,7 @@ class FirestoreCustomFoodRepository : CustomFoodRepository {
         return try {
             val snapshot = customFoodsCollection(userId)
                 .orderBy("usageCount", Direction.DESCENDING)
+                .limit(100)
                 .get()
 
             val foods = snapshot.documents.mapNotNull { doc ->
@@ -129,7 +130,6 @@ class FirestoreCustomFoodRepository : CustomFoodRepository {
     // ========== Mapping Functions ==========
 
     private fun foodToMap(food: CustomFood): Map<String, Any?> = mapOf(
-        "id" to food.id,
         "userId" to food.userId,
         "name" to food.name,
         "calories" to food.calories,

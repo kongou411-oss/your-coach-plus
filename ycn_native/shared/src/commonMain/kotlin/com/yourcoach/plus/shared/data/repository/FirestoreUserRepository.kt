@@ -63,11 +63,11 @@ class FirestoreUserRepository : UserRepository {
 
     /**
      * ユーザー情報を取得
+     * デフォルトソース（キャッシュ→サーバー）を使用して信頼性を向上
      */
     override suspend fun getUser(userId: String): Result<User?> {
         return try {
-            // サーバーから直接取得（キャッシュの古いデータを避けるため）
-            val snapshot = usersCollection.document(userId).get(dev.gitlive.firebase.firestore.Source.SERVER)
+            val snapshot = usersCollection.document(userId).get()
             if (!snapshot.exists) {
                 return Result.success(null)
             }
@@ -75,6 +75,7 @@ class FirestoreUserRepository : UserRepository {
             val user = snapshot.toUser(userId)
             Result.success(user)
         } catch (e: Exception) {
+            println("FirestoreUserRepository: getUser error: ${e.message}")
             Result.failure(AppError.NetworkError("ユーザー情報の取得に失敗しました", e))
         }
     }
@@ -114,61 +115,102 @@ class FirestoreUserRepository : UserRepository {
     }
 
     /**
+     * プロフィールを取得
+     */
+    override suspend fun getUserProfile(userId: String): Result<UserProfile?> {
+        return try {
+            val snapshot = usersCollection.document(userId).get()
+            if (!snapshot.exists) {
+                return Result.success(null)
+            }
+            val user = snapshot.toUser(userId)
+            Result.success(user.profile)
+        } catch (e: Exception) {
+            Result.failure(AppError.NetworkError("プロフィールの取得に失敗しました", e))
+        }
+    }
+
+    /**
      * プロフィールを更新
+     * update()を使用（セキュリティルールとの互換性のため）
+     * ドキュメント未存在時はcreateUserで先に作成されている前提
      */
     override suspend fun updateProfile(userId: String, profile: UserProfile): Result<Unit> {
         return try {
-            val profileData = mapOf(
-                "profile" to mapOf(
-                    "nickname" to profile.nickname,
-                    "gender" to profile.gender?.name,
-                    "birthYear" to profile.birthYear,
-                    "age" to profile.age,
-                    "height" to profile.height,
-                    "weight" to profile.weight,
-                    "bodyFatPercentage" to profile.bodyFatPercentage,
-                    "targetWeight" to profile.targetWeight,
-                    "activityLevel" to profile.activityLevel?.name,
-                    "goal" to profile.goal?.name,
-                    "style" to profile.style,
-                    "idealWeight" to profile.idealWeight,
-                    "idealBodyFatPercentage" to profile.idealBodyFatPercentage,
-                    "targetCalories" to profile.targetCalories,
-                    "targetProtein" to profile.targetProtein,
-                    "targetFat" to profile.targetFat,
-                    "targetCarbs" to profile.targetCarbs,
-                    "proteinRatioPercent" to profile.proteinRatioPercent,
-                    "fatRatioPercent" to profile.fatRatioPercent,
-                    "carbRatioPercent" to profile.carbRatioPercent,
-                    "calorieAdjustment" to profile.calorieAdjustment,
-                    "dietaryPreferences" to profile.dietaryPreferences,
-                    "allergies" to profile.allergies,
-                    "preferredProteinSources" to profile.preferredProteinSources,
-                    "preferredCarbSources" to profile.preferredCarbSources,
-                    "preferredFatSources" to profile.preferredFatSources,
-                    "avoidFoods" to profile.avoidFoods,
-                    "trainingStyle" to profile.trainingStyle.name,
-                    "onboardingCompleted" to profile.onboardingCompleted,
-                    "favoriteFoods" to profile.favoriteFoods,
-                    "ngFoods" to profile.ngFoods,
-                    "budgetTier" to profile.budgetTier,
-                    "mealsPerDay" to profile.mealsPerDay,
-                    "trainingAfterMeal" to profile.trainingAfterMeal,
-                    "preWorkoutProtein" to profile.preWorkoutProtein,
-                    "preWorkoutFat" to profile.preWorkoutFat,
-                    "preWorkoutCarbs" to profile.preWorkoutCarbs,
-                    "postWorkoutProtein" to profile.postWorkoutProtein,
-                    "postWorkoutFat" to profile.postWorkoutFat,
-                    "postWorkoutCarbs" to profile.postWorkoutCarbs,
-                    "wakeUpTime" to profile.wakeUpTime,
-                    "sleepTime" to profile.sleepTime,
-                    "trainingTime" to profile.trainingTime,
-                    "trainingDuration" to profile.trainingDuration
-                )
+            val profileMap = mapOf(
+                "nickname" to profile.nickname,
+                "gender" to profile.gender?.name,
+                "birthYear" to profile.birthYear,
+                "age" to profile.age,
+                "height" to profile.height,
+                "weight" to profile.weight,
+                "bodyFatPercentage" to profile.bodyFatPercentage,
+                "targetWeight" to profile.targetWeight,
+                "activityLevel" to profile.activityLevel?.name,
+                "goal" to profile.goal?.name,
+                "style" to profile.style,
+                "idealWeight" to profile.idealWeight,
+                "idealBodyFatPercentage" to profile.idealBodyFatPercentage,
+                "targetCalories" to profile.targetCalories,
+                "targetProtein" to profile.targetProtein,
+                "targetFat" to profile.targetFat,
+                "targetCarbs" to profile.targetCarbs,
+                "proteinRatioPercent" to profile.proteinRatioPercent,
+                "fatRatioPercent" to profile.fatRatioPercent,
+                "carbRatioPercent" to profile.carbRatioPercent,
+                "calorieAdjustment" to profile.calorieAdjustment,
+                "dietaryPreferences" to profile.dietaryPreferences,
+                "allergies" to profile.allergies,
+                "preferredProteinSources" to profile.preferredProteinSources,
+                "preferredCarbSources" to profile.preferredCarbSources,
+                "preferredFatSources" to profile.preferredFatSources,
+                "avoidFoods" to profile.avoidFoods,
+                "trainingStyle" to profile.trainingStyle.name,
+                "onboardingCompleted" to profile.onboardingCompleted,
+                "favoriteFoods" to profile.favoriteFoods,
+                "ngFoods" to profile.ngFoods,
+                "budgetTier" to profile.budgetTier,
+                "mealsPerDay" to profile.mealsPerDay,
+                "trainingAfterMeal" to profile.trainingAfterMeal,
+                "preWorkoutProtein" to profile.preWorkoutProtein,
+                "preWorkoutFat" to profile.preWorkoutFat,
+                "preWorkoutCarbs" to profile.preWorkoutCarbs,
+                "postWorkoutProtein" to profile.postWorkoutProtein,
+                "postWorkoutFat" to profile.postWorkoutFat,
+                "postWorkoutCarbs" to profile.postWorkoutCarbs,
+                "wakeUpTime" to profile.wakeUpTime,
+                "sleepTime" to profile.sleepTime,
+                "trainingTime" to profile.trainingTime,
+                "trainingDuration" to profile.trainingDuration
             )
-            usersCollection.document(userId).update(profileData)
+            val profileData = mapOf("profile" to profileMap)
+
+            try {
+                // まずupdate()を試行（既存ドキュメント用、セキュリティルール互換）
+                usersCollection.document(userId).update(profileData)
+            } catch (updateError: Exception) {
+                // update失敗時（ドキュメント未存在の可能性）→ ドキュメントを作成してからupdate
+                println("FirestoreUserRepository: update failed, ensuring document exists: ${updateError.message}")
+                val docSnapshot = usersCollection.document(userId).get()
+                if (!docSnapshot.exists) {
+                    // ドキュメントが存在しない → 最低限のデータで作成
+                    val now = com.yourcoach.plus.shared.util.DateUtil.currentTimestamp()
+                    val baseData = mapOf(
+                        "email" to "",
+                        "createdAt" to now,
+                        "lastLoginAt" to now,
+                        "isPremium" to false,
+                        "freeCredits" to INITIAL_CREDITS,
+                        "paidCredits" to 0
+                    )
+                    usersCollection.document(userId).set(baseData)
+                }
+                // ドキュメント存在確認後、再度update
+                usersCollection.document(userId).update(profileData)
+            }
             Result.success(Unit)
         } catch (e: Exception) {
+            println("FirestoreUserRepository: updateProfile error: ${e.message}")
             Result.failure(AppError.NetworkError("プロフィールの更新に失敗しました", e))
         }
     }
@@ -202,21 +244,16 @@ class FirestoreUserRepository : UserRepository {
      */
     override suspend fun addCredits(userId: String, amount: Int): Result<Int> {
         return try {
-            // 現在の値を取得
-            val snapshot = usersCollection.document(userId).get()
-            val currentFreeCredits = snapshot.get<Long?>("freeCredits")?.toInt() ?: INITIAL_CREDITS
-            val currentPaidCredits = snapshot.get<Long?>("paidCredits")?.toInt() ?: 0
-
-            val newPaidCredits = currentPaidCredits + amount
-
-            usersCollection.document(userId).update(
-                mapOf(
-                    "paidCredits" to newPaidCredits,
-                    "freeCredits" to currentFreeCredits
-                )
-            )
-
-            Result.success(currentFreeCredits + newPaidCredits)
+            val docRef = usersCollection.document(userId)
+            val result = firestore.runTransaction {
+                val snapshot = get(docRef)
+                val currentFreeCredits = snapshot.get<Long?>("freeCredits")?.toInt() ?: INITIAL_CREDITS
+                val currentPaidCredits = snapshot.get<Long?>("paidCredits")?.toInt() ?: 0
+                val newPaidCredits = currentPaidCredits + amount
+                set(docRef, mapOf("paidCredits" to newPaidCredits, "freeCredits" to currentFreeCredits), merge = true)
+                currentFreeCredits + newPaidCredits
+            }
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(AppError.NetworkError("クレジットの追加に失敗しました: ${e.message}", e))
         }
@@ -227,37 +264,37 @@ class FirestoreUserRepository : UserRepository {
      */
     override suspend fun useCredits(userId: String, amount: Int): Result<Int> {
         return try {
-            val snapshot = usersCollection.document(userId).get()
+            val docRef = usersCollection.document(userId)
+            val result = firestore.runTransaction {
+                val snapshot = get(docRef)
+                var freeCredits = snapshot.get<Long?>("freeCredits")?.toInt()
+                    ?: snapshot.get<Long?>("credits")?.toInt()
+                    ?: INITIAL_CREDITS
+                var paidCredits = snapshot.get<Long?>("paidCredits")?.toInt() ?: 0
 
-            var freeCredits = snapshot.get<Long?>("freeCredits")?.toInt()
-                ?: snapshot.get<Long?>("credits")?.toInt()
-                ?: INITIAL_CREDITS
-            var paidCredits = snapshot.get<Long?>("paidCredits")?.toInt() ?: 0
+                val totalCredits = freeCredits + paidCredits
+                if (totalCredits < amount) {
+                    throw AppError.InsufficientCredits()
+                }
 
-            val totalCredits = freeCredits + paidCredits
-            if (totalCredits < amount) {
-                return Result.failure(AppError.InsufficientCredits())
-            }
+                // freeCreditsを優先消費
+                var remaining = amount
+                if (freeCredits >= remaining) {
+                    freeCredits -= remaining
+                } else {
+                    remaining -= freeCredits
+                    freeCredits = 0
+                    paidCredits -= remaining
+                }
 
-            // freeCreditsを優先消費
-            var remaining = amount
-            if (freeCredits >= remaining) {
-                freeCredits -= remaining
-                remaining = 0
-            } else {
-                remaining -= freeCredits
-                freeCredits = 0
-                paidCredits -= remaining
-            }
-
-            usersCollection.document(userId).update(
-                mapOf(
+                update(docRef, mapOf(
                     "freeCredits" to freeCredits,
                     "paidCredits" to paidCredits
-                )
-            )
+                ))
 
-            Result.success(freeCredits + paidCredits)
+                freeCredits + paidCredits
+            }
+            Result.success(result)
         } catch (e: AppError.InsufficientCredits) {
             Result.failure(e)
         } catch (e: Exception) {
@@ -357,6 +394,81 @@ class FirestoreUserRepository : UserRepository {
     }
 
     /**
+     * スロット設定を更新
+     */
+    override suspend fun updateSlotConfig(
+        userId: String,
+        mealSlotConfig: com.yourcoach.plus.shared.domain.model.MealSlotConfig,
+        workoutSlotConfig: com.yourcoach.plus.shared.domain.model.WorkoutSlotConfig,
+        routineTemplateConfig: com.yourcoach.plus.shared.domain.model.RoutineTemplateConfig
+    ): Result<Unit> {
+        return try {
+            val slotsData = mealSlotConfig.slots.map { slot ->
+                mapOf(
+                    "slotNumber" to slot.slotNumber,
+                    "relativeTime" to slot.relativeTime,
+                    "absoluteTime" to slot.absoluteTime
+                )
+            }
+            val mappingsData = routineTemplateConfig.mappings.map { mapping ->
+                mapOf(
+                    "routineId" to mapping.routineId,
+                    "routineName" to mapping.routineName,
+                    "slotNumber" to mapping.slotNumber,
+                    "templateId" to mapping.templateId,
+                    "templateName" to mapping.templateName
+                )
+            }
+            val data = mapOf(
+                "profile.mealSlotConfig" to mapOf(
+                    "slots" to slotsData,
+                    "mealsPerDay" to mealSlotConfig.mealsPerDay
+                ),
+                "profile.workoutSlotConfig" to emptyMap<String, Any?>(),
+                "profile.routineTemplateConfig" to mapOf(
+                    "mappings" to mappingsData
+                )
+            )
+            usersCollection.document(userId).update(data)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.NetworkError("スロット設定の更新に失敗しました", e))
+        }
+    }
+
+    /**
+     * タイムライン設定を更新
+     */
+    override suspend fun updateTimelineConfig(
+        userId: String,
+        wakeUpTime: String,
+        sleepTime: String,
+        trainingTime: String?,
+        trainingAfterMeal: Int?,
+        trainingDuration: Int,
+        trainingStyle: String
+    ): Result<Unit> {
+        return try {
+            val data = mutableMapOf<String, Any?>(
+                "profile.wakeUpTime" to wakeUpTime,
+                "profile.sleepTime" to sleepTime,
+                "profile.trainingDuration" to trainingDuration,
+                "profile.trainingStyle" to trainingStyle
+            )
+            if (trainingTime != null) {
+                data["profile.trainingTime"] = trainingTime
+            }
+            if (trainingAfterMeal != null) {
+                data["profile.trainingAfterMeal"] = trainingAfterMeal
+            }
+            usersCollection.document(userId).update(data as Map<String, Any>)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.NetworkError("タイムライン設定の更新に失敗しました", e))
+        }
+    }
+
+    /**
      * DocumentSnapshotをUserに変換
      */
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toUser(userId: String): User {
@@ -428,15 +540,15 @@ class FirestoreUserRepository : UserRepository {
             targetProtein = (profileMap["targetProtein"] as? Number)?.toFloat(),
             targetFat = (profileMap["targetFat"] as? Number)?.toFloat(),
             targetCarbs = (profileMap["targetCarbs"] as? Number)?.toFloat(),
-            proteinRatioPercent = (profileMap["proteinRatioPercent"] as? Number)?.toInt() ?: 35,
-            fatRatioPercent = (profileMap["fatRatioPercent"] as? Number)?.toInt() ?: 15,
-            carbRatioPercent = (profileMap["carbRatioPercent"] as? Number)?.toInt() ?: 50,
+            proteinRatioPercent = (profileMap["proteinRatioPercent"] as? Number)?.toInt() ?: 30,
+            fatRatioPercent = (profileMap["fatRatioPercent"] as? Number)?.toInt() ?: 25,
+            carbRatioPercent = (profileMap["carbRatioPercent"] as? Number)?.toInt() ?: 45,
             calorieAdjustment = (profileMap["calorieAdjustment"] as? Number)?.toInt() ?: 0,
             dietaryPreferences = (profileMap["dietaryPreferences"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
             allergies = (profileMap["allergies"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
-            preferredProteinSources = (profileMap["preferredProteinSources"] as? List<*>)?.filterIsInstance<String>() ?: listOf("鶏むね肉", "鮭"),
-            preferredCarbSources = (profileMap["preferredCarbSources"] as? List<*>)?.filterIsInstance<String>() ?: listOf("白米", "玄米"),
-            preferredFatSources = (profileMap["preferredFatSources"] as? List<*>)?.filterIsInstance<String>() ?: listOf("オリーブオイル", "アボカド"),
+            preferredProteinSources = (profileMap["preferredProteinSources"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            preferredCarbSources = (profileMap["preferredCarbSources"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
+            preferredFatSources = (profileMap["preferredFatSources"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
             avoidFoods = (profileMap["avoidFoods"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
             trainingStyle = (profileMap["trainingStyle"] as? String)?.let {
                 try { TrainingStyle.valueOf(it) } catch (e: Exception) { TrainingStyle.PUMP }

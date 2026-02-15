@@ -2,7 +2,6 @@ package com.yourcoach.plus.shared.ui.screens.auth
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.yourcoach.plus.shared.auth.isAppleSignInAvailable
 import com.yourcoach.plus.shared.auth.signInToFirebaseWithApple
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
@@ -157,16 +156,27 @@ class AuthScreenModel(
             authResult.fold(
                 onSuccess = { user ->
                     // 既存ユーザーかチェック
-                    val existingUser = userRepository.getUser(user.uid).getOrNull()
-                    val isNew = existingUser == null
+                    val getUserResult = userRepository.getUser(user.uid)
+                    val existingUser = getUserResult.getOrNull()
+                    val isNew = existingUser == null && getUserResult.isSuccess
 
                     // 新規ユーザーの場合、Firestoreにドキュメント作成
                     if (isNew) {
-                        userRepository.createUser(
+                        val createResult = userRepository.createUser(
                             userId = user.uid,
                             email = user.email,
                             displayName = user.displayName
                         )
+                        if (createResult.isFailure) {
+                            println("AuthScreenModel: Google createUser failed: ${createResult.exceptionOrNull()?.message}")
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "アカウント作成に失敗しました。再度お試しください"
+                                )
+                            }
+                            return@fold
+                        }
                     }
 
                     val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
@@ -208,77 +218,55 @@ class AuthScreenModel(
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            // iOSではネイティブFirebase SDKを直接使用
-            if (isAppleSignInAvailable()) {
-                val directAuthResult = signInToFirebaseWithApple(idToken, nonce, fullName)
+            // ネイティブFirebase SDKを使用（iOS: ASAuthorizationAppleID, Android: OAuthProvider Webフロー）
+            val directAuthResult = signInToFirebaseWithApple(idToken, nonce, fullName)
 
-                directAuthResult.fold(
-                    onSuccess = { uid ->
-                        // 既存ユーザーかチェック
-                        val existingUser = userRepository.getUser(uid).getOrNull()
-                        val isNew = existingUser == null
+            directAuthResult.fold(
+                onSuccess = { uid ->
+                    // 既存ユーザーかチェック
+                    val getUserResult = userRepository.getUser(uid)
+                    val existingUser = getUserResult.getOrNull()
+                    val isNew = existingUser == null && getUserResult.isSuccess
 
-                        // 新規ユーザーの場合、Firestoreにドキュメント作成
-                        if (isNew) {
-                            userRepository.createUser(
-                                userId = uid,
-                                email = "", // Apple Sign-Inではemailがnullになることがあるため空文字
-                                displayName = fullName
-                            )
+                    // 新規ユーザーの場合、Firestoreにドキュメント作成
+                    if (isNew) {
+                        val createResult = userRepository.createUser(
+                            userId = uid,
+                            email = "", // Apple Sign-Inではemailがnullになることがあるため空文字
+                            displayName = fullName
+                        )
+                        if (createResult.isFailure) {
+                            val errorMsg = createResult.exceptionOrNull()?.message ?: "不明なエラー"
+                            println("AuthScreenModel: createUser failed: $errorMsg")
+                            // ドキュメント作成失敗 → エラー表示（オンボーディングは進めない）
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "アカウント作成に失敗しました。再度お試しください"
+                                )
+                            }
+                            return@fold
                         }
-
-                        val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
-
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                isLoggedIn = true,
-                                isNewUser = isNew,
-                                userId = uid,
-                                needsOnboarding = needsOnboarding
-                            )
-                        }
-                        onSuccess()
-                    },
-                    onFailure = { error ->
-                        handleAppleSignInError(error)
                     }
-                )
-            } else {
-                // Android (should not reach here as Apple Sign-In is hidden on Android)
-                val authResult = authRepository.signInWithApple(idToken, nonce)
 
-                authResult.fold(
-                    onSuccess = { user ->
-                        val existingUser = userRepository.getUser(user.uid).getOrNull()
-                        val isNew = existingUser == null
+                    // getUser失敗時（ネットワークエラー等）でも認証済みなら進める
+                    val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
 
-                        if (isNew) {
-                            userRepository.createUser(
-                                userId = user.uid,
-                                email = user.email,
-                                displayName = user.displayName
-                            )
-                        }
-
-                        val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
-
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                isLoggedIn = true,
-                                isNewUser = isNew,
-                                userId = user.uid,
-                                needsOnboarding = needsOnboarding
-                            )
-                        }
-                        onSuccess()
-                    },
-                    onFailure = { error ->
-                        handleAppleSignInError(error)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isLoggedIn = true,
+                            isNewUser = isNew,
+                            userId = uid,
+                            needsOnboarding = needsOnboarding
+                        )
                     }
-                )
-            }
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    handleAppleSignInError(error)
+                }
+            )
         }
     }
 

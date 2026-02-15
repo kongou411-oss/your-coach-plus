@@ -78,6 +78,25 @@ enum class CelebrationInfoType {
 }
 
 /**
+ * 運動クエスト完了シート用の種目データ
+ * 統一カロリー計算式: (volume × 0.05) + (duration × 3)
+ */
+data class WorkoutCompletionExercise(
+    val name: String,
+    val category: String,
+    val sets: Int,
+    val reps: Int,
+    val weight: Float?,
+    val isWeightEstimated: Boolean = false,
+    val rmPercentMin: Float? = null,
+    val rmPercentMax: Float? = null
+) {
+    val duration: Int get() = sets * 5
+    val volume: Float get() = sets * reps * (weight ?: 0f)
+    val calories: Int get() = ((volume * 0.05f) + (duration * 3)).toInt().coerceAtLeast(0)
+}
+
+/**
  * GL評価
  */
 enum class GlRating {

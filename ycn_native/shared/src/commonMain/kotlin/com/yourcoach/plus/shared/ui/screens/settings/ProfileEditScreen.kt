@@ -31,6 +31,7 @@ import com.yourcoach.plus.shared.domain.model.Gender
 import com.yourcoach.plus.shared.ui.theme.*
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 
 class ProfileEditScreen : Screen {
 
@@ -226,7 +227,36 @@ class ProfileEditScreen : Screen {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Text("1日の食事回数", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text("1日の食事回数", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            var showMealInfo by remember { mutableStateOf(false) }
+                            IconButton(
+                                onClick = { showMealInfo = !showMealInfo },
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = "食事回数の説明",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (showMealInfo) {
+                                AlertDialog(
+                                    onDismissRequest = { showMealInfo = false },
+                                    confirmButton = {
+                                        TextButton(onClick = { showMealInfo = false }) { Text("OK") }
+                                    },
+                                    title = { Text("総食事回数について") },
+                                    text = {
+                                        Text("トレーニング前後のプロテインシェイクも1食としてカウントします。\n\n例: 朝食・昼食・トレ前プロテイン・トレ後プロテイン・夕食 = 5食")
+                                    }
+                                )
+                            }
+                        }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             (2..8).forEach { count ->
                                 FilterChip(
@@ -399,7 +429,7 @@ class ProfileEditScreen : Screen {
                         TagInputField(
                             label = "優先炭水化物源",
                             items = uiState.preferredCarbSources,
-                            suggestions = listOf("白米", "玄米", "オートミール", "さつまいも", "もち", "うどん", "バナナ"),
+                            suggestions = listOf("白米", "玄米", "オートミール", "さつまいも", "もち", "バナナ"),
                             onAdd = { screenModel.addPreferredCarbSource(it) },
                             onRemove = { screenModel.removePreferredCarbSource(it) },
                             focusManager = focusManager

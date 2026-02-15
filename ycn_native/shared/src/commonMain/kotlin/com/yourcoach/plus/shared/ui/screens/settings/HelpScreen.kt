@@ -194,6 +194,7 @@ private fun HelpFeaturesContent() {
         HelpFeatureItem(Icons.Default.Analytics, "AI分析", "記録データをAIが分析し、改善点やアドバイスを提供します。")
         HelpFeatureItem(Icons.Default.History, "履歴", "過去の記録を振り返り、進捗を確認できます。")
         HelpFeatureItem(Icons.Default.MenuBook, "PG BASE", "ボディメイクの専門知識を学べる教科書コンテンツです。")
+        HelpFeatureItem(Icons.Default.Forum, "COMY", "コミュニティ機能。他のユーザーと情報交換や励まし合いができます。")
     }
 }
 

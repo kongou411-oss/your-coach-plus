@@ -101,18 +101,23 @@ class FirestoreAnalysisRepository : AnalysisRepository {
         return try {
             val doc = userDocument(userId).get()
             if (doc.exists) {
-                val freeCredits = doc.get<Long?>("freeCredits")?.toInt() ?: 0
+                val freeCredits = doc.get<Long?>("freeCredits")?.toInt()
+                    ?: doc.get<Long?>("credits")?.toInt()  // 旧フィールドフォールバック
+                    ?: 0
                 val paidCredits = doc.get<Long?>("paidCredits")?.toInt() ?: 0
-                val isPremium = doc.get<Boolean?>("isPremium") ?: false
                 val level = doc.get<Long?>("level")?.toInt() ?: 1
                 val xp = doc.get<Long?>("experience")?.toInt() ?: 0
+
+                // Premium判定（Android版と同じロジック）
+                val subscriptionStatus = doc.get<String?>("subscriptionStatus")
+                val tier = if (subscriptionStatus == "active") "premium" else "free"
 
                 Result.success(
                     UserCreditInfo(
                         totalCredits = freeCredits + paidCredits,
                         freeCredits = freeCredits,
                         paidCredits = paidCredits,
-                        tier = if (isPremium) "premium" else "free",
+                        tier = tier,
                         level = level,
                         xp = xp
                     )
@@ -127,31 +132,41 @@ class FirestoreAnalysisRepository : AnalysisRepository {
 
     override suspend fun consumeCredit(userId: String, amount: Int): Result<Int> {
         return try {
-            // 現在のクレジットを取得
-            val creditResult = getCreditInfo(userId)
-            val creditInfo = creditResult.getOrNull()
-                ?: return Result.failure(AppError.DatabaseError("クレジット情報の取得に失敗しました"))
+            val docRef = userDocument(userId)
+            val remaining = firestore.runTransaction {
+                val snapshot = get(docRef)
+                val freeCredits = snapshot.get<Long?>("freeCredits")?.toInt()
+                    ?: snapshot.get<Long?>("credits")?.toInt()
+                    ?: 0
+                val paidCredits = snapshot.get<Long?>("paidCredits")?.toInt() ?: 0
+                val totalCredits = freeCredits + paidCredits
 
-            if (creditInfo.totalCredits < amount) {
-                return Result.failure(AppError.InsufficientCredits("クレジットが不足しています"))
+                if (totalCredits < amount) {
+                    throw AppError.InsufficientCredits()
+                }
+
+                // 無料クレジットを優先消費
+                val newFreeCredits: Int
+                val newPaidCredits: Int
+
+                if (freeCredits >= amount) {
+                    newFreeCredits = freeCredits - amount
+                    newPaidCredits = paidCredits
+                } else {
+                    newFreeCredits = 0
+                    newPaidCredits = paidCredits - (amount - freeCredits)
+                }
+
+                update(docRef, mapOf(
+                    "freeCredits" to newFreeCredits,
+                    "paidCredits" to newPaidCredits
+                ))
+
+                newFreeCredits + newPaidCredits
             }
-
-            // まず無料クレジットから消費、足りなければ有料クレジットから消費
-            val freeToConsume = minOf(amount, creditInfo.freeCredits)
-            val paidToConsume = amount - freeToConsume
-
-            val updates = mutableMapOf<String, Any>()
-            if (freeToConsume > 0) {
-                updates["freeCredits"] = FieldValue.increment(-freeToConsume)
-            }
-            if (paidToConsume > 0) {
-                updates["paidCredits"] = FieldValue.increment(-paidToConsume)
-            }
-
-            userDocument(userId).update(updates)
-
-            val newTotal = creditInfo.totalCredits - amount
-            Result.success(newTotal)
+            Result.success(remaining)
+        } catch (e: AppError.InsufficientCredits) {
+            Result.failure(e)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("クレジットの消費に失敗しました", e))
         }
@@ -161,7 +176,6 @@ class FirestoreAnalysisRepository : AnalysisRepository {
 
     @Suppress("UNCHECKED_CAST")
     private fun reportToMap(report: AnalysisReport): Map<String, Any?> = mapOf(
-        "id" to report.id,
         "title" to report.title,
         "content" to report.content,
         "conversationHistory" to report.conversationHistory.map { entry ->

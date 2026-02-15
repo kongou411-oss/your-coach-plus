@@ -4359,7 +4359,7 @@ async function verifyGooglePlayReceipt(receipt) {
       auth: auth,
     });
 
-    const packageName = 'jp.yourcoach.plus'; // アプリのパッケージ名
+    const packageName = 'com.yourcoach.plus'; // アプリのパッケージ名
 
     // 購入トークンとプロダクトIDを取得
     const { productId, purchaseToken } = receipt;

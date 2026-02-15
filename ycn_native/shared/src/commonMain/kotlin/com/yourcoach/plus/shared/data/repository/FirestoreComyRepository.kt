@@ -45,7 +45,7 @@ class FirestoreComyRepository : ComyRepository {
             var query = postsCollection.orderBy("createdAt", Direction.DESCENDING)
 
             if (category != null) {
-                query = query.where { "category" equalTo category.name }
+                query = query.where { "category" equalTo category.name.lowercase() }
             }
 
             query = query.limit(limit)
@@ -89,7 +89,7 @@ class FirestoreComyRepository : ComyRepository {
         var query = postsCollection.orderBy("createdAt", Direction.DESCENDING)
 
         if (category != null) {
-            query = query.where { "category" equalTo category.name }
+            query = query.where { "category" equalTo category.name.lowercase() }
         }
 
         return query.limit(limit).snapshots.map { snapshot ->
@@ -125,29 +125,24 @@ class FirestoreComyRepository : ComyRepository {
 
     override suspend fun toggleLike(userId: String, postId: String): Result<Boolean> {
         return try {
-            val likeDoc = userLikesCollection(userId).document(postId).get()
-            val isCurrentlyLiked = likeDoc.exists
-
-            if (isCurrentlyLiked) {
-                // いいね解除
-                userLikesCollection(userId).document(postId).delete()
-                postsCollection.document(postId).update(
-                    mapOf("likeCount" to FieldValue.increment(-1))
-                )
-                Result.success(false)
-            } else {
-                // いいね追加
-                userLikesCollection(userId).document(postId).set(
-                    mapOf(
+            val likeRef = userLikesCollection(userId).document(postId)
+            val postRef = postsCollection.document(postId)
+            val result = firestore.runTransaction {
+                val likeDoc = get(likeRef)
+                if (likeDoc.exists) {
+                    delete(likeRef)
+                    update(postRef, mapOf("likeCount" to FieldValue.increment(-1)))
+                    false
+                } else {
+                    set(likeRef, mapOf(
                         "postId" to postId,
                         "likedAt" to DateUtil.currentTimestamp()
-                    )
-                )
-                postsCollection.document(postId).update(
-                    mapOf("likeCount" to FieldValue.increment(1))
-                )
-                Result.success(true)
+                    ))
+                    update(postRef, mapOf("likeCount" to FieldValue.increment(1)))
+                    true
+                }
             }
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("いいねの更新に失敗しました", e))
         }
@@ -205,16 +200,15 @@ class FirestoreComyRepository : ComyRepository {
 
     override suspend fun addComment(comment: ComyComment): Result<String> {
         return try {
-            val docRef = commentsCollection(comment.postId).document
-            val commentWithId = comment.copy(id = docRef.id, createdAt = DateUtil.currentTimestamp())
-            docRef.set(commentToMap(commentWithId))
-
-            // コメント数をインクリメント
-            postsCollection.document(comment.postId).update(
-                mapOf("commentCount" to FieldValue.increment(1))
-            )
-
-            Result.success(docRef.id)
+            val commentRef = commentsCollection(comment.postId).document
+            val postRef = postsCollection.document(comment.postId)
+            val commentWithId = comment.copy(id = commentRef.id, createdAt = DateUtil.currentTimestamp())
+            val data = commentToMap(commentWithId)
+            firestore.runTransaction {
+                set(commentRef, data)
+                update(postRef, mapOf("commentCount" to FieldValue.increment(1)))
+            }
+            Result.success(commentRef.id)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("コメントの追加に失敗しました", e))
         }
@@ -222,13 +216,12 @@ class FirestoreComyRepository : ComyRepository {
 
     override suspend fun deleteComment(postId: String, commentId: String): Result<Unit> {
         return try {
-            commentsCollection(postId).document(commentId).delete()
-
-            // コメント数をデクリメント
-            postsCollection.document(postId).update(
-                mapOf("commentCount" to FieldValue.increment(-1))
-            )
-
+            val commentRef = commentsCollection(postId).document(commentId)
+            val postRef = postsCollection.document(postId)
+            firestore.runTransaction {
+                delete(commentRef)
+                update(postRef, mapOf("commentCount" to FieldValue.increment(-1)))
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("コメントの削除に失敗しました", e))
@@ -245,21 +238,18 @@ class FirestoreComyRepository : ComyRepository {
     override suspend fun followUser(currentUserId: String, targetUserId: String): Result<Unit> {
         return try {
             val docId = "${currentUserId}_${targetUserId}"
-            followsCollection.document(docId).set(
-                mapOf(
+            val followRef = followsCollection.document(docId)
+            val currentUserRef = firestore.collection("users").document(currentUserId)
+            val targetUserRef = firestore.collection("users").document(targetUserId)
+            firestore.runTransaction {
+                set(followRef, mapOf(
                     "followerId" to currentUserId,
                     "followingId" to targetUserId,
                     "createdAt" to DateUtil.currentTimestamp()
-                )
-            )
-            // followingCount を更新
-            firestore.collection("users").document(currentUserId).update(
-                mapOf("followingCount" to FieldValue.increment(1))
-            )
-            // followerCount を更新
-            firestore.collection("users").document(targetUserId).update(
-                mapOf("followerCount" to FieldValue.increment(1))
-            )
+                ))
+                update(currentUserRef, mapOf("followingCount" to FieldValue.increment(1)))
+                update(targetUserRef, mapOf("followerCount" to FieldValue.increment(1)))
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("フォローに失敗しました", e))
@@ -269,15 +259,14 @@ class FirestoreComyRepository : ComyRepository {
     override suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<Unit> {
         return try {
             val docId = "${currentUserId}_${targetUserId}"
-            followsCollection.document(docId).delete()
-            // followingCount を更新
-            firestore.collection("users").document(currentUserId).update(
-                mapOf("followingCount" to FieldValue.increment(-1))
-            )
-            // followerCount を更新
-            firestore.collection("users").document(targetUserId).update(
-                mapOf("followerCount" to FieldValue.increment(-1))
-            )
+            val followRef = followsCollection.document(docId)
+            val currentUserRef = firestore.collection("users").document(currentUserId)
+            val targetUserRef = firestore.collection("users").document(targetUserId)
+            firestore.runTransaction {
+                delete(followRef)
+                update(currentUserRef, mapOf("followingCount" to FieldValue.increment(-1)))
+                update(targetUserRef, mapOf("followerCount" to FieldValue.increment(-1)))
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("フォロー解除に失敗しました", e))
@@ -343,14 +332,13 @@ class FirestoreComyRepository : ComyRepository {
     // ========== Mapping Functions ==========
 
     private fun postToMap(post: ComyPost): Map<String, Any?> = mapOf(
-        "id" to post.id,
         "userId" to post.userId,
         "authorName" to post.authorName,
         "authorPhotoUrl" to post.authorPhotoUrl,
         "authorLevel" to post.authorLevel,
         "title" to post.title,
         "content" to post.content,
-        "category" to post.category.name,
+        "category" to post.category.name.lowercase(),
         "imageUrl" to post.imageUrl,
         "likeCount" to post.likeCount,
         "commentCount" to post.commentCount,
@@ -358,7 +346,6 @@ class FirestoreComyRepository : ComyRepository {
     )
 
     private fun commentToMap(comment: ComyComment): Map<String, Any?> = mapOf(
-        "id" to comment.id,
         "postId" to comment.postId,
         "userId" to comment.userId,
         "authorName" to comment.authorName,
@@ -368,9 +355,9 @@ class FirestoreComyRepository : ComyRepository {
     )
 
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toPost(): ComyPost {
-        val categoryStr = get<String?>("category") ?: "QUESTION"
+        val categoryStr = get<String?>("category") ?: "question"
         val category = try {
-            ComyCategory.valueOf(categoryStr)
+            ComyCategory.valueOf(categoryStr.uppercase())
         } catch (e: Exception) {
             ComyCategory.QUESTION
         }

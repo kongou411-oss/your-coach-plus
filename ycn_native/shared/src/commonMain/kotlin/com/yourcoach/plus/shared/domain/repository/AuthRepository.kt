@@ -71,4 +71,9 @@ interface AuthRepository {
      * アカウント削除
      */
     suspend fun deleteAccount(): Result<Unit>
+
+    /**
+     * Google再認証してアカウント削除
+     */
+    suspend fun reauthenticateWithGoogleAndDelete(idToken: String): Result<Unit>
 }
