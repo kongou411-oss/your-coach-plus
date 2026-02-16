@@ -400,7 +400,8 @@ class FirestoreUserRepository : UserRepository {
         userId: String,
         mealSlotConfig: com.yourcoach.plus.shared.domain.model.MealSlotConfig,
         workoutSlotConfig: com.yourcoach.plus.shared.domain.model.WorkoutSlotConfig,
-        routineTemplateConfig: com.yourcoach.plus.shared.domain.model.RoutineTemplateConfig
+        routineTemplateConfig: com.yourcoach.plus.shared.domain.model.RoutineTemplateConfig,
+        questAutoGenEnabled: Boolean
     ): Result<Unit> {
         return try {
             val slotsData = mealSlotConfig.slots.map { slot ->
@@ -427,7 +428,8 @@ class FirestoreUserRepository : UserRepository {
                 "profile.workoutSlotConfig" to emptyMap<String, Any?>(),
                 "profile.routineTemplateConfig" to mapOf(
                     "mappings" to mappingsData
-                )
+                ),
+                "profile.questAutoGenEnabled" to questAutoGenEnabled
             )
             usersCollection.document(userId).update(data)
             Result.success(Unit)
@@ -474,7 +476,20 @@ class FirestoreUserRepository : UserRepository {
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toUser(userId: String): User {
         // iOS対応: プラットフォーム固有のプロファイルパーサーを使用
         val profile = try {
-            getProfileMap()?.let { parseUserProfile(it) }
+            getProfileMap()?.let { profileMap ->
+                val baseProfile = parseUserProfile(profileMap)
+                // ネストオブジェクトは @Serializable クラスで直接読み取り
+                val rtc = try {
+                    get<RoutineTemplateConfig>("profile.routineTemplateConfig")
+                } catch (_: Throwable) { null }
+                val msc = try {
+                    get<MealSlotConfig>("profile.mealSlotConfig")
+                } catch (_: Throwable) { null }
+                baseProfile.copy(
+                    routineTemplateConfig = rtc ?: baseProfile.routineTemplateConfig,
+                    mealSlotConfig = msc ?: baseProfile.mealSlotConfig
+                )
+            }
         } catch (e: Throwable) {
             null
         }
@@ -588,7 +603,8 @@ class FirestoreUserRepository : UserRepository {
             postWorkoutCarbs = (profileMap["postWorkoutCarbs"] as? Number)?.toInt() ?: 60,
             mealSlotConfig = mealSlotConfig,
             workoutSlotConfig = workoutSlotConfig,
-            routineTemplateConfig = routineTemplateConfig
+            routineTemplateConfig = routineTemplateConfig,
+            questAutoGenEnabled = profileMap["questAutoGenEnabled"] as? Boolean ?: false
         )
     }
 

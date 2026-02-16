@@ -167,6 +167,15 @@ class FirestoreWorkoutRepository : WorkoutRepository {
         }
     }
 
+    override suspend fun updateWorkoutTemplate(template: WorkoutTemplate): Result<Unit> {
+        return try {
+            templatesCollection(template.userId).document(template.id).set(templateToMap(template))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("テンプレートの更新に失敗しました", e))
+        }
+    }
+
     /**
      * 運動テンプレートを取得
      */
@@ -543,13 +552,12 @@ class FirestoreWorkoutRepository : WorkoutRepository {
         "createdAt" to template.createdAt
     )
 
-    @Suppress("UNCHECKED_CAST")
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toTemplate(): WorkoutTemplate? {
         if (!exists) return null
 
-        // iOS対応: List<Map<String, Any?>>の取得はシリアライズエラーになる可能性があるためtry-catch
-        val exercisesList = try {
-            get<List<Map<String, Any?>>?>("exercises") ?: emptyList()
+        // @Serializable Exerciseを直接使用（Map<String, Any?>はKotlin/Nativeで動作しないため）
+        val exercises = try {
+            get<List<Exercise>>("exercises")
         } catch (e: Throwable) {
             println("FirestoreWorkoutRepository: Could not parse template exercises: ${e.message}")
             emptyList()
@@ -561,7 +569,7 @@ class FirestoreWorkoutRepository : WorkoutRepository {
             type = get<String?>("type")?.let {
                 try { WorkoutType.valueOf(it) } catch (e: Exception) { WorkoutType.STRENGTH }
             } ?: WorkoutType.STRENGTH,
-            exercises = exercisesList.map { mapToExercise(it) },
+            exercises = exercises,
             estimatedDuration = get<Long?>("estimatedDuration")?.toInt() ?: 0,
             estimatedCalories = get<Long?>("estimatedCalories")?.toInt() ?: 0,
             usageCount = get<Long?>("usageCount")?.toInt() ?: 0,

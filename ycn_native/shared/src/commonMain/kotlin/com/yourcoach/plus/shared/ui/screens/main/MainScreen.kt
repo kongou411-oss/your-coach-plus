@@ -107,6 +107,7 @@ class MainScreen : Screen {
                         progressPercent = if (isDashboard) bottomBarState.progressPercent else null,
                         freeCredits = if (isDashboard) bottomBarState.freeCredits else null,
                         paidCredits = if (isDashboard) bottomBarState.paidCredits else null,
+                        isPremium = bottomBarState.isPremium,
                         onAnalysisClick = if (isDashboard) bottomBarState.onAnalysisClick else null,
                         onGenerateQuestClick = if (isDashboard) bottomBarState.onGenerateQuestClick else null,
                         isGeneratingQuest = if (isDashboard) bottomBarState.isGeneratingQuest else false,

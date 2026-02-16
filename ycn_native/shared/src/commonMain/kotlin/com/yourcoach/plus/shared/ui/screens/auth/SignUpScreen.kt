@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.yourcoach.plus.shared.ui.components.BrandIcons
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -343,22 +345,11 @@ class SignUpScreen : Screen {
                         enabled = !uiState.isLoading,
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(4.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "G",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF4285F4)
-                            )
-                        }
+                        Image(
+                            imageVector = BrandIcons.Google,
+                            contentDescription = "Google",
+                            modifier = Modifier.size(20.dp)
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = "Googleで登録",
@@ -414,8 +405,15 @@ class SignUpScreen : Screen {
                                 contentColor = Color.White
                             )
                         ) {
+                            Icon(
+                                imageVector = BrandIcons.Apple,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = " Appleで登録",
+                                text = "Appleで登録",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium
                             )

@@ -59,6 +59,11 @@ interface WorkoutRepository {
     suspend fun getWorkoutTemplates(userId: String): Result<List<WorkoutTemplate>>
 
     /**
+     * 運動テンプレートを更新
+     */
+    suspend fun updateWorkoutTemplate(template: WorkoutTemplate): Result<Unit>
+
+    /**
      * 運動テンプレートを削除
      */
     suspend fun deleteWorkoutTemplate(userId: String, templateId: String): Result<Unit>

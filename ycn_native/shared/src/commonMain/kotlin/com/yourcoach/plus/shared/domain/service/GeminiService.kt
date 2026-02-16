@@ -84,7 +84,10 @@ data class CreditInfo(
     val paidCredits: Int,
     val tier: String // "free" or "premium"
 ) {
-    val isAllowed: Boolean get() = totalCredits > 0
+    val isPremiumTier: Boolean get() = tier == "premium"
+    // 非プレミアムはfreeCreditsのみ利用可能
+    val availableCredits: Int get() = if (isPremiumTier) totalCredits else freeCredits
+    val isAllowed: Boolean get() = availableCredits > 0
 }
 
 /**

@@ -170,6 +170,15 @@ class FirestoreMealRepository : MealRepository {
         }
     }
 
+    override suspend fun updateMealTemplate(template: MealTemplate): Result<Unit> {
+        return try {
+            templatesCollection(template.userId).document(template.id).set(templateToMap(template))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(AppError.DatabaseError("テンプレートの更新に失敗しました", e))
+        }
+    }
+
     /**
      * 食事テンプレートを取得
      */

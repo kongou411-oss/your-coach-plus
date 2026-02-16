@@ -28,8 +28,12 @@ data class User(
 ) {
     // 所属による Premium 判定
     val hasCorporatePremium: Boolean get() = !organizationName.isNullOrEmpty() || !b2b2cOrgId.isNullOrEmpty()
+    // プレミアム判定（Stripe/所属/ギフト）
+    val isEffectivePremium: Boolean get() = isPremium || hasCorporatePremium
     // 合計クレジット
     val totalCredits: Int get() = freeCredits + paidCredits
+    // 利用可能クレジット（非プレミアムはfreeCreditsのみ）
+    val availableCredits: Int get() = if (isEffectivePremium) freeCredits + paidCredits else freeCredits
 }
 
 @Serializable
@@ -91,6 +95,7 @@ data class UserProfile(
     val mealSlotConfig: MealSlotConfig? = null,                          // 食事スロット設定
     val workoutSlotConfig: WorkoutSlotConfig? = null,                    // 運動スロット設定
     val routineTemplateConfig: RoutineTemplateConfig? = null,            // ルーティン別テンプレート設定
+    val questAutoGenEnabled: Boolean = false,                           // 起動時クエスト自動生成
     // アクティビティ追跡
     val activeDays: List<String> = emptyList(),
     val streak: Int = 0,
@@ -233,9 +238,9 @@ enum class ActivityLevel(val multiplier: Float, val displayName: String) {
  */
 object TrainingCalorieBonus {
     // Class別の加算定数（LBM 60kg基準）
-    private const val CLASS_SSS = 400   // 大筋群・高神経系疲労（脚、全身、下半身）
-    private const val CLASS_S = 250     // 標準的な筋肥大トレ（胸、背中、肩、複合系）
-    private const val CLASS_A = 100     // 小筋群・回復コスト低（腕、腹筋）
+    private const val CLASS_SSS = 550   // 大筋群・高神経系疲労（脚、全身、下半身）
+    private const val CLASS_S = 400     // 標準的な筋肥大トレ（胸、背中、肩、複合系）
+    private const val CLASS_A = 250     // 小筋群・回復コスト低（腕、腹筋）
 
     private const val REFERENCE_LBM = 60f
 

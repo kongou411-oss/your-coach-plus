@@ -39,6 +39,7 @@ import com.yourcoach.plus.shared.ui.screens.auth.ProfileSetupScreenModel
 import com.yourcoach.plus.shared.ui.screens.dashboard.DashboardScreenModel
 import com.yourcoach.plus.shared.ui.screens.history.HistoryScreenModel
 import com.yourcoach.plus.shared.ui.screens.settings.MealSlotSettingsScreenModel
+import com.yourcoach.plus.shared.ui.screens.settings.QuestSlotSettingsScreenModel
 import com.yourcoach.plus.shared.ui.screens.settings.ProfileEditScreenModel
 import com.yourcoach.plus.shared.ui.screens.settings.RoutineSettingsScreenModel
 import com.yourcoach.plus.shared.ui.screens.settings.SettingsScreenModel
@@ -100,13 +101,23 @@ val sharedModule = module {
         )
     }
     // History
-    factory { HistoryScreenModel(get(), get(), get(), get(), rmRepository = get()) }
+    factory {
+        HistoryScreenModel(
+            authRepository = get(),
+            userRepository = get(),
+            mealRepository = get(),
+            workoutRepository = get(),
+            conditionRepository = get(),
+            rmRepository = get()
+        )
+    }
     // Settings
     factory { SettingsScreenModel(get(), get(), get(), get(), getOrNull<GeminiService>()) }
     factory { ProfileEditScreenModel(get(), get()) }
     factory { RoutineSettingsScreenModel(get(), get(), get(), get()) }
     factory { TemplateSettingsScreenModel(get(), get(), get()) }
     factory { MealSlotSettingsScreenModel(get(), get()) }
+    factory { QuestSlotSettingsScreenModel(get(), get(), get(), get(), get()) }
     // Notification
     single { PushNotificationHelper() }
     single<NotificationSettingsRepository> { FirestoreNotificationSettingsRepository() }

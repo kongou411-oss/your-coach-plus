@@ -310,7 +310,7 @@ private fun AnalysisContent(
                 question = uiState.userQuestion,
                 onQuestionChange = onUpdateQuestion,
                 onSend = { onSendQuestion(uiState.userQuestion) },
-                enabled = !uiState.isQaLoading && (uiState.creditInfo?.totalCredits ?: 0) > 0
+                enabled = !uiState.isQaLoading && (uiState.creditInfo?.availableCredits ?: 0) > 0
             )
         }
     }
@@ -462,7 +462,7 @@ private fun GenerateAnalysisCard(
 
             Button(
                 onClick = onGenerate,
-                enabled = (creditInfo?.totalCredits ?: 0) > 0,
+                enabled = (creditInfo?.availableCredits ?: 0) > 0,
                 colors = ButtonDefaults.buttonColors(containerColor = Primary),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -472,7 +472,7 @@ private fun GenerateAnalysisCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("分析を生成（1クレジット）")
             }
-            if ((creditInfo?.totalCredits ?: 0) <= 0) {
+            if ((creditInfo?.availableCredits ?: 0) <= 0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "クレジットが不足しています",

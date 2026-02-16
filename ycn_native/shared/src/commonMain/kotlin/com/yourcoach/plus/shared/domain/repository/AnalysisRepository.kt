@@ -88,5 +88,8 @@ data class UserCreditInfo(
     val level: Int = 1,
     val xp: Int = 0
 ) {
-    val isAllowed: Boolean get() = totalCredits > 0
+    val isPremiumTier: Boolean get() = tier == "premium"
+    // 非プレミアムはfreeCreditsのみ利用可能
+    val availableCredits: Int get() = if (isPremiumTier) totalCredits else freeCredits
+    val isAllowed: Boolean get() = availableCredits > 0
 }

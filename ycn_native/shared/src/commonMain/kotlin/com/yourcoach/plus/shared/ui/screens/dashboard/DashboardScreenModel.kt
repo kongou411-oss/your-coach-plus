@@ -127,6 +127,7 @@ data class DashboardUiState(
     val questGenerationError: String? = null,
     val showDirectiveEditDialog: Boolean = false,
     val showQuestSettingsDialog: Boolean = false,
+    val questDetailItem: UnifiedTimelineItem? = null, // クエスト項目詳細表示用
     val executedDirectiveItems: Set<Int> = emptySet(),
     val editedDirectiveTexts: Map<Int, String> = emptyMap(),
 
@@ -414,6 +415,9 @@ class DashboardScreenModel(
                         updateWorkoutSummary(workouts)
                     }
                 }
+
+                // 今日のクエストが未生成なら自動生成チェック
+                checkAndAutoGenerateQuest()
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -635,6 +639,20 @@ class DashboardScreenModel(
 
         var foundCurrentItem = false
 
+        // 運動種目行（・で始まる）を事前に【運動】行に紐づけ
+        val workoutExerciseLines = mutableListOf<String>()
+        var foundWorkoutLine = false
+        for (l in lines) {
+            if (workoutPattern.containsMatchIn(l)) {
+                foundWorkoutLine = true
+            } else if (foundWorkoutLine && l.trimStart().startsWith("\u30FB")) {
+                // ・で始まる行を収集
+                workoutExerciseLines.add(l.trimStart().removePrefix("\u30FB").trim())
+            } else if (foundWorkoutLine && !l.trimStart().startsWith("\u30FB")) {
+                foundWorkoutLine = false
+            }
+        }
+
         lines.forEachIndexed { lineIndex, line ->
             val mealMatch = mealPattern.find(line)
             val workoutMatch = workoutPattern.find(line)
@@ -695,8 +713,8 @@ class DashboardScreenModel(
                     val defaultWorkoutTime = 18 * 60
                     val timeMinutes = trainingMinutes ?: defaultWorkoutTime
 
-                    // Android版と一致: 運動の完了はworkouts.isNotEmpty()で判定（executedItemsは使わない）
-                    val isCompleted = workouts.isNotEmpty()
+                    // 運動の完了: workouts存在 or executedItemsに含まれる
+                    val isCompleted = workouts.isNotEmpty() || directive.executedItems.contains(lineIndex)
                     val isNext = !isCompleted && !foundCurrentItem && timeMinutes >= currentTimeMinutes - 30
                     val status = when {
                         isCompleted -> TimelineItemStatus.COMPLETED
@@ -707,15 +725,23 @@ class DashboardScreenModel(
                         else -> TimelineItemStatus.UPCOMING
                     }
 
+                    // 運動サマリー + 種目詳細を結合
+                    val fullContent = if (workoutExerciseLines.isNotEmpty()) {
+                        (listOf(content) + workoutExerciseLines).filter { it.isNotEmpty() }.joinToString("\n")
+                    } else {
+                        content
+                    }
+
                     items.add(UnifiedTimelineItem(
                         id = "directive_workout",
                         type = TimelineItemType.WORKOUT,
                         timeMinutes = timeMinutes,
                         timeString = MealSlot.minutesToTimeString(timeMinutes),
                         title = "トレーニング",
-                        subtitle = content.ifEmpty { null },
+                        subtitle = fullContent.ifEmpty { null },
                         status = status,
                         isTrainingRelated = true,
+                        directiveItemIndex = lineIndex,
                         linkedWorkout = workouts.firstOrNull()
                     ))
                 }
@@ -725,7 +751,8 @@ class DashboardScreenModel(
                     val defaultSleepTime = 23 * 60
                     val timeMinutes = sleepMinutes ?: defaultSleepTime
 
-                    // Android版と一致: 睡眠の完了は時刻ベースで判定（executedItemsは使わない）
+                    // 睡眠の完了: executedItemsに含まれる or 時刻ベース
+                    val isCompleted = directive.executedItems.contains(lineIndex) || timeMinutes < currentTimeMinutes
                     items.add(UnifiedTimelineItem(
                         id = "directive_sleep",
                         type = TimelineItemType.CONDITION,
@@ -733,7 +760,8 @@ class DashboardScreenModel(
                         timeString = MealSlot.minutesToTimeString(timeMinutes),
                         title = "睡眠",
                         subtitle = content.ifEmpty { null },
-                        status = if (timeMinutes < currentTimeMinutes) TimelineItemStatus.COMPLETED else TimelineItemStatus.UPCOMING
+                        status = if (isCompleted) TimelineItemStatus.COMPLETED else TimelineItemStatus.UPCOMING,
+                        directiveItemIndex = lineIndex
                     ))
                 }
             }
@@ -1916,18 +1944,30 @@ class DashboardScreenModel(
      * Cloud Function generateQuestを呼び出し、Directiveとして保存
      */
     fun generateQuest() {
+        generateQuestForDate(
+            targetDate = DateUtil.nextDay(DateUtil.todayString()),
+            silent = false
+        )
+    }
+
+    /**
+     * 指定日のクエストを生成
+     * @param targetDate 対象日（YYYY-MM-DD）
+     * @param silent trueの場合はエラーをUIに表示しない（自動生成用）
+     */
+    private fun generateQuestForDate(targetDate: String, silent: Boolean = false) {
         val userId = authRepository.getCurrentUserId() ?: run {
-            _uiState.update { it.copy(questGenerationError = "ログインが必要です") }
+            if (!silent) _uiState.update { it.copy(questGenerationError = "ログインが必要です") }
             return
         }
         val user = _uiState.value.user ?: run {
-            _uiState.update { it.copy(questGenerationError = "ユーザー情報を読み込み中です。しばらくお待ちください") }
+            if (!silent) _uiState.update { it.copy(questGenerationError = "ユーザー情報を読み込み中です。しばらくお待ちください") }
             return
         }
 
         // プレミアム会員チェック
         if (user.isPremium != true && !user.hasCorporatePremium) {
-            _uiState.update { it.copy(questGenerationError = "クエスト生成はプレミアム会員限定機能です") }
+            if (!silent) _uiState.update { it.copy(questGenerationError = "クエスト生成はプレミアム会員限定機能です") }
             return
         }
 
@@ -1940,11 +1980,10 @@ class DashboardScreenModel(
                 val goal = profile?.goal?.name ?: "MAINTAIN"
                 val budgetTier = profile?.budgetTier ?: 2
                 val mealsPerDay = profile?.mealsPerDay ?: 5
-                val targetDate = DateUtil.nextDay(DateUtil.todayString())
 
-                // 翌日のルーティンを取得
-                val tomorrowRoutine = routineRepository?.getRoutineForDate(userId, targetDate)?.getOrNull()
-                val rawSplitType = tomorrowRoutine?.splitType ?: "off"
+                // 対象日のルーティンを取得
+                val routine = routineRepository?.getRoutineForDate(userId, targetDate)?.getOrNull()
+                val rawSplitType = routine?.splitType ?: "off"
 
                 // splitTypeは日本語→英語変換
                 val splitType = when (rawSplitType) {
@@ -1969,8 +2008,8 @@ class DashboardScreenModel(
                     else -> rawSplitType.lowercase()
                 }
 
-                // 目標PFC（明日のルーティンに基づいて再計算）
-                val tomorrowTargets = calculateTargets(user, tomorrowRoutine, isManualRestDay = false)
+                // 目標PFC（対象日のルーティンに基づいて再計算）
+                val targets = calculateTargets(user, routine, isManualRestDay = false)
 
                 // 体組成（LBM計算用）
                 val weight = profile?.weight ?: 70f
@@ -1997,10 +2036,10 @@ class DashboardScreenModel(
                     "mealsPerDay" to mealsPerDay,
                     "splitType" to splitType,
                     "targetDate" to targetDate,
-                    "targetProtein" to tomorrowTargets.protein,
-                    "targetCarbs" to tomorrowTargets.carbs,
-                    "targetFat" to tomorrowTargets.fat,
-                    "targetCalories" to tomorrowTargets.calories,
+                    "targetProtein" to targets.protein,
+                    "targetCarbs" to targets.carbs,
+                    "targetFat" to targets.fat,
+                    "targetCalories" to targets.calories,
                     "fiberTarget" to fiberTarget,
                     "wakeUpTime" to wakeUpTime,
                     "sleepTime" to sleepTime,
@@ -2023,17 +2062,45 @@ class DashboardScreenModel(
 
                 // 経験値はCloud Function側で付与済み（Firestore権限の関係でクライアント側では不可）
 
-                // 翌日に切り替えて即時反映
+                // 対象日に切り替えて即時反映
                 loadDataForDate(targetDate)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isGeneratingQuest = false,
-                        questGenerationError = "クエスト生成エラー: ${e.message}"
+                        questGenerationError = if (silent) null else "クエスト生成エラー: ${e.message}"
                     )
+                }
+                if (silent) {
+                    println("DashboardScreenModel: 自動クエスト生成エラー: ${e.message}")
                 }
             }
         }
+    }
+
+    /**
+     * 今日のクエストが未生成の場合に自動生成をチェック
+     */
+    private fun checkAndAutoGenerateQuest() {
+        val state = _uiState.value
+
+        // ガード条件
+        if (!state.isToday) return
+        if (state.directive != null || state.customQuest != null) return
+        if (state.isGeneratingQuest) return
+
+        val user = state.user ?: return
+        val profile = user.profile ?: return
+        if (!profile.questAutoGenEnabled) return
+        if (user.isPremium != true && !user.hasCorporatePremium) return
+
+        if (user.availableCredits < 1) return
+
+        println("DashboardScreenModel: 自動クエスト生成を開始")
+        generateQuestForDate(
+            targetDate = DateUtil.todayString(),
+            silent = true
+        )
     }
 
     /**
@@ -2188,8 +2255,18 @@ class DashboardScreenModel(
 
     // タイムラインアイテムのクリック
     fun onTimelineItemClick(item: UnifiedTimelineItem) {
-        item.linkedMeal?.let { showMealEditDialog(it) }
-        item.linkedWorkout?.let { showWorkoutEditDialog(it) }
+        if (item.linkedMeal != null) {
+            showMealEditDialog(item.linkedMeal)
+        } else if (item.linkedWorkout != null) {
+            showWorkoutEditDialog(item.linkedWorkout)
+        } else if (item.actionItems?.isNotEmpty() == true || item.subtitle != null) {
+            // 未記録のクエスト/タイムライン項目 → 詳細表示
+            _uiState.update { it.copy(questDetailItem = item) }
+        }
+    }
+
+    fun dismissQuestDetail() {
+        _uiState.update { it.copy(questDetailItem = null) }
     }
 
     fun onTimelineRecordClick(item: UnifiedTimelineItem) {

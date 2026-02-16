@@ -43,7 +43,9 @@ data class MealSlot(
         sleepMinutes: Int,
         previousSlotTimes: Map<Int, Int>
     ): Int? {
-        val relative = relativeTime ?: return absoluteTime?.let { parseTimeToMinutes(it) }
+        // absoluteTime（ユーザー設定）を最優先
+        if (absoluteTime != null) return parseTimeToMinutes(absoluteTime)
+        val relative = relativeTime ?: return null
 
         return when {
             relative.startsWith("wake") -> {
@@ -149,8 +151,9 @@ data class MealSlotConfig(
          * タイムライン型ルーティンを生成
          * @param mealsPerDay 食事回数
          * @param trainingAfterMeal 何食目の後にトレーニングするか（null=トレーニングなし）
+         * @param trainingDuration トレーニング所要時間（分）デフォルト120分
          */
-        fun createTimelineRoutine(mealsPerDay: Int, trainingAfterMeal: Int?): MealSlotConfig {
+        fun createTimelineRoutine(mealsPerDay: Int, trainingAfterMeal: Int?, trainingDuration: Int = 120): MealSlotConfig {
             val slots = (1..mealsPerDay).map { num ->
                 val relativeTime = when {
                     // 食事1: 起床時刻
@@ -159,8 +162,8 @@ data class MealSlotConfig(
                     // トレ前食事: トレ2時間前
                     trainingAfterMeal != null && num == trainingAfterMeal -> "training-120"
 
-                    // トレ後食事: トレ直後
-                    trainingAfterMeal != null && num == trainingAfterMeal + 1 -> "training+0"
+                    // トレ後食事: トレーニング終了後（開始+所要時間）
+                    trainingAfterMeal != null && num == trainingAfterMeal + 1 -> "training+$trainingDuration"
 
                     // トレ後1時間後の食事
                     trainingAfterMeal != null && num == trainingAfterMeal + 2 -> "meal${num - 1}+60"

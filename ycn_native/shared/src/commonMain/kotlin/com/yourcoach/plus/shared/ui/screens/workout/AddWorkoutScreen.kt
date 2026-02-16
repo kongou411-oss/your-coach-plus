@@ -2,6 +2,7 @@ package com.yourcoach.plus.shared.ui.screens.workout
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,6 +42,7 @@ import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import com.yourcoach.plus.shared.ui.theme.*
 import com.yourcoach.plus.shared.util.DateUtil
+import com.yourcoach.plus.shared.util.MetCalorieCalculator
 import org.koin.compose.koinInject
 
 /**
@@ -48,7 +50,8 @@ import org.koin.compose.koinInject
  */
 data class AddWorkoutScreen(
     val templateMode: Boolean = false,
-    val selectedDate: String = DateUtil.todayString()
+    val selectedDate: String = DateUtil.todayString(),
+    val editingTemplateId: String? = null
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -88,11 +91,16 @@ data class AddWorkoutScreen(
             }
         }
 
+        // テンプレート編集モード初期化
+        LaunchedEffect(Unit) {
+            editingTemplateId?.let { screenModel.loadAndEditTemplate(it) }
+        }
+
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
-                    title = { Text(if (templateMode) "運動テンプレート作成" else "運動を記録") },
+                    title = { Text(if (templateMode) (if (editingTemplateId != null) "運動テンプレート編集" else "運動テンプレート作成") else "運動を記録") },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る")
@@ -194,6 +202,9 @@ data class AddWorkoutScreen(
                     item {
                         WorkoutTemplateSection(
                             templates = uiState.templates,
+                            defaultTemplates = uiState.defaultTemplates,
+                            showDefaultTemplates = uiState.showDefaultTemplates,
+                            onToggleDefaultTemplates = { screenModel.toggleDefaultTemplates() },
                             onApplyTemplate = { screenModel.applyTemplate(it) },
                             onSaveAsTemplate = {
                                 if (uiState.exercises.isNotEmpty()) {
@@ -349,7 +360,8 @@ data class AddWorkoutScreen(
                     if (templateMode) {
                         navigator.pop()
                     }
-                }
+                },
+                initialName = if (editingTemplateId != null) uiState.editingTemplateName else ""
             )
         }
 
@@ -357,6 +369,8 @@ data class AddWorkoutScreen(
         if (showEditExerciseDialog && editingExerciseIndex >= 0 && editingExerciseIndex < uiState.exercises.size) {
             EditExerciseDialog(
                 exercise = uiState.exercises[editingExerciseIndex],
+                bodyWeight = uiState.userBodyWeight,
+                intensity = uiState.intensity,
                 onDismiss = {
                     showEditExerciseDialog = false
                     editingExerciseIndex = -1
@@ -1091,6 +1105,9 @@ private fun CustomExerciseItemCard(exercise: CustomExercise, onClick: () -> Unit
 @Composable
 private fun WorkoutTemplateSection(
     templates: List<WorkoutTemplate>,
+    defaultTemplates: List<WorkoutTemplate>,
+    showDefaultTemplates: Boolean,
+    onToggleDefaultTemplates: () -> Unit,
     onApplyTemplate: (WorkoutTemplate) -> Unit,
     onSaveAsTemplate: () -> Unit,
     hasExercises: Boolean
@@ -1111,7 +1128,7 @@ private fun WorkoutTemplateSection(
                     }
                 }
             }
-            if (templates.isEmpty()) {
+            if (templates.isEmpty() && (!showDefaultTemplates || defaultTemplates.isEmpty())) {
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.BookmarkBorder, null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1121,6 +1138,7 @@ private fun WorkoutTemplateSection(
                     }
                 }
             } else {
+                // ユーザーテンプレート
                 templates.forEach { template ->
                     Card(onClick = { onApplyTemplate(template) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
                         Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -1132,14 +1150,49 @@ private fun WorkoutTemplateSection(
                         }
                     }
                 }
+                // デフォルトテンプレート表示
+                if (showDefaultTemplates) {
+                    defaultTemplates.forEach { template ->
+                        val totalSets = template.exercises.sumOf { it.sets ?: 0 }
+                        Card(onClick = { onApplyTemplate(template) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(template.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                                    Text("${template.exercises.size}種目 • ${totalSets}セット", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Icon(Icons.Default.ChevronRight, "適用", tint = AccentOrange)
+                            }
+                        }
+                    }
+                }
+            }
+            // デフォルトテンプレート トグル
+            if (defaultTemplates.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onToggleDefaultTemplates() }.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        if (showDefaultTemplates) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        if (showDefaultTemplates) "デフォルトテンプレートを非表示" else "デフォルトテンプレートを表示 (${defaultTemplates.size})",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SaveWorkoutTemplateDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var templateName by remember { mutableStateOf("") }
+private fun SaveWorkoutTemplateDialog(onDismiss: () -> Unit, onSave: (String) -> Unit, initialName: String = "") {
+    var templateName by remember { mutableStateOf(initialName) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("テンプレートとして保存") },
@@ -1160,23 +1213,21 @@ private fun SaveWorkoutTemplateDialog(onDismiss: () -> Unit, onSave: (String) ->
     )
 }
 
-/**
- * 消費カロリー計算
- */
-private fun calculateCalories(sets: Int?, reps: Int?, weight: Float?, duration: Int?): Int {
-    if (weight != null && weight > 0 && sets != null && reps != null) {
-        val volume = sets * reps * weight
-        return (volume * 0.05f).toInt().coerceAtLeast(1)
-    }
-    if (duration != null && duration > 0) {
-        return duration * 7
-    }
-    return 0
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditExerciseDialog(exercise: Exercise, onDismiss: () -> Unit, onSave: (Exercise) -> Unit) {
+private fun EditExerciseDialog(
+    exercise: Exercise,
+    bodyWeight: Float,
+    intensity: WorkoutIntensity,
+    onDismiss: () -> Unit,
+    onSave: (Exercise) -> Unit
+) {
+    val isCardio = exercise.category in listOf(
+        ExerciseCategory.RUNNING, ExerciseCategory.WALKING,
+        ExerciseCategory.CYCLING, ExerciseCategory.SWIMMING,
+        ExerciseCategory.HIIT
+    )
+
     var sets by remember { mutableStateOf(exercise.sets?.toString() ?: "") }
     var reps by remember { mutableStateOf(exercise.reps?.toString() ?: "") }
     var weight by remember { mutableStateOf(exercise.weight?.toInt()?.toString() ?: "") }
@@ -1188,30 +1239,46 @@ private fun EditExerciseDialog(exercise: Exercise, onDismiss: () -> Unit, onSave
         title = { Text("${exercise.name} を編集") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = sets, onValueChange = { sets = it }, label = { Text("セット") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
-                    OutlinedTextField(value = reps, onValueChange = { reps = it }, label = { Text("回数") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
-                    OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("重量(kg)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
+                if (!isCardio) {
+                    // 筋トレ系: セット・回数・重量
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = sets, onValueChange = { sets = it }, label = { Text("セット") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = reps, onValueChange = { reps = it }, label = { Text("回数") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
+                        OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("重量(kg)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = duration, onValueChange = { duration = it }, label = { Text("時間(分)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
-                    OutlinedTextField(value = distance, onValueChange = { distance = it }, label = { Text("距離(km)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
+                    if (isCardio) {
+                        // 有酸素系: 距離
+                        OutlinedTextField(value = distance, onValueChange = { distance = it }, label = { Text("距離(km)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done), singleLine = true, modifier = Modifier.weight(1f))
+                    }
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val newSets = sets.toIntOrNull()
-                    val newReps = reps.toIntOrNull()
-                    val newWeight = weight.toFloatOrNull()
+                    val newSets = if (!isCardio) sets.toIntOrNull() else exercise.sets
+                    val newReps = if (!isCardio) reps.toIntOrNull() else exercise.reps
+                    val newWeight = if (!isCardio) weight.toFloatOrNull() else exercise.weight
                     val newDuration = duration.toIntOrNull()
-                    val newDistance = distance.toFloatOrNull()
-                    val newCalories = calculateCalories(newSets, newReps, newWeight, newDuration)
+                    val newDistance = if (isCardio) distance.toFloatOrNull() else exercise.distance
+
+                    // METベース + ボリュームボーナスでカロリー計算
+                    val effectiveDuration = newDuration
+                        ?: MetCalorieCalculator.estimateStrengthDuration(
+                            exercise.category, newSets ?: 3, newReps ?: 10
+                        )
+                    val newCalories = MetCalorieCalculator.calculateCalories(
+                        exercise.category, bodyWeight, effectiveDuration, intensity,
+                        liftedWeight = newWeight, reps = newReps, sets = newSets
+                    )
+
                     onSave(exercise.copy(
                         sets = newSets, reps = newReps, weight = newWeight,
                         duration = newDuration, distance = newDistance,
-                        caloriesBurned = if (newCalories > 0) newCalories else exercise.caloriesBurned
+                        caloriesBurned = newCalories
                     ))
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = AccentOrange)

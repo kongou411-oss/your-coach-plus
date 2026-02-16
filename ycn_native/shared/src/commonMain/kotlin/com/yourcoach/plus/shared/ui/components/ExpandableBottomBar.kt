@@ -76,6 +76,7 @@ fun ExpandableBottomBar(
     progressPercent: Int? = null,
     freeCredits: Int? = null,
     paidCredits: Int? = null,
+    isPremium: Boolean = false,
     // アクションボタン
     onAnalysisClick: (() -> Unit)? = null,
     onGenerateQuestClick: (() -> Unit)? = null,
@@ -146,7 +147,8 @@ fun ExpandableBottomBar(
                             expRequired = expRequired ?: 100,
                             progressPercent = progressPercent ?: 0,
                             freeCredits = freeCredits ?: 0,
-                            paidCredits = paidCredits ?: 0
+                            paidCredits = paidCredits ?: 0,
+                            isPremium = isPremium
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
@@ -217,7 +219,8 @@ private fun LevelSection(
     expRequired: Int,
     progressPercent: Int,
     freeCredits: Int,
-    paidCredits: Int
+    paidCredits: Int,
+    isPremium: Boolean = false
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -296,17 +299,19 @@ private fun LevelSection(
                     fontWeight = FontWeight.Bold,
                     color = Primary
                 )
-                Text(
-                    text = "+",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "$paidCredits",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = AccentOrange
-                )
+                if (isPremium && paidCredits > 0) {
+                    Text(
+                        text = "+",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$paidCredits",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentOrange
+                    )
+                }
             }
         }
     }
@@ -449,6 +454,7 @@ data class BottomBarState(
     val progressPercent: Int = 0,
     val freeCredits: Int = 0,
     val paidCredits: Int = 0,
+    val isPremium: Boolean = false,
     val onAnalysisClick: (() -> Unit)? = null,
     val onGenerateQuestClick: (() -> Unit)? = null,
     val isGeneratingQuest: Boolean = false,

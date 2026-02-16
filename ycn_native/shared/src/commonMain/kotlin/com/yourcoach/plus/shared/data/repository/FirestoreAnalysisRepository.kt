@@ -108,9 +108,13 @@ class FirestoreAnalysisRepository : AnalysisRepository {
                 val level = doc.get<Long?>("level")?.toInt() ?: 1
                 val xp = doc.get<Long?>("experience")?.toInt() ?: 0
 
-                // Premium判定（Android版と同じロジック）
-                val subscriptionStatus = doc.get<String?>("subscriptionStatus")
-                val tier = if (subscriptionStatus == "active") "premium" else "free"
+                // Premium判定（Stripe/所属/ギフト）
+                val isPremium = doc.get<Boolean?>("isPremium") == true
+                val organizationName = doc.get<String?>("organizationName")
+                val b2b2cOrgId = doc.get<String?>("b2b2cOrgId")
+                val giftCodeActive = doc.get<Boolean?>("giftCodeActive") == true
+                val isEffectivePremium = isPremium || !organizationName.isNullOrEmpty() || !b2b2cOrgId.isNullOrEmpty() || giftCodeActive
+                val tier = if (isEffectivePremium) "premium" else "free"
 
                 Result.success(
                     UserCreditInfo(

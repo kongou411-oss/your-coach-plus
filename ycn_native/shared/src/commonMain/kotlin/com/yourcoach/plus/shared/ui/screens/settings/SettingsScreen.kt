@@ -279,13 +279,14 @@ class SettingsScreen : Screen {
                             onNavigateToRoutine = { mainNavigator?.push(RoutineSettingsScreen()) },
                             onNavigateToTemplates = { mainNavigator?.push(TemplateSettingsScreen()) },
                             onNavigateToMealSlots = { mainNavigator?.push(MealSlotSettingsScreen()) },
+                            onNavigateToQuestSlots = { mainNavigator?.push(QuestSlotSettingsScreen()) },
                             customQuestSlots = uiState.customQuestSlots,
                             customQuestDate = uiState.customQuestDate
                         )
                         SettingsTab.DATA -> DataSettingsTab(
                             customFoods = uiState.customFoods,
                             isLoadingCustomFoods = uiState.isLoadingCustomFoods,
-                            totalCredits = uiState.freeCredits + uiState.paidCredits,
+                            totalCredits = if (uiState.isPremium) uiState.freeCredits + uiState.paidCredits else uiState.freeCredits,
                             isAnalyzingNutrition = uiState.isAnalyzingNutrition,
                             analyzingFoodId = uiState.analyzingFoodId,
                             onUpdateCustomFood = { id, name, cal, p, c, f, fiber ->
@@ -371,6 +372,7 @@ private fun FeaturesSettingsTab(
     onNavigateToRoutine: () -> Unit,
     onNavigateToTemplates: () -> Unit,
     onNavigateToMealSlots: () -> Unit,
+    onNavigateToQuestSlots: () -> Unit,
     customQuestSlots: Map<String, CustomQuestSlot> = emptyMap(),
     customQuestDate: String? = null
 ) {
@@ -405,6 +407,13 @@ private fun FeaturesSettingsTab(
                     title = "クエスト連動設定",
                     subtitle = "固定/AI/ルーティン連動スロットを設定",
                     onClick = onNavigateToMealSlots
+                )
+                HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+                SettingsRow(
+                    icon = Icons.Default.Dashboard,
+                    title = "クエストスロット設定",
+                    subtitle = "ルーティン別テンプレート割り当て・自動生成",
+                    onClick = onNavigateToQuestSlots
                 )
             }
         }

@@ -25,7 +25,7 @@
 |------|-----|
 | アプリ名 | Your Coach+ |
 | パッケージ | com.yourcoach.plus |
-| バージョン | 2.0.7 (versionCode 91) |
+| バージョン | 2.0.8 (versionCode 92) |
 | 技術 | Kotlin Multiplatform + Compose Multiplatform + Voyager |
 | 状態 | Android リリース済み / iOS 未実装 |
 
@@ -70,10 +70,12 @@ export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && cd C:/Users/yo
 - Debug: `ycn_native/androidApp/build/outputs/apk/debug/androidApp-debug.apk`
 - Release: `ycn_native/androidApp/build/outputs/bundle/release/androidApp-release.aab`
 
-### バージョンアップ時
+### バージョンアップ時（リリース毎に必ず全箇所更新）
 1. `ycn_native/androidApp/build.gradle.kts` の versionCode +1、versionName 更新
-2. `./gradlew :androidApp:bundleRelease` でAABビルド
-3. `git add && git commit && git push`
+2. `shared/.../settings/SettingsScreenModel.kt` の `appVersion` を新バージョンに更新（設定→その他→バージョン表示）
+3. `CLAUDE.md` 冒頭のバージョン表記を更新
+4. `./gradlew :androidApp:bundleRelease` でAABビルド
+5. `git add && git commit && git push`
 
 ---
 

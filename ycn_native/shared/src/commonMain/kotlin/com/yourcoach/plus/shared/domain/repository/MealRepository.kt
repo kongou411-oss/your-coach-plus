@@ -59,6 +59,11 @@ interface MealRepository {
     suspend fun getMealTemplates(userId: String): Result<List<MealTemplate>>
 
     /**
+     * 食事テンプレートを更新
+     */
+    suspend fun updateMealTemplate(template: MealTemplate): Result<Unit>
+
+    /**
      * 食事テンプレートを削除
      */
     suspend fun deleteMealTemplate(userId: String, templateId: String): Result<Unit>

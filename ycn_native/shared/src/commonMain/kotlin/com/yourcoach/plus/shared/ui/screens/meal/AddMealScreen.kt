@@ -52,7 +52,8 @@ import org.koin.compose.koinInject
 data class AddMealScreen(
     val mealType: String = "breakfast",
     val templateMode: Boolean = false,
-    val selectedDate: String = DateUtil.todayString()
+    val selectedDate: String = DateUtil.todayString(),
+    val editingTemplateId: String? = null
 ) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -93,6 +94,7 @@ data class AddMealScreen(
                 else -> MealType.BREAKFAST
             }
             screenModel.setMealType(type)
+            editingTemplateId?.let { screenModel.loadAndEditTemplate(it) }
         }
 
         // 保存成功時に戻る
@@ -122,7 +124,7 @@ data class AddMealScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
-                    title = { Text(if (templateMode) "食事テンプレート作成" else "食事を記録") },
+                    title = { Text(if (templateMode) (if (editingTemplateId != null) "食事テンプレート編集" else "食事テンプレート作成") else "食事を記録") },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る")
@@ -243,6 +245,9 @@ data class AddMealScreen(
                         item {
                             TemplateSection(
                                 templates = uiState.templates,
+                                defaultTemplates = uiState.defaultTemplates,
+                                showDefaultTemplates = uiState.showDefaultTemplates,
+                                onToggleDefaultTemplates = { screenModel.toggleDefaultTemplates() },
                                 onApplyTemplate = { screenModel.applyTemplate(it) },
                                 onSaveAsTemplate = {
                                     if (uiState.items.isNotEmpty()) {
@@ -502,7 +507,8 @@ data class AddMealScreen(
                 onSave = { name ->
                     screenModel.saveAsTemplate(name)
                     showSaveTemplateDialog = false
-                }
+                },
+                initialName = if (editingTemplateId != null) uiState.mealName else ""
             )
         }
 
@@ -929,7 +935,15 @@ private fun SearchResultFoodCard(food: SearchResultFood, onClick: () -> Unit) {
 }
 
 @Composable
-private fun TemplateSection(templates: List<MealTemplate>, onApplyTemplate: (MealTemplate) -> Unit, onSaveAsTemplate: () -> Unit, hasItems: Boolean) {
+private fun TemplateSection(
+    templates: List<MealTemplate>,
+    defaultTemplates: List<MealTemplate>,
+    showDefaultTemplates: Boolean,
+    onToggleDefaultTemplates: () -> Unit,
+    onApplyTemplate: (MealTemplate) -> Unit,
+    onSaveAsTemplate: () -> Unit,
+    hasItems: Boolean
+) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -940,7 +954,7 @@ private fun TemplateSection(templates: List<MealTemplate>, onApplyTemplate: (Mea
                     }
                 }
             }
-            if (templates.isEmpty()) {
+            if (templates.isEmpty() && (!showDefaultTemplates || defaultTemplates.isEmpty())) {
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.Bookmark, null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -950,6 +964,7 @@ private fun TemplateSection(templates: List<MealTemplate>, onApplyTemplate: (Mea
                     }
                 }
             } else {
+                // ユーザーテンプレート
                 templates.forEach { template ->
                     Card(onClick = { onApplyTemplate(template) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
                         Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -961,14 +976,48 @@ private fun TemplateSection(templates: List<MealTemplate>, onApplyTemplate: (Mea
                         }
                     }
                 }
+                // デフォルトテンプレート表示
+                if (showDefaultTemplates) {
+                    defaultTemplates.forEach { template ->
+                        Card(onClick = { onApplyTemplate(template) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(template.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                                    Text("${template.items.size}品 • ${template.totalCalories}kcal • P${template.totalProtein.toInt()} F${template.totalFat.toInt()} C${template.totalCarbs.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
+            // デフォルトテンプレート トグル
+            if (defaultTemplates.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { onToggleDefaultTemplates() }.padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        if (showDefaultTemplates) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        if (showDefaultTemplates) "デフォルトテンプレートを非表示" else "デフォルトテンプレートを表示 (${defaultTemplates.size})",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SaveTemplateDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var templateName by remember { mutableStateOf("") }
+private fun SaveTemplateDialog(onDismiss: () -> Unit, onSave: (String) -> Unit, initialName: String = "") {
+    var templateName by remember { mutableStateOf(initialName) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("テンプレートとして保存") },

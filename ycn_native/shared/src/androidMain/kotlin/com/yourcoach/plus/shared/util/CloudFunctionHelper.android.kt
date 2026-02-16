@@ -1,11 +1,15 @@
 package com.yourcoach.plus.shared.util
 
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.functions.functions
+import com.google.firebase.functions.FirebaseFunctions
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
- * Android: GitLive SDKを使用（タイムアウトはKotlin coroutineで制御）
+ * Android: ネイティブFirebase Functions SDKを直接使用
+ * GitLive SDKのdata<Any?>()はkotlinx.serializationでAnyのシリアライザが
+ * 見つからずエラーになるため、ネイティブSDKのgetData()を使用する
  */
 @Suppress("UNCHECKED_CAST")
 actual suspend fun invokeCloudFunction(
@@ -14,9 +18,18 @@ actual suspend fun invokeCloudFunction(
     data: Map<String, Any>,
     timeoutSeconds: Long
 ): Map<String, Any?> {
-    val functions = Firebase.functions(region)
-    val result = withTimeout(timeoutSeconds * 1000) {
-        functions.httpsCallable(functionName).invoke(data)
+    val functions = FirebaseFunctions.getInstance(region)
+    return withTimeout(timeoutSeconds * 1000) {
+        suspendCancellableCoroutine { continuation ->
+            functions.getHttpsCallable(functionName).call(data)
+                .addOnSuccessListener { result ->
+                    val raw = result.data
+                    val map = raw as? Map<String, Any?> ?: emptyMap()
+                    continuation.resume(map)
+                }
+                .addOnFailureListener { exception ->
+                    continuation.resumeWithException(exception)
+                }
+        }
     }
-    return result.data() as? Map<String, Any?> ?: emptyMap()
 }

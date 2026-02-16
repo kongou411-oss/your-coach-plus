@@ -35,10 +35,10 @@ object MetCalorieCalculator {
 
     // === 強度乗数 ===
     private val INTENSITY_MULTIPLIER: Map<WorkoutIntensity, Double> = mapOf(
-        WorkoutIntensity.LOW to 0.8,
-        WorkoutIntensity.MODERATE to 1.0,
-        WorkoutIntensity.HIGH to 1.2,
-        WorkoutIntensity.VERY_HIGH to 1.4
+        WorkoutIntensity.LOW to 0.4,
+        WorkoutIntensity.MODERATE to 0.6,
+        WorkoutIntensity.HIGH to 0.8,
+        WorkoutIntensity.VERY_HIGH to 1.0
     )
 
     // === 部位別セット間レスト秒数 ===
@@ -64,13 +64,22 @@ object MetCalorieCalculator {
         category: ExerciseCategory,
         bodyWeightKg: Float,
         durationMinutes: Int,
-        intensity: WorkoutIntensity = WorkoutIntensity.MODERATE
+        intensity: WorkoutIntensity = WorkoutIntensity.MODERATE,
+        liftedWeight: Float? = null,
+        reps: Int? = null,
+        sets: Int? = null
     ): Int {
         val met = BASE_MET[category] ?: 4.0
         val multiplier = INTENSITY_MULTIPLIER[intensity] ?: 1.0
         val durationHours = durationMinutes / 60.0
-        val calories = met * bodyWeightKg * durationHours * multiplier
-        return max(1, calories.roundToInt())
+        val baseCal = met * bodyWeightKg * durationHours * multiplier
+
+        // 筋トレ系: ボリュームボーナス（使用重量を反映）
+        val volumeBonus = if (liftedWeight != null && reps != null && sets != null && liftedWeight > 0) {
+            liftedWeight * reps * sets * 0.02
+        } else 0.0
+
+        return max(1, (baseCal + volumeBonus).roundToInt())
     }
 
     /**

@@ -1,15 +1,18 @@
 package com.yourcoach.plus.shared.ui.screens.splash
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.yourcoach.plus.shared.generated.resources.Res
+import com.yourcoach.plus.shared.generated.resources.icon_512
+import org.jetbrains.compose.resources.painterResource
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -44,7 +47,7 @@ class SplashScreen : Screen {
 
                 val userId = currentUser.uid
 
-                // getUser失敗時も認証済みならMainScreenに遷移（Firestore一時エラー対策）
+                // getUser失敗時は認証状態を再チェック（トークン失効→自動サインアウト対策）
                 val userResult = userRepository.getUser(userId)
                 val user = userResult.getOrNull()
 
@@ -53,9 +56,15 @@ class SplashScreen : Screen {
                         navigator.replace(MainScreen())
                     }
                     userResult.isFailure -> {
-                        // Firestoreアクセス失敗だが認証済み → MainScreenで再試行させる
-                        println("SplashScreen: getUser failed but user is authenticated, proceeding to MainScreen")
-                        navigator.replace(MainScreen())
+                        // Firestoreアクセス失敗 → 認証が自動サインアウトされた可能性をチェック
+                        val stillAuthenticated = authRepository.getCurrentUser() != null
+                        if (stillAuthenticated) {
+                            println("SplashScreen: getUser failed but still authenticated, proceeding to MainScreen")
+                            navigator.replace(MainScreen())
+                        } else {
+                            println("SplashScreen: getUser failed and user signed out, redirecting to LoginScreen")
+                            navigator.replace(LoginScreen())
+                        }
                     }
                     else -> {
                         // ユーザードキュメント未完成（オンボーディング未完了）
@@ -80,19 +89,13 @@ class SplashScreen : Screen {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Box(
+                Image(
+                    painter = painterResource(Res.drawable.icon_512),
+                    contentDescription = "Your Coach+",
                     modifier = Modifier
                         .size(80.dp)
-                        .background(Primary.copy(alpha = 0.1f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FitnessCenter,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = Primary
-                    )
-                }
+                        .clip(CircleShape)
+                )
                 Spacer(modifier = Modifier.height(24.dp))
                 CircularProgressIndicator(
                     modifier = Modifier.size(32.dp),

@@ -51,10 +51,9 @@ class FirestoreRmRepository : RmRepository {
         limit: Int
     ): Result<List<RmRecord>> {
         return try {
+            // 複合インデックス不要: 全件取得→メモリ内フィルタ
             val snapshot = rmRecordsCollection(userId)
-                .where { "exerciseName" equalTo exerciseName }
                 .orderBy("timestamp", Direction.DESCENDING)
-                .limit(limit)
                 .get()
             val records = snapshot.documents.mapNotNull { doc ->
                 try {
@@ -63,7 +62,8 @@ class FirestoreRmRepository : RmRepository {
                     println("FirestoreRmRepository: Failed to parse RM record: ${e.message}")
                     null
                 }
-            }
+            }.filter { it.exerciseName == exerciseName }
+                .take(limit)
             Result.success(records)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("RM履歴の取得に失敗しました", e))

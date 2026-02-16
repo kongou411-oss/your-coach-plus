@@ -11,6 +11,7 @@ import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
 import kotlinx.coroutines.NonCancellable
 import com.yourcoach.plus.shared.util.DateUtil
 import com.yourcoach.plus.shared.util.MetCalorieCalculator
+import com.yourcoach.plus.shared.util.invokeCloudFunction
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,16 +30,22 @@ data class AddWorkoutUiState(
     val intensity: WorkoutIntensity = WorkoutIntensity.MODERATE,
     val note: String = "",
     val templates: List<WorkoutTemplate> = emptyList(),
+    val defaultTemplates: List<WorkoutTemplate> = emptyList(),
     val showTemplates: Boolean = false,
+    val showDefaultTemplates: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
+    val editingTemplateId: String? = null,
+    val editingTemplateName: String = "",
     // 合計値
     val totalDuration: Int = 0,
     val totalCaloriesBurned: Int = 0,
     // カスタム運動
     val customExercises: List<CustomExercise> = emptyList(),
     // 日付
-    val selectedDate: String = DateUtil.todayString()
+    val selectedDate: String = DateUtil.todayString(),
+    // ユーザー体重（カロリー計算用）
+    val userBodyWeight: Float = 70f
 )
 
 /**
@@ -81,7 +88,9 @@ class AddWorkoutScreenModel(
             val uid = authRepository.getCurrentUserId() ?: return@launch
             userRepository.getUser(uid)
                 .onSuccess { user ->
-                    userBodyWeight = user?.profile?.weight ?: 70f
+                    val w = user?.profile?.weight ?: 70f
+                    userBodyWeight = w
+                    _uiState.update { it.copy(userBodyWeight = w) }
                 }
         }
     }
@@ -90,11 +99,57 @@ class AddWorkoutScreenModel(
         screenModelScope.launch(exceptionHandler) {
             val uid = authRepository.getCurrentUserId() ?: return@launch
             cachedUserId = uid
-            workoutRepository.getWorkoutTemplates(uid)
-                .onSuccess { templates ->
-                    _uiState.update { it.copy(templates = templates) }
-                }
+            val userTemplates = workoutRepository.getWorkoutTemplates(uid).getOrDefault(emptyList())
+            _uiState.update { it.copy(templates = userTemplates) }
+
+            // デフォルトテンプレートをバックグラウンドで取得
+            loadDefaultWorkoutTemplates()
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun loadDefaultWorkoutTemplates() {
+        screenModelScope.launch {
+            try {
+                val result = invokeCloudFunction(
+                    region = "asia-northeast2",
+                    functionName = "getQuestTemplates",
+                    data = emptyMap()
+                )
+                val templatesList = (result["templates"] as? List<*>)
+                    ?.mapNotNull { it as? Map<String, Any?> } ?: emptyList()
+
+                val defaults = templatesList.filter { (it["type"] as? String) == "WORKOUT" }.map { t ->
+                    val templateId = t["templateId"] as? String ?: ""
+                    val title = t["title"] as? String ?: ""
+                    val items = (t["items"] as? List<Map<String, Any?>>)?.map { item ->
+                        Exercise(
+                            name = item["foodName"] as? String ?: "",
+                            category = ExerciseCategory.CHEST,
+                            sets = (item["sets"] as? Number)?.toInt(),
+                            reps = (item["reps"] as? Number)?.toInt(),
+                            weight = (item["weight"] as? Number)?.toFloat(),
+                            caloriesBurned = 0
+                        )
+                    } ?: emptyList()
+                    WorkoutTemplate(
+                        id = "default_$templateId",
+                        userId = "default",
+                        name = title,
+                        type = WorkoutType.STRENGTH,
+                        exercises = items,
+                        estimatedDuration = 0,
+                        estimatedCalories = 0,
+                        createdAt = 0
+                    )
+                }
+                _uiState.update { it.copy(defaultTemplates = defaults) }
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun toggleDefaultTemplates() {
+        _uiState.update { it.copy(showDefaultTemplates = !it.showDefaultTemplates) }
     }
 
     /**
@@ -181,7 +236,8 @@ class AddWorkoutScreenModel(
                     exercise.category, exercise.sets ?: 3, exercise.reps ?: 10
                 )
             val calories = MetCalorieCalculator.calculateCalories(
-                exercise.category, userBodyWeight, duration, _uiState.value.intensity
+                exercise.category, userBodyWeight, duration, _uiState.value.intensity,
+                liftedWeight = exercise.weight, reps = exercise.reps, sets = exercise.sets
             )
             exercise.copy(caloriesBurned = calories)
         } else exercise
@@ -235,6 +291,27 @@ class AddWorkoutScreenModel(
                 totalCaloriesBurned = template.estimatedCalories,
                 showTemplates = false
             )
+        }
+    }
+
+    fun startEditingTemplate(template: WorkoutTemplate) {
+        applyTemplate(template)
+        _uiState.update { it.copy(editingTemplateId = template.id, editingTemplateName = template.name) }
+    }
+
+    fun loadAndEditTemplate(templateId: String) {
+        screenModelScope.launch(exceptionHandler) {
+            val userId = cachedUserId ?: authRepository.getCurrentUserId() ?: return@launch
+            println("WORKOUT_EDIT: loadAndEditTemplate id=$templateId userId=$userId")
+            workoutRepository.getWorkoutTemplates(userId).onSuccess { templates ->
+                println("WORKOUT_EDIT: got ${templates.size} templates")
+                val template = templates.find { it.id == templateId }
+                println("WORKOUT_EDIT: found template=${template?.name} exercises=${template?.exercises?.size}")
+                if (template != null) {
+                    startEditingTemplate(template)
+                    println("WORKOUT_EDIT: after apply, exercises=${_uiState.value.exercises.size}")
+                }
+            }
         }
     }
 
@@ -298,20 +375,41 @@ class AddWorkoutScreenModel(
 
         screenModelScope.launch(exceptionHandler) {
             val state = _uiState.value
-            val template = WorkoutTemplate(
-                id = "",
-                userId = uid,
-                name = name,
-                type = state.workoutType,
-                exercises = state.exercises,
-                estimatedDuration = state.totalDuration,
-                estimatedCalories = state.totalCaloriesBurned,
-                createdAt = DateUtil.currentTimestamp()
-            )
-            workoutRepository.saveWorkoutTemplate(template)
-                .onSuccess {
-                    loadTemplates()
-                }
+            val editingId = state.editingTemplateId
+
+            if (editingId != null) {
+                // 既存テンプレートを上書き更新
+                val template = WorkoutTemplate(
+                    id = editingId,
+                    userId = uid,
+                    name = name,
+                    type = state.workoutType,
+                    exercises = state.exercises,
+                    estimatedDuration = state.totalDuration,
+                    estimatedCalories = state.totalCaloriesBurned,
+                    createdAt = DateUtil.currentTimestamp()
+                )
+                workoutRepository.updateWorkoutTemplate(template)
+                    .onSuccess {
+                        loadTemplates()
+                    }
+            } else {
+                // 新規テンプレート作成
+                val template = WorkoutTemplate(
+                    id = "",
+                    userId = uid,
+                    name = name,
+                    type = state.workoutType,
+                    exercises = state.exercises,
+                    estimatedDuration = state.totalDuration,
+                    estimatedCalories = state.totalCaloriesBurned,
+                    createdAt = DateUtil.currentTimestamp()
+                )
+                workoutRepository.saveWorkoutTemplate(template)
+                    .onSuccess {
+                        loadTemplates()
+                    }
+            }
         }
     }
 

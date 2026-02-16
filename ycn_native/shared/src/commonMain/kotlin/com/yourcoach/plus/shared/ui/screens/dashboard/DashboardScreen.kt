@@ -68,6 +68,7 @@ class DashboardScreen : Screen {
                 progressPercent = expProgress?.progressPercent ?: 0,
                 freeCredits = uiState.user?.freeCredits ?: 0,
                 paidCredits = uiState.user?.paidCredits ?: 0,
+                isPremium = uiState.user?.isEffectivePremium ?: false,
                 onAnalysisClick = { navigator?.push(AnalysisScreen()) },
                 onGenerateQuestClick = { screenModel.generateQuest() },
                 isGeneratingQuest = uiState.isGeneratingQuest,
@@ -275,6 +276,17 @@ class DashboardScreen : Screen {
                                         onToggleRestDay = screenModel::toggleRestDay
                                     )
 
+                                    // RM記録セクション（運動セクション直下）
+                                    if (uiState.latestRmRecords.isNotEmpty() || uiState.workouts.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        RmRecordSection(
+                                            rmRecords = uiState.latestRmRecords,
+                                            onEditRm = { screenModel.showRmEditDialog(it) },
+                                            onDeleteRm = { screenModel.deleteRmRecord(it) },
+                                            onAddRm = { screenModel.showRmAddDialog() }
+                                        )
+                                    }
+
                                     Spacer(modifier = Modifier.height(16.dp))
 
                                     // コンディションセクション
@@ -286,17 +298,6 @@ class DashboardScreen : Screen {
                                         userId = uiState.user?.uid ?: "",
                                         date = uiState.date
                                     )
-
-                                    // RM記録セクション
-                                    if (uiState.latestRmRecords.isNotEmpty() || uiState.workouts.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        RmRecordSection(
-                                            rmRecords = uiState.latestRmRecords,
-                                            onEditRm = { screenModel.showRmEditDialog(it) },
-                                            onDeleteRm = { screenModel.deleteRmRecord(it) },
-                                            onAddRm = { screenModel.showRmAddDialog() }
-                                        )
-                                    }
 
                                     Spacer(modifier = Modifier.height(100.dp))
                                 }
@@ -538,6 +539,14 @@ class DashboardScreen : Screen {
                 exercises = uiState.workoutCompletionExercises,
                 onConfirm = { screenModel.confirmWorkoutCompletion() },
                 onDismiss = { screenModel.dismissWorkoutCompletionSheet() }
+            )
+        }
+
+        // クエスト項目詳細ダイアログ
+        uiState.questDetailItem?.let { item ->
+            QuestDetailDialog(
+                item = item,
+                onDismiss = { screenModel.dismissQuestDetail() }
             )
         }
 
@@ -1203,6 +1212,138 @@ private fun WorkoutCompletionExerciseCard(exercise: WorkoutCompletionExercise) {
             }
         }
     }
+}
+
+// ========== クエスト項目詳細ダイアログ ==========
+
+@Composable
+private fun QuestDetailDialog(
+    item: UnifiedTimelineItem,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (item.type == TimelineItemType.WORKOUT) Icons.Default.FitnessCenter else Icons.Default.Restaurant,
+                    contentDescription = null,
+                    tint = if (item.isTrainingRelated) AccentOrange else Primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "${item.timeString}  ${item.title}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // actionItemsがある場合: 食品/運動の詳細リスト
+                val actions = item.actionItems
+                if (actions != null && actions.isNotEmpty()) {
+                    actions.forEach { action ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (action.isExecuted) "\u2705" else "\u25CB",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.width(24.dp)
+                            )
+                            Text(
+                                text = action.itemName ?: action.originalText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (action.amount != null) {
+                                Text(
+                                    text = "${action.amount.toInt()}${action.unit ?: "g"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                } else if (item.subtitle != null) {
+                    val isWorkout = item.type == TimelineItemType.WORKOUT
+                    val bulletColor = if (isWorkout) AccentOrange else Primary
+
+                    if (isWorkout) {
+                        // 運動: 改行で分割（1行目サマリー + 種目）
+                        val subtitleLines = item.subtitle.split("\n").filter { it.isNotBlank() }
+                        Text(
+                            text = subtitleLines.first(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (subtitleLines.size > 1) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            subtitleLines.drop(1).forEach { line ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Text("\u2022", style = MaterialTheme.typography.bodyMedium, color = bulletColor, modifier = Modifier.width(16.dp))
+                                    Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    } else {
+                        // 食事: カンマ区切りで分割して箇条書き
+                        val foodItems = item.subtitle.split(", ", "、").filter { it.isNotBlank() }
+                        foodItems.forEach { food ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text("\u2022", style = MaterialTheme.typography.bodyMedium, color = bulletColor, modifier = Modifier.width(16.dp))
+                                Text(food.trim(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+
+                // カスタムクエストのアイテム
+                val customItems = item.customQuestItems
+                if (customItems != null && customItems.isNotEmpty()) {
+                    customItems.forEach { cItem ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "\u25CB",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.width(24.dp)
+                            )
+                            Text(
+                                text = cItem.foodName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "${cItem.amount.toInt()}${cItem.unit}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("閉じる") }
+        }
+    )
 }
 
 // ========== 指示書編集ダイアログ ==========

@@ -21,7 +21,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.MealTemplate
 import com.yourcoach.plus.shared.domain.model.WorkoutTemplate
-import com.yourcoach.plus.shared.ui.screens.main.LocalMainNavigator
+import androidx.compose.foundation.clickable
 import com.yourcoach.plus.shared.ui.screens.meal.AddMealScreen
 import com.yourcoach.plus.shared.ui.screens.workout.AddWorkoutScreen
 import com.yourcoach.plus.shared.ui.theme.*
@@ -34,8 +34,13 @@ class TemplateSettingsScreen : Screen {
         val screenModel = koinScreenModel<TemplateSettingsScreenModel>()
         val uiState by screenModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
-        val mainNavigator = LocalMainNavigator.current
         val snackbarHostState = remember { SnackbarHostState() }
+
+        // 編集画面から戻った時にテンプレート一覧を再取得
+        val stackSize = navigator.size
+        LaunchedEffect(stackSize) {
+            screenModel.refreshTemplates()
+        }
 
         LaunchedEffect(uiState.actionMessage) {
             uiState.actionMessage?.let {
@@ -69,6 +74,11 @@ class TemplateSettingsScreen : Screen {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
+                val defaultMealCount = if (uiState.showDefaultTemplates) uiState.defaultMealTemplates.size else 0
+                val defaultWorkoutCount = if (uiState.showDefaultTemplates) uiState.defaultWorkoutTemplates.size else 0
+                val totalMeals = uiState.mealTemplates.size + defaultMealCount
+                val totalWorkouts = uiState.workoutTemplates.size + defaultWorkoutCount
+
                 TabRow(selectedTabIndex = uiState.selectedTabIndex) {
                     Tab(
                         selected = uiState.selectedTabIndex == 0,
@@ -78,7 +88,7 @@ class TemplateSettingsScreen : Screen {
                                 Icon(Icons.Default.Restaurant, null, modifier = Modifier.size(18.dp),
                                     tint = if (uiState.selectedTabIndex == 0) ScoreCarbs else MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("食事 (${uiState.mealTemplates.size})")
+                                Text("食事 ($totalMeals)")
                             }
                         }
                     )
@@ -90,7 +100,7 @@ class TemplateSettingsScreen : Screen {
                                 Icon(Icons.Default.FitnessCenter, null, modifier = Modifier.size(18.dp),
                                     tint = if (uiState.selectedTabIndex == 1) AccentOrange else MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("運動 (${uiState.workoutTemplates.size})")
+                                Text("運動 ($totalWorkouts)")
                             }
                         }
                     )
@@ -103,14 +113,28 @@ class TemplateSettingsScreen : Screen {
                 } else {
                     when (uiState.selectedTabIndex) {
                         0 -> MealTemplateList(
-                            templates = uiState.mealTemplates,
+                            templates = uiState.mealTemplates.sortedBy { it.name },
+                            defaultTemplates = uiState.defaultMealTemplates.sortedBy { it.name },
+                            showDefaultTemplates = uiState.showDefaultTemplates,
+                            onToggleDefaultTemplates = { screenModel.toggleDefaultTemplates() },
                             onDelete = { screenModel.deleteMealTemplate(it) },
-                            onAdd = { mainNavigator?.push(AddMealScreen()) }
+                            onDuplicate = { screenModel.duplicateMealTemplate(it) },
+                            onAdd = { navigator.push(AddMealScreen()) },
+                            onEdit = { template ->
+                                navigator.push(AddMealScreen(templateMode = true, editingTemplateId = template.id))
+                            }
                         )
                         1 -> WorkoutTemplateList(
-                            templates = uiState.workoutTemplates,
+                            templates = uiState.workoutTemplates.sortedBy { it.name },
+                            defaultTemplates = uiState.defaultWorkoutTemplates.sortedBy { it.name },
+                            showDefaultTemplates = uiState.showDefaultTemplates,
+                            onToggleDefaultTemplates = { screenModel.toggleDefaultTemplates() },
                             onDelete = { screenModel.deleteWorkoutTemplate(it) },
-                            onAdd = { mainNavigator?.push(AddWorkoutScreen()) }
+                            onDuplicate = { screenModel.duplicateWorkoutTemplate(it) },
+                            onAdd = { navigator.push(AddWorkoutScreen()) },
+                            onEdit = { template ->
+                                navigator.push(AddWorkoutScreen(templateMode = true, editingTemplateId = template.id))
+                            }
                         )
                     }
                 }
@@ -122,8 +146,13 @@ class TemplateSettingsScreen : Screen {
 @Composable
 private fun MealTemplateList(
     templates: List<MealTemplate>,
+    defaultTemplates: List<MealTemplate>,
+    showDefaultTemplates: Boolean,
+    onToggleDefaultTemplates: () -> Unit,
     onDelete: (String) -> Unit,
-    onAdd: () -> Unit
+    onDuplicate: (MealTemplate) -> Unit,
+    onAdd: () -> Unit,
+    onEdit: (MealTemplate) -> Unit
 ) {
     var deletingId by remember { mutableStateOf<String?>(null) }
 
@@ -161,7 +190,59 @@ private fun MealTemplateList(
             }
         }
 
-        if (templates.isEmpty()) {
+        // ユーザーテンプレート
+        if (templates.isNotEmpty()) {
+            item {
+                Text(
+                    "マイテンプレート",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            items(templates, key = { it.id }) { template ->
+                MealTemplateCard(template = template, onDelete = { deletingId = template.id }, onEdit = { onEdit(template) })
+            }
+        }
+
+        // デフォルトテンプレート トグル
+        if (defaultTemplates.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onToggleDefaultTemplates() }
+                        .padding(top = 8.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (showDefaultTemplates) "デフォルトテンプレートを非表示"
+                        else "デフォルトテンプレートを表示 (${defaultTemplates.size})",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        if (showDefaultTemplates) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            if (showDefaultTemplates) {
+                items(defaultTemplates, key = { it.id }) { template ->
+                    MealTemplateCard(
+                        template = template,
+                        isDefault = true,
+                        onDuplicate = { onDuplicate(template) }
+                    )
+                }
+            }
+        }
+
+        // 空の場合
+        if (templates.isEmpty() && (!showDefaultTemplates || defaultTemplates.isEmpty())) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -180,10 +261,6 @@ private fun MealTemplateList(
                     }
                 }
             }
-        } else {
-            items(templates, key = { it.id }) { template ->
-                MealTemplateCard(template = template, onDelete = { deletingId = template.id })
-            }
         }
 
         item { Spacer(modifier = Modifier.height(60.dp)) }
@@ -191,7 +268,13 @@ private fun MealTemplateList(
 }
 
 @Composable
-private fun MealTemplateCard(template: MealTemplate, onDelete: () -> Unit) {
+private fun MealTemplateCard(
+    template: MealTemplate,
+    onDelete: (() -> Unit)? = null,
+    onDuplicate: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
+    isDefault: Boolean = false
+) {
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
@@ -202,12 +285,44 @@ private fun MealTemplateCard(template: MealTemplate, onDelete: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(template.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(template.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        if (isDefault) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                color = ScoreCarbs.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    "デフォルト",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ScoreCarbs,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("${template.items.size}品目", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, "削除", tint = MaterialTheme.colorScheme.error)
+                if (isDefault && onDuplicate != null) {
+                    IconButton(onClick = onDuplicate) {
+                        Icon(Icons.Default.ContentCopy, "複製", tint = ScoreCarbs)
+                    }
+                }
+                if (!isDefault) {
+                    Row {
+                        if (onEdit != null) {
+                            IconButton(onClick = onEdit) {
+                                Icon(Icons.Default.Edit, "編集", tint = ScoreCarbs)
+                            }
+                        }
+                        if (onDelete != null) {
+                            IconButton(onClick = onDelete) {
+                                Icon(Icons.Default.Delete, "削除", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -220,7 +335,7 @@ private fun MealTemplateCard(template: MealTemplate, onDelete: () -> Unit) {
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                NutrientChip("Cal", "${template.totalCalories}", ScoreCalories)
+                NutrientChip("kcal", "${template.totalCalories}", ScoreCalories)
                 NutrientChip("P", "${template.totalProtein.toInt()}g", ScoreProtein)
                 NutrientChip("F", "${template.totalFat.toInt()}g", ScoreFat)
                 NutrientChip("C", "${template.totalCarbs.toInt()}g", ScoreCarbs)
@@ -271,8 +386,13 @@ private fun MealTemplateCard(template: MealTemplate, onDelete: () -> Unit) {
 @Composable
 private fun WorkoutTemplateList(
     templates: List<WorkoutTemplate>,
+    defaultTemplates: List<WorkoutTemplate>,
+    showDefaultTemplates: Boolean,
+    onToggleDefaultTemplates: () -> Unit,
     onDelete: (String) -> Unit,
-    onAdd: () -> Unit
+    onDuplicate: (WorkoutTemplate) -> Unit,
+    onAdd: () -> Unit,
+    onEdit: (WorkoutTemplate) -> Unit
 ) {
     var deletingId by remember { mutableStateOf<String?>(null) }
 
@@ -310,7 +430,59 @@ private fun WorkoutTemplateList(
             }
         }
 
-        if (templates.isEmpty()) {
+        // ユーザーテンプレート
+        if (templates.isNotEmpty()) {
+            item {
+                Text(
+                    "マイテンプレート",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            items(templates, key = { it.id }) { template ->
+                WorkoutTemplateCard(template = template, onDelete = { deletingId = template.id }, onEdit = { onEdit(template) })
+            }
+        }
+
+        // デフォルトテンプレート トグル
+        if (defaultTemplates.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onToggleDefaultTemplates() }
+                        .padding(top = 8.dp, bottom = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (showDefaultTemplates) "デフォルトテンプレートを非表示"
+                        else "デフォルトテンプレートを表示 (${defaultTemplates.size})",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        if (showDefaultTemplates) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            if (showDefaultTemplates) {
+                items(defaultTemplates, key = { it.id }) { template ->
+                    WorkoutTemplateCard(
+                        template = template,
+                        isDefault = true,
+                        onDuplicate = { onDuplicate(template) }
+                    )
+                }
+            }
+        }
+
+        // 空の場合
+        if (templates.isEmpty() && (!showDefaultTemplates || defaultTemplates.isEmpty())) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -329,10 +501,6 @@ private fun WorkoutTemplateList(
                     }
                 }
             }
-        } else {
-            items(templates, key = { it.id }) { template ->
-                WorkoutTemplateCard(template = template, onDelete = { deletingId = template.id })
-            }
         }
 
         item { Spacer(modifier = Modifier.height(60.dp)) }
@@ -340,7 +508,13 @@ private fun WorkoutTemplateList(
 }
 
 @Composable
-private fun WorkoutTemplateCard(template: WorkoutTemplate, onDelete: () -> Unit) {
+private fun WorkoutTemplateCard(
+    template: WorkoutTemplate,
+    onDelete: (() -> Unit)? = null,
+    onDuplicate: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
+    isDefault: Boolean = false
+) {
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
@@ -351,31 +525,75 @@ private fun WorkoutTemplateCard(template: WorkoutTemplate, onDelete: () -> Unit)
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(template.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(template.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        if (isDefault) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                color = AccentOrange.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    "デフォルト",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AccentOrange,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("${template.exercises.size}種目", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, "削除", tint = MaterialTheme.colorScheme.error)
+                if (isDefault && onDuplicate != null) {
+                    IconButton(onClick = onDuplicate) {
+                        Icon(Icons.Default.ContentCopy, "複製", tint = AccentOrange)
+                    }
+                }
+                if (!isDefault) {
+                    Row {
+                        if (onEdit != null) {
+                            IconButton(onClick = onEdit) {
+                                Icon(Icons.Default.Edit, "編集", tint = AccentOrange)
+                            }
+                        }
+                        if (onDelete != null) {
+                            IconButton(onClick = onDelete) {
+                                Icon(Icons.Default.Delete, "削除", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // サマリー
+            // サマリー — デフォルトの場合セット数表示、通常は時間・カロリー
             Row(
                 modifier = Modifier.fillMaxWidth()
                     .background(color = AccentOrange.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp))
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${template.estimatedDuration}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
-                    Text("分", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${template.estimatedCalories}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
-                    Text("kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (isDefault) {
+                    val totalSets = template.exercises.mapNotNull { it.sets }.sum()
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("$totalSets", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                        Text("セット", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("${template.exercises.size}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                        Text("種目", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("${template.estimatedDuration}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                        Text("分", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("${template.estimatedCalories}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                        Text("kcal", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
 
@@ -402,16 +620,20 @@ private fun WorkoutTemplateCard(template: WorkoutTemplate, onDelete: () -> Unit)
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(exercise.name, style = MaterialTheme.typography.bodyMedium)
-                                    val detail = when {
-                                        exercise.sets != null && exercise.sets > 0 -> "${exercise.sets}セット"
-                                        exercise.duration != null && exercise.duration > 0 -> "${exercise.duration}分"
-                                        else -> ""
-                                    }
+                                    val detail = buildString {
+                                        exercise.sets?.takeIf { it > 0 }?.let { append("${it}セット ") }
+                                        exercise.reps?.takeIf { it > 0 }?.let { append("x ${it}レップ ") }
+                                        exercise.weight?.takeIf { it > 0 }?.let { append("${it.toInt()}kg ") }
+                                        exercise.duration?.takeIf { it > 0 }?.let { append("${it}分 ") }
+                                        exercise.distance?.takeIf { it > 0 }?.let { append("${it}km") }
+                                    }.trim()
                                     if (detail.isNotEmpty()) {
                                         Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
-                                Text("${exercise.caloriesBurned}kcal", style = MaterialTheme.typography.labelMedium, color = AccentOrange)
+                                if (!isDefault) {
+                                    Text("${exercise.caloriesBurned}kcal", style = MaterialTheme.typography.labelMedium, color = AccentOrange)
+                                }
                             }
                             if (index < template.exercises.size - 1) {
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

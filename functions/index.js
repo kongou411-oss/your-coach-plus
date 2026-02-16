@@ -16,6 +16,50 @@ const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 
 admin.initializeApp();
 
+// ===== プレミアム判定ユーティリティ =====
+/**
+ * ユーザーがプレミアムかどうかを判定
+ * isPremium, organizationName, b2b2cOrgId, giftCodeActive のいずれかで判定
+ */
+function isUserPremium(userData) {
+  return userData.isPremium === true
+    || !!userData.organizationName
+    || !!userData.b2b2cOrgId
+    || userData.giftCodeActive === true;
+}
+
+/**
+ * 利用可能クレジットを計算
+ * プレミアム: freeCredits + paidCredits
+ * 非プレミアム: freeCredits のみ（paidCreditsはロック）
+ */
+function getAvailableCredits(userData) {
+  const free = userData.freeCredits || 0;
+  const paid = userData.paidCredits || 0;
+  const premium = isUserPremium(userData);
+  return premium ? free + paid : free;
+}
+
+/**
+ * クレジットを1消費して残高を返す
+ * 非プレミアムはfreeCreditsのみ消費可能
+ * @returns {{ freeCredits, paidCredits }} 消費後の残高
+ */
+function consumeOneCredit(userData) {
+  let free = userData.freeCredits || 0;
+  let paid = userData.paidCredits || 0;
+  const premium = isUserPremium(userData);
+
+  if (free >= 1) {
+    free -= 1;
+  } else if (premium && paid >= 1) {
+    paid -= 1;
+  } else {
+    throw new HttpsError("resource-exhausted", "クレジットが不足しています");
+  }
+  return { freeCredits: free, paidCredits: paid };
+}
+
 // ===== Vertex AI経由でAIを呼び出し（クライアントから呼び出し可能） =====
 exports.callGemini = onCall({
   region: "asia-northeast2", // 大阪リージョン（Cloud Functionのデプロイ先）
@@ -49,9 +93,8 @@ exports.callGemini = onCall({
 
     const userData = userDoc.data();
 
-    // クレジットチェック
-    const totalCredits = (userData.freeCredits || 0) + (userData.paidCredits || 0);
-    if (totalCredits < 1) {
+    // クレジットチェック（非プレミアムはfreeCreditsのみ）
+    if (getAvailableCredits(userData) < 1) {
       throw new HttpsError("permission-denied", "AI分析クレジットが不足しています");
     }
 
@@ -81,29 +124,22 @@ exports.callGemini = onCall({
 
     const response = result.response;
 
-    // 5. クレジット消費（呼び出し成功時のみ）
-    let freeCredits = userData.freeCredits || 0;
-    let paidCredits = userData.paidCredits || 0;
-
-    if (freeCredits >= 1) {
-      freeCredits -= 1;
-    } else {
-      paidCredits -= 1;
-    }
+    // 5. クレジット消費（呼び出し成功時のみ、非プレミアムはfreeのみ）
+    const credits = consumeOneCredit(userData);
 
     await admin.firestore()
         .collection("users")
         .doc(userId)
         .update({
-          freeCredits: freeCredits,
-          paidCredits: paidCredits,
+          freeCredits: credits.freeCredits,
+          paidCredits: credits.paidCredits,
         });
 
     // 6. 成功した結果をクライアントに返す
     return {
       success: true,
       response: response,
-      remainingCredits: freeCredits + paidCredits,
+      remainingCredits: credits.freeCredits + credits.paidCredits,
     };
   } catch (error) {
     console.error("Vertex AI call failed:", error);
@@ -2511,16 +2547,19 @@ exports.leaveOrganization = onCall({
     }
 
     const userData = userDoc.data();
-    const organizationName = userData.organizationName;
+    const organizationName = userData.organizationName || userData.b2b2cOrgName;
+    const b2b2cOrgId = userData.b2b2cOrgId;
 
-    if (!organizationName) {
+    if (!organizationName && !b2b2cOrgId) {
       throw new HttpsError("failed-precondition", "現在どの所属にも登録されていません");
     }
 
-    // ユーザーから所属情報を削除
+    // ユーザーから所属情報を削除（新旧両システム）
     const updateFields = {
       organizationName: admin.firestore.FieldValue.delete(),
       organizationJoinedAt: admin.firestore.FieldValue.delete(),
+      b2b2cOrgId: admin.firestore.FieldValue.delete(),
+      b2b2cOrgName: admin.firestore.FieldValue.delete(),
     };
 
     // トレーナーの場合はrole・Custom Claimsもクリア
@@ -2541,6 +2580,18 @@ exports.leaveOrganization = onCall({
     }
 
     await admin.firestore().collection('users').doc(userId).update(updateFields);
+
+    // トレーナーが割り当てたカスタムクエストを全削除
+    const customQuestsSnap = await admin.firestore()
+      .collection('users').doc(userId)
+      .collection('custom_quests')
+      .get();
+    if (!customQuestsSnap.empty) {
+      const batch = admin.firestore().batch();
+      customQuestsSnap.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      console.log(`[Corporate] Deleted ${customQuestsSnap.size} custom quests for user ${userId}`);
+    }
 
     // 契約の登録ユーザー一覧から削除
     const contractSnapshot = await admin.firestore()
@@ -3495,6 +3546,11 @@ exports.purchaseTextbook = onCall({
       // 既に購入済みかチェック
       if (purchasedModules.includes(moduleId)) {
         throw new HttpsError("already-exists", "既に購入済みです");
+      }
+
+      // プレミアムチェック（非プレミアムは有料クレジット使用不可）
+      if (!isUserPremium(userData)) {
+        throw new HttpsError("permission-denied", "プレミアム会員のみ購入可能です");
       }
 
       // 有料クレジット残高チェック
@@ -4551,8 +4607,8 @@ exports.processAnalysisRequest = onDocumentCreated({
     }
 
     const userData = userDoc.data();
-    const totalCredits = (userData.freeCredits || 0) + (userData.paidCredits || 0);
-    if (totalCredits < 1) {
+    // クレジットチェック（非プレミアムはfreeCreditsのみ）
+    if (getAvailableCredits(userData) < 1) {
       throw new Error("Insufficient credits");
     }
 
@@ -4616,24 +4672,18 @@ exports.processAnalysisRequest = onDocumentCreated({
       analysisResult = { raw_text: responseText, parse_error: true };
     }
 
-    // 6. クレジット消費
-    let freeCredits = userData.freeCredits || 0;
-    let paidCredits = userData.paidCredits || 0;
-    if (freeCredits >= 1) {
-      freeCredits -= 1;
-    } else {
-      paidCredits -= 1;
-    }
+    // 6. クレジット消費（非プレミアムはfreeCreditsのみ）
+    const credits = consumeOneCredit(userData);
     await db.collection("users").doc(userId).update({
-      freeCredits: freeCredits,
-      paidCredits: paidCredits,
+      freeCredits: credits.freeCredits,
+      paidCredits: credits.paidCredits,
     });
 
     // 7. 成功: ステータスを completed に更新
     await requestRef.update({
       status: "completed",
       result: analysisResult,
-      remainingCredits: freeCredits + paidCredits,
+      remainingCredits: credits.freeCredits + credits.paidCredits,
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -5210,12 +5260,11 @@ function adjustToMacroTargets(meals, targetProtein, targetFat, targetCarbs, shop
  * ロジックベースのクエスト生成（Gemini置換）
  * PFC目標から食材量を決定的に計算
  */
-function generateQuestLogic(promptData) {
+function generateQuestLogic(promptData, fixedSlotData = {}) {
   const {
     splitType, budgetTier, mealsPerDay,
     targetProtein, targetFat, targetCarbs, targetCalories,
     trainingAfterMeal, trainingDuration, trainingStyle, repsPerSet,
-    isEatingOut, eatingOutMeal,
     wakeUpTime, trainingTime, sleepTime,
     goal, weight, bodyFatPercentage
   } = promptData;
@@ -5244,19 +5293,32 @@ function generateQuestLogic(promptData) {
   const preP = 25, preF = 1, preC = Math.round(mochiAmount * 0.5) + 1;
   const postP = 25, postF = 1, postC = Math.round(mochiAmount * 0.5) + 1;
 
-  // 通常食事の食数（トレ前後・外食を除く）
+  // 固定スロットのPFCを先に控除
+  let fixedP = 0, fixedF = 0, fixedC = 0;
+  let fixedMealSlotCount = 0;
+  for (const [slotStr, slotData] of Object.entries(fixedSlotData)) {
+    const slotNum = parseInt(slotStr);
+    if (slotNum >= 1 && slotData.type !== "WORKOUT" && slotData.totalMacros) {
+      fixedP += slotData.totalMacros.protein || 0;
+      fixedF += slotData.totalMacros.fat || 0;
+      fixedC += slotData.totalMacros.carbs || 0;
+      fixedMealSlotCount++;
+    }
+  }
+
+  // 通常食事の食数（トレ前後・外食・固定スロットを除く）
   let normalMealCount = mealsPerDay;
   if (hasTraining) normalMealCount -= 2;
-  if (isEatingOut && eatingOutMeal) normalMealCount -= 1;
+  normalMealCount -= fixedMealSlotCount;
   normalMealCount = Math.max(normalMealCount, 1);
 
-  // 通常食事1食あたりのPFC目標
-  const usedP = hasTraining ? preP + postP : 0;
-  const usedF = hasTraining ? preF + postF : 0;
-  const usedC = hasTraining ? preC + postC : 0;
-  const pPerMeal = Math.round((targetProtein - usedP) / normalMealCount);
-  const fPerMeal = Math.round((targetFat - usedF) / normalMealCount);
-  const cPerMeal = Math.round((targetCarbs - usedC) / normalMealCount);
+  // 通常食事1食あたりのPFC目標（固定スロット分も控除）
+  const usedP = (hasTraining ? preP + postP : 0) + fixedP;
+  const usedF = (hasTraining ? preF + postF : 0) + fixedF;
+  const usedC = (hasTraining ? preC + postC : 0) + fixedC;
+  const pPerMeal = Math.max(0, Math.round((targetProtein - usedP) / normalMealCount));
+  const fPerMeal = Math.max(0, Math.round((targetFat - usedF) / normalMealCount));
+  const cPerMeal = Math.max(0, Math.round((targetCarbs - usedC) / normalMealCount));
 
   // ブロッコリー量（食物繊維25g目標 → 100g/日を均等分割）
   const totalBroccoli = 100;
@@ -5272,9 +5334,21 @@ function generateQuestLogic(promptData) {
   }
 
   for (let i = 1; i <= mealsPerDay; i++) {
-    // 外食
-    if (isEatingOut && i === eatingOutMeal) {
-      meals.push({ slot: i, foods: [] });
+    // 固定スロット（テンプレート）
+    if (fixedSlotData[i] && fixedSlotData[i].type !== "WORKOUT") {
+      const fixed = fixedSlotData[i];
+      const fixedFoods = (fixed.items || []).map(item => ({
+        food_id: item.foodId || item.food_id || "custom",
+        amount: item.amount || 0,
+        unit: item.unit || "g",
+        displayName: item.name || item.displayName || ""
+      }));
+      meals.push({
+        slot: i,
+        foods: fixedFoods,
+        isFixed: true,
+        templateTitle: fixed.title
+      });
       continue;
     }
 
@@ -5449,7 +5523,31 @@ function generateQuestLogic(promptData) {
   // ワークアウト（LBMスケーリングで消費カロリー予測）
   // 1セット≒5分、1種目≒30分（6セット相当）
   const workout = {};
-  if (!isRestDay) {
+  // 固定運動スロット（slot=0がWORKOUT）
+  if (!isRestDay && fixedSlotData[0] && fixedSlotData[0].type === "WORKOUT") {
+    const fixedWorkout = fixedSlotData[0];
+    workout.name = fixedWorkout.title || "固定ワークアウト";
+    workout.isFixed = true;
+    workout.templateTitle = fixedWorkout.title;
+    workout.exerciseDetails = (fixedWorkout.items || []).map(item => ({
+      name: item.name || item.displayName || "",
+      sets: item.sets || 4,
+      reps: item.reps || 10,
+      rmMin: item.rmMin || null,
+      rmMax: item.rmMax || null
+    }));
+    workout.exercises = workout.exerciseDetails.length;
+    workout.total_sets = workout.exerciseDetails.reduce((sum, ex) => sum + ex.sets, 0);
+    workout.duration = trainingDuration || 120;
+    // カロリー計算
+    const BONUS_BASE = {
+      legs: 500, back: 450, chest: 400, shoulders: 350, arms: 300, abs: 250,
+      full_body: 500, lower_body: 500, upper_body: 400,
+      push: 400, pull: 450, chest_triceps: 400, back_biceps: 450, shoulders_arms: 350
+    };
+    const base = BONUS_BASE[splitType] || BONUS_BASE.upper_body;
+    workout.calories_burned = Math.round((base + 100) * (lbm / 60));
+  } else if (!isRestDay) {
     const style = trainingStyle === "POWER" ? "POWER" : "PUMP";
     const templateKey = SPLIT_TO_TEMPLATE[splitType] || "chest";
     const baseTemplate = WORKOUT_TEMPLATES[templateKey]?.[style] || WORKOUT_TEMPLATES.chest.PUMP;
@@ -5656,8 +5754,6 @@ function generateQuestPrompt(data) {
     trainingStyle,
     repsPerSet,
     ngFoods,
-    isEatingOut,
-    eatingOutMeal,
     goal,
     wakeUpTime,
     trainingTime,
@@ -5727,8 +5823,6 @@ function generateQuestPrompt(data) {
       mealScheduleList.push(`slot ${i}: ${timeStr} [トレ前] → 餅${mochiAmount}g + プロテインパウダー30g + 岩塩${saltPerMeal}g【固定・他の食材禁止】`);
     } else if (hasTraining && i === trainingAfterMeal + 1) {
       mealScheduleList.push(`slot ${i}: ${timeStr} [トレ後] → 餅${mochiAmount}g + プロテインパウダー30g【固定・他の食材禁止】`);
-    } else if (isEatingOut && i === eatingOutMeal) {
-      mealScheduleList.push(`slot ${i}: ${timeStr} [外食] → スキップ`);
     } else {
       mealScheduleList.push(`slot ${i}: ${timeStr} ${labelStr} → P${pPerMeal}g F${fPerMeal}g C${cPerMeal}g`);
     }
@@ -5845,6 +5939,62 @@ ${hasTraining ? `- name: "${splitTypeJa}トレーニング"
 上記の形式に厳密に従い、純粋なJSONのみを出力してください。マークダウンのコードブロックは不要です。`;
 }
 
+// ===== クエストテンプレート一覧取得 =====
+exports.getQuestTemplates = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  const userId = request.auth?.uid;
+  if (!userId) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const db = admin.firestore();
+
+  try {
+    // quest_templates からアクティブなデフォルトテンプレートを取得
+    // ownerId="admintrainer" のもののみ（手動テストデータを除外）
+    const templatesSnap = await db.collection("quest_templates")
+      .where("isActive", "==", true)
+      .where("ownerId", "==", "admintrainer")
+      .get();
+
+    const templates = [];
+    templatesSnap.forEach((doc) => {
+      const data = doc.data();
+      templates.push({
+        templateId: doc.id,
+        title: data.title || "",
+        type: data.type || "MEAL",
+        totalMacros: data.totalMacros || null,
+        itemCount: (data.items || []).length,
+        items: (data.items || []).map((item) => ({
+          foodName: item.foodName || "",
+          amount: item.amount || 0,
+          unit: item.unit || "",
+          calories: item.calories || 0,
+          protein: item.protein || 0,
+          fat: item.fat || 0,
+          carbs: item.carbs || 0,
+          fiber: item.fiber || 0,
+          sets: item.sets || 0,
+          reps: item.reps || 0,
+          weight: item.weight || 0,
+          rmPercentMin: item.rmPercentMin || 0,
+          rmPercentMax: item.rmPercentMax || 0,
+        })),
+      });
+    });
+
+    console.log(`[QuestTemplates] Returned ${templates.length} templates for user ${userId}`);
+    return { success: true, templates };
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    console.error("[QuestTemplates] Error:", error);
+    throw new HttpsError("internal", error.message || "テンプレート取得に失敗しました");
+  }
+});
+
 // ===== クエスト生成 Cloud Function（分離版） =====
 exports.generateQuest = onCall({
   region: "asia-northeast2",
@@ -5870,17 +6020,21 @@ exports.generateQuest = onCall({
     const userData = userDoc.data();
     const profile = userData.profile || {};
 
-    // 1.5. クレジットチェック（クエスト生成は1クレジット消費）
-    const totalCredits = (userData.freeCredits || 0) + (userData.paidCredits || 0);
-    if (totalCredits < 1) {
+    // 1.5. クレジットチェック（非プレミアムはfreeCreditsのみ）
+    if (getAvailableCredits(userData) < 1) {
       throw new HttpsError("resource-exhausted", "クレジットが不足しています");
     }
 
-    // 2. 明日の日付を計算（JSTベース）
-    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
-    const tomorrowJST = new Date(nowJST);
-    tomorrowJST.setDate(tomorrowJST.getDate() + 1);
-    const tomorrowStr = tomorrowJST.toISOString().split("T")[0];  // YYYY-MM-DD
+    // 2. 対象日を決定（targetDateが指定されていればそれを使用、なければ翌日）
+    let tomorrowStr;
+    if (data.targetDate) {
+      tomorrowStr = data.targetDate;
+    } else {
+      const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+      const tomorrowJST = new Date(nowJST);
+      tomorrowJST.setDate(tomorrowJST.getDate() + 1);
+      tomorrowStr = tomorrowJST.toISOString().split("T")[0];  // YYYY-MM-DD
+    }
 
     // 3. 明日のルーティンをパターンから計算
     const routineSettingsDoc = await db.collection("users").doc(userId)
@@ -5909,7 +6063,16 @@ exports.generateQuest = onCall({
       "休み": "rest",
       "オフ": "off",
       "腹筋": "abs",
+      "腹筋・体幹": "abs_core",
       "有酸素": "cardio",
+      "上半身": "upper_body",
+      "下半身": "lower_body",
+      "全身": "full_body",
+      "プッシュ": "push",
+      "プル": "pull",
+      "胸・三頭": "chest_triceps",
+      "背中・二頭": "back_biceps",
+      "肩・腕": "shoulders_arms",
       // 英語はそのまま
       "chest": "chest",
       "back": "back",
@@ -5919,7 +6082,16 @@ exports.generateQuest = onCall({
       "rest": "rest",
       "off": "off",
       "abs": "abs",
-      "cardio": "cardio"
+      "abs_core": "abs_core",
+      "cardio": "cardio",
+      "upper_body": "upper_body",
+      "lower_body": "lower_body",
+      "full_body": "full_body",
+      "push": "push",
+      "pull": "pull",
+      "chest_triceps": "chest_triceps",
+      "back_biceps": "back_biceps",
+      "shoulders_arms": "shoulders_arms"
     };
     // クライアントから送られたsplitTypeを優先（ダッシュボードと同じルーティン）
     const rawSplitType = data.splitType || tomorrowSplitType || "off";
@@ -5948,8 +6120,6 @@ exports.generateQuest = onCall({
       trainingStyle,
       repsPerSet,
       ngFoods: profile.ngFoods || "",
-      isEatingOut: data.isEatingOut || false,
-      eatingOutMeal: data.eatingOutMeal || null,
       // タイムスケジュール
       wakeUpTime: data.wakeUpTime || profile.wakeUpTime || "07:00",
       trainingTime: data.trainingTime || profile.trainingTime || "17:00",
@@ -5963,8 +6133,126 @@ exports.generateQuest = onCall({
     console.log(`[Quest] Generating for ${userId}, budget=${promptData.budgetTier}, meals=${promptData.mealsPerDay}`);
     console.log(`[Quest] Time settings: wake=${promptData.wakeUpTime}, training=${promptData.trainingTime}, sleep=${promptData.sleepTime}, duration=${promptData.trainingDuration}min, trainingAfterMeal=${promptData.trainingAfterMeal}`);
 
+    // 3.5. routineTemplateConfig からテンプレート固定スロットを解決
+    const fixedSlotData = {};
+    const routineTemplateConfig = profile.routineTemplateConfig;
+    if (routineTemplateConfig && routineTemplateConfig.mappings) {
+      // 対象日のルーティン splitType に一致するマッピングを抽出
+      // routineId は日本語・英語・カスタム名のいずれかで保存されている
+      // 正規化して確実にマッチさせる
+      const normalizeToEnglish = (s) => splitTypeMap[s] || s;
+      const splitTypeJa = splitTypeToJapanese(splitType);
+      const normalizedTarget = normalizeToEnglish(rawSplitType);
+
+      const matchingMappings = routineTemplateConfig.mappings.filter(m => {
+        const normalizedId = normalizeToEnglish(m.routineId);
+        // 正規化した英語同士で比較 OR 完全一致（カスタム名対応）
+        return normalizedId === normalizedTarget
+            || m.routineId === rawSplitType
+            || m.routineId === splitType
+            || m.routineId === splitTypeJa;
+      });
+      console.log(`[Quest] Template matching: raw=${rawSplitType}, en=${splitType}, ja=${splitTypeJa}, norm=${normalizedTarget}, mappings=${routineTemplateConfig.mappings.length}, matched=${matchingMappings.length}`);
+
+      for (const mapping of matchingMappings) {
+        try {
+          // 1. まず quest_templates コレクションを検索
+          let templateDoc = await db.collection("quest_templates").doc(mapping.templateId).get();
+          if (templateDoc.exists) {
+            const templateData = templateDoc.data();
+            if (templateData.isActive !== false) {
+              fixedSlotData[mapping.slotNumber] = {
+                items: templateData.items || [],
+                totalMacros: templateData.totalMacros || null,
+                title: templateData.title || mapping.templateName,
+                type: templateData.type || "MEAL"
+              };
+              console.log(`[Quest] Fixed slot ${mapping.slotNumber}: ${templateData.title} (${(templateData.items || []).length} items) [default]`);
+            }
+          } else {
+            // 2. ユーザーのマイテンプレートを検索（食事 → 運動の順）
+            const isWorkoutSlot = mapping.slotNumber === 0;
+            const userCollection = isWorkoutSlot ? "workoutTemplates" : "mealTemplates";
+            const userTemplateDoc = await db.collection("users").doc(userId).collection(userCollection).doc(mapping.templateId).get();
+            if (userTemplateDoc.exists) {
+              const utData = userTemplateDoc.data();
+              if (isWorkoutSlot) {
+                // 運動テンプレート → fixedSlotData 形式に変換
+                const exercises = utData.exercises || [];
+                fixedSlotData[mapping.slotNumber] = {
+                  items: exercises.map(ex => ({
+                    name: ex.name || "",
+                    sets: ex.sets || 4,
+                    reps: ex.reps || 10,
+                    weight: ex.weight || null
+                  })),
+                  totalMacros: null,
+                  title: utData.name || mapping.templateName,
+                  type: "WORKOUT"
+                };
+              } else {
+                // 食事テンプレート → fixedSlotData 形式に変換
+                fixedSlotData[mapping.slotNumber] = {
+                  items: (utData.items || []).map(item => ({
+                    foodId: item.foodId || item.food_id || "custom",
+                    food_id: item.foodId || item.food_id || "custom",
+                    amount: item.amount || 0,
+                    unit: item.unit || "g",
+                    name: item.name || item.displayName || "",
+                    displayName: item.name || item.displayName || ""
+                  })),
+                  totalMacros: {
+                    calories: utData.totalCalories || 0,
+                    protein: utData.totalProtein || 0,
+                    fat: utData.totalFat || 0,
+                    carbs: utData.totalCarbs || 0
+                  },
+                  title: utData.name || mapping.templateName,
+                  type: "MEAL"
+                };
+              }
+              console.log(`[Quest] Fixed slot ${mapping.slotNumber}: ${utData.name} (user template) [${userCollection}]`);
+            } else {
+              // 食事スロットだがmealTemplatesに見つからない場合、workoutTemplatesも確認（逆も然り）
+              const altCollection = isWorkoutSlot ? "mealTemplates" : "workoutTemplates";
+              const altDoc = await db.collection("users").doc(userId).collection(altCollection).doc(mapping.templateId).get();
+              if (altDoc.exists) {
+                const altData = altDoc.data();
+                if (altCollection === "workoutTemplates") {
+                  fixedSlotData[mapping.slotNumber] = {
+                    items: (altData.exercises || []).map(ex => ({
+                      name: ex.name || "", sets: ex.sets || 4, reps: ex.reps || 10, weight: ex.weight || null
+                    })),
+                    totalMacros: null,
+                    title: altData.name || mapping.templateName,
+                    type: "WORKOUT"
+                  };
+                } else {
+                  fixedSlotData[mapping.slotNumber] = {
+                    items: (altData.items || []).map(item => ({
+                      foodId: item.foodId || "custom", food_id: item.foodId || "custom",
+                      amount: item.amount || 0, unit: item.unit || "g",
+                      name: item.name || "", displayName: item.name || ""
+                    })),
+                    totalMacros: { calories: altData.totalCalories || 0, protein: altData.totalProtein || 0, fat: altData.totalFat || 0, carbs: altData.totalCarbs || 0 },
+                    title: altData.name || mapping.templateName,
+                    type: "MEAL"
+                  };
+                }
+                console.log(`[Quest] Fixed slot ${mapping.slotNumber}: ${altData.name} (user template) [${altCollection}]`);
+              } else {
+                console.log(`[Quest] Template ${mapping.templateId} not found in any collection, slot ${mapping.slotNumber} will be AI-generated`);
+              }
+            }
+          }
+        } catch (e) {
+          console.log(`[Quest] Error loading template ${mapping.templateId}: ${e.message}, falling back to AI`);
+        }
+      }
+    }
+
     // 4. ロジックベースでクエスト生成（Gemini不要）
-    const questResult = generateQuestLogic(promptData);
+    const questResult = generateQuestLogic(promptData, fixedSlotData);
     console.log(`[Quest] Logic-based generation succeeded, meals count: ${questResult.meals?.length}`);
 
     // 6. サーバー側で計算した時刻を各食事に追加
@@ -5980,6 +6268,19 @@ exports.generateQuest = onCall({
       effectiveTrainingAfterMealForTime,
       promptData.trainingDuration
     );
+
+    // mealSlotConfig の absoluteTime でカスタム時刻をオーバーライド
+    const mealSlotConfig = profile.mealSlotConfig;
+    if (mealSlotConfig && mealSlotConfig.slots) {
+      for (const slot of mealSlotConfig.slots) {
+        if (slot.absoluteTime) {
+          const mealTime = mealTimes.find(m => m.slot === slot.slotNumber);
+          if (mealTime) {
+            mealTime.time = slot.absoluteTime;
+          }
+        }
+      }
+    }
 
     // 各mealにtime/labelを追加
     if (questResult.meals) {
@@ -6008,16 +6309,16 @@ exports.generateQuest = onCall({
         const header = [prefix, labelStr].filter(Boolean).join(" ");
 
         if (foods.length === 0) {
-          directiveItems.push(`【食事${slot}】${header} 外食予定`);
           continue;
         }
 
         const foodStrings = foods.map(f => {
           const info = FOOD_ID_MAP[f.food_id];
-          const displayName = info?.displayName || f.food_id;
+          const displayName = f.displayName || info?.displayName || f.food_id;
           return `${displayName} ${f.amount}${f.unit || "g"}`;
         });
-        directiveItems.push(`【食事${slot}】${header} ${foodStrings.join(", ")}`);
+        const templateLabel = meal.isFixed && meal.templateTitle ? ` [${meal.templateTitle}]` : "";
+        directiveItems.push(`【食事${slot}】${header}${templateLabel} ${foodStrings.join(", ")}`);
       }
     }
 
@@ -6080,23 +6381,16 @@ exports.generateQuest = onCall({
 
     console.log(`[Quest] Saved for ${tomorrowStr}: ${directiveItems.length} items`);
 
-    // クレジット消費（1クレジット）
-    let freeCredits = userData.freeCredits || 0;
-    let paidCredits = userData.paidCredits || 0;
-    if (freeCredits >= 1) {
-      freeCredits -= 1;
-    } else {
-      paidCredits -= 1;
-    }
-    // クレジット消費 + 経験値付与（10XP）
+    // クレジット消費（非プレミアムはfreeCreditsのみ） + 経験値付与（10XP）
+    const credits = consumeOneCredit(userData);
     const currentExp = userData.experience || 0;
     const newExp = currentExp + 10;
     await db.collection("users").doc(userId).update({
-      freeCredits: freeCredits,
-      paidCredits: paidCredits,
+      freeCredits: credits.freeCredits,
+      paidCredits: credits.paidCredits,
       experience: newExp,
     });
-    console.log(`[Quest] Credit consumed. Remaining: ${freeCredits + paidCredits}. XP: ${currentExp} → ${newExp}`);
+    console.log(`[Quest] Credit consumed. Remaining: ${credits.freeCredits + credits.paidCredits}. XP: ${currentExp} → ${newExp}`);
 
     return {
       success: true,
@@ -6104,7 +6398,7 @@ exports.generateQuest = onCall({
       quest: questResult,
       directiveMessage,
       shoppingList: questResult.shopping_list || [],
-      remainingCredits: freeCredits + paidCredits
+      remainingCredits: credits.freeCredits + credits.paidCredits
     };
 
   } catch (error) {
@@ -6255,5 +6549,301 @@ exports.updateBadgeStats = onCall({
   // 完全版では実データ照会のため、カウンター更新は不要
   // クライアントは updateBadgeStats 後に checkAndAwardBadges を呼ぶ
   return { success: true, action, message: "Stats update skipped (complete version uses real data queries)" };
+});
+
+// ===== デフォルトクエストテンプレート投入 =====
+exports.seedDefaultQuestTemplates = onCall({
+  region: "asia-northeast2",
+  cors: true,
+}, async (request) => {
+  const userId = request.auth?.uid;
+  if (!userId) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const db = admin.firestore();
+  const ADMIN_OWNER = "admintrainer";
+
+  // 栄養値定数（100gあたり）
+  const NUT = {
+    chicken_breast: { p: 23, f: 2, c: 0, cal: 108 },
+    beef_lean:      { p: 21, f: 4, c: 0, cal: 120 },
+    saba:           { p: 26, f: 12, c: 0, cal: 216 },
+    salmon:         { p: 22, f: 4, c: 0, cal: 124 },
+    white_rice:     { p: 2.5, f: 0.3, c: 37, cal: 160 },
+    brown_rice:     { p: 2.8, f: 1, c: 35, cal: 159 },
+    broccoli:       { p: 4, f: 0.5, c: 5, cal: 40 },
+    egg_whole:      { p: 8, f: 6.5, c: 0.3, cal: 91 },  // 1個64g換算
+    mochi:          { p: 4, f: 1, c: 50, cal: 225 },
+    whey_protein:   { p: 80, f: 3, c: 5, cal: 367 },
+    olive_oil:      { p: 0, f: 100, c: 0, cal: 900 },
+    pink_salt:      { p: 0, f: 0, c: 0, cal: 0 },
+  };
+
+  function mealItem(name, foodId, amount, unit = "g") {
+    const n = NUT[foodId] || { p: 0, f: 0, c: 0, cal: 0 };
+    const scale = unit === "個" ? 64 / 100 * amount : amount / 100;
+    return {
+      foodName: name,
+      foodId: foodId,
+      amount: amount,
+      unit: unit,
+      protein: Math.round(n.p * scale * 10) / 10,
+      fat: Math.round(n.f * scale * 10) / 10,
+      carbs: Math.round(n.c * scale * 10) / 10,
+      calories: Math.round(n.cal * scale),
+    };
+  }
+
+  function workoutItem(name, category, sets, reps, rmMin, rmMax) {
+    return {
+      foodName: name,
+      category: category,
+      sets: sets,
+      reps: reps,
+      unit: "セット",
+      amount: sets,
+      rmPercentMin: rmMin || null,
+      rmPercentMax: rmMax || null,
+    };
+  }
+
+  function sumMacros(items) {
+    let p = 0, f = 0, c = 0, cal = 0;
+    for (const it of items) {
+      p += it.protein || 0;
+      f += it.fat || 0;
+      c += it.carbs || 0;
+      cal += it.calories || 0;
+    }
+    return { protein: Math.round(p * 10) / 10, fat: Math.round(f * 10) / 10, carbs: Math.round(c * 10) / 10, calories: Math.round(cal) };
+  }
+
+  // === 食事テンプレート ===
+  const mealTemplates = [
+    {
+      title: "定番の朝食セット（鶏むね）",
+      items: [
+        mealItem("鶏むね肉（皮なし）", "chicken_breast", 150),
+        mealItem("全卵Lサイズ", "egg_whole", 1, "個"),
+        mealItem("白米", "white_rice", 150),
+        mealItem("ブロッコリー", "broccoli", 50),
+        mealItem("ピンク岩塩", "pink_salt", 3),
+      ],
+    },
+    {
+      title: "牛赤身の食事セット",
+      items: [
+        mealItem("牛赤身肉", "beef_lean", 150),
+        mealItem("白米", "white_rice", 180),
+        mealItem("ブロッコリー", "broccoli", 50),
+        mealItem("オリーブオイル", "olive_oil", 5),
+        mealItem("ピンク岩塩", "pink_salt", 3),
+      ],
+    },
+    {
+      title: "サバの食事セット",
+      items: [
+        mealItem("サバ（焼き）", "saba", 120),
+        mealItem("白米", "white_rice", 150),
+        mealItem("ブロッコリー", "broccoli", 50),
+        mealItem("ピンク岩塩", "pink_salt", 3),
+      ],
+    },
+    {
+      title: "鮭の食事セット",
+      items: [
+        mealItem("鮭", "salmon", 150),
+        mealItem("白米", "white_rice", 160),
+        mealItem("ブロッコリー", "broccoli", 50),
+        mealItem("オリーブオイル", "olive_oil", 5),
+        mealItem("ピンク岩塩", "pink_salt", 3),
+      ],
+    },
+    {
+      title: "減量用 朝食（玄米）",
+      items: [
+        mealItem("鶏むね肉（皮なし）", "chicken_breast", 150),
+        mealItem("全卵Lサイズ", "egg_whole", 1, "個"),
+        mealItem("玄米", "brown_rice", 120),
+        mealItem("ブロッコリー", "broccoli", 80),
+        mealItem("ピンク岩塩", "pink_salt", 3),
+      ],
+    },
+    {
+      title: "トレ前 餅プロテイン",
+      items: [
+        mealItem("切り餅", "mochi", 50),
+        mealItem("ホエイプロテイン", "whey_protein", 30),
+        mealItem("ピンク岩塩", "pink_salt", 3),
+      ],
+    },
+    {
+      title: "トレ後 餅プロテイン",
+      items: [
+        mealItem("切り餅", "mochi", 50),
+        mealItem("ホエイプロテイン", "whey_protein", 30),
+      ],
+    },
+  ];
+
+  // === 運動テンプレート ===
+  const workoutTemplates = [
+    {
+      title: "胸トレ（パンプ）",
+      category: "chest",
+      items: [
+        workoutItem("ベンチプレス", "胸", 4, 12),
+        workoutItem("インクラインベンチプレス", "胸", 4, 12),
+        workoutItem("ディップス", "胸", 3, 15),
+        workoutItem("ダンベルフライ", "胸", 3, 15),
+      ],
+    },
+    {
+      title: "胸トレ（パワー）",
+      category: "chest",
+      items: [
+        workoutItem("ベンチプレス", "胸", 5, 5, 80, 85),
+        workoutItem("インクラインベンチプレス", "胸", 4, 6, 75, 80),
+        workoutItem("ディップス", "胸", 4, 6, 75, 80),
+        workoutItem("ダンベルフライ", "胸", 3, 10, 65, 70),
+      ],
+    },
+    {
+      title: "背中トレ（パンプ）",
+      category: "back",
+      items: [
+        workoutItem("デッドリフト", "背中", 4, 10),
+        workoutItem("ベントオーバーロー", "背中", 4, 12),
+        workoutItem("チンニング", "背中", 3, 12),
+        workoutItem("シーテッドロー", "背中", 3, 15),
+      ],
+    },
+    {
+      title: "背中トレ（パワー）",
+      category: "back",
+      items: [
+        workoutItem("デッドリフト", "背中", 5, 5, 80, 85),
+        workoutItem("ベントオーバーロー", "背中", 5, 5, 75, 80),
+        workoutItem("チンニング", "背中", 4, 6, 75, 80),
+        workoutItem("シーテッドロー", "背中", 4, 8, 70, 75),
+      ],
+    },
+    {
+      title: "脚トレ（パンプ）",
+      category: "legs",
+      items: [
+        workoutItem("バーベルスクワット", "脚", 4, 12),
+        workoutItem("レッグプレス", "脚", 4, 15),
+        workoutItem("レッグエクステンション", "脚", 3, 15),
+        workoutItem("レッグカール", "脚", 3, 15),
+      ],
+    },
+    {
+      title: "脚トレ（パワー）",
+      category: "legs",
+      items: [
+        workoutItem("バーベルスクワット", "脚", 5, 5, 80, 85),
+        workoutItem("レッグプレス", "脚", 5, 5, 80, 85),
+        workoutItem("レッグエクステンション", "脚", 4, 8, 70, 75),
+        workoutItem("レッグカール", "脚", 4, 8, 70, 75),
+      ],
+    },
+    {
+      title: "肩トレ（パンプ）",
+      category: "shoulders",
+      items: [
+        workoutItem("ダンベルショルダープレス", "肩", 4, 12),
+        workoutItem("スミスバックプレス", "肩", 4, 12),
+        workoutItem("サイドレイズ", "肩", 3, 20),
+        workoutItem("フロントレイズ", "肩", 3, 15),
+      ],
+    },
+    {
+      title: "肩トレ（パワー）",
+      category: "shoulders",
+      items: [
+        workoutItem("ダンベルショルダープレス", "肩", 5, 5, 80, 85),
+        workoutItem("スミスバックプレス", "肩", 4, 6, 75, 80),
+        workoutItem("サイドレイズ", "肩", 4, 10, 65, 70),
+        workoutItem("フロントレイズ", "肩", 3, 10, 65, 70),
+      ],
+    },
+    {
+      title: "腕トレ（パンプ）",
+      category: "arms",
+      items: [
+        workoutItem("ナローベンチプレス", "腕", 4, 12),
+        workoutItem("バーベルカール", "腕", 4, 12),
+        workoutItem("フレンチプレス", "腕", 3, 15),
+        workoutItem("インクラインダンベルカール", "腕", 3, 15),
+      ],
+    },
+    {
+      title: "腕トレ（パワー）",
+      category: "arms",
+      items: [
+        workoutItem("ナローベンチプレス", "腕", 5, 5, 80, 85),
+        workoutItem("バーベルカール", "腕", 4, 6, 75, 80),
+        workoutItem("フレンチプレス", "腕", 4, 8, 70, 75),
+        workoutItem("インクラインダンベルカール", "腕", 3, 10, 65, 70),
+      ],
+    },
+  ];
+
+  try {
+    const batch = db.batch();
+    const now = Date.now();
+    let count = 0;
+
+    // 既存のadmintrainerテンプレートを確認
+    const existingSnap = await db.collection("quest_templates")
+      .where("ownerId", "==", ADMIN_OWNER)
+      .get();
+    const existingTitles = new Set();
+    existingSnap.forEach(doc => existingTitles.add(doc.data().title));
+
+    // 食事テンプレート
+    for (const tmpl of mealTemplates) {
+      if (existingTitles.has(tmpl.title)) continue;
+      const ref = db.collection("quest_templates").doc();
+      batch.set(ref, {
+        ownerId: ADMIN_OWNER,
+        title: tmpl.title,
+        type: "MEAL",
+        items: tmpl.items,
+        totalMacros: sumMacros(tmpl.items),
+        isActive: true,
+        createdAt: now,
+      });
+      count++;
+    }
+
+    // 運動テンプレート
+    for (const tmpl of workoutTemplates) {
+      if (existingTitles.has(tmpl.title)) continue;
+      const ref = db.collection("quest_templates").doc();
+      batch.set(ref, {
+        ownerId: ADMIN_OWNER,
+        title: tmpl.title,
+        type: "WORKOUT",
+        items: tmpl.items,
+        totalMacros: null,
+        isActive: true,
+        createdAt: now,
+      });
+      count++;
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+
+    console.log(`[Seed] Created ${count} default quest templates (skipped ${mealTemplates.length + workoutTemplates.length - count} duplicates)`);
+    return { success: true, created: count, total: mealTemplates.length + workoutTemplates.length };
+  } catch (error) {
+    console.error("[Seed] Error:", error);
+    throw new HttpsError("internal", error.message || "テンプレート投入に失敗しました");
+  }
 });
 

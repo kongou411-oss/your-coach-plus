@@ -12,8 +12,7 @@ import com.yourcoach.plus.shared.domain.repository.CustomQuestRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.service.GeminiService
 import com.yourcoach.plus.shared.util.DateUtil
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.functions.functions
+import com.yourcoach.plus.shared.util.invokeCloudFunction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +34,7 @@ data class SettingsUiState(
     val user: User? = null,
     val isPremium: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val appVersion: String = "2.0.6",
+    val appVersion: String = "2.0.8",
     val error: String? = null,
     val isLoggedOut: Boolean = false,
     val isAccountDeleted: Boolean = false,
@@ -135,7 +134,7 @@ class SettingsScreenModel(
                         _uiState.update {
                             it.copy(
                                 user = enrichedUser,
-                                isPremium = enrichedUser?.isPremium ?: false,
+                                isPremium = enrichedUser?.isEffectivePremium ?: false,
                                 freeCredits = enrichedUser?.freeCredits ?: 0,
                                 paidCredits = enrichedUser?.paidCredits ?: 0,
                                 organizationName = enrichedUser?.organizationName ?: enrichedUser?.b2b2cOrgName,
@@ -201,52 +200,44 @@ class SettingsScreenModel(
     }
 
     /**
-     * Delete account
+     * Delete account via Cloud Function
+     * CF側でStripeサブスク解約・Firestoreデータ削除・Firebase Auth削除を一括実行
      */
     fun deleteAccount() {
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isDeletingAccount = true, needsReauthentication = false) }
             try {
                 val userId = authRepository.getCurrentUserId()
-                if (userId != null) {
-                    val deleteAuthResult = authRepository.deleteAccount()
-                    if (deleteAuthResult.isFailure) {
-                        val error = deleteAuthResult.exceptionOrNull()
-                        // Check for re-authentication required
-                        _uiState.update {
-                            it.copy(
-                                isDeletingAccount = false,
-                                needsReauthentication = true,
-                                pendingDeleteUserId = userId
-                            )
-                        }
-                        return@launch
-                    }
-
-                    // Delete Firestore data
-                    userRepository.deleteUserData(userId)
-
+                if (userId == null) {
                     _uiState.update {
-                        it.copy(
-                            isDeletingAccount = false,
-                            isAccountDeleted = true,
-                            pendingDeleteUserId = null
-                        )
+                        it.copy(isDeletingAccount = false, error = "ログイン状態を確認できません")
                     }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isDeletingAccount = false,
-                            error = "Could not verify login status"
-                        )
-                    }
+                    return@launch
+                }
+
+                // CF deleteAccount を呼び出し（Stripe解約・Firestore削除・Auth削除を一括実行）
+                invokeCloudFunction(
+                    region = "asia-northeast2",
+                    functionName = "deleteAccount",
+                    data = emptyMap()
+                )
+
+                // CF成功 → ローカルサインアウト
+                authRepository.signOut()
+
+                _uiState.update {
+                    it.copy(
+                        isDeletingAccount = false,
+                        isAccountDeleted = true,
+                        pendingDeleteUserId = null
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isDeletingAccount = false,
                         pendingDeleteUserId = null,
-                        error = e.message ?: "Account deletion failed"
+                        error = "アカウント削除に失敗しました: ${e.message}"
                     )
                 }
             }
@@ -399,7 +390,8 @@ class SettingsScreenModel(
      * Get total credits
      */
     fun getTotalCredits(): Int {
-        return _uiState.value.freeCredits + _uiState.value.paidCredits
+        val state = _uiState.value
+        return if (state.isPremium) state.freeCredits + state.paidCredits else state.freeCredits
     }
 
     /**
@@ -409,13 +401,13 @@ class SettingsScreenModel(
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isAddingCredits = true) }
             try {
-                val functions = Firebase.functions("asia-northeast1")
-                val data = hashMapOf("amount" to 100)
-
-                val result = functions.httpsCallable("debugAddCredits").invoke(data)
-                val response = result.data() as? Map<*, *>
-                val newTotal = (response?.get("newTotal") as? Number)?.toInt() ?: 0
-                val message = response?.get("message") as? String ?: "クレジットを追加しました"
+                val response = invokeCloudFunction(
+                    region = "asia-northeast1",
+                    functionName = "debugAddCredits",
+                    data = mapOf("amount" to 100)
+                )
+                val newTotal = (response["newTotal"] as? Number)?.toInt() ?: 0
+                val message = response["message"] as? String ?: "クレジットを追加しました"
 
                 _uiState.update {
                     it.copy(
@@ -456,14 +448,14 @@ class SettingsScreenModel(
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isValidatingOrganization = true, organizationMessage = null) }
             try {
-                val functions = Firebase.functions("asia-northeast2")
-                val data = hashMapOf("organizationName" to organizationName.trim())
-
-                val result = functions.httpsCallable("validateOrganizationName").invoke(data)
-                val response = result.data() as? Map<*, *>
-                val success = response?.get("success") as? Boolean ?: false
-                val message = response?.get("message") as? String ?: "所属を登録しました"
-                val orgName = response?.get("organizationName") as? String
+                val response = invokeCloudFunction(
+                    region = "asia-northeast2",
+                    functionName = "validateOrganizationName",
+                    data = mapOf("organizationName" to organizationName.trim())
+                )
+                val success = response["success"] as? Boolean ?: false
+                val message = response["message"] as? String ?: "所属を登録しました"
+                val orgName = response["organizationName"] as? String
 
                 _uiState.update {
                     it.copy(
@@ -501,11 +493,12 @@ class SettingsScreenModel(
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isValidatingOrganization = true, organizationMessage = null) }
             try {
-                val functions = Firebase.functions("asia-northeast2")
-
-                val result = functions.httpsCallable("leaveOrganization").invoke()
-                val response = result.data() as? Map<*, *>
-                val message = response?.get("message") as? String ?: "所属を解除しました"
+                val response = invokeCloudFunction(
+                    region = "asia-northeast2",
+                    functionName = "leaveOrganization",
+                    data = emptyMap()
+                )
+                val message = response["message"] as? String ?: "所属を解除しました"
 
                 _uiState.update {
                     it.copy(

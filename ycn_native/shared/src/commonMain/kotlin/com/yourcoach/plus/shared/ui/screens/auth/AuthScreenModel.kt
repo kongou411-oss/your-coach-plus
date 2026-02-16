@@ -45,7 +45,8 @@ class AuthScreenModel(
     // iOS対応: コルーチン例外ハンドラー（NULLクラッシュ防止）
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         println("AuthScreenModel: Coroutine exception: ${throwable.message}")
-        _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+        throwable.printStackTrace()
+        _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました: ${throwable.message}") }
     }
 
     init {

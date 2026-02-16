@@ -17,6 +17,7 @@ import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.service.GeminiService
 import com.yourcoach.plus.shared.domain.service.RecognizedFoodResult
 import com.yourcoach.plus.shared.util.DateUtil
+import com.yourcoach.plus.shared.util.invokeCloudFunction
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,11 +54,14 @@ data class AddMealUiState(
     val note: String = "",
     val imageUrl: String? = null,
     val templates: List<MealTemplate> = emptyList(),
+    val defaultTemplates: List<MealTemplate> = emptyList(),
     val showTemplates: Boolean = false,
+    val showDefaultTemplates: Boolean = false,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
     val isSavingTemplate: Boolean = false,
     val templateSavedSuccessfully: Boolean = false,
+    val editingTemplateId: String? = null,
     // 入力元フラグ
     val isFromTemplate: Boolean = false,
     val isFromRoutine: Boolean = false,
@@ -251,11 +255,61 @@ class AddMealScreenModel(
         screenModelScope.launch(exceptionHandler) {
             val userId = authRepository.getCurrentUserId() ?: return@launch
             cachedUserId = userId
-            mealRepository.getMealTemplates(userId)
-                .onSuccess { templates ->
-                    _uiState.update { it.copy(templates = templates) }
-                }
+            val userTemplates = mealRepository.getMealTemplates(userId).getOrDefault(emptyList())
+            _uiState.update { it.copy(templates = userTemplates) }
+
+            // デフォルトテンプレートをバックグラウンドで取得
+            loadDefaultMealTemplates()
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun loadDefaultMealTemplates() {
+        screenModelScope.launch {
+            try {
+                val result = invokeCloudFunction(
+                    region = "asia-northeast2",
+                    functionName = "getQuestTemplates",
+                    data = emptyMap()
+                )
+                val templatesList = (result["templates"] as? List<*>)
+                    ?.mapNotNull { it as? Map<String, Any?> } ?: emptyList()
+
+                val defaults = templatesList.filter { (it["type"] as? String) == "MEAL" }.map { t ->
+                    val templateId = t["templateId"] as? String ?: ""
+                    val title = t["title"] as? String ?: ""
+                    val items = (t["items"] as? List<Map<String, Any?>>)?.map { item ->
+                        MealItem(
+                            name = item["foodName"] as? String ?: "",
+                            amount = (item["amount"] as? Number)?.toFloat() ?: 0f,
+                            unit = item["unit"] as? String ?: "g",
+                            calories = (item["calories"] as? Number)?.toInt() ?: 0,
+                            protein = (item["protein"] as? Number)?.toFloat() ?: 0f,
+                            carbs = (item["carbs"] as? Number)?.toFloat() ?: 0f,
+                            fat = (item["fat"] as? Number)?.toFloat() ?: 0f,
+                            fiber = (item["fiber"] as? Number)?.toFloat() ?: 0f
+                        )
+                    } ?: emptyList()
+                    val macros = t["totalMacros"] as? Map<String, Any?>
+                    MealTemplate(
+                        id = "default_$templateId",
+                        userId = "default",
+                        name = title,
+                        items = items,
+                        totalCalories = (macros?.get("calories") as? Number)?.toInt() ?: items.sumOf { it.calories },
+                        totalProtein = (macros?.get("protein") as? Number)?.toFloat() ?: items.map { it.protein }.sum(),
+                        totalCarbs = (macros?.get("carbs") as? Number)?.toFloat() ?: items.map { it.carbs }.sum(),
+                        totalFat = (macros?.get("fat") as? Number)?.toFloat() ?: items.map { it.fat }.sum(),
+                        createdAt = 0
+                    )
+                }
+                _uiState.update { it.copy(defaultTemplates = defaults) }
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun toggleDefaultTemplates() {
+        _uiState.update { it.copy(showDefaultTemplates = !it.showDefaultTemplates) }
     }
 
     fun setPostWorkout(isPostWorkout: Boolean) {
@@ -339,23 +393,100 @@ class AddMealScreenModel(
 
     fun applyTemplate(template: MealTemplate) {
         _uiState.update { state ->
-            val totalGL = template.items.sumOf { item ->
+            // FoodDBから全栄養素（ミクロ含む）を取得してエンリッチ
+            val enrichedItems = template.items.map { item -> enrichItemFromFoodDb(item) }
+
+            val totalGL = enrichedItems.sumOf { item ->
                 val carbs = item.carbs.toDouble()
                 if (item.gi > 0 && carbs > 0) (item.gi * carbs / 100) else 0.0
             }.toFloat()
 
             state.copy(
                 mealName = template.name,
-                items = template.items,
-                totalCalories = template.totalCalories,
-                totalProtein = template.totalProtein,
-                totalCarbs = template.totalCarbs,
-                totalFat = template.totalFat,
+                items = enrichedItems,
+                totalCalories = enrichedItems.sumOf { it.calories },
+                totalProtein = enrichedItems.sumOf { it.protein.toDouble() }.toFloat(),
+                totalCarbs = enrichedItems.sumOf { it.carbs.toDouble() }.toFloat(),
+                totalFat = enrichedItems.sumOf { it.fat.toDouble() }.toFloat(),
+                totalFiber = enrichedItems.sumOf { it.fiber.toDouble() }.toFloat(),
                 totalGL = totalGL,
                 isFromTemplate = true,
                 showTemplates = false
             )
         }
+    }
+
+    fun startEditingTemplate(template: MealTemplate) {
+        applyTemplate(template)
+        _uiState.update { it.copy(editingTemplateId = template.id) }
+    }
+
+    fun loadAndEditTemplate(templateId: String) {
+        screenModelScope.launch(exceptionHandler) {
+            val userId = cachedUserId ?: authRepository.getCurrentUserId() ?: return@launch
+            mealRepository.getMealTemplates(userId).onSuccess { templates ->
+                val template = templates.find { it.id == templateId }
+                if (template != null) {
+                    startEditingTemplate(template)
+                }
+            }
+        }
+    }
+
+    /**
+     * FoodDatabase から per-100g 栄養素を取得し、テンプレートの量でスケーリング
+     */
+    private fun enrichItemFromFoodDb(item: MealItem): MealItem {
+        val foodData = FoodDatabase.getFoodByName(item.name) ?: return item
+        // グラム換算（卵など unit="個" の場合 servingSizes で変換）
+        val grams = foodData.toGrams(item.amount, item.unit)
+        val ratio = grams / 100f
+
+        return item.copy(
+            calories = (foodData.calories * ratio).toInt(),
+            protein = foodData.protein * ratio,
+            carbs = foodData.carbs * ratio,
+            fat = foodData.fat * ratio,
+            fiber = foodData.fiber * ratio,
+            solubleFiber = foodData.solubleFiber * ratio,
+            insolubleFiber = foodData.insolubleFiber * ratio,
+            sugar = foodData.sugar * ratio,
+            gi = foodData.gi ?: 0,
+            diaas = foodData.diaas,
+            saturatedFat = foodData.saturatedFat * ratio,
+            monounsaturatedFat = foodData.monounsaturatedFat * ratio,
+            polyunsaturatedFat = foodData.polyunsaturatedFat * ratio,
+            vitamins = mapOf(
+                "A" to foodData.vitaminA * ratio,
+                "B1" to foodData.vitaminB1 * ratio,
+                "B2" to foodData.vitaminB2 * ratio,
+                "B6" to foodData.vitaminB6 * ratio,
+                "B12" to foodData.vitaminB12 * ratio,
+                "C" to foodData.vitaminC * ratio,
+                "D" to foodData.vitaminD * ratio,
+                "E" to foodData.vitaminE * ratio,
+                "K" to foodData.vitaminK * ratio,
+                "niacin" to foodData.niacin * ratio,
+                "pantothenicAcid" to foodData.pantothenicAcid * ratio,
+                "biotin" to foodData.biotin * ratio,
+                "folicAcid" to foodData.folicAcid * ratio
+            ),
+            minerals = mapOf(
+                "sodium" to foodData.sodium * ratio,
+                "potassium" to foodData.potassium * ratio,
+                "calcium" to foodData.calcium * ratio,
+                "magnesium" to foodData.magnesium * ratio,
+                "phosphorus" to foodData.phosphorus * ratio,
+                "iron" to foodData.iron * ratio,
+                "zinc" to foodData.zinc * ratio,
+                "copper" to foodData.copper * ratio,
+                "manganese" to foodData.manganese * ratio,
+                "iodine" to foodData.iodine * ratio,
+                "selenium" to foodData.selenium * ratio,
+                "chromium" to foodData.chromium * ratio,
+                "molybdenum" to foodData.molybdenum * ratio
+            )
+        )
     }
 
     /**
@@ -496,36 +627,71 @@ class AddMealScreenModel(
             _uiState.update { it.copy(isSavingTemplate = true, templateSavedSuccessfully = false) }
 
             val state = _uiState.value
-            val template = MealTemplate(
-                id = "",
-                userId = userId,
-                name = name,
-                items = state.items,
-                totalCalories = state.totalCalories,
-                totalProtein = state.totalProtein,
-                totalCarbs = state.totalCarbs,
-                totalFat = state.totalFat,
-                createdAt = DateUtil.currentTimestamp()
-            )
+            val editingId = state.editingTemplateId
 
-            mealRepository.saveMealTemplate(template)
-                .onSuccess {
-                    _uiState.update {
-                        it.copy(
-                            isSavingTemplate = false,
-                            templateSavedSuccessfully = true
-                        )
+            if (editingId != null) {
+                // 既存テンプレートを上書き更新
+                val template = MealTemplate(
+                    id = editingId,
+                    userId = userId,
+                    name = name,
+                    items = state.items,
+                    totalCalories = state.totalCalories,
+                    totalProtein = state.totalProtein,
+                    totalCarbs = state.totalCarbs,
+                    totalFat = state.totalFat,
+                    createdAt = DateUtil.currentTimestamp()
+                )
+                mealRepository.updateMealTemplate(template)
+                    .onSuccess {
+                        _uiState.update {
+                            it.copy(
+                                isSavingTemplate = false,
+                                templateSavedSuccessfully = true
+                            )
+                        }
+                        loadTemplates()
                     }
-                    loadTemplates()
-                }
-                .onFailure { e ->
-                    _uiState.update {
-                        it.copy(
-                            isSavingTemplate = false,
-                            error = "テンプレートの保存に失敗しました: ${e.message}"
-                        )
+                    .onFailure { e ->
+                        _uiState.update {
+                            it.copy(
+                                isSavingTemplate = false,
+                                error = "テンプレートの更新に失敗しました: ${e.message}"
+                            )
+                        }
                     }
-                }
+            } else {
+                // 新規テンプレート作成
+                val template = MealTemplate(
+                    id = "",
+                    userId = userId,
+                    name = name,
+                    items = state.items,
+                    totalCalories = state.totalCalories,
+                    totalProtein = state.totalProtein,
+                    totalCarbs = state.totalCarbs,
+                    totalFat = state.totalFat,
+                    createdAt = DateUtil.currentTimestamp()
+                )
+                mealRepository.saveMealTemplate(template)
+                    .onSuccess {
+                        _uiState.update {
+                            it.copy(
+                                isSavingTemplate = false,
+                                templateSavedSuccessfully = true
+                            )
+                        }
+                        loadTemplates()
+                    }
+                    .onFailure { e ->
+                        _uiState.update {
+                            it.copy(
+                                isSavingTemplate = false,
+                                error = "テンプレートの保存に失敗しました: ${e.message}"
+                            )
+                        }
+                    }
+            }
         }
     }
 

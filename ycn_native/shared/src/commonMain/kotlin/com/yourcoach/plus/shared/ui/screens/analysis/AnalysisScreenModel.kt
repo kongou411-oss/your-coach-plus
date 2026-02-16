@@ -66,7 +66,7 @@ data class AnalysisUiState(
     // Level
     val levelUpMessage: String? = null
 ) {
-    val totalCredits: Int get() = creditInfo?.totalCredits ?: 0
+    val totalCredits: Int get() = creditInfo?.availableCredits ?: 0
 }
 
 /**
@@ -208,8 +208,8 @@ class AnalysisScreenModel(
         // 二重呼び出し防止
         if (state.isAnalyzing) return
 
-        // Credit check
-        if (creditInfo == null || creditInfo.totalCredits <= 0) {
+        // Credit check（非プレミアムはfreeCreditsのみ）
+        if (creditInfo == null || creditInfo.availableCredits <= 0) {
             _uiState.update { it.copy(error = "クレジットが不足しています") }
             return
         }
@@ -259,9 +259,15 @@ class AnalysisScreenModel(
                         it.copy(
                             aiAnalysis = analysisText,
                             isAnalyzing = false,
-                            creditInfo = it.creditInfo?.copy(
-                                totalCredits = response.remainingCredits ?: it.creditInfo.totalCredits
-                            )
+                            creditInfo = it.creditInfo?.let { info ->
+                                val newFree = if (info.freeCredits >= 1) info.freeCredits - 1 else info.freeCredits
+                                val newPaid = if (info.freeCredits < 1 && info.isPremiumTier) maxOf(0, info.paidCredits - 1) else info.paidCredits
+                                info.copy(
+                                    totalCredits = response.remainingCredits ?: (newFree + newPaid),
+                                    freeCredits = newFree,
+                                    paidCredits = newPaid
+                                )
+                            }
                         )
                     }
 
@@ -776,8 +782,8 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
 
         if (question.isBlank()) return
 
-        // Credit check
-        if (state.creditInfo == null || state.creditInfo.totalCredits <= 0) {
+        // Credit check（非プレミアムはfreeCreditsのみ）
+        if (state.creditInfo == null || state.creditInfo.availableCredits <= 0) {
             _uiState.update { it.copy(error = "クレジットが不足しています") }
             return
         }
@@ -834,9 +840,15 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
                         it.copy(
                             conversationHistory = updatedHistory,
                             isQaLoading = false,
-                            creditInfo = it.creditInfo?.copy(
-                                totalCredits = response.remainingCredits ?: it.creditInfo.totalCredits
-                            )
+                            creditInfo = it.creditInfo?.let { info ->
+                                val newFree = if (info.freeCredits >= 1) info.freeCredits - 1 else info.freeCredits
+                                val newPaid = if (info.freeCredits < 1 && info.isPremiumTier) maxOf(0, info.paidCredits - 1) else info.paidCredits
+                                info.copy(
+                                    totalCredits = response.remainingCredits ?: (newFree + newPaid),
+                                    freeCredits = newFree,
+                                    paidCredits = newPaid
+                                )
+                            }
                         )
                     }
 

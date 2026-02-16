@@ -95,7 +95,8 @@ interface UserRepository {
         userId: String,
         mealSlotConfig: MealSlotConfig,
         workoutSlotConfig: WorkoutSlotConfig,
-        routineTemplateConfig: RoutineTemplateConfig
+        routineTemplateConfig: RoutineTemplateConfig,
+        questAutoGenEnabled: Boolean = false
     ): Result<Unit>
 
     /**

@@ -61,7 +61,7 @@ private val NUMBER_FIELDS = listOf(
     "postWorkoutProtein", "postWorkoutFat", "postWorkoutCarbs"
 )
 
-private val BOOLEAN_FIELDS = listOf("onboardingCompleted")
+private val BOOLEAN_FIELDS = listOf("onboardingCompleted", "questAutoGenEnabled")
 
 private val LIST_FIELDS = listOf(
     "dietaryPreferences", "allergies",
