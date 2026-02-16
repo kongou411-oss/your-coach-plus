@@ -267,6 +267,12 @@ class ProfileEditScreen : Screen {
                                 )
                             }
                         }
+                        Text(
+                            "※ トレーニング前後のプロテインや間食も1食に含みます",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -471,7 +477,7 @@ class ProfileEditScreen : Screen {
                             value = uiState.favoriteFoods,
                             onValueChange = { screenModel.updateFavoriteFoods(it) },
                             label = { Text("よく食べる食材") },
-                            supportingText = { Text("カンマ区切り") },
+                            supportingText = { Text("スペース区切り") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)
@@ -481,7 +487,7 @@ class ProfileEditScreen : Screen {
                             value = uiState.ngFoods,
                             onValueChange = { screenModel.updateNgFoods(it) },
                             label = { Text("NG食材") },
-                            supportingText = { Text("カンマ区切り") },
+                            supportingText = { Text("スペース区切り") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp)

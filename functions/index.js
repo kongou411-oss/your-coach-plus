@@ -1021,8 +1021,6 @@ exports.debugAddCredits = onCall({
 
     const newTotal = currentFreeCredits + amount + currentPaidCredits;
 
-    console.log(`[DEBUG] User ${userId} added ${amount} credits. New total: ${newTotal}`);
-
     return {
       success: true,
       message: `${amount}クレジットを追加しました`,
@@ -1052,8 +1050,11 @@ exports.sendFeedback = onCall({
   }
 
   // フィードバック種類の日本語ラベル
-  const typeLabel = type === "bug_report" ? "バグ・不具合報告" : "機能リクエスト・要望";
-  const typeEmoji = type === "bug_report" ? "🐛" : "💡";
+  const typeLabels = {"bug_report": "バグ・不具合報告", "feature_request": "機能リクエスト・要望", "inquiry": "問い合わせ"};
+  const typeEmojis = {"bug_report": "🐛", "feature_request": "💡", "inquiry": "📩"};
+  const typeColors = {"bug_report": "#FFEBEE", "feature_request": "#E8F5E9", "inquiry": "#E3F2FD"};
+  const typeLabel = typeLabels[type] || "その他";
+  const typeEmoji = typeEmojis[type] || "📝";
 
   try {
     // Gmail設定（シークレットから取得）
@@ -1072,7 +1073,7 @@ exports.sendFeedback = onCall({
       subject: `${typeEmoji} [Your Coach+] ${typeLabel} from ${userEmail}`,
       html: `
         <h2>${typeEmoji} Your Coach+ フィードバック</h2>
-        <p><strong>種類:</strong> <span style="background: ${type === "bug_report" ? "#FFEBEE" : "#E8F5E9"}; padding: 4px 8px; border-radius: 4px;">${typeLabel}</span></p>
+        <p><strong>種類:</strong> <span style="background: ${typeColors[type] || "#F5F5F5"}; padding: 4px 8px; border-radius: 4px;">${typeLabel}</span></p>
         <p><strong>ユーザーID:</strong> ${userId}</p>
         <p><strong>メールアドレス:</strong> ${userEmail}</p>
         <p><strong>送信日時:</strong> ${new Date(timestamp).toLocaleString("ja-JP", {timeZone: "Asia/Tokyo"})}</p>
@@ -3157,7 +3158,7 @@ exports.getAdminAnalytics = onCall({
   const { adminPassword, period } = request.data;
 
   // 管理者PIN認証
-  if (adminPassword !== '0910') {
+  if (adminPassword !== process.env.ADMIN_PASSWORD) {
     throw new HttpsError("permission-denied", "管理者権限が必要です");
   }
 

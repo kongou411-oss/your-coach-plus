@@ -35,7 +35,8 @@ fun ArticleDetailSheet(
     userCredits: Int,
     onDismiss: () -> Unit,
     onMarkCompleted: () -> Unit,
-    onPurchase: () -> Unit
+    onPurchase: () -> Unit,
+    onNavigateToSubscription: () -> Unit = {}
 ) {
     val canAccess = !article.isPremium || isPurchased
 
@@ -201,6 +202,7 @@ fun ArticleDetailSheet(
                     userCredits = userCredits,
                     isLoading = isLoading,
                     onPurchase = onPurchase,
+                    onNavigateToSubscription = onNavigateToSubscription,
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
             }
@@ -285,6 +287,7 @@ private fun PremiumPurchaseSection(
     userCredits: Int,
     isLoading: Boolean,
     onPurchase: () -> Unit,
+    onNavigateToSubscription: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val purchaseCost = 50
@@ -381,11 +384,11 @@ private fun PremiumPurchaseSection(
             }
         } else {
             OutlinedButton(
-                onClick = { /* TODO: クレジット購入画面へ遷移 */ },
+                onClick = onNavigateToSubscription,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("クレジットが不足しています")
+                Text("クレジットを購入する")
             }
         }
 

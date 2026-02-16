@@ -91,7 +91,11 @@ data class SubscriptionScreen(
                 ) {
                     // ヘッダーカード
                     item {
-                        PremiumHeaderCard(isPremium = uiState.isPremium)
+                        PremiumHeaderCard(
+                            isPremium = uiState.isPremium,
+                            isOrganizationPremium = uiState.isOrganizationPremium,
+                            organizationName = uiState.organizationName
+                        )
                     }
 
                     // 機能一覧
@@ -106,8 +110,8 @@ data class SubscriptionScreen(
                         }
                     }
 
-                    // サブスクリプションプラン
-                    if (uiState.connectionState == BillingConnectionState.CONNECTED && !uiState.isPremium) {
+                    // サブスクリプションプラン（所属プレミアムの場合は非表示）
+                    if (uiState.connectionState == BillingConnectionState.CONNECTED && !uiState.isPremium && !uiState.isOrganizationPremium) {
                         item {
                             Text(
                                 text = "プランを選択",
@@ -177,11 +181,28 @@ data class SubscriptionScreen(
                         }
                     }
 
-                    // 既にPremiumの場合
-                    if (uiState.isPremium && uiState.subscriptionStatus != null) {
+                    // 所属プレミアムの場合
+                    if (uiState.isOrganizationPremium) {
+                        item {
+                            OrganizationPremiumCard(
+                                organizationName = uiState.organizationName ?: ""
+                            )
+                        }
+                    }
+
+                    // サブスクPremiumの場合
+                    if (uiState.isPremium && !uiState.isOrganizationPremium && uiState.subscriptionStatus != null) {
                         item {
                             CurrentSubscriptionCard(status = uiState.subscriptionStatus!!)
                         }
+                    }
+
+                    // 購入復元
+                    item {
+                        RestorePurchasesButton(
+                            isRestoring = uiState.isRestoring,
+                            onRestore = { screenModel.restorePurchases() }
+                        )
                     }
 
                     // フッター
@@ -279,7 +300,11 @@ data class SubscriptionScreen(
 // ========== コンポーネント ==========
 
 @Composable
-private fun PremiumHeaderCard(isPremium: Boolean) {
+private fun PremiumHeaderCard(
+    isPremium: Boolean,
+    isOrganizationPremium: Boolean = false,
+    organizationName: String? = null
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -323,7 +348,19 @@ private fun PremiumHeaderCard(isPremium: Boolean) {
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
-            if (isPremium) {
+            if (isOrganizationPremium) {
+                Text(
+                    text = "プレミアム会員",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "${organizationName ?: "所属組織"} 提供プラン",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else if (isPremium) {
                 Text(
                     text = "プレミアム会員",
                     style = MaterialTheme.typography.headlineSmall,
@@ -845,6 +882,49 @@ private fun PremiumPromotionCard() {
 }
 
 @Composable
+private fun OrganizationPremiumCard(organizationName: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Business,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "所属プラン",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = organizationName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "所属組織によりプレミアム機能が有効です。サブスクリプション契約は不要です。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun CurrentSubscriptionCard(status: SubscriptionStatus) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -891,6 +971,39 @@ private fun CurrentSubscriptionCard(status: SubscriptionStatus) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+@Composable
+private fun RestorePurchasesButton(
+    isRestoring: Boolean,
+    onRestore: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        TextButton(
+            onClick = onRestore,
+            enabled = !isRestoring
+        ) {
+            if (isRestoring) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("復元中...")
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("以前の購入を復元")
+            }
         }
     }
 }

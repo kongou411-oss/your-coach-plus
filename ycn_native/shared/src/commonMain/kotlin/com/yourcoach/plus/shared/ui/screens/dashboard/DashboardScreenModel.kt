@@ -207,14 +207,19 @@ class DashboardScreenModel(
                     if (authUser != null) {
                         try {
                             userRepository.observeUser(authUser.uid).collect { user ->
+                                // プロフィール変更時にターゲットを再計算
+                                val targets = calculateTargets(
+                                    user,
+                                    _uiState.value.todayRoutine,
+                                    _uiState.value.isManualRestDay
+                                )
                                 _uiState.update { state ->
-                                    val profile = user?.profile
                                     state.copy(
                                         user = user,
-                                        targetCalories = profile?.targetCalories ?: 2500,
-                                        targetProtein = profile?.targetProtein ?: 180f,
-                                        targetFat = profile?.targetFat ?: 80f,
-                                        targetCarbs = profile?.targetCarbs ?: 300f
+                                        targetCalories = targets.calories,
+                                        targetProtein = targets.protein,
+                                        targetFat = targets.fat,
+                                        targetCarbs = targets.carbs
                                     )
                                 }
                             }

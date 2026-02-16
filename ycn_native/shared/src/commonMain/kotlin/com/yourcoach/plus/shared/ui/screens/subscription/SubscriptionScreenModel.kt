@@ -23,11 +23,14 @@ import kotlinx.serialization.Serializable
 data class SubscriptionUiState(
     val isLoading: Boolean = true,
     val isPremium: Boolean = false,
+    val isOrganizationPremium: Boolean = false,
+    val organizationName: String? = null,
     val currentPlan: SubscriptionPlan = SubscriptionPlan.FREE,
     val freeTrialStatus: FreeTrialStatus = FreeTrialStatus(false, 0, false),
     val products: List<ProductInfo> = emptyList(),
     val subscriptionStatus: SubscriptionStatus? = null,
     val isPurchasing: Boolean = false,
+    val isRestoring: Boolean = false,
     val purchaseSuccess: Boolean = false,
     val error: String? = null,
     val connectionState: BillingConnectionState = BillingConnectionState.DISCONNECTED
@@ -99,9 +102,12 @@ class SubscriptionScreenModel(
                 println("SubscriptionScreenModel: Failed to get user: ${e.message}")
             }
 
+            // 所属プレミアム判定
+            val isOrgPremium = !organizationName.isNullOrBlank()
+
             // Premium判定
             val usageDays = if (trialStatus.isInTrial) trialStatus.daysRemaining else 8
-            val isPremium = PremiumService.isPremiumUser(
+            val isPremium = isOrgPremium || PremiumService.isPremiumUser(
                 subscriptionStatus = subscriptionStatus,
                 usageDays = usageDays,
                 organizationName = organizationName
@@ -111,6 +117,8 @@ class SubscriptionScreenModel(
                 it.copy(
                     freeTrialStatus = trialStatus,
                     isPremium = isPremium,
+                    isOrganizationPremium = isOrgPremium,
+                    organizationName = organizationName,
                     currentPlan = if (isPremium) SubscriptionPlan.PREMIUM else SubscriptionPlan.FREE
                 )
             }
@@ -152,10 +160,12 @@ class SubscriptionScreenModel(
             billingRepository.getSubscriptionStatus()
                 .onSuccess { status ->
                     _uiState.update {
+                        // 所属プレミアムは上書きしない
+                        val premium = it.isOrganizationPremium || status.isActive
                         it.copy(
                             subscriptionStatus = status,
-                            isPremium = status.isActive,
-                            currentPlan = if (status.isActive) SubscriptionPlan.PREMIUM else SubscriptionPlan.FREE
+                            isPremium = premium,
+                            currentPlan = if (premium) SubscriptionPlan.PREMIUM else SubscriptionPlan.FREE
                         )
                     }
                 }
@@ -331,6 +341,27 @@ class SubscriptionScreenModel(
         )
 
         functions.httpsCallable("updatePremiumStatusFromReceipt").invoke(request)
+    }
+
+    /**
+     * 購入を復元
+     */
+    fun restorePurchases() {
+        screenModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isRestoring = true, error = null) }
+
+            billingRepository.restorePurchases()
+                .onSuccess {
+                    // 復元後にサブスクリプション状態を再確認
+                    checkSubscriptionStatus()
+                    _uiState.update { it.copy(isRestoring = false) }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(isRestoring = false, error = error.message)
+                    }
+                }
+        }
     }
 
     /**

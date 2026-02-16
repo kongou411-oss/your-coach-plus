@@ -7,10 +7,9 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 enum class PgBaseCategory(val displayName: String, val emoji: String) {
-    NUTRITION("栄養の基本", "🥗"),
     PROTEIN("タンパク質", "🍖"),
-    CARBS("炭水化物", "🍚"),
     FAT("脂質", "🥑"),
+    CARBS("炭水化物", "🍚"),
     VITAMINS("ビタミン・ミネラル", "💊"),
     TRAINING("トレーニング", "💪"),
     RECOVERY("回復・休養", "😴"),
@@ -27,7 +26,7 @@ data class PgBaseArticle(
     val summary: String = "",
     val content: String = "",           // 記事本文（Markdown）- 後方互換性のため残す
     val contentUrl: String = "",        // 記事HTML URL（優先）
-    val category: PgBaseCategory = PgBaseCategory.NUTRITION,
+    val category: PgBaseCategory = PgBaseCategory.PROTEIN,
     val readingTime: Int = 5,           // 読了予想時間（分）
     val isPremium: Boolean = false,     // プレミアム記事かどうか
     val order: Int = 0,                 // 表示順

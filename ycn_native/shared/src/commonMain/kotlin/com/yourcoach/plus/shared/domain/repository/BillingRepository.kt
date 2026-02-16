@@ -46,6 +46,11 @@ interface BillingRepository {
     suspend fun getPurchaseHistory(): Result<List<PurchaseHistoryItem>>
 
     /**
+     * 購入を復元（iOS: AppStore.sync / Android: 購入状態再取得）
+     */
+    suspend fun restorePurchases(): Result<Unit>
+
+    /**
      * 接続を開始
      */
     fun startConnection()

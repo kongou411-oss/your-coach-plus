@@ -55,8 +55,7 @@ class FirestoreCustomQuestRepository : CustomQuestRepository {
                 if (doc.exists) {
                     try {
                         doc.toCustomQuest()
-                    } catch (e: Throwable) {
-                        println("CQ_DEBUG: observe parse failed: ${e::class.simpleName}: ${e.message}")
+                    } catch (_: Throwable) {
                         null
                     }
                 } else {
@@ -67,27 +66,17 @@ class FirestoreCustomQuestRepository : CustomQuestRepository {
 
     override suspend fun getCustomQuest(userId: String, date: String): Result<CustomQuest?> {
         return try {
-            println("CQ_DEBUG: getCustomQuest userId=$userId, date=$date")
             val doc = customQuestsCollection(userId).document(date).get()
-            println("CQ_DEBUG: date doc exists=${doc.exists}")
             if (doc.exists) {
-                val quest = doc.toCustomQuest()
-                println("CQ_DEBUG: parsed OK, slots=${quest.slots.keys}, executedItems=${quest.executedItems.keys}")
-                return Result.success(quest)
+                return Result.success(doc.toCustomQuest())
             }
             val defaultDoc = customQuestsCollection(userId).document("_default").get()
-            println("CQ_DEBUG: _default doc exists=${defaultDoc.exists}")
             if (defaultDoc.exists) {
-                val quest = defaultDoc.toCustomQuest().copy(date = date)
-                println("CQ_DEBUG: parsed _default OK, slots=${quest.slots.keys}")
-                Result.success(quest)
+                Result.success(defaultDoc.toCustomQuest().copy(date = date))
             } else {
-                println("CQ_DEBUG: no custom quest found")
                 Result.success(null)
             }
         } catch (e: Throwable) {
-            println("CQ_DEBUG: EXCEPTION: ${e::class.simpleName}: ${e.message}")
-            e.printStackTrace()
             Result.failure(AppError.DatabaseError("カスタムクエストの取得に失敗: ${e.message}", e as? Exception ?: Exception(e)))
         }
     }
@@ -111,15 +100,10 @@ class FirestoreCustomQuestRepository : CustomQuestRepository {
     // ========== Mapping ==========
 
     private fun DocumentSnapshot.toCustomQuest(): CustomQuest {
-        println("CQ_DEBUG: toCustomQuest START, id=$id")
-
         // 方法1: @Serializable DTO で一括デシリアライズ
         val questDoc = try {
-            val doc = data(CustomQuestDoc.serializer())
-            println("CQ_DEBUG: typed deserialize OK, slots=${doc.slots.keys}")
-            doc
-        } catch (e: Throwable) {
-            println("CQ_DEBUG: typed deserialize FAILED: ${e::class.simpleName}: ${e.message}")
+            data(CustomQuestDoc.serializer())
+        } catch (_: Throwable) {
             null
         }
 
@@ -135,18 +119,15 @@ class FirestoreCustomQuestRepository : CustomQuestRepository {
         }
 
         // 方法2: フォールバック（個別フィールド読み取り）
-        println("CQ_DEBUG: falling back to field-by-field parsing")
         val slots = try {
             get<Map<String, CustomQuestSlot>?>("slots") ?: emptyMap()
-        } catch (e: Throwable) {
-            println("CQ_DEBUG: slots typed get FAILED: ${e::class.simpleName}: ${e.message}")
+        } catch (_: Throwable) {
             emptyMap()
         }
 
         val executedItems = try {
             get<Map<String, List<Int>>?>("executedItems") ?: emptyMap()
-        } catch (e: Throwable) {
-            println("CQ_DEBUG: executedItems typed get FAILED: ${e.message}")
+        } catch (_: Throwable) {
             emptyMap()
         }
 

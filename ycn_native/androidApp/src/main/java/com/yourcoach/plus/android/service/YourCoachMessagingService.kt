@@ -31,8 +31,6 @@ class YourCoachMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d(TAG, "New FCM token: $token")
 
-        // TODO: トークンをサーバー（Firestore）に保存
-        // サーバーにトークンを送信して、ユーザーのFCMトークン配列に追加
         sendTokenToServer(token)
     }
 
@@ -159,7 +157,7 @@ class YourCoachMessagingService : FirebaseMessagingService() {
         )
 
         val notification = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: カスタムアイコンに置き換え
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

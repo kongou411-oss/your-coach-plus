@@ -322,6 +322,12 @@ class GooglePlayBillingRepository(
             }
         }
 
+    override suspend fun restorePurchases(): Result<Unit> {
+        ensureConnected()
+        // Google Playでは購入状態を再取得することで復元とする
+        return getSubscriptionStatus().map { }
+    }
+
     private suspend fun ensureConnected() {
         if (_connectionState.value != BillingConnectionState.CONNECTED) {
             startConnection()

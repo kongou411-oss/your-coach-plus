@@ -157,11 +157,11 @@ enum class GraphType {
 }
 
 enum class GraphPeriod(val days: Int, val label: String) {
-    WEEK(7, "7D"),
-    MONTH(30, "1M"),
-    THREE_MONTHS(90, "3M"),
-    SIX_MONTHS(180, "6M"),
-    YEAR(365, "1Y");
+    WEEK(7, "7日"),
+    MONTH(30, "1ヶ月"),
+    THREE_MONTHS(90, "3ヶ月"),
+    SIX_MONTHS(180, "6ヶ月"),
+    YEAR(365, "1年");
 
     val titleSuffix: String get() = when (this) {
         WEEK -> "過去7日間"; MONTH -> "過去1ヶ月"

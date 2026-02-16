@@ -7,8 +7,10 @@ import com.yourcoach.plus.shared.util.DateUtil
 import com.yourcoach.plus.shared.util.invokeCloudFunction
 import com.yourcoach.plus.shared.util.getProfileMap
 import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.FirebaseFirestore
+import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -137,63 +139,62 @@ class FirestoreUserRepository : UserRepository {
      */
     override suspend fun updateProfile(userId: String, profile: UserProfile): Result<Unit> {
         return try {
-            val profileMap = mapOf(
-                "nickname" to profile.nickname,
-                "gender" to profile.gender?.name,
-                "birthYear" to profile.birthYear,
-                "age" to profile.age,
-                "height" to profile.height,
-                "weight" to profile.weight,
-                "bodyFatPercentage" to profile.bodyFatPercentage,
-                "targetWeight" to profile.targetWeight,
-                "activityLevel" to profile.activityLevel?.name,
-                "goal" to profile.goal?.name,
-                "style" to profile.style,
-                "idealWeight" to profile.idealWeight,
-                "idealBodyFatPercentage" to profile.idealBodyFatPercentage,
-                "targetCalories" to profile.targetCalories,
-                "targetProtein" to profile.targetProtein,
-                "targetFat" to profile.targetFat,
-                "targetCarbs" to profile.targetCarbs,
-                "proteinRatioPercent" to profile.proteinRatioPercent,
-                "fatRatioPercent" to profile.fatRatioPercent,
-                "carbRatioPercent" to profile.carbRatioPercent,
-                "calorieAdjustment" to profile.calorieAdjustment,
-                "dietaryPreferences" to profile.dietaryPreferences,
-                "allergies" to profile.allergies,
-                "preferredProteinSources" to profile.preferredProteinSources,
-                "preferredCarbSources" to profile.preferredCarbSources,
-                "preferredFatSources" to profile.preferredFatSources,
-                "avoidFoods" to profile.avoidFoods,
-                "trainingStyle" to profile.trainingStyle.name,
-                "onboardingCompleted" to profile.onboardingCompleted,
-                "favoriteFoods" to profile.favoriteFoods,
-                "ngFoods" to profile.ngFoods,
-                "budgetTier" to profile.budgetTier,
-                "mealsPerDay" to profile.mealsPerDay,
-                "trainingAfterMeal" to profile.trainingAfterMeal,
-                "preWorkoutProtein" to profile.preWorkoutProtein,
-                "preWorkoutFat" to profile.preWorkoutFat,
-                "preWorkoutCarbs" to profile.preWorkoutCarbs,
-                "postWorkoutProtein" to profile.postWorkoutProtein,
-                "postWorkoutFat" to profile.postWorkoutFat,
-                "postWorkoutCarbs" to profile.postWorkoutCarbs,
-                "wakeUpTime" to profile.wakeUpTime,
-                "sleepTime" to profile.sleepTime,
-                "trainingTime" to profile.trainingTime,
-                "trainingDuration" to profile.trainingDuration
-            )
-            val profileData = mapOf("profile" to profileMap)
+            // ドット記法で個別フィールドを更新（既存フィールドを保持）
+            val fieldMap = mutableMapOf<String, Any?>()
+            fieldMap["profile.nickname"] = profile.nickname
+            fieldMap["profile.gender"] = profile.gender?.name
+            fieldMap["profile.birthYear"] = profile.birthYear
+            fieldMap["profile.age"] = profile.age
+            fieldMap["profile.height"] = profile.height
+            fieldMap["profile.weight"] = profile.weight
+            fieldMap["profile.bodyFatPercentage"] = profile.bodyFatPercentage
+            fieldMap["profile.targetWeight"] = profile.targetWeight
+            fieldMap["profile.activityLevel"] = profile.activityLevel?.name
+            fieldMap["profile.goal"] = profile.goal?.name
+            fieldMap["profile.style"] = profile.style
+            fieldMap["profile.idealWeight"] = profile.idealWeight
+            fieldMap["profile.idealBodyFatPercentage"] = profile.idealBodyFatPercentage
+            fieldMap["profile.targetCalories"] = profile.targetCalories
+            fieldMap["profile.targetProtein"] = profile.targetProtein
+            fieldMap["profile.targetFat"] = profile.targetFat
+            fieldMap["profile.targetCarbs"] = profile.targetCarbs
+            fieldMap["profile.proteinRatioPercent"] = profile.proteinRatioPercent
+            fieldMap["profile.fatRatioPercent"] = profile.fatRatioPercent
+            fieldMap["profile.carbRatioPercent"] = profile.carbRatioPercent
+            fieldMap["profile.calorieAdjustment"] = profile.calorieAdjustment
+            fieldMap["profile.dietaryPreferences"] = profile.dietaryPreferences
+            fieldMap["profile.allergies"] = profile.allergies
+            fieldMap["profile.preferredProteinSources"] = profile.preferredProteinSources
+            fieldMap["profile.preferredCarbSources"] = profile.preferredCarbSources
+            fieldMap["profile.preferredFatSources"] = profile.preferredFatSources
+            fieldMap["profile.avoidFoods"] = profile.avoidFoods
+            fieldMap["profile.trainingStyle"] = profile.trainingStyle.name
+            fieldMap["profile.onboardingCompleted"] = profile.onboardingCompleted
+            fieldMap["profile.favoriteFoods"] = profile.favoriteFoods
+            fieldMap["profile.ngFoods"] = profile.ngFoods
+            fieldMap["profile.budgetTier"] = profile.budgetTier
+            fieldMap["profile.mealsPerDay"] = profile.mealsPerDay
+            fieldMap["profile.trainingAfterMeal"] = profile.trainingAfterMeal
+            fieldMap["profile.preWorkoutProtein"] = profile.preWorkoutProtein
+            fieldMap["profile.preWorkoutFat"] = profile.preWorkoutFat
+            fieldMap["profile.preWorkoutCarbs"] = profile.preWorkoutCarbs
+            fieldMap["profile.postWorkoutProtein"] = profile.postWorkoutProtein
+            fieldMap["profile.postWorkoutFat"] = profile.postWorkoutFat
+            fieldMap["profile.postWorkoutCarbs"] = profile.postWorkoutCarbs
+            fieldMap["profile.wakeUpTime"] = profile.wakeUpTime
+            fieldMap["profile.sleepTime"] = profile.sleepTime
+            fieldMap["profile.trainingTime"] = profile.trainingTime
+            fieldMap["profile.trainingDuration"] = profile.trainingDuration
+
+            // null値をフィルタリング（既存フィールドを削除しない）
+            val updateData = fieldMap.filterValues { it != null }
 
             try {
-                // まずupdate()を試行（既存ドキュメント用、セキュリティルール互換）
-                usersCollection.document(userId).update(profileData)
+                usersCollection.document(userId).update(updateData)
             } catch (updateError: Exception) {
-                // update失敗時（ドキュメント未存在の可能性）→ ドキュメントを作成してからupdate
                 println("FirestoreUserRepository: update failed, ensuring document exists: ${updateError.message}")
                 val docSnapshot = usersCollection.document(userId).get()
                 if (!docSnapshot.exists) {
-                    // ドキュメントが存在しない → 最低限のデータで作成
                     val now = com.yourcoach.plus.shared.util.DateUtil.currentTimestamp()
                     val baseData = mapOf(
                         "email" to "",
@@ -205,8 +206,7 @@ class FirestoreUserRepository : UserRepository {
                     )
                     usersCollection.document(userId).set(baseData)
                 }
-                // ドキュメント存在確認後、再度update
-                usersCollection.document(userId).update(profileData)
+                usersCollection.document(userId).update(updateData)
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -495,14 +495,30 @@ class FirestoreUserRepository : UserRepository {
             freeCredits = freeCredits,
             paidCredits = paidCredits,
             profile = profileWithExp,
-            createdAt = get<Long?>("createdAt") ?: 0,
-            lastLoginAt = get<Long?>("lastLoginAt") ?: 0,
+            createdAt = getTimestampOrLong("createdAt"),
+            lastLoginAt = getTimestampOrLong("lastLoginAt"),
             lastLoginBonusDate = get<String?>("lastLoginBonusDate"),
             b2b2cOrgId = get<String?>("b2b2cOrgId"),
             b2b2cOrgName = get<String?>("b2b2cOrgName"),
             organizationName = get<String?>("organizationName"),
             role = get<String?>("role")
         )
+    }
+
+    /**
+     * Timestamp型またはLong型のフィールドをLongとして読み取る
+     */
+    private fun DocumentSnapshot.getTimestampOrLong(field: String): Long {
+        return try {
+            get<Long?>(field) ?: 0L
+        } catch (_: Throwable) {
+            try {
+                val ts = get<Timestamp?>(field)
+                ts?.let { it.seconds * 1000 + it.nanoseconds / 1_000_000 } ?: 0L
+            } catch (_: Throwable) {
+                0L
+            }
+        }
     }
 
     @Suppress("UNCHECKED_CAST")

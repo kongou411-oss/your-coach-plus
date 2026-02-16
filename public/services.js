@@ -3465,8 +3465,9 @@ const RetentionService = {
     },
 
     // リテンション統計を取得（管理者用）
+    // 認証はサーバーサイド（Cloud Functions）で行うため、クライアント側ではチェックしない
     getRetentionStats: async (adminPassword) => {
-        if (adminPassword !== '0910') {
+        if (!adminPassword) {
             throw new Error('Unauthorized');
         }
 

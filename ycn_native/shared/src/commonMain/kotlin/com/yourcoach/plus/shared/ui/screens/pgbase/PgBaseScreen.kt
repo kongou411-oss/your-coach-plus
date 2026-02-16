@@ -1,16 +1,15 @@
 package com.yourcoach.plus.shared.ui.screens.pgbase
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -23,7 +22,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
-import com.yourcoach.plus.shared.domain.model.PgBaseCategory
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.ui.theme.AccentOrange
 import com.yourcoach.plus.shared.ui.theme.Primary
 import com.yourcoach.plus.shared.ui.theme.Secondary
@@ -39,6 +39,7 @@ class PgBaseScreen : Screen {
     override fun Content() {
         val screenModel = koinScreenModel<PgBaseScreenModel>()
         val uiState by screenModel.uiState.collectAsState()
+        val navigator = LocalNavigator.currentOrThrow
         val snackbarHostState = remember { SnackbarHostState() }
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val scope = rememberCoroutineScope()
@@ -71,15 +72,6 @@ class PgBaseScreen : Screen {
                         PgBaseHeader(
                             completedCount = uiState.completedCount,
                             totalCount = uiState.totalCount
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    // カテゴリフィルター
-                    item {
-                        CategoryFilter(
-                            selectedCategory = uiState.selectedCategory,
-                            onCategorySelected = screenModel::selectCategory
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
@@ -124,6 +116,17 @@ class PgBaseScreen : Screen {
                 onPurchase = {
                     uiState.selectedArticle?.let { article ->
                         screenModel.purchaseArticle(article.id)
+                    }
+                },
+                onNavigateToSubscription = {
+                    scope.launch {
+                        sheetState.hide()
+                        screenModel.closeArticleDetail()
+                    }
+                    screenModel.getCurrentUserId()?.let { userId ->
+                        navigator.push(
+                            com.yourcoach.plus.shared.ui.screens.subscription.SubscriptionScreen(userId)
+                        )
                     }
                 }
             )
@@ -207,46 +210,6 @@ private fun PgBaseHeader(
 }
 
 /**
- * カテゴリフィルター
- */
-@Composable
-private fun CategoryFilter(
-    selectedCategory: PgBaseCategory?,
-    onCategorySelected: (PgBaseCategory?) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // 全て
-        FilterChip(
-            selected = selectedCategory == null,
-            onClick = { onCategorySelected(null) },
-            label = { Text("すべて") },
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = Secondary.copy(alpha = 0.2f),
-                selectedLabelColor = Secondary
-            )
-        )
-
-        // カテゴリ
-        PgBaseCategory.entries.forEach { category ->
-            FilterChip(
-                selected = selectedCategory == category,
-                onClick = { onCategorySelected(category) },
-                label = { Text("${category.emoji} ${category.displayName}") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Secondary.copy(alpha = 0.2f),
-                    selectedLabelColor = Secondary
-                )
-            )
-        }
-    }
-}
-
-/**
  * 記事カード
  */
 @Composable
@@ -297,15 +260,6 @@ private fun ArticleCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-                    if (article.isPremium && !articleWithProgress.isPurchased) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "プレミアム",
-                            modifier = Modifier.size(16.dp),
-                            tint = AccentOrange
-                        )
-                    }
                     if (articleWithProgress.isCompleted) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
@@ -314,6 +268,24 @@ private fun ArticleCard(
                             modifier = Modifier.size(16.dp),
                             tint = Primary
                         )
+                    }
+                    if (article.isPremium) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        if (articleWithProgress.isPurchased) {
+                            Icon(
+                                imageVector = Icons.Filled.LockOpen,
+                                contentDescription = "購入済み",
+                                modifier = Modifier.size(16.dp),
+                                tint = Primary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "プレミアム",
+                                modifier = Modifier.size(16.dp),
+                                tint = AccentOrange
+                            )
+                        }
                     }
                 }
 

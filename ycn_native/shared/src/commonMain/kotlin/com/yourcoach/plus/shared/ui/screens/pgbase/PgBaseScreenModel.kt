@@ -293,6 +293,11 @@ class PgBaseScreenModel(
     }
 
     /**
+     * 現在のユーザーIDを取得
+     */
+    fun getCurrentUserId(): String? = authRepository.getCurrentUserId()
+
+    /**
      * エラーをクリア
      */
     fun clearError() {

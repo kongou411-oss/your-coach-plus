@@ -36,7 +36,7 @@ private enum class FeedbackType(
     val color: Color
 ) {
     FEATURE_REQUEST(
-        label = "機能リクエスト・要望",
+        label = "機能リクエスト",
         icon = Icons.Default.Lightbulb,
         placeholder = "こんな機能がほしい、こうなったら便利、など何でもお書きください。",
         color = Color(0xFF4CAF50)
@@ -46,6 +46,12 @@ private enum class FeedbackType(
         icon = Icons.Default.BugReport,
         placeholder = "どの画面で、どんな操作をしたときに、何が起きたかを教えてください。",
         color = Color(0xFFEF5350)
+    ),
+    INQUIRY(
+        label = "問い合わせ",
+        icon = Icons.Default.Email,
+        placeholder = "ご質問やお問い合わせ内容をお書きください。",
+        color = Color(0xFF2196F3)
     )
 }
 
@@ -152,6 +158,7 @@ class FeedbackScreen : Screen {
                                 val typeLabel = when (selectedType!!) {
                                     FeedbackType.FEATURE_REQUEST -> "feature_request"
                                     FeedbackType.BUG_REPORT -> "bug_report"
+                                    FeedbackType.INQUIRY -> "inquiry"
                                 }
 
                                 val functions = Firebase.functions("asia-northeast2")

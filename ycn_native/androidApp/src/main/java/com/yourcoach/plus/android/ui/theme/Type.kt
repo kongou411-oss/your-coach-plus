@@ -2,17 +2,8 @@ package com.yourcoach.plus.android.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
-// TODO: カスタムフォントを追加する場合はここで定義
-// val YourCoachFontFamily = FontFamily(
-//     Font(R.font.noto_sans_jp_regular, FontWeight.Normal),
-//     Font(R.font.noto_sans_jp_medium, FontWeight.Medium),
-//     Font(R.font.noto_sans_jp_bold, FontWeight.Bold)
-// )
 
 /**
  * Your Coach+ タイポグラフィ

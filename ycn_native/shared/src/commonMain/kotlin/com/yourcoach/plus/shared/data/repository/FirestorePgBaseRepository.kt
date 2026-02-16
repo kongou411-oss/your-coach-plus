@@ -272,14 +272,14 @@ class FirestorePgBaseRepository : PgBaseRepository {
     }
 
     private fun DocumentSnapshot.toArticle(): PgBaseArticle {
-        val categoryStr = get<String?>("category") ?: "NUTRITION"
+        val categoryStr = get<String?>("category") ?: "PROTEIN"
         val category = try {
             PgBaseCategory.valueOf(categoryStr)
         } catch (e: Exception) {
             try {
                 PgBaseCategory.valueOf(categoryStr.uppercase())
             } catch (e2: Exception) {
-                PgBaseCategory.NUTRITION
+                PgBaseCategory.PROTEIN
             }
         }
 

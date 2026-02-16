@@ -65,6 +65,7 @@ class ProfileEditScreenModel(
     private fun loadProfile() {
         screenModelScope.launch(exceptionHandler) {
             val userId = authRepository.getCurrentUserId() ?: return@launch
+
             userRepository.getUser(userId)
                 .onSuccess { user ->
                     val p = user?.profile
@@ -196,7 +197,10 @@ class ProfileEditScreenModel(
 
     fun saveProfile() {
         screenModelScope.launch(exceptionHandler) {
-            val userId = authRepository.getCurrentUserId() ?: return@launch
+            val userId = authRepository.getCurrentUserId()
+            if (userId == null) {
+                return@launch
+            }
 
             // Android版と一致: "official"ニックネームは公式アカウントのみ許可
             val currentEmail = authRepository.getCurrentUser()?.email

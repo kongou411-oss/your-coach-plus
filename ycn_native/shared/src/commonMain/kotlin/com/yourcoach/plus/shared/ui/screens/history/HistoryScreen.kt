@@ -1087,7 +1087,7 @@ private fun GraphView(
                                 GraphType.CALORIES -> "カロリー"
                                 GraphType.NUTRITION -> "栄養素"
                                 GraphType.EXERCISE -> "運動"
-                                GraphType.CONDITION -> "体調"
+                                GraphType.CONDITION -> "コンディション"
                                 GraphType.RM -> "RM"
                             },
                             style = MaterialTheme.typography.labelMedium
@@ -1132,7 +1132,7 @@ private fun GraphView(
                             GraphType.CALORIES -> "摂取カロリー（${selectedPeriod.titleSuffix}）"
                             GraphType.NUTRITION -> "栄養素バランス（${selectedPeriod.titleSuffix}）"
                             GraphType.EXERCISE -> "消費カロリー（${selectedPeriod.titleSuffix}）"
-                            GraphType.CONDITION -> "体調スコア（${selectedPeriod.titleSuffix}）"
+                            GraphType.CONDITION -> "コンディションスコア（${selectedPeriod.titleSuffix}）"
                             GraphType.RM -> "RM記録推移（${selectedPeriod.titleSuffix}）"
                         },
                         style = MaterialTheme.typography.titleMedium,
@@ -1326,7 +1326,7 @@ private fun GraphView(
                     }
                     GraphType.EXERCISE -> LegendItem(color = ScoreExercise, label = "消費カロリー (kcal)")
                     GraphType.CONDITION -> {
-                        LegendItem(color = Primary, label = "体調スコア (0-100)")
+                        LegendItem(color = Primary, label = "コンディションスコア (0-100)")
                         LegendItem(color = Primary.copy(alpha = 0.6f), label = maLabel)
                         LegendItem(color = Primary.copy(alpha = 0.4f), label = "予測線")
                     }

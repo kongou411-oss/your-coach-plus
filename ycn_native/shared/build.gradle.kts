@@ -88,9 +88,11 @@ kotlin {
             implementation(libs.coil.compose)
 
             // Firebase (Android native APIs used in androidMain)
-            implementation("com.google.firebase:firebase-messaging-ktx:24.0.3")
-            implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
-            implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
+            // BOMバージョンはlibs.versions.toml firebaseBom と統一
+            implementation(project.dependencies.platform("com.google.firebase:firebase-bom:33.5.1"))
+            implementation("com.google.firebase:firebase-messaging-ktx")
+            implementation("com.google.firebase:firebase-auth-ktx")
+            implementation("com.google.firebase:firebase-firestore-ktx")
         }
 
         iosMain.dependencies {

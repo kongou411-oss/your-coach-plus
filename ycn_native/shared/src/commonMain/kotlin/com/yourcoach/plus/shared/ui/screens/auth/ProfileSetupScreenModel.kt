@@ -50,9 +50,9 @@ data class ProfileSetupState(
     val nickname: String = "",
     val age: String = "",
     val gender: Gender = Gender.MALE,
-    val height: String = "",
-    val weight: String = "",
-    val bodyFatPercentage: String = "",
+    val height: String = "170",
+    val weight: String = "70",
+    val bodyFatPercentage: String = "15",
     val activityLevel: ActivityLevel = ActivityLevel.DESK_WORK,
     val goal: FitnessGoal = FitnessGoal.MAINTAIN,
     val mealsPerDay: Int = 5,
@@ -139,7 +139,10 @@ class ProfileSetupScreenModel(
 
     // ========== プロフィール更新 ==========
     fun updateNickname(value: String) = _state.update { it.copy(nickname = value, validationError = null) }
-    fun updateAge(value: String) = _state.update { it.copy(age = value, validationError = null) }
+    fun updateAge(value: String) {
+        _state.update { it.copy(age = value, validationError = null) }
+        recalculateTDEE()
+    }
 
     fun updateGender(value: Gender) {
         val defaults = when (value) {
