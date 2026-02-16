@@ -879,8 +879,9 @@ JSONのみ出力、説明文不要"""
 
     private fun checkBadges() {
         screenModelScope.launch(NonCancellable) {
-            println("AiFoodRecognitionScreenModel: updateBadgeStats: meal_recorded")
-            badgeRepository.updateBadgeStats("meal_recorded")
+            try {
+                badgeRepository.checkAndAwardBadges()
+            } catch (_: Exception) { }
         }
     }
 }

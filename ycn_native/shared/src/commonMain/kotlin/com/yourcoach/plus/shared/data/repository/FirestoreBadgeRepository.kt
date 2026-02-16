@@ -8,11 +8,13 @@ import com.yourcoach.plus.shared.util.AppError
 import com.yourcoach.plus.shared.util.DateUtil
 import com.yourcoach.plus.shared.util.invokeCloudFunction
 import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.firestore.Direction
 import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.*
 
 /**
  * Firestore バッジリポジトリ実装 (GitLive KMP版)
@@ -130,33 +132,80 @@ class FirestoreBadgeRepository : BadgeRepository {
 
     override suspend fun getBadgeProgress(userId: String): Result<Map<String, BadgeProgress>> {
         return try {
-            val doc = userDocument(userId).get()
-            if (doc.exists) {
-                val currentStreak = doc.get<Long?>("currentStreak")?.toInt() ?: 0
-                val totalMeals = doc.get<Long?>("totalMeals")?.toInt() ?: 0
-                val totalWorkouts = doc.get<Long?>("totalWorkouts")?.toInt() ?: 0
-                val totalAnalyses = doc.get<Long?>("totalAnalyses")?.toInt() ?: 0
+            val progress = mutableMapOf<String, BadgeProgress>()
 
-                val progress = mutableMapOf<String, BadgeProgress>()
+            // ストリーク計算: 過去120日の食事・運動記録からリアルタイム計算
+            val streak = calculateStreakFromRecords(userId)
+            progress["streak_3"] = BadgeProgress("streak_3", streak, 3)
+            progress["streak_7"] = BadgeProgress("streak_7", streak, 7)
+            progress["streak_14"] = BadgeProgress("streak_14", streak, 14)
+            progress["streak_30"] = BadgeProgress("streak_30", streak, 30)
+            progress["streak_100"] = BadgeProgress("streak_100", streak, 100)
 
-                // ストリーク系
-                progress["streak_3"] = BadgeProgress("streak_3", currentStreak, 3)
-                progress["streak_7"] = BadgeProgress("streak_7", currentStreak, 7)
-                progress["streak_14"] = BadgeProgress("streak_14", currentStreak, 14)
-                progress["streak_30"] = BadgeProgress("streak_30", currentStreak, 30)
-                progress["streak_100"] = BadgeProgress("streak_100", currentStreak, 100)
+            // 食事数: 実データカウント
+            val mealsRef = firestore.collection("users").document(userId).collection("meals")
+            val mealsCount = mealsRef.get().documents.size
+            progress["milestone_10_meals"] = BadgeProgress("milestone_10_meals", mealsCount.coerceAtMost(10), 10)
+            progress["milestone_100_meals"] = BadgeProgress("milestone_100_meals", mealsCount.coerceAtMost(100), 100)
 
-                // マイルストーン系
-                progress["milestone_10_meals"] = BadgeProgress("milestone_10_meals", totalMeals, 10)
-                progress["milestone_100_meals"] = BadgeProgress("milestone_100_meals", totalMeals, 100)
-
-                Result.success(progress)
-            } else {
-                Result.success(emptyMap())
-            }
+            Result.success(progress)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("バッジ進捗の取得に失敗しました", e))
         }
+    }
+
+    /**
+     * 食事・運動の記録日から連続記録日数を計算
+     */
+    private suspend fun calculateStreakFromRecords(userId: String): Int {
+        val tz = TimeZone.of("Asia/Tokyo")
+        val today = Clock.System.now().toLocalDateTime(tz).date
+        val yesterday = today.minus(1, DateTimeUnit.DAY)
+
+        // 過去120日のタイムスタンプ
+        val sinceDate = today.minus(120, DateTimeUnit.DAY)
+        val sinceTimestamp = sinceDate.atStartOfDayIn(tz).toEpochMilliseconds()
+
+        val activeDays = mutableSetOf<LocalDate>()
+
+        // 食事の記録日を収集
+        try {
+            val mealsSnap = firestore.collection("users").document(userId).collection("meals")
+                .where { "timestamp" greaterThanOrEqualTo sinceTimestamp }
+                .get()
+            for (doc in mealsSnap.documents) {
+                val ts = doc.get<Long?>("timestamp") ?: continue
+                val date = Instant.fromEpochMilliseconds(ts).toLocalDateTime(tz).date
+                activeDays.add(date)
+            }
+        } catch (_: Exception) { }
+
+        // 運動の記録日を収集
+        try {
+            val workoutsSnap = firestore.collection("users").document(userId).collection("workouts")
+                .where { "timestamp" greaterThanOrEqualTo sinceTimestamp }
+                .get()
+            for (doc in workoutsSnap.documents) {
+                val ts = doc.get<Long?>("timestamp") ?: continue
+                val date = Instant.fromEpochMilliseconds(ts).toLocalDateTime(tz).date
+                activeDays.add(date)
+            }
+        } catch (_: Exception) { }
+
+        // 今日か昨日にアクティブでなければストリーク0
+        if (!activeDays.contains(today) && !activeDays.contains(yesterday)) {
+            return 0
+        }
+
+        // 最新のアクティブ日から遡って連続日数をカウント
+        var checkDate = if (activeDays.contains(today)) today else yesterday
+        var streak = 0
+        while (activeDays.contains(checkDate)) {
+            streak++
+            checkDate = checkDate.minus(1, DateTimeUnit.DAY)
+        }
+
+        return streak
     }
 
     override suspend fun updateBadgeStats(action: String, data: Map<String, Any>?): Result<Unit> {

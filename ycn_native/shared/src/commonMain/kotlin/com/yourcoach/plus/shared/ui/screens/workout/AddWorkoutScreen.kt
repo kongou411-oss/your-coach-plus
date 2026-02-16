@@ -35,6 +35,7 @@ import com.yourcoach.plus.shared.data.database.ExerciseDatabase
 import com.yourcoach.plus.shared.data.database.ExerciseItem
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.BadgeRepository
 import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
@@ -57,9 +58,10 @@ data class AddWorkoutScreen(
         val workoutRepository: WorkoutRepository = koinInject()
         val customExerciseRepository: CustomExerciseRepository = koinInject()
         val userRepository: UserRepository = koinInject()
+        val badgeRepository: BadgeRepository = koinInject()
 
         val screenModel = rememberScreenModel {
-            AddWorkoutScreenModel(authRepository, workoutRepository, customExerciseRepository, userRepository, selectedDate)
+            AddWorkoutScreenModel(authRepository, workoutRepository, customExerciseRepository, userRepository, badgeRepository, selectedDate)
         }
         val uiState by screenModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow

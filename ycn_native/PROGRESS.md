@@ -1,8 +1,8 @@
 # Your Coach+ KMP 統合進捗
 
-**最終更新**: 2026-02-15
+**最終更新**: 2026-02-16
 **バージョン**: 2.0.6 (versionCode 90)
-**ステータス**: Shared層一本化完了 / UXギャップ残あり
+**ステータス**: Shared層一本化完了 / UXギャップ解消済み
 
 ---
 
@@ -81,6 +81,22 @@ Android NavHost → Voyager Navigator 切替完了。全52画面がShared層。
 | main | 1 | - | ✅ |
 | splash | 1 | - | ✅ |
 
+### バッジシステム修正 ✅ (2026-02-16)
+
+全18バッジが内容通りに獲得可能。
+
+| 修正 | 詳細 |
+|------|------|
+| ストリーク5バッジ | `profile.streak`参照 → 食事・運動の記録日からリアルタイム計算 |
+| 食事記録時バッジチェック | `updateBadgeStats`(no-op) → `checkAndAwardBadges`呼出 |
+| 運動記録時バッジチェック | バッジチェック未接続 → AddWorkout/WorkoutRecorderに`badgeRepository`追加 |
+| バッジ進捗表示 | 未更新カウンタ参照 → Firestoreから実データクエリ（streak計算+meals count） |
+| early_birdバッジ | 未保存のslot条件削除 → JST 7時前の食事記録で獲得可能に |
+
+### 利用規約リンク修正 ✅ (2026-02-16)
+
+SignUpScreenの「利用規約とプライバシーポリシーに同意」テキストを、個別タップ可能なリンクに変更。LegalWebViewScreenへ遷移。
+
 ### 直近のバグ修正 ✅
 
 | 修正 | ファイル |
@@ -101,34 +117,29 @@ Android NavHost → Voyager Navigator 切替完了。全52画面がShared層。
 
 ### Firebase Cloud Functions デプロイ ✅
 
-パッケージ名修正（`jp.yourcoach.plus` → `com.yourcoach.plus`）反映済み。
+パッケージ名修正 + バッジシステム修正 反映済み (2026-02-16)。
 
 ---
 
-## UXギャップ（残タスク）
+## 残タスク
 
-### P0（最優先）
+### iOS対応時
 
-| 項目 | 画面 | 詳細 |
-|------|------|------|
-| 年額プラン表示 | SubscriptionScreen | ロジックは存在、UIボタン未表示 |
-| 購入復元ボタン | SubscriptionScreen | App Store審査必須要件 |
+| 項目 | 詳細 |
+|------|------|
+| 購入復元ボタン | SubscriptionScreen — App Store審査必須要件 |
+| iOS actual実装 | カメラ、WebView、Billing等のiOS固有コード |
 
-### P1（重要）
+### 対象外（旧React版の機能 / 現行アプリ不要）
 
-| 項目 | 画面 | 詳細 |
-|------|------|------|
-| レストタイマー | WorkoutRecorderScreen | セット間休憩カウントダウン未実装 |
-| ギフトコード入力 | SubscriptionScreen | Cloud Functions側は実装済み、UI欠落 |
-| 紹介コード入力 | SubscriptionScreen | Cloud Functions側は実装済み、UI欠落 |
-| 利用規約リンク | SignUpScreen | チェックボックスはあるがリンクなし |
-
-### P2（改善）
-
-| 項目 | 画面 | 詳細 |
-|------|------|------|
-| ストリーク表示 | DashboardScreen | データはロード済み、UI未表示 |
-| スコア表示 | DashboardScreen | スコアデータあり、メイン画面に非表示 |
+| 項目 | 理由 |
+|------|------|
+| 年額プラン表示 | 法人のみ年額、アプリ内は個人向け月額のみ |
+| レストタイマー | 旧React版の機能 |
+| ギフトコード入力 | 旧React版の機能（Cloud Functions側のみ残留） |
+| 紹介コード入力 | 旧React版の機能（Cloud Functions側のみ残留） |
+| ストリーク表示 | 不要（バックエンドは存在、UI不要） |
+| スコア表示 | 不要（バックエンドは存在、UI不要） |
 
 ---
 
@@ -189,12 +200,6 @@ firebase deploy --only hosting
 
 ## 未コミット変更
 
-現在のワーキングツリーには以下の未コミット変更あり:
-- リポジトリ層統合（Android版削除 + Shared版修正）
-- UI層統合（Android画面削除 + Shared画面修正）
-- 直近バグ修正全件
-- functions/index.js パッケージ名修正
-- SettingsScreen出典統合・バージョン更新
-- テンプレート空表示テキスト修正
-
-**コミット前に `git status` で全変更を確認すること。**
+- バッジシステム修正（全18バッジ獲得可能化）
+- 利用規約リンク修正（SignUpScreen）
+- PROGRESS.md更新

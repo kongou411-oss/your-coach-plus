@@ -4,9 +4,11 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.BadgeRepository
 import com.yourcoach.plus.shared.domain.repository.CustomExerciseRepository
 import com.yourcoach.plus.shared.domain.repository.UserRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
+import kotlinx.coroutines.NonCancellable
 import com.yourcoach.plus.shared.util.DateUtil
 import com.yourcoach.plus.shared.util.MetCalorieCalculator
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -47,6 +49,7 @@ class AddWorkoutScreenModel(
     private val workoutRepository: WorkoutRepository,
     private val customExerciseRepository: CustomExerciseRepository,
     private val userRepository: UserRepository,
+    private val badgeRepository: BadgeRepository,
     private val initialDate: String
 ) : ScreenModel {
 
@@ -269,6 +272,7 @@ class AddWorkoutScreenModel(
                 workoutRepository.addWorkout(workout)
                     .onSuccess {
                         _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+                        checkBadges()
                     }
                     .onFailure { e ->
                         _uiState.update {
@@ -313,5 +317,13 @@ class AddWorkoutScreenModel(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    private fun checkBadges() {
+        screenModelScope.launch(NonCancellable) {
+            try {
+                badgeRepository.checkAndAwardBadges()
+            } catch (_: Exception) { }
+        }
     }
 }

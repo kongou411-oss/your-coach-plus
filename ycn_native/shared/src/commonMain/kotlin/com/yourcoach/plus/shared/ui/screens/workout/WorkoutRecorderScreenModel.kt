@@ -4,7 +4,9 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.AuthRepository
+import com.yourcoach.plus.shared.domain.repository.BadgeRepository
 import com.yourcoach.plus.shared.domain.repository.WorkoutRepository
+import kotlinx.coroutines.NonCancellable
 import com.yourcoach.plus.shared.util.DateUtil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,7 +67,8 @@ data class SessionStats(
 
 class WorkoutRecorderScreenModel(
     private val authRepository: AuthRepository,
-    private val workoutRepository: WorkoutRepository
+    private val workoutRepository: WorkoutRepository,
+    private val badgeRepository: BadgeRepository
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(WorkoutRecorderUiState())
@@ -288,6 +291,7 @@ class WorkoutRecorderScreenModel(
             workoutRepository.addWorkout(workout)
                 .onSuccess {
                     _uiState.update { it.copy(isSaving = false, savedSuccessfully = true) }
+                    checkBadges()
                     onSuccess()
                 }
                 .onFailure { e ->
@@ -331,4 +335,12 @@ class WorkoutRecorderScreenModel(
     }
 
     fun clearError() { _uiState.update { it.copy(error = null) } }
+
+    private fun checkBadges() {
+        screenModelScope.launch(NonCancellable) {
+            try {
+                badgeRepository.checkAndAwardBadges()
+            } catch (_: Exception) { }
+        }
+    }
 }

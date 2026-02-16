@@ -1,6 +1,7 @@
 package com.yourcoach.plus.shared.ui.screens.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,8 @@ import com.yourcoach.plus.shared.auth.AppleSignInButtonHandler
 import com.yourcoach.plus.shared.auth.GoogleSignInButtonHandler
 import com.yourcoach.plus.shared.auth.isAppleSignInAvailable
 import com.yourcoach.plus.shared.ui.screens.main.MainScreen
+import com.yourcoach.plus.shared.ui.screens.settings.LegalPageType
+import com.yourcoach.plus.shared.ui.screens.settings.LegalWebViewScreen
 import com.yourcoach.plus.shared.ui.theme.Primary
 
 /**
@@ -227,7 +230,29 @@ class SignUpScreen : Screen {
                         colors = CheckboxDefaults.colors(checkedColor = Primary)
                     )
                     Text(
-                        text = "利用規約とプライバシーポリシーに同意",
+                        text = "利用規約",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                        modifier = Modifier.clickable {
+                            navigator.push(LegalWebViewScreen(LegalPageType.TERMS))
+                        }
+                    )
+                    Text(
+                        text = "と",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "プライバシーポリシー",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                        modifier = Modifier.clickable {
+                            navigator.push(LegalWebViewScreen(LegalPageType.PRIVACY))
+                        }
+                    )
+                    Text(
+                        text = "に同意",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

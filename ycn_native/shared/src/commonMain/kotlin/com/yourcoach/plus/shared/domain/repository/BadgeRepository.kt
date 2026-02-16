@@ -179,7 +179,7 @@ object BadgeDefinitions {
         Badge(
             id = "special_early_bird",
             name = "早起き鳥",
-            description = "朝7時前に朝食を記録",
+            description = "朝7時前に食事を記録",
             iconUrl = "",
             category = BadgeCategory.SPECIAL
         ),

@@ -120,7 +120,7 @@ val sharedModule = module {
     // COMY
     factory { ComyScreenModel(get(), get(), get(), get()) }
     // Workout
-    factory { com.yourcoach.plus.shared.ui.screens.workout.WorkoutRecorderScreenModel(get(), get()) }
+    factory { com.yourcoach.plus.shared.ui.screens.workout.WorkoutRecorderScreenModel(get(), get(), get()) }
     // Analysis
     factory {
         AnalysisScreenModel(

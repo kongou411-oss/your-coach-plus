@@ -474,11 +474,13 @@ class AddMealScreenModel(
     }
 
     /**
-     * バッジ統計更新（カウンターのみ）
+     * バッジチェック＆付与
      */
     private fun checkBadges() {
         screenModelScope.launch(NonCancellable) {
-            badgeRepository.updateBadgeStats("meal_recorded")
+            try {
+                badgeRepository.checkAndAwardBadges()
+            } catch (_: Exception) { }
         }
     }
 

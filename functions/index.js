@@ -3542,42 +3542,107 @@ const EXPERIENCE_CONFIG = {
   XP_PER_ACTION: 10         // 各アクションで獲得するXP
 };
 
+/**
+ * 食事・運動の記録日からストリーク（連続記録日数）をリアルタイム計算
+ * 今日または昨日から遡って、食事か運動の記録がある連続日数を返す
+ */
+async function calculateStreakFromRecords(userId, db) {
+  const now = new Date();
+  const jstOffset = 9 * 60 * 60 * 1000;
+  const todayJST = new Date(now.getTime() + jstOffset).toISOString().split('T')[0];
+  const yesterdayJST = new Date(now.getTime() + jstOffset - 86400000).toISOString().split('T')[0];
+
+  // 過去120日分の記録日を収集（streak_100対応）
+  const since = new Date(now.getTime() - 120 * 86400000);
+  const sinceTimestamp = since.getTime();
+
+  const activeDays = new Set();
+
+  // 食事の記録日を収集
+  const mealsSnap = await db.collection("users").doc(userId).collection("meals")
+    .where("timestamp", ">=", sinceTimestamp)
+    .select("timestamp")
+    .get();
+  for (const doc of mealsSnap.docs) {
+    const ts = doc.data().timestamp;
+    if (ts) {
+      const date = new Date(ts + jstOffset).toISOString().split('T')[0];
+      activeDays.add(date);
+    }
+  }
+
+  // 運動の記録日を収集
+  const workoutsSnap = await db.collection("users").doc(userId).collection("workouts")
+    .where("timestamp", ">=", sinceTimestamp)
+    .select("timestamp")
+    .get();
+  for (const doc of workoutsSnap.docs) {
+    const ts = doc.data().timestamp;
+    if (ts) {
+      const date = new Date(ts + jstOffset).toISOString().split('T')[0];
+      activeDays.add(date);
+    }
+  }
+
+  // 今日か昨日にアクティブでなければストリーク0
+  if (!activeDays.has(todayJST) && !activeDays.has(yesterdayJST)) {
+    return 0;
+  }
+
+  // 最新のアクティブ日から遡って連続日数をカウント
+  const startDate = activeDays.has(todayJST) ? todayJST : yesterdayJST;
+  let streak = 0;
+  let checkDate = new Date(startDate + 'T00:00:00Z');
+
+  while (true) {
+    const dateStr = checkDate.toISOString().split('T')[0];
+    if (activeDays.has(dateStr)) {
+      streak++;
+      checkDate = new Date(checkDate.getTime() - 86400000); // 1日前へ
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
 // バッジ定義（実データ照会版）
 // 各バッジは checkCondition(userId, db) で実際のFirestoreデータを照会して判定
 const BADGE_DEFINITIONS = {
-  // === ストリーク系（スコアのcurrentStreakを使用） ===
+  // === ストリーク系（食事・運動の記録日から連続日数をリアルタイム計算） ===
   streak_3: {
     name: "3日連続",
     checkCondition: async (userId, db, userData) => {
-      const streak = userData.profile?.streak || 0;
+      const streak = await calculateStreakFromRecords(userId, db);
       return streak >= 3;
     }
   },
   streak_7: {
     name: "1週間連続",
     checkCondition: async (userId, db, userData) => {
-      const streak = userData.profile?.streak || 0;
+      const streak = await calculateStreakFromRecords(userId, db);
       return streak >= 7;
     }
   },
   streak_14: {
     name: "2週間連続",
     checkCondition: async (userId, db, userData) => {
-      const streak = userData.profile?.streak || 0;
+      const streak = await calculateStreakFromRecords(userId, db);
       return streak >= 14;
     }
   },
   streak_30: {
     name: "1ヶ月連続",
     checkCondition: async (userId, db, userData) => {
-      const streak = userData.profile?.streak || 0;
+      const streak = await calculateStreakFromRecords(userId, db);
       return streak >= 30;
     }
   },
   streak_100: {
     name: "100日連続",
     checkCondition: async (userId, db, userData) => {
-      const streak = userData.profile?.streak || 0;
+      const streak = await calculateStreakFromRecords(userId, db);
       return streak >= 100;
     }
   },
@@ -3760,7 +3825,7 @@ const BADGE_DEFINITIONS = {
   // === 特別系（実データ照会） ===
   special_early_bird: {
     name: "早起き鳥",
-    description: "朝7時前に1食目を記録",
+    description: "朝7時前に食事を記録",
     checkCondition: async (userId, db, userData) => {
       const mealsRef = db.collection("users").doc(userId).collection("meals");
       const meals = await mealsRef.get();
@@ -3771,9 +3836,7 @@ const BADGE_DEFINITIONS = {
           // JSTで7時前かチェック
           const mealDate = new Date(data.timestamp);
           const jstHour = (mealDate.getUTCHours() + 9) % 24;
-          // スロット1 = 1食目（朝食相当）
-          const slot = data.slot || data.mealSlot || 0;
-          if (jstHour < 7 && slot === 1) {
+          if (jstHour < 7) {
             return true;
           }
         }
