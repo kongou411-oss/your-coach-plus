@@ -17,7 +17,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -181,11 +180,12 @@ class DashboardScreenModel(
     // RM記録キャッシュ（種目名→最新RM記録）
     private var rmRecordCache: Map<String, RmRecord> = emptyMap()
 
+    // ログインボーナス重複呼び出し防止
+    private var loginBonusChecked = false
+
     init {
         observeUser()
-        loadDataForDate(_uiState.value.date)
         updateCurrentTime()
-        checkLoginBonus()
     }
 
     /**
@@ -200,38 +200,47 @@ class DashboardScreenModel(
 
     /**
      * ユーザー情報を監視
+     * collectLatest + filterNotNull により、Auth状態が一時的にnilになった後
+     * 回復した際にFirestoreリスナーを自動再確立する
      */
     private fun observeUser() {
         screenModelScope.launch(exceptionHandler) {
-            try {
-                authRepository.currentUser.collect { authUser ->
-                    if (authUser != null) {
-                        try {
-                            userRepository.observeUser(authUser.uid).collect { user ->
-                                // プロフィール変更時にターゲットを再計算
-                                val targets = calculateTargets(
-                                    user,
-                                    _uiState.value.todayRoutine,
-                                    _uiState.value.isManualRestDay
+            authRepository.currentUser
+                .filterNotNull()
+                .collectLatest { authUser ->
+                    // データ読み込み（Auth回復時にも再実行して壊れたデータをリロード）
+                    loadDataForDate(_uiState.value.date)
+
+                    // ログインボーナスは一度だけ（Cloud Functionは冪等だが呼び出しコスト削減）
+                    if (!loginBonusChecked) {
+                        loginBonusChecked = true
+                        checkLoginBonus()
+                    }
+
+                    // Firestoreリスナーを開始
+                    // collectLatestにより、Auth状態変化→回復時に自動キャンセル＆再確立
+                    try {
+                        userRepository.observeUser(authUser.uid).collect { user ->
+                            val targets = calculateTargets(
+                                user,
+                                _uiState.value.todayRoutine,
+                                _uiState.value.isManualRestDay
+                            )
+                            _uiState.update { state ->
+                                state.copy(
+                                    user = user,
+                                    targetCalories = targets.calories,
+                                    targetProtein = targets.protein,
+                                    targetFat = targets.fat,
+                                    targetCarbs = targets.carbs
                                 )
-                                _uiState.update { state ->
-                                    state.copy(
-                                        user = user,
-                                        targetCalories = targets.calories,
-                                        targetProtein = targets.protein,
-                                        targetFat = targets.fat,
-                                        targetCarbs = targets.carbs
-                                    )
-                                }
                             }
-                        } catch (e: Throwable) {
-                            println("DashboardScreenModel: observeUser inner error: ${e::class.simpleName}: ${e.message}")
                         }
+                    } catch (e: Throwable) {
+                        println("DashboardScreenModel: observeUser Firestore error: ${e::class.simpleName}: ${e.message}")
+                        // Auth回復時にcollectLatestが自動で再起動するためリトライ不要
                     }
                 }
-            } catch (e: Throwable) {
-                println("DashboardScreenModel: observeUser error: ${e::class.simpleName}: ${e.message}")
-            }
         }
     }
 
@@ -243,11 +252,24 @@ class DashboardScreenModel(
 
         screenModelScope.launch(exceptionHandler) {
             try {
-                val userId = authRepository.getCurrentUserId()
-                if (userId == null) {
-                    _uiState.update { it.copy(isLoading = false, error = "ログインしていません") }
-                    return@launch
+                loadDataForDateInternal(date)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "データの読み込みに失敗しました"
+                    )
                 }
+            }
+        }
+    }
+
+    private suspend fun loadDataForDateInternal(date: String) {
+            val userId = authRepository.getCurrentUserId()
+            if (userId == null) {
+                _uiState.update { it.copy(isLoading = false, error = "ログインしていません") }
+                return
+            }
 
                 // データを並列取得（Android版と同等の全データ取得）
                 coroutineScope {
@@ -401,32 +423,23 @@ class DashboardScreenModel(
                             directive = directive
                         )
                     }
-                }
 
-                // リアルタイム監視を開始
-                launch {
-                    mealRepository.observeMealsForDate(userId, date).collect { meals ->
-                        updateNutritionFromMeals(meals)
+                    // リアルタイム監視を開始
+                    launch {
+                        mealRepository.observeMealsForDate(userId, date).collect { meals ->
+                            updateNutritionFromMeals(meals)
+                        }
                     }
-                }
 
-                launch {
-                    workoutRepository.observeWorkoutsForDate(userId, date).collect { workouts ->
-                        updateWorkoutSummary(workouts)
+                    launch {
+                        workoutRepository.observeWorkoutsForDate(userId, date).collect { workouts ->
+                            updateWorkoutSummary(workouts)
+                        }
                     }
                 }
 
                 // 今日のクエストが未生成なら自動生成チェック
                 checkAndAutoGenerateQuest()
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "データの読み込みに失敗しました"
-                    )
-                }
-            }
-        }
     }
 
     /**

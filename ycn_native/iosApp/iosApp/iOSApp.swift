@@ -1,5 +1,7 @@
 import SwiftUI
 import FirebaseCore
+import FirebaseFirestore
+import FirebaseAuth
 import FirebaseMessaging
 import GoogleSignIn
 import UserNotifications
@@ -10,6 +12,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         // Firebase初期化
         FirebaseApp.configure()
+
+        // Firestore・Authを早期初期化（Auth→Firestoreのトークン伝播を確実にする）
+        let _ = Firestore.firestore()
+        let _ = Auth.auth()
 
         // FCM設定
         Messaging.messaging().delegate = FCMBridge.shared

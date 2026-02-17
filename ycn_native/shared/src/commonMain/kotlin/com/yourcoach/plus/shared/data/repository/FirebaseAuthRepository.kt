@@ -9,8 +9,10 @@ import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.auth.GoogleAuthProvider
 import dev.gitlive.firebase.auth.OAuthProvider
 import dev.gitlive.firebase.auth.auth
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transformLatest
 
 /**
  * Firebase Authentication リポジトリ実装 (GitLive KMP版)
@@ -29,10 +31,24 @@ class FirebaseAuthRepository : AuthRepository {
 
     /**
      * 現在のユーザーを監視
+     * iOS対応: getIdToken(true)等によるAuth状態の一時的なnil遷移をフィルタリング
+     * （ネイティブAuthにユーザーが存在する場合、transient nilをスキップ）
      */
-    override val currentUser: Flow<User?> = auth.authStateChanged.map { firebaseUser ->
-        firebaseUser?.toUser()
-    }
+    override val currentUser: Flow<User?> = auth.authStateChanged
+        .map { it?.toUser() }
+        .transformLatest { user ->
+            if (user != null) {
+                emit(user)
+            } else {
+                // nilが一時的か確認するため短時間待機
+                delay(300)
+                // ネイティブAuth側にユーザーがまだ存在するなら一時的なnil → スキップ
+                if (auth.currentUser == null) {
+                    emit(null) // 本当のサインアウト
+                }
+                // auth.currentUser != null なら一時的なnil → 無視（次のnon-nil emissionを待つ）
+            }
+        }
 
     /**
      * ログイン状態を監視
@@ -59,7 +75,11 @@ class FirebaseAuthRepository : AuthRepository {
      */
     override suspend fun signInWithGoogle(idToken: String): Result<User> {
         return try {
-            val credential = GoogleAuthProvider.credential(idToken, null)
+            // iOS: idTokenとaccessTokenが":::"で結合されている場合分割
+            val parts = idToken.split(":::")
+            val actualIdToken = parts[0]
+            val accessToken = if (parts.size > 1) parts[1] else null
+            val credential = GoogleAuthProvider.credential(actualIdToken, accessToken)
             val result = auth.signInWithCredential(credential)
             val firebaseUser = result.user
                 ?: return Result.failure(AppError.AuthenticationError("ユーザー情報を取得できませんでした"))
@@ -206,7 +226,11 @@ class FirebaseAuthRepository : AuthRepository {
             val currentUser = auth.currentUser
                 ?: return Result.failure(AppError.AuthenticationError("ログインしていません"))
 
-            val credential = GoogleAuthProvider.credential(idToken, null)
+            // iOS: idTokenとaccessTokenが":::"で結合されている場合分割
+            val parts = idToken.split(":::")
+            val actualIdToken = parts[0]
+            val accessToken = if (parts.size > 1) parts[1] else null
+            val credential = GoogleAuthProvider.credential(actualIdToken, accessToken)
             currentUser.reauthenticate(credential)
 
             // 再認証成功後に削除
@@ -217,6 +241,19 @@ class FirebaseAuthRepository : AuthRepository {
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(mapFirebaseAuthError(e))
+        }
+    }
+
+    /**
+     * IDトークンをリフレッシュ（Firestore SDKへのAuth伝播を確実にする）
+     * iOS対応: getIdToken(true) は AuthStateDidChange: uid=nil を一時的に引き起こすため
+     * forceRefresh=false で既存トークンの有効性チェックのみ行う
+     */
+    override suspend fun ensureTokenRefreshed() {
+        try {
+            auth.currentUser?.getIdToken(false)
+        } catch (e: Exception) {
+            println("FirebaseAuthRepository: Token refresh failed: ${e.message}")
         }
     }
 

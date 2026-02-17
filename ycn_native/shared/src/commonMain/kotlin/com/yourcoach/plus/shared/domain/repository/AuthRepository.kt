@@ -76,4 +76,9 @@ interface AuthRepository {
      * Google再認証してアカウント削除
      */
     suspend fun reauthenticateWithGoogleAndDelete(idToken: String): Result<Unit>
+
+    /**
+     * IDトークンを強制リフレッシュ（Firestore SDKへのAuth伝播を確実にする）
+     */
+    suspend fun ensureTokenRefreshed()
 }

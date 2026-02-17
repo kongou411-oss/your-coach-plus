@@ -248,7 +248,7 @@ class StoreKit2BillingRepository : BillingRepository {
     /**
      * 購入を復元
      */
-    suspend fun restorePurchases(): Result<Unit> = suspendCancellableCoroutine { continuation ->
+    override suspend fun restorePurchases(): Result<Unit> = suspendCancellableCoroutine { continuation ->
         val handler = storeKit2RestorePurchasesHandler
         if (handler == null) {
             continuation.resume(

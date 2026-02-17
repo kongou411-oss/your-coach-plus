@@ -68,6 +68,15 @@ class SettingsScreen : Screen {
         val snackbarHostState = remember { SnackbarHostState() }
         var showLogoutDialog by remember { mutableStateOf(false) }
         var showDeleteAccountDialog by remember { mutableStateOf(false) }
+
+        // iOS: タブ遷移時のタッチイベント伝播を防ぐガード
+        // Compose Multiplatform iOSでタブタップが設定画面内のclickableに伝播するバグ対策
+        var isInteractive by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(400)
+            isInteractive = true
+        }
+
         // TabNavigator内ではLocalNavigatorがTabNavigatorになるため、
         // メインナビゲーターを使用してサブ画面遷移する
         val mainNavigator = LocalMainNavigator.current
@@ -222,8 +231,8 @@ class SettingsScreen : Screen {
                     onValidateOrganization = screenModel::validateOrganization,
                     onLeaveOrganization = screenModel::leaveOrganization,
                     onClearOrganizationMessage = screenModel::clearOrganizationMessage,
-                    onLogout = { showLogoutDialog = true },
-                    onDeleteAccount = { showDeleteAccountDialog = true },
+                    onLogout = { if (isInteractive) showLogoutDialog = true },
+                    onDeleteAccount = { if (isInteractive) showDeleteAccountDialog = true },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
 

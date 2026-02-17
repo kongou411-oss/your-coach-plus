@@ -3743,11 +3743,11 @@ const BADGE_DEFINITIONS = {
 
       for (const doc of scoresSnap.docs) {
         const data = doc.data();
-        const protein = data.food?.protein || 0;
+        const protein = data.totalProtein || 0;
         const date = data.date;
 
         // 目標達成判定（90%以上で達成とみなす）
-        const achieved = protein >= targetProtein * 0.9;
+        const achieved = targetProtein > 0 && protein >= targetProtein * 0.9;
 
         if (achieved) {
           if (lastDate === null || isConsecutiveDay(lastDate, date)) {
@@ -3774,11 +3774,10 @@ const BADGE_DEFINITIONS = {
 
       for (const doc of scoresSnap.docs) {
         const data = doc.data();
-        const food = data.food || {};
-        // PFCスコアを確認（各要素が70%以上）
-        const pScore = food.proteinScore || 0;
-        const fScore = food.fatScore || 0;
-        const cScore = food.carbScore || 0;
+        // PFCスコアを確認（各要素が70点以上）
+        const pScore = data.proteinScore || 0;
+        const fScore = data.fatScore || 0;
+        const cScore = data.carbsScore || 0;
         if (pScore >= 70 && fScore >= 70 && cScore >= 70) {
           return true;
         }
@@ -3873,7 +3872,7 @@ const BADGE_DEFINITIONS = {
     name: "初めてのAI分析",
     description: "初めてAI分析を実行",
     checkCondition: async (userId, db, userData) => {
-      const analysesRef = db.collection("users").doc(userId).collection("analyses");
+      const analysesRef = db.collection("users").doc(userId).collection("analysisReports");
       const analyses = await analysesRef.limit(1).get();
       return !analyses.empty;
     }
@@ -3936,10 +3935,12 @@ const BADGE_DEFINITIONS = {
  * 連続日判定ヘルパー（YYYY-MM-DD形式）
  */
 function isConsecutiveDay(prevDate, currDate) {
-  const prev = new Date(prevDate);
-  const curr = new Date(currDate);
-  const diffDays = Math.abs((prev - curr) / (1000 * 60 * 60 * 24));
-  return diffDays === 1;
+  const [py, pm, pd] = prevDate.split('-').map(Number);
+  const [cy, cm, cd] = currDate.split('-').map(Number);
+  const prev = new Date(py, pm - 1, pd);
+  const curr = new Date(cy, cm - 1, cd);
+  const diffDays = Math.abs((curr - prev) / (1000 * 60 * 60 * 24));
+  return Math.round(diffDays) === 1;
 }
 
 // レベルアップに必要な累計経験値を計算（累進式）

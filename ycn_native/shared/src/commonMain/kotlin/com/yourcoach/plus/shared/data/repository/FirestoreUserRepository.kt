@@ -186,6 +186,23 @@ class FirestoreUserRepository : UserRepository {
             fieldMap["profile.trainingTime"] = profile.trainingTime
             fieldMap["profile.trainingDuration"] = profile.trainingDuration
 
+            // MealSlotConfigをマップとして保存
+            profile.mealSlotConfig?.let { config ->
+                if (config.slots.isNotEmpty()) {
+                    val slotsData = config.slots.map { slot ->
+                        mapOf(
+                            "slotNumber" to slot.slotNumber,
+                            "relativeTime" to slot.relativeTime,
+                            "absoluteTime" to slot.absoluteTime
+                        )
+                    }
+                    fieldMap["profile.mealSlotConfig"] = mapOf(
+                        "slots" to slotsData,
+                        "mealsPerDay" to config.mealsPerDay
+                    )
+                }
+            }
+
             // null値をフィルタリング（既存フィールドを削除しない）
             val updateData = fieldMap.filterValues { it != null }
 
@@ -193,20 +210,29 @@ class FirestoreUserRepository : UserRepository {
                 usersCollection.document(userId).update(updateData)
             } catch (updateError: Exception) {
                 println("FirestoreUserRepository: update failed, ensuring document exists: ${updateError.message}")
-                val docSnapshot = usersCollection.document(userId).get()
-                if (!docSnapshot.exists) {
-                    val now = com.yourcoach.plus.shared.util.DateUtil.currentTimestamp()
-                    val baseData = mapOf(
-                        "email" to "",
-                        "createdAt" to now,
-                        "lastLoginAt" to now,
-                        "isPremium" to false,
-                        "freeCredits" to INITIAL_CREDITS,
-                        "paidCredits" to 0
-                    )
-                    usersCollection.document(userId).set(baseData)
+                // ドキュメントが存在しない場合: ベースデータ + プロフィールを一括set
+                val now = com.yourcoach.plus.shared.util.DateUtil.currentTimestamp()
+                val baseData = mutableMapOf<String, Any?>(
+                    "email" to "",
+                    "createdAt" to now,
+                    "lastLoginAt" to now,
+                    "isPremium" to false,
+                    "freeCredits" to INITIAL_CREDITS,
+                    "paidCredits" to 0
+                )
+                // ドット記法をネストmapに変換してset
+                val profileMap = mutableMapOf<String, Any?>()
+                updateData.forEach { (key, value) ->
+                    if (key.startsWith("profile.")) {
+                        profileMap[key.removePrefix("profile.")] = value
+                    } else {
+                        baseData[key] = value
+                    }
                 }
-                usersCollection.document(userId).update(updateData)
+                if (profileMap.isNotEmpty()) {
+                    baseData["profile"] = profileMap
+                }
+                usersCollection.document(userId).set(baseData)
             }
             Result.success(Unit)
         } catch (e: Exception) {

@@ -174,6 +174,8 @@ class SettingsScreenModel(
      * Logout
      */
     fun logout() {
+        // 二重呼び出し防止（iOS タッチイベント伝播対策）
+        if (_uiState.value.isLoggedOut || _uiState.value.isLoading) return
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true) }
             try {

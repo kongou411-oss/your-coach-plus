@@ -59,7 +59,6 @@ private fun AppContent() {
         scope.launch(exceptionHandler) {
             try {
                 val currentUser = authRepository.getCurrentUser()
-
                 initialScreen = if (currentUser == null) {
                     // 未ログイン → LoginScreen
                     LoginScreen()

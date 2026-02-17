@@ -5,7 +5,10 @@ import UIKit
 @objc public class GoogleSignInBridge: NSObject {
     @objc public static let shared = GoogleSignInBridge()
 
-    private let webClientId = "654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com"
+    // iOS用CLIENT_ID（GoogleService-Info.plistから）
+    private let iOSClientId = "654534642431-fhv6j555ug7otbo752rgafpt37e3kk04.apps.googleusercontent.com"
+    // Web/Server用CLIENT_ID（Firebase Auth検証用）
+    private let serverClientId = "654534642431-654ak0n4ptob8r2qiu93keo6u1ics1qs.apps.googleusercontent.com"
 
     private override init() {
         super.init()
@@ -15,7 +18,7 @@ import UIKit
         presentingViewController: UIViewController,
         completion: @escaping (String?, Error?) -> Void
     ) {
-        let config = GIDConfiguration(clientID: webClientId)
+        let config = GIDConfiguration(clientID: iOSClientId, serverClientID: serverClientId)
         GIDSignIn.sharedInstance.configuration = config
 
         GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController) { signInResult, error in
@@ -42,7 +45,9 @@ import UIKit
                 return
             }
 
-            completion(idToken, nil)
+            let accessToken = result.user.accessToken.tokenString
+            // idTokenとaccessTokenを区切り文字で結合して返す
+            completion("\(idToken):::\(accessToken)", nil)
         }
     }
 

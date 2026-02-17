@@ -56,7 +56,9 @@ class MainScreen : Screen {
             CompositionLocalProvider(
                 LocalMainNavigator provides navigator,
                 LocalBottomBarStateUpdater provides { state -> bottomBarState = state },
-                LocalLogoutHandler provides { navigator.replaceAll(LoginScreen()) }
+                LocalLogoutHandler provides {
+                    navigator.replaceAll(LoginScreen())
+                }
             ) {
                 val isDashboard = tabNavigator.current == HomeTab
 
