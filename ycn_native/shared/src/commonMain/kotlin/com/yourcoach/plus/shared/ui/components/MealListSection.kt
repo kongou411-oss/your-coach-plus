@@ -143,8 +143,15 @@ private fun MealCard(
         else -> Color.Transparent
     }
 
-    // GL評価
-    val glRating = getGlRating(meal.totalGL, glLimitPerMeal, meal.isPostWorkout)
+    // GL評価（PFC混食による血糖上昇緩和を考慮）
+    val glRating = getGlRating(
+        gl = meal.totalGL,
+        limit = glLimitPerMeal,
+        isPostWorkout = meal.isPostWorkout,
+        protein = meal.totalProtein,
+        fat = meal.totalFat,
+        fiber = meal.totalFiber
+    )
 
     Card(
         modifier = Modifier

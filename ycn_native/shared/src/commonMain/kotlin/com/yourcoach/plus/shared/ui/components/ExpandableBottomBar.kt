@@ -299,7 +299,7 @@ private fun LevelSection(
                     fontWeight = FontWeight.Bold,
                     color = Primary
                 )
-                if (isPremium && paidCredits > 0) {
+                if (paidCredits > 0) {
                     Text(
                         text = "+",
                         style = MaterialTheme.typography.labelSmall,

@@ -9,6 +9,7 @@ import com.yourcoach.plus.shared.data.database.FoodItem
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.*
 import com.yourcoach.plus.shared.domain.usecase.NutritionCalculator
+import com.yourcoach.plus.shared.domain.usecase.WorkoutQuestGenerator
 import com.yourcoach.plus.shared.util.DateUtil
 import com.yourcoach.plus.shared.util.MetCalorieCalculator
 import com.yourcoach.plus.shared.util.invokeCloudFunction
@@ -424,6 +425,10 @@ class DashboardScreenModel(
                         )
                     }
 
+                    // 今日のクエストが未生成なら自動生成チェック
+                    // ※ coroutineScope内で実行（下のobserve collectは永遠に完了しないため、外に置くと到達不能）
+                    checkAndAutoGenerateQuest()
+
                     // リアルタイム監視を開始
                     launch {
                         mealRepository.observeMealsForDate(userId, date).collect { meals ->
@@ -437,9 +442,6 @@ class DashboardScreenModel(
                         }
                     }
                 }
-
-                // 今日のクエストが未生成なら自動生成チェック
-                checkAndAutoGenerateQuest()
     }
 
     /**
@@ -659,8 +661,8 @@ class DashboardScreenModel(
             if (workoutPattern.containsMatchIn(l)) {
                 foundWorkoutLine = true
             } else if (foundWorkoutLine && l.trimStart().startsWith("\u30FB")) {
-                // ・で始まる行を収集
-                workoutExerciseLines.add(l.trimStart().removePrefix("\u30FB").trim())
+                // ・で始まる行を収集（プレフィックス保持）
+                workoutExerciseLines.add(l.trimStart())
             } else if (foundWorkoutLine && !l.trimStart().startsWith("\u30FB")) {
                 foundWorkoutLine = false
             }
@@ -1978,9 +1980,9 @@ class DashboardScreenModel(
             return
         }
 
-        // プレミアム会員チェック
-        if (user.isPremium != true && !user.hasCorporatePremium) {
-            if (!silent) _uiState.update { it.copy(questGenerationError = "クエスト生成はプレミアム会員限定機能です") }
+        // クレジット残高チェック
+        if (user.availableCredits < 1) {
+            if (!silent) _uiState.update { it.copy(questGenerationError = "クレジットが不足しています") }
             return
         }
 
@@ -1997,29 +1999,7 @@ class DashboardScreenModel(
                 // 対象日のルーティンを取得
                 val routine = routineRepository?.getRoutineForDate(userId, targetDate)?.getOrNull()
                 val rawSplitType = routine?.splitType ?: "off"
-
-                // splitTypeは日本語→英語変換
-                val splitType = when (rawSplitType) {
-                    "胸" -> "chest"
-                    "背中" -> "back"
-                    "脚" -> "legs"
-                    "肩" -> "shoulders"
-                    "腕" -> "arms"
-                    "腹筋" -> "abs"
-                    "腹筋・体幹" -> "abs_core"
-                    "有酸素" -> "cardio"
-                    "休み" -> "rest"
-                    "オフ" -> "off"
-                    "上半身" -> "upper_body"
-                    "下半身" -> "lower_body"
-                    "全身" -> "full_body"
-                    "プッシュ" -> "push"
-                    "プル" -> "pull"
-                    "胸・三頭" -> "chest_triceps"
-                    "背中・二頭" -> "back_biceps"
-                    "肩・腕" -> "shoulders_arms"
-                    else -> rawSplitType.lowercase()
-                }
+                val splitType = convertSplitTypeToEnglish(rawSplitType)
 
                 // 目標PFC（対象日のルーティンに基づいて再計算）
                 val targets = calculateTargets(user, routine, isManualRestDay = false)
@@ -2105,8 +2085,6 @@ class DashboardScreenModel(
         val user = state.user ?: return
         val profile = user.profile ?: return
         if (!profile.questAutoGenEnabled) return
-        if (user.isPremium != true && !user.hasCorporatePremium) return
-
         if (user.availableCredits < 1) return
 
         println("DashboardScreenModel: 自動クエスト生成を開始")
@@ -2252,6 +2230,28 @@ class DashboardScreenModel(
     }
 
     // ========== ユーティリティ ==========
+
+    private fun convertSplitTypeToEnglish(rawSplitType: String): String = when (rawSplitType) {
+        "胸" -> "chest"
+        "背中" -> "back"
+        "脚" -> "legs"
+        "肩" -> "shoulders"
+        "腕" -> "arms"
+        "腹筋" -> "abs"
+        "腹筋・体幹" -> "abs_core"
+        "有酸素" -> "cardio"
+        "休み" -> "rest"
+        "オフ" -> "off"
+        "上半身" -> "upper_body"
+        "下半身" -> "lower_body"
+        "全身" -> "full_body"
+        "プッシュ" -> "push"
+        "プル" -> "pull"
+        "胸・三頭" -> "chest_triceps"
+        "背中・二頭" -> "back_biceps"
+        "肩・腕" -> "shoulders_arms"
+        else -> rawSplitType.lowercase()
+    }
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
@@ -2597,27 +2597,25 @@ class DashboardScreenModel(
                 ))
             }
         } else if (item.id.startsWith("directive_")) {
-            val workoutText = item.subtitle ?: ""
-            val bulletLines = workoutText.split("\n").filter { it.trimStart().startsWith("・") }
+            // デフォルトテンプレートから種目を生成
+            val rawSplitType = _uiState.value.todayRoutine?.splitType ?: ""
+            val splitType = convertSplitTypeToEnglish(rawSplitType)
+            val trainingStyle = _uiState.value.user?.profile?.trainingStyle?.name ?: "POWER"
+            val duration = _uiState.value.user?.profile?.trainingDuration ?: 120
 
-            for (line in bulletLines) {
-                val name = line.removePrefix("・").substringBefore(" ").trim()
-                val setsMatch = Regex("(\\d+)セット").find(line)
-                val repsMatch = Regex("(\\d+)回/セット").find(line)
-                val sets = setsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 6
-                val reps = repsMatch?.groupValues?.get(1)?.toIntOrNull() ?: 10
+            val generated = WorkoutQuestGenerator.generateExercisesFromTemplate(
+                splitType = splitType,
+                trainingStyle = trainingStyle,
+                durationMinutes = duration
+            )
 
-                val rmRecord = rmRecordCache[name]
-                val estimatedWeight = rmRecord?.weight
-                val isEstimated = rmRecord != null
-
+            for (ex in generated) {
                 exercises.add(WorkoutCompletionExercise(
-                    name = name,
+                    name = ex.name,
                     category = "",
-                    sets = sets,
-                    reps = reps,
-                    weight = estimatedWeight,
-                    isWeightEstimated = isEstimated
+                    sets = ex.sets,
+                    reps = ex.reps,
+                    weight = null
                 ))
             }
 
@@ -2637,6 +2635,10 @@ class DashboardScreenModel(
             workoutCompletionItem = item,
             workoutCompletionExercises = exercises
         ) }
+    }
+
+    fun updateWorkoutCompletionExercises(exercises: List<WorkoutCompletionExercise>) {
+        _uiState.update { it.copy(workoutCompletionExercises = exercises) }
     }
 
     fun dismissWorkoutCompletionSheet() {
@@ -2674,16 +2676,26 @@ class DashboardScreenModel(
                 val totalDuration = exercises.sumOf { it.duration }
                 val totalCalories = exercises.sumOf { it.calories }
 
+                // テンプレ名を生成（例: "背中トレーニング（パワー）"）
+                val workoutName = if (item.id.startsWith("directive_")) {
+                    val rawSplit = _uiState.value.todayRoutine?.splitType ?: ""
+                    val style = _uiState.value.user?.profile?.trainingStyle?.name ?: "POWER"
+                    val styleLabel = if (style == "POWER") "パワー" else "パンプ"
+                    "${rawSplit}トレーニング（$styleLabel）"
+                } else {
+                    item.title
+                }
+
                 val workout = Workout(
                     id = "",
                     userId = userId,
-                    name = item.title,
+                    name = workoutName,
                     type = WorkoutType.STRENGTH,
                     exercises = exerciseModels,
                     totalDuration = totalDuration,
                     totalCaloriesBurned = totalCalories,
                     intensity = WorkoutIntensity.MODERATE,
-                    note = if (item.isCustomQuest) "カスタムクエスト" else (item.subtitle ?: ""),
+                    note = if (item.isCustomQuest) "カスタムクエスト" else null,
                     timestamp = targetTimestamp,
                     createdAt = Clock.System.now().toEpochMilliseconds()
                 )

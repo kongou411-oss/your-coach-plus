@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,6 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -199,10 +205,15 @@ class DashboardScreen : Screen {
                                             screenModel.onTimelineItemClick(item)
                                         },
                                         onRecordClick = { item ->
-                                            // タイムラインアイテムのインデックスから指示書アイテムを特定して完了トグル
-                                            val directive = uiState.directive
-                                            if (directive != null && item.directiveItemIndex != null) {
-                                                screenModel.toggleDirectiveItem(item.directiveItemIndex)
+                                            if (item.type == TimelineItemType.WORKOUT && !item.isRecorded) {
+                                                // 運動クエスト: テンプレートベースの完了シートを表示
+                                                screenModel.showWorkoutCompletionSheet(item)
+                                            } else {
+                                                // 食事・その他: 従来のトグル
+                                                val directive = uiState.directive
+                                                if (directive != null && item.directiveItemIndex != null) {
+                                                    screenModel.toggleDirectiveItem(item.directiveItemIndex)
+                                                }
                                             }
                                         },
                                         modifier = Modifier
@@ -534,9 +545,13 @@ class DashboardScreen : Screen {
 
         // 運動クエスト完了シート
         if (uiState.showWorkoutCompletionSheet && uiState.workoutCompletionItem != null) {
+            val splitLabel = uiState.todayRoutine?.splitType ?: ""
+            val styleLabel = if (uiState.user?.profile?.trainingStyle?.name == "POWER") "パワー" else "パンプ"
             WorkoutCompletionSheet(
                 item = uiState.workoutCompletionItem!!,
                 exercises = uiState.workoutCompletionExercises,
+                workoutDisplayName = "${splitLabel}トレーニング（$styleLabel）",
+                onExercisesEdited = { edited -> screenModel.updateWorkoutCompletionExercises(edited) },
                 onConfirm = { screenModel.confirmWorkoutCompletion() },
                 onDismiss = { screenModel.dismissWorkoutCompletionSheet() }
             )
@@ -1088,12 +1103,29 @@ private fun RmAddDialog(
 private fun WorkoutCompletionSheet(
     item: UnifiedTimelineItem,
     exercises: List<WorkoutCompletionExercise>,
+    workoutDisplayName: String? = null,
+    onExercisesEdited: (List<WorkoutCompletionExercise>) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val totalDuration = exercises.sumOf { it.duration }
     val totalCalories = exercises.sumOf { it.calories }
+
+    // 編集可能な重量リスト（各種目のkg入力用）
+    val editedWeights = remember(exercises) {
+        mutableStateListOf(*exercises.map { it.weight?.toInt()?.toString() ?: "" }.toTypedArray())
+    }
+
+    // 編集後のカロリー・時間を再計算（空欄時は元の推定値を維持）
+    val editedExercises = exercises.mapIndexed { i, ex ->
+        val text = editedWeights.getOrNull(i) ?: ""
+        val w = if (text.isNotEmpty()) text.toFloatOrNull() else ex.weight
+        ex.copy(weight = w)
+    }
+    val editedTotalCalories = editedExercises.sumOf { it.calories }
+
+    val focusManager = LocalFocusManager.current
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1103,114 +1135,112 @@ private fun WorkoutCompletionSheet(
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp)
         ) {
-            Text(item.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(12.dp))
+            Text(workoutDisplayName ?: item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp),
+                    .background(MaterialTheme.colorScheme.surfaceVariant).padding(10.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${totalDuration}分", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("${totalDuration}分", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                     Text("時間", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${totalCalories}kcal", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
+                    Text("${editedTotalCalories}kcal", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = AccentOrange)
                     Text("消費", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${exercises.size}種目", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("種目", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                    Text("${exercises.size}種目", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                    Text("種目数", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            editedExercises.forEachIndexed { index, exercise ->
+                WorkoutCompletionExerciseCard(
+                    exercise = exercise,
+                    weightText = editedWeights.getOrElse(index) { "" },
+                    onWeightChange = { newVal ->
+                        if (index < editedWeights.size) editedWeights[index] = newVal
+                    },
+                    onDone = { focusManager.clearFocus() }
+                )
+                if (index < editedExercises.lastIndex) Spacer(modifier = Modifier.height(6.dp))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            Text("種目 (${exercises.size})", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
-                Icon(Icons.Outlined.Info, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("各種目メインセットの平均重量を入力", style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-            }
-
-            Column(
-                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                exercises.forEach { exercise ->
-                    WorkoutCompletionExerciseCard(exercise = exercise)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = onConfirm,
+                onClick = {
+                    focusManager.clearFocus()
+                    onExercisesEdited(editedExercises)
+                    onConfirm()
+                },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentOrange),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Filled.FitnessCenter, null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("記録 (${totalCalories}kcal / ${totalDuration}分)", fontWeight = FontWeight.Bold)
+                Text("記録 (${editedTotalCalories}kcal / ${totalDuration}分)", fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-private fun WorkoutCompletionExerciseCard(exercise: WorkoutCompletionExercise) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        shape = RoundedCornerShape(12.dp)
+private fun WorkoutCompletionExerciseCard(
+    exercise: WorkoutCompletionExercise,
+    weightText: String,
+    onWeightChange: (String) -> Unit,
+    onDone: () -> Unit = {}
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Text(exercise.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (exercise.category.isNotEmpty()) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(exercise.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (exercise.isWeightEstimated) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Surface(shape = RoundedCornerShape(4.dp), color = AccentOrange.copy(alpha = 0.15f)) {
-                            Text("推定", style = MaterialTheme.typography.labelSmall, color = AccentOrange,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
-                        }
-                    }
-                }
-                Text("${exercise.calories}kcal", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = AccentOrange)
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            val details = buildString {
-                append("${exercise.sets}セット × ${exercise.reps}回")
-                exercise.weight?.let { append(" / ${it.toInt()}kg") }
-                append(" = ${exercise.duration}分")
-            }
-            Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            val hasRmPercent = exercise.rmPercentMin != null || exercise.rmPercentMax != null
-            if (hasRmPercent) {
-                val rmStr = when {
-                    exercise.rmPercentMin != null && exercise.rmPercentMax != null ->
-                        "1RM ${exercise.rmPercentMin.toInt()}-${exercise.rmPercentMax.toInt()}%"
-                    exercise.rmPercentMin != null -> "1RM ${exercise.rmPercentMin.toInt()}%"
-                    else -> "1RM ${exercise.rmPercentMax!!.toInt()}%"
-                }
-                Text(rmStr, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(exercise.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("${exercise.sets}s × ${exercise.reps}rep",
+                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        val isFocused = remember { mutableStateOf(false) }
+        val borderColor = if (isFocused.value) AccentOrange else MaterialTheme.colorScheme.outline
+
+        BasicTextField(
+            value = weightText,
+            onValueChange = { newVal ->
+                if (newVal.isEmpty() || newVal.matches(Regex("^\\d*\\.?\\d*$"))) {
+                    onWeightChange(newVal)
+                }
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onDone() }),
+            modifier = Modifier.width(100.dp)
+                .onFocusChanged { isFocused.value = it.isFocused },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+            decorationBox = { innerTextField ->
+                Row(
+                    modifier = Modifier
+                        .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.weight(1f)) { innerTextField() }
+                    Text("kg", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        )
     }
 }
 
@@ -1292,7 +1322,7 @@ private fun QuestDetailDialog(
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     Text("\u2022", style = MaterialTheme.typography.bodyMedium, color = bulletColor, modifier = Modifier.width(16.dp))
-                                    Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(line.removePrefix("\u30FB").trim(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }

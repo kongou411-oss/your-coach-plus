@@ -3,7 +3,6 @@ package com.yourcoach.plus.shared.domain.usecase
 import com.yourcoach.plus.shared.domain.model.DetailedNutrition
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
 import com.yourcoach.plus.shared.domain.model.Meal
-import kotlin.math.min
 
 /**
  * 詳細栄養素計算ユースケース
@@ -195,31 +194,16 @@ object NutritionCalculator {
         val highGIPercent = if (totalGICarbs > 0) (highGICarbs / totalGICarbs) * 100f else 0f
         val lowGIPercent = if (totalGICarbs > 0) (lowGICarbs / totalGICarbs) * 100f else 0f
 
-        // GL補正要因
-        val glModifiers = mutableListOf<Pair<String, Float>>()
-        val proteinReduction = min(10f, (totalProtein / 20f) * 10f)
-        if (proteinReduction > 0) {
-            glModifiers.add("タンパク質(${totalProtein.toInt()}g)" to -proteinReduction)
-        }
-        val fatReduction = min(5f, (totalFat / 10f) * 5f)
-        if (fatReduction > 0) {
-            glModifiers.add("脂質(${totalFat.toInt()}g)" to -fatReduction)
-        }
-        val fiberReduction = min(10f, (totalFiber / 10f) * 10f)
-        if (fiberReduction > 0) {
-            glModifiers.add("食物繊維(${totalFiber.toInt()}g)" to -fiberReduction)
-        }
+        // PFC補正は食事単位で適用（getGlRating）するため、1日合計には適用しない
+        val glModifiers = emptyList<Pair<String, Float>>()
+        val adjustedGL = totalGL
 
-        // 補正後GL値
-        val totalReduction = proteinReduction + fatReduction + fiberReduction
-        val adjustedGL = totalGL * (1f - totalReduction / 100f)
-
-        // 血糖管理評価
+        // 血糖管理評価（生のGL値で判定）
         val (bloodSugarRating, bloodSugarLabel) = when {
-            adjustedGL < glLimit * 0.5f -> "A+" to "優秀"
-            adjustedGL < glLimit * 0.7f -> "A" to "良好"
-            adjustedGL < glLimit * 0.85f -> "B" to "普通"
-            adjustedGL < glLimit -> "C" to "やや高め"
+            totalGL < glLimit * 0.5f -> "A+" to "優秀"
+            totalGL < glLimit * 0.7f -> "A" to "良好"
+            totalGL < glLimit * 0.85f -> "B" to "普通"
+            totalGL < glLimit -> "C" to "やや高め"
             else -> "D" to "要改善"
         }
 

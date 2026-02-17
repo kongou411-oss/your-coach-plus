@@ -927,7 +927,8 @@ private fun ExerciseDatabaseDialog(
                                     duration = totalDuration,
                                     distance = null,
                                     caloriesBurned = if (isStrength) {
-                                        ((totalVolume * 0.05f) + (totalDuration * 3)).toInt().coerceAtLeast(1)
+                                        // MetCalorieCalculator準拠: volumeBonus(0.02) + base(3kcal/分)
+                                        ((totalVolume * 0.02f) + (totalDuration * 3)).toInt().coerceAtLeast(1)
                                     } else {
                                         totalDuration * 7
                                     },

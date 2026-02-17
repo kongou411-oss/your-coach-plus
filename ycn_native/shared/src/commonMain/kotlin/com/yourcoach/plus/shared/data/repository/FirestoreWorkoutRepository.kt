@@ -483,12 +483,18 @@ class FirestoreWorkoutRepository : WorkoutRepository {
     private fun dev.gitlive.firebase.firestore.DocumentSnapshot.toWorkout(): Workout? {
         if (!exists) return null
 
-        // iOS対応: List<Map<String, Any?>>の取得はシリアライズエラーになる可能性があるためtry-catch
-        val exercisesList = try {
-            get<List<Map<String, Any?>>?>("exercises") ?: emptyList()
+        // iOS対応: @Serializableで直接デシリアライズ（MealItemと同じパターン）
+        val exercises: List<Exercise> = try {
+            get<List<Exercise>>("exercises")
         } catch (e: Throwable) {
-            println("FirestoreWorkoutRepository: Could not parse exercises: ${e.message}")
-            emptyList()
+            // フォールバック: Map<String, Any?>経由でパース
+            try {
+                val exerciseMaps = get<List<Map<String, Any?>>?>("exercises") ?: emptyList()
+                exerciseMaps.map { mapToExercise(it) }
+            } catch (e2: Throwable) {
+                println("FirestoreWorkoutRepository: exercises parse failed: ${e.message}")
+                emptyList()
+            }
         }
         return Workout(
             id = id,
@@ -497,7 +503,7 @@ class FirestoreWorkoutRepository : WorkoutRepository {
             type = get<String?>("type")?.let {
                 try { WorkoutType.valueOf(it) } catch (e: Exception) { WorkoutType.STRENGTH }
             } ?: WorkoutType.STRENGTH,
-            exercises = exercisesList.map { mapToExercise(it) },
+            exercises = exercises,
             totalDuration = get<Long?>("totalDuration")?.toInt() ?: 0,
             totalCaloriesBurned = get<Long?>("totalCaloriesBurned")?.toInt() ?: 0,
             intensity = get<String?>("intensity")?.let {

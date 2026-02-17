@@ -5701,6 +5701,11 @@ function calculateMealTimes(wakeUpTime, trainingTime, sleepTime, mealsPerDay, tr
       // トレ後: トレーニング終了直後
       time = training + duration;
       label = "トレ後";
+    } else if (hasTraining && i === trainingAfterMeal + 2) {
+      // トレ後の次: トレ後食事から1時間後
+      const prevTime = parseTimeToMinutes(mealTimes[i - 2].time);
+      time = prevTime + 60;
+      label = "";
     } else {
       // 順算: 前食+3時間
       const prevTime = parseTimeToMinutes(mealTimes[i - 2].time);

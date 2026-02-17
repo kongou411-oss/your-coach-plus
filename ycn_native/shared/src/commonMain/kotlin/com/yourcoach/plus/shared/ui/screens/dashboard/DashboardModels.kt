@@ -93,7 +93,15 @@ data class WorkoutCompletionExercise(
 ) {
     val duration: Int get() = sets * 5
     val volume: Float get() = sets * reps * (weight ?: 0f)
-    val calories: Int get() = ((volume * 0.05f) + (duration * 3)).toInt().coerceAtLeast(0)
+    val calories: Int get() {
+        return if (weight != null && weight > 0f) {
+            // MetCalorieCalculator準拠: volumeBonus(0.02) + base(3kcal/分)
+            ((volume * 0.02f) + (duration * 3f)).toInt().coerceAtLeast(0)
+        } else {
+            // 重量不明時: 筋トレMETベース概算 (~4kcal/分)
+            (duration * 4).coerceAtLeast(0)
+        }
+    }
 }
 
 /**
@@ -107,15 +115,24 @@ enum class GlRating {
 }
 
 /**
- * GL評価を取得
+ * GL評価を取得（PFC混食による血糖上昇緩和を考慮）
+ * タンパク質・脂質・食物繊維が同一食事内にあると血糖上昇が緩やかになる
  */
-fun getGlRating(gl: Float, limit: Float, isPostWorkout: Boolean): GlRating {
+fun getGlRating(gl: Float, limit: Float, isPostWorkout: Boolean,
+                protein: Float = 0f, fat: Float = 0f, fiber: Float = 0f): GlRating {
+    // PFC補正: 混食による血糖上昇緩和
+    val proteinReduction = kotlin.math.min(10f, (protein / 20f) * 10f)
+    val fatReduction = kotlin.math.min(5f, (fat / 10f) * 5f)
+    val fiberReduction = kotlin.math.min(10f, (fiber / 10f) * 10f)
+    val totalReduction = proteinReduction + fatReduction + fiberReduction
+    val adjustedGL = gl * (1f - totalReduction / 100f)
+
     val lowThreshold = limit * 0.5f
     val mediumThreshold = limit * 0.8f
 
     return when {
-        gl <= lowThreshold -> GlRating.LOW
-        gl <= mediumThreshold -> GlRating.MEDIUM
+        adjustedGL <= lowThreshold -> GlRating.LOW
+        adjustedGL <= mediumThreshold -> GlRating.MEDIUM
         isPostWorkout -> GlRating.HIGH_RECOMMENDED
         else -> GlRating.HIGH
     }
