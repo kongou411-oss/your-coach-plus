@@ -31,10 +31,11 @@ import kotlinx.serialization.json.intOrNull
  */
 data class SettingsUiState(
     val isLoading: Boolean = false,
+    val selectedTabIndex: Int = 0,
     val user: User? = null,
     val isPremium: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val appVersion: String = "2.0.8",
+    val appVersion: String = "2.1.0",
     val error: String? = null,
     val isLoggedOut: Boolean = false,
     val isAccountDeleted: Boolean = false,
@@ -104,6 +105,10 @@ class SettingsScreenModel(
         loadUserInfo()
         loadCustomFoods()
         loadCustomQuestSlots()
+    }
+
+    fun updateSelectedTab(index: Int) {
+        _uiState.update { it.copy(selectedTabIndex = index) }
     }
 
     /**

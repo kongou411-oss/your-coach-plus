@@ -219,10 +219,22 @@ class AnalysisScreenModel(
 
             try {
                 val profile = state.userProfile
-                val targetCalories = profile?.targetCalories ?: 2000
-                val targetProtein = profile?.targetProtein ?: 120f
-                val targetFat = profile?.targetFat ?: 60f
-                val targetCarbs = profile?.targetCarbs ?: 250f
+
+                // class消費加算を含む動的ターゲット計算
+                val weight = profile?.weight ?: 70f
+                val bodyFat = profile?.bodyFatPercentage ?: 20f
+                val lbm = weight * (1 - bodyFat / 100f)
+                val trainingBonus = TrainingCalorieBonus.fromSplitType(
+                    state.todaySplitType, state.isRestDay, lbm
+                )
+                val baseCalories = profile?.targetCalories ?: 2000
+                val targetCalories = baseCalories + trainingBonus
+                val pRatio = (profile?.proteinRatioPercent ?: 30) / 100f
+                val fRatio = (profile?.fatRatioPercent ?: 25) / 100f
+                val cRatio = (profile?.carbRatioPercent ?: 45) / 100f
+                val targetProtein = targetCalories * pRatio / 4f
+                val targetFat = targetCalories * fRatio / 9f
+                val targetCarbs = targetCalories * cRatio / 4f
 
                 // Calculate score if not available
                 val effectiveScore = state.score ?: calculateScoreFromMeals(
@@ -478,10 +490,38 @@ class AnalysisScreenModel(
         isRestDay: Boolean
     ): String {
         val state = _uiState.value
-        val targetCalories = profile?.targetCalories ?: 2000
-        val targetProtein = profile?.targetProtein ?: 120f
-        val targetFat = profile?.targetFat ?: 60f
-        val targetCarbs = profile?.targetCarbs ?: 250f
+
+        // --- class消費加算を含む動的ターゲット計算 ---
+        val weight = profile?.weight ?: 70f
+        val bodyFat = profile?.bodyFatPercentage ?: 20f
+        val lbmCalc = weight * (1 - bodyFat / 100f)
+
+        val trainingBonus = TrainingCalorieBonus.fromSplitType(
+            state.todaySplitType, isRestDay, lbmCalc
+        )
+        val trainingClass = when {
+            isRestDay -> "休養日（+0）"
+            state.todaySplitType in listOf("脚", "全身", "下半身") -> "SSS（+${trainingBonus}kcal）"
+            state.todaySplitType in listOf("胸", "背中", "肩", "上半身", "プッシュ", "プル", "胸・三頭", "背中・二頭", "肩・腕") -> "S（+${trainingBonus}kcal）"
+            state.todaySplitType in listOf("腕", "腹筋・体幹") -> "A（+${trainingBonus}kcal）"
+            state.todaySplitType != null -> "S（+${trainingBonus}kcal）"
+            else -> "なし（+0）"
+        }
+
+        // ベースターゲット（プロフィール保存値 = TDEE + 目標調整）
+        val baseCalories = profile?.targetCalories ?: 2000
+        // 加算後の実際の日次ターゲット
+        val targetCalories = baseCalories + trainingBonus
+
+        // PFC も加算後カロリーベースで再計算
+        val pRatio = (profile?.proteinRatioPercent ?: 30) / 100f
+        val fRatio = (profile?.fatRatioPercent ?: 25) / 100f
+        val cRatio = (profile?.carbRatioPercent ?: 45) / 100f
+        val targetProtein = targetCalories * pRatio / 4f
+        val targetFat = targetCalories * fRatio / 9f
+        val targetCarbs = targetCalories * cRatio / 4f
+
+        val activityName = profile?.activityLevel?.displayName ?: "不明"
 
         // 目標名と評価コンテキスト
         val goalKey = profile?.goal?.name ?: "MAINTAIN"
@@ -541,9 +581,7 @@ class AnalysisScreenModel(
             "$rounded"
         } else "未計測"
         val fiberStr = "${(micro.totalFiber * 10).roundToInt() / 10.0}"
-        val lbmWeight = profile?.weight ?: 70f
-        val lbmBodyFat = profile?.bodyFatPercentage ?: 20f
-        val lbm = lbmWeight * (1 - lbmBodyFat / 100f)
+        val lbm = lbmCalc
         val lbmStr = "${(lbm * 10).roundToInt() / 10.0}"
 
         val microSection = """
@@ -603,16 +641,20 @@ $predictionText
 - 性別: ${profile?.gender?.name ?: "不明"}
 - 年齢: ${profile?.age ?: "不明"}歳
 - 体重: ${profile?.weight ?: "不明"}kg（目標: ${profile?.targetWeight ?: "不明"}kg）
+- 体脂肪率: ${profile?.bodyFatPercentage ?: "不明"}%
 - LBM（除脂肪体重）: ${lbmStr}kg
-${if (state.todaySplitType != null) "- 本日のトレーニング部位: ${state.todaySplitType}" else ""}
+- 日常活動レベル: $activityName
+${if (state.todaySplitType != null) "- 本日のトレーニング部位: ${state.todaySplitType}（クラス: $trainingClass）" else "- 本日のトレーニング: なし"}
 ${if (isRestDay) "- 本日は休養日（無理な運動は提案せず、回復を優先するコメントをすること）" else "- 本日はトレーニング推奨日"}
 $lbmSection
 
 ## 今日の目標（Plan）
-- カロリー: ${targetCalories}kcal（※トレーニング消費分を含む摂取目標。運動消費を差し引かないこと）
-- P（タンパク質）: ${targetProtein.roundToInt()}g
-- F（脂質）: ${targetFat.roundToInt()}g
-- C（炭水化物）: ${targetCarbs.roundToInt()}g
+- ベースカロリー: ${baseCalories}kcal（TDEE ± 目標調整）
+- トレーニングclass加算: +${trainingBonus}kcal
+- **本日の摂取目標: ${targetCalories}kcal**（※運動消費を差し引かないこと）
+- P（タンパク質）: ${targetProtein.roundToInt()}g（${(pRatio * 100).roundToInt()}%）
+- F（脂質）: ${targetFat.roundToInt()}g（${(fRatio * 100).roundToInt()}%）
+- C（炭水化物）: ${targetCarbs.roundToInt()}g（${(cRatio * 100).roundToInt()}%）
 
 ## 今日の実績（Do）
 - カロリー: ${score.totalCalories.roundToInt()}kcal（達成率: ${calPercent}%）
@@ -746,7 +788,7 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
     }
 
     /**
-     * Auto-save report
+     * Auto-save report + 古いレポートの自動削除（最新30件を保持）
      */
     private fun autoSaveReport(userId: String, analysisText: String) {
         screenModelScope.launch(exceptionHandler) {
@@ -766,10 +808,35 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
                         val savedReport = report.copy(id = reportId)
                         _uiState.update { it.copy(selectedReport = savedReport) }
                         loadSavedReports()
+                        // 古いレポートを削除（30件超）
+                        cleanupOldReports(userId)
                     }
             } catch (e: Exception) {
                 // Log error but don't show to user
             }
+        }
+    }
+
+    private companion object {
+        const val MAX_REPORTS = 30
+    }
+
+    /**
+     * 30件を超える古いレポートを自動削除
+     */
+    private suspend fun cleanupOldReports(userId: String) {
+        try {
+            val allReports = analysisRepository?.getReports(userId, MAX_REPORTS + 20)
+                ?.getOrNull() ?: return
+            if (allReports.size <= MAX_REPORTS) return
+            val toDelete = allReports.drop(MAX_REPORTS)
+            toDelete.forEach { report ->
+                if (report.id.isNotEmpty()) {
+                    analysisRepository?.deleteReport(userId, report.id)
+                }
+            }
+        } catch (_: Exception) {
+            // クリーンアップ失敗は無視
         }
     }
 
@@ -880,36 +947,6 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
      */
     fun updateQuestion(question: String) {
         _uiState.update { it.copy(userQuestion = question) }
-    }
-
-    /**
-     * Save report
-     */
-    fun saveReport(title: String) {
-        val userId = authRepository.getCurrentUserId() ?: return
-        val state = _uiState.value
-        val aiAnalysis = state.aiAnalysis ?: return
-
-        screenModelScope.launch(exceptionHandler) {
-            val today = DateUtil.todayString()
-            val report = AnalysisReport(
-                title = title,
-                content = aiAnalysis,
-                conversationHistory = state.conversationHistory,
-                periodStart = today,
-                periodEnd = today,
-                reportType = ReportType.DAILY
-            )
-
-            analysisRepository?.saveReport(userId, report)
-                ?.onSuccess {
-                    loadSavedReports()
-                    _uiState.update { it.copy(activeTab = AnalysisTab.HISTORY) }
-                }
-                ?.onFailure { error ->
-                    _uiState.update { it.copy(error = error.message) }
-                }
-        }
     }
 
     /**

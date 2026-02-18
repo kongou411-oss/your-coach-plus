@@ -630,7 +630,7 @@ class FirestoreUserRepository : UserRepository {
             mealSlotConfig = mealSlotConfig,
             workoutSlotConfig = workoutSlotConfig,
             routineTemplateConfig = routineTemplateConfig,
-            questAutoGenEnabled = profileMap["questAutoGenEnabled"] as? Boolean ?: false
+            questAutoGenEnabled = profileMap["questAutoGenEnabled"] as? Boolean ?: true
         )
     }
 

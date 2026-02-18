@@ -67,16 +67,6 @@ class RoutineSettingsScreen : Screen {
                         }
                     }
                 )
-            },
-            floatingActionButton = {
-                if (uiState.days.size < 10) {
-                    FloatingActionButton(
-                        onClick = { screenModel.addDay() },
-                        containerColor = Primary
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Day追加")
-                    }
-                }
             }
         ) { paddingValues ->
             if (uiState.isLoading) {
@@ -141,7 +131,22 @@ class RoutineSettingsScreen : Screen {
                         )
                     }
 
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
+                    // Day追加ボタン
+                    if (uiState.days.size < 10) {
+                        item {
+                            OutlinedButton(
+                                onClick = { screenModel.addDay() },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Day追加")
+                            }
+                        }
+                    }
+
+                    item { Spacer(modifier = Modifier.height(24.dp)) }
                 }
             }
         }

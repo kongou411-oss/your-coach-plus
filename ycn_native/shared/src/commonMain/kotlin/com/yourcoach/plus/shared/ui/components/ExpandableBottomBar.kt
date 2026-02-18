@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yourcoach.plus.shared.ui.theme.AccentOrange
 import com.yourcoach.plus.shared.ui.theme.Primary
+import com.yourcoach.plus.shared.util.getSafeAreaBottomPadding
 
 /**
  * 展開可能な統合ボトムバー
@@ -86,6 +87,7 @@ fun ExpandableBottomBar(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(true) }  // デフォルト展開
+    val safeAreaBottom = getSafeAreaBottomPadding()
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -96,7 +98,7 @@ fun ExpandableBottomBar(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // シェブロンハンドル（常に表示・システムナビ上に十分な余白）
+            // シェブロンハンドル（常に表示）
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -104,7 +106,7 @@ fun ExpandableBottomBar(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { isExpanded = !isExpanded }
-                    .padding(top = 12.dp, bottom = 24.dp),
+                    .padding(top = 12.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -205,6 +207,8 @@ fun ExpandableBottomBar(
                 }
             }
 
+            // システムナビゲーション領域の余白（ジェスチャーナビ/ホームインジケータ）
+            Spacer(modifier = Modifier.height(safeAreaBottom))
         }
     }
 }

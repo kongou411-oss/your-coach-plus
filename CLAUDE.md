@@ -25,7 +25,7 @@
 |------|-----|
 | アプリ名 | Your Coach+ |
 | パッケージ | com.yourcoach.plus |
-| バージョン | 2.0.8 (versionCode 92) |
+| バージョン | 2.1.0 (versionCode 94) |
 | 技術 | Kotlin Multiplatform + Compose Multiplatform + Voyager |
 | 状態 | Android リリース済み / iOS 未実装 |
 

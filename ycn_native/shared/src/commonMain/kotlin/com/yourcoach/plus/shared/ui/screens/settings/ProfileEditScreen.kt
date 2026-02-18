@@ -130,14 +130,14 @@ class ProfileEditScreen : Screen {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("性別", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Gender.entries.forEach { g ->
+                            listOf(Gender.MALE, Gender.FEMALE).forEach { g ->
                                 FilterChip(
                                     onClick = { screenModel.updateGender(g) },
                                     label = {
                                         Text(when (g) {
                                             Gender.MALE -> "男性"
                                             Gender.FEMALE -> "女性"
-                                            Gender.OTHER -> "その他"
+                                            else -> ""
                                         })
                                     },
                                     selected = uiState.gender == g,
@@ -151,28 +151,39 @@ class ProfileEditScreen : Screen {
                 // 体組成
                 item {
                     ProfileSectionCard(title = "体組成") {
+                        val heightVal = uiState.height.toFloatOrNull()
+                        val weightVal = uiState.weight.toFloatOrNull()
+                        val bodyFatVal = uiState.bodyFatPercentage.toFloatOrNull()
+                        val heightError = uiState.height.isNotEmpty() && (heightVal == null || heightVal < 100f || heightVal > 250f)
+                        val weightError = uiState.weight.isNotEmpty() && (weightVal == null || weightVal < 30f || weightVal > 300f)
+                        val bodyFatError = uiState.bodyFatPercentage.isNotEmpty() && (bodyFatVal == null || bodyFatVal < 3f || bodyFatVal > 60f)
+
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             OutlinedTextField(
                                 value = uiState.height,
                                 onValueChange = { screenModel.updateHeight(it) },
-                                label = { Text("身長") },
+                                label = { Text("身長 *") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
                                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 shape = RoundedCornerShape(12.dp),
-                                suffix = { Text("cm") }
+                                suffix = { Text("cm") },
+                                isError = heightError,
+                                supportingText = if (heightError) {{ Text("100〜250cm", color = Color.Red) }} else null
                             )
                             OutlinedTextField(
                                 value = uiState.weight,
                                 onValueChange = { screenModel.updateWeight(it) },
-                                label = { Text("体重") },
+                                label = { Text("体重 *") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
                                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 shape = RoundedCornerShape(12.dp),
-                                suffix = { Text("kg") }
+                                suffix = { Text("kg") },
+                                isError = weightError,
+                                supportingText = if (weightError) {{ Text("30〜300kg", color = Color.Red) }} else null
                             )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
@@ -180,13 +191,15 @@ class ProfileEditScreen : Screen {
                             OutlinedTextField(
                                 value = uiState.bodyFatPercentage,
                                 onValueChange = { screenModel.updateBodyFatPercentage(it) },
-                                label = { Text("体脂肪率") },
+                                label = { Text("体脂肪率 *") },
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
                                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 shape = RoundedCornerShape(12.dp),
-                                suffix = { Text("%") }
+                                suffix = { Text("%") },
+                                isError = bodyFatError,
+                                supportingText = if (bodyFatError) {{ Text("3〜60%", color = Color.Red) }} else null
                             )
                         }
 
@@ -287,6 +300,12 @@ class ProfileEditScreen : Screen {
                                 )
                             }
                         }
+                        Text(
+                            "※ 運動の消費カロリーはルーティンから自動加算されます",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -335,7 +354,7 @@ class ProfileEditScreen : Screen {
 
                         val total = uiState.proteinRatio + uiState.fatRatio + uiState.carbRatio
                         Text(
-                            "合計: $total% ${if (total != 100) "(100%に調整してください)" else ""}",
+                            "合計: $total% ${if (total != 100) "(100%に調整してください)" else "✓"}",
                             style = MaterialTheme.typography.labelSmall,
                             color = if (total == 100) Color(0xFF4CAF50) else Color.Red,
                             modifier = Modifier.padding(top = 8.dp)

@@ -45,6 +45,7 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.*
+import com.yourcoach.plus.shared.ui.components.ClockTimePickerDialog
 import com.yourcoach.plus.shared.ui.screens.main.MainScreen
 import com.yourcoach.plus.shared.ui.theme.*
 import kotlin.math.round
@@ -59,13 +60,6 @@ private fun formatOneDecimal(value: Float): String {
     } else {
         rounded.toString()
     }
-}
-
-/**
- * 2桁ゼロ埋めフォーマット（KMP対応）
- */
-private fun formatTwoDigits(value: Int): String {
-    return if (value < 10) "0$value" else value.toString()
 }
 
 /**
@@ -399,7 +393,7 @@ private fun ProfileStep(state: ProfileSetupState, screenModel: ProfileSetupScree
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "身体的性別",
+                    text = "性別",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -643,6 +637,12 @@ private fun ProfileStep(state: ProfileSetupState, screenModel: ProfileSetupScree
                         )
                     }
                 }
+                Text(
+                    "※ トレーニング前後のプロテインや間食も1食に含みます",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -880,6 +880,8 @@ private fun RoutineStep(state: ProfileSetupState, screenModel: ProfileSetupScree
         // Day一覧
         itemsIndexed(state.routineDays) { index, day ->
             var expanded by remember { mutableStateOf(false) }
+            var showCustomInput by remember { mutableStateOf(false) }
+            var customType by remember { mutableStateOf("") }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -997,10 +999,50 @@ private fun RoutineStep(state: ProfileSetupState, screenModel: ProfileSetupScree
                                         }
                                     )
                                 }
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp), tint = Primary)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("カスタム追加...", color = Primary)
+                                        }
+                                    },
+                                    onClick = { expanded = false; showCustomInput = true }
+                                )
                             }
                         }
                     }
                 }
+            }
+
+            if (showCustomInput) {
+                AlertDialog(
+                    onDismissRequest = { showCustomInput = false },
+                    title = { Text("カスタム分類") },
+                    text = {
+                        OutlinedTextField(
+                            value = customType, onValueChange = { customType = it },
+                            label = { Text("分類名") }, placeholder = { Text("例: 胸・肩") },
+                            singleLine = true, modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                if (customType.isNotBlank()) {
+                                    screenModel.updateRoutineDaySplitType(day.dayNumber, customType.trim())
+                                    customType = ""
+                                    showCustomInput = false
+                                }
+                            },
+                            enabled = customType.isNotBlank()
+                        ) { Text("追加") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { customType = ""; showCustomInput = false }) { Text("キャンセル") }
+                    }
+                )
             }
         }
 
@@ -1209,7 +1251,7 @@ private fun MealSlotStep(
 
                     // トレ前の食事番号
                     Text(
-                        text = "トレ前食事",
+                        text = "トレーニング前の食事番号は？",
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Row(
@@ -1378,94 +1420,20 @@ private fun TimePickerRow(
     }
 
     if (showTimePicker) {
-        SimpleTimePickerDialog(
-            initialTime = if (time == "未設定") "18:00" else time,
-            onDismiss = { showTimePicker = false },
+        val initialTime = if (time == "未設定") "18:00" else time
+        val hours = initialTime.substringBefore(":").toIntOrNull() ?: 18
+        val minutes = initialTime.substringAfter(":").toIntOrNull() ?: 0
+        ClockTimePickerDialog(
+            label = label,
+            initialHour = hours,
+            initialMinute = minutes,
             onConfirm = { newTime ->
                 onTimeChange(newTime)
                 showTimePicker = false
-            }
+            },
+            onDismiss = { showTimePicker = false }
         )
     }
-}
-
-@Composable
-private fun SimpleTimePickerDialog(
-    initialTime: String,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    val parts = initialTime.split(":")
-    var hour by remember { mutableStateOf(parts.getOrNull(0)?.toIntOrNull() ?: 12) }
-    var minute by remember { mutableStateOf(parts.getOrNull(1)?.toIntOrNull() ?: 0) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("時刻を選択") },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    // 時
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        IconButton(onClick = { hour = (hour + 1) % 24 }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "時を増やす")
-                        }
-                        Text(
-                            text = formatTwoDigits(hour),
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(onClick = { hour = if (hour == 0) 23 else hour - 1 }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "時を減らす")
-                        }
-                    }
-
-                    Text(
-                        text = ":",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-
-                    // 分
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        IconButton(onClick = { minute = (minute + 5) % 60 }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "分を増やす")
-                        }
-                        Text(
-                            text = formatTwoDigits(minute),
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(onClick = { minute = if (minute < 5) 55 else minute - 5 }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "分を減らす")
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val time = "${formatTwoDigits(hour)}:${formatTwoDigits(minute)}"
-                    onConfirm(time)
-                }
-            ) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("キャンセル")
-            }
-        }
-    )
 }
 
 // 旧メソッドの後方互換性（updateStyleはもう使わないがコンパイルエラー回避）

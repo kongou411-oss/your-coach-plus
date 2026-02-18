@@ -47,7 +47,7 @@ data class QuestSlotSettingsUiState(
     val routineTemplateConfig: RoutineTemplateConfig = RoutineTemplateConfig(),
     val availableTemplates: List<TemplateSummary> = emptyList(),
     val isLoadingTemplates: Boolean = false,
-    val questAutoGenEnabled: Boolean = false,
+    val questAutoGenEnabled: Boolean = true,
     val mealsPerDay: Int = 5,
     val showTemplatePicker: Boolean = false,
     val pickerTargetSlot: Int = -1, // -1=未選択, 0=運動, 1-N=食事
@@ -139,7 +139,7 @@ class QuestSlotSettingsScreenModel(
                     isLoading = false,
                     routineDays = days,
                     routineTemplateConfig = config,
-                    questAutoGenEnabled = profile?.questAutoGenEnabled ?: false,
+                    questAutoGenEnabled = profile?.questAutoGenEnabled ?: true,
                     mealsPerDay = meals,
                     wakeUpTime = wakeUp,
                     sleepTime = sleep,

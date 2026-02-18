@@ -81,8 +81,18 @@ class SettingsScreen : Screen {
         // メインナビゲーターを使用してサブ画面遷移する
         val mainNavigator = LocalMainNavigator.current
 
-        val pagerState = rememberPagerState(pageCount = { SettingsTab.entries.size })
+        val pagerState = rememberPagerState(
+            initialPage = uiState.selectedTabIndex,
+            pageCount = { SettingsTab.entries.size }
+        )
         val scope = rememberCoroutineScope()
+
+        // タブ変更をScreenModelに同期（サブ画面から戻った際にタブ保持）
+        LaunchedEffect(pagerState) {
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                screenModel.updateSelectedTab(page)
+            }
+        }
 
         // Logout/Account deletion → TabNavigator外でナビゲーション
         val logoutHandler = LocalLogoutHandler.current

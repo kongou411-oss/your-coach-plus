@@ -51,7 +51,6 @@ class AnalysisScreen : Screen {
         val uiState by screenModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val snackbarHostState = remember { SnackbarHostState() }
-        var showSaveDialog by remember { mutableStateOf(false) }
 
         // Error display
         LaunchedEffect(uiState.error) {
@@ -144,7 +143,6 @@ class AnalysisScreen : Screen {
                             onGenerateAnalysis = screenModel::generateAnalysis,
                             onSendQuestion = screenModel::sendQuestion,
                             onUpdateQuestion = screenModel::updateQuestion,
-                            onSaveReport = { showSaveDialog = true },
                             onClearAnalysis = screenModel::clearAnalysis
                         )
                     }
@@ -161,16 +159,6 @@ class AnalysisScreen : Screen {
             }
         }
 
-        // Save dialog
-        if (showSaveDialog) {
-            SaveReportDialog(
-                onDismiss = { showSaveDialog = false },
-                onSave = { title ->
-                    screenModel.saveReport(title)
-                    showSaveDialog = false
-                }
-            )
-        }
     }
 }
 
@@ -180,7 +168,6 @@ private fun AnalysisContent(
     onGenerateAnalysis: () -> Unit,
     onSendQuestion: (String) -> Unit,
     onUpdateQuestion: (String) -> Unit,
-    onSaveReport: () -> Unit,
     onClearAnalysis: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -275,7 +262,6 @@ private fun AnalysisContent(
                 item {
                     AnalysisResultCard(
                         analysis = analysis,
-                        onSave = onSaveReport,
                         onClear = onClearAnalysis
                     )
                 }
@@ -493,7 +479,6 @@ private fun GenerateAnalysisCard(
 @Composable
 private fun AnalysisResultCard(
     analysis: String,
-    onSave: () -> Unit,
     onClear: () -> Unit
 ) {
     Card(
@@ -517,21 +502,12 @@ private fun AnalysisResultCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Row {
-                    IconButton(onClick = onSave) {
-                        Icon(
-                            Icons.Default.Save,
-                            contentDescription = "保存",
-                            tint = Primary
-                        )
-                    }
-                    IconButton(onClick = onClear) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "閉じる",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                IconButton(onClick = onClear) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "閉じる",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -726,41 +702,6 @@ private fun ReportCard(
             }
         }
     }
-}
-
-@Composable
-private fun SaveReportDialog(
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit
-) {
-    var title by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("レポートを保存") },
-        text = {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("タイトル") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onSave(title) },
-                enabled = title.isNotBlank()
-            ) {
-                Text("保存")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("キャンセル")
-            }
-        }
-    )
 }
 
 /**

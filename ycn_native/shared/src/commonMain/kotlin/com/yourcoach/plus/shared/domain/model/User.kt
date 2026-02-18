@@ -95,7 +95,7 @@ data class UserProfile(
     val mealSlotConfig: MealSlotConfig? = null,                          // 食事スロット設定
     val workoutSlotConfig: WorkoutSlotConfig? = null,                    // 運動スロット設定
     val routineTemplateConfig: RoutineTemplateConfig? = null,            // ルーティン別テンプレート設定
-    val questAutoGenEnabled: Boolean = false,                           // 起動時クエスト自動生成
+    val questAutoGenEnabled: Boolean = true,                            // 起動時クエスト自動生成
     // アクティビティ追跡
     val activeDays: List<String> = emptyList(),
     val streak: Int = 0,

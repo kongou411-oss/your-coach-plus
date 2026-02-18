@@ -39,7 +39,6 @@ import com.yourcoach.plus.shared.ui.screens.analysis.AnalysisScreen
 import com.yourcoach.plus.shared.ui.screens.meal.AddMealScreen
 import com.yourcoach.plus.shared.ui.screens.workout.AddWorkoutScreen
 import com.yourcoach.plus.shared.ui.theme.*
-import com.yourcoach.plus.shared.util.getSafeAreaTopPadding
 
 /**
  * ダッシュボード画面 (Compose Multiplatform版)
@@ -120,15 +119,9 @@ class DashboardScreen : Screen {
                     onRefresh = screenModel::refresh,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // SafeAreaのトップパディングを取得（iOS: ノッチ/Dynamic Island対応）
-                    val safeAreaTop = getSafeAreaTopPadding()
-
                     Column(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        // SafeArea対応: 上部余白（iOS: ノッチ、Android: ステータスバー）
-                        Spacer(modifier = Modifier.height(safeAreaTop))
-
                         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                             // 日付セレクター
                             DateSelector(
@@ -310,7 +303,7 @@ class DashboardScreen : Screen {
                                         date = uiState.date
                                     )
 
-                                    Spacer(modifier = Modifier.height(100.dp))
+                                    Spacer(modifier = Modifier.height(24.dp))
                                 }
                             }
                         }

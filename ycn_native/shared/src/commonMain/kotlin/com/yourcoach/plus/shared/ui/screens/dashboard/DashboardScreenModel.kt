@@ -583,7 +583,7 @@ class DashboardScreenModel(
                 items[index] = existingItem.copy(
                     status = TimelineItemStatus.COMPLETED,
                     linkedMeal = meal,
-                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.toInt()}g"
+                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.toInt()} F${meal.totalFat.toInt()} C${meal.totalCarbs.toInt()}"
                 )
             } else {
                 items.add(UnifiedTimelineItem(
@@ -592,7 +592,7 @@ class DashboardScreenModel(
                     timeMinutes = mealTime,
                     timeString = formatTimeMinutes(mealTime),
                     title = meal.name ?: getMealTypeName(meal.type),
-                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.toInt()}g",
+                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.toInt()} F${meal.totalFat.toInt()} C${meal.totalCarbs.toInt()}",
                     status = TimelineItemStatus.COMPLETED,
                     linkedMeal = meal
                 ))

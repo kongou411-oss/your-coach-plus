@@ -21,6 +21,7 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.domain.model.TrainingStyle
+import com.yourcoach.plus.shared.ui.components.ClockTimePickerDialog
 import com.yourcoach.plus.shared.ui.theme.*
 
 class MealSlotSettingsScreen : Screen {
@@ -333,54 +334,15 @@ private fun TimePickerRow(
     }
 
     if (showTimePicker) {
-        var selectedHour by remember { mutableStateOf(hours) }
-        var selectedMinute by remember { mutableStateOf(minutes / 30 * 30) }
-
-        AlertDialog(
-            onDismissRequest = { showTimePicker = false },
-            title = { Text(label) },
-            text = {
-                Column {
-                    Text("時", style = MaterialTheme.typography.labelMedium)
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        for (row in 0..2) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                for (col in 0..7) {
-                                    val h = row * 8 + col
-                                    if (h < 24) {
-                                        FilterChip(
-                                            onClick = { selectedHour = h },
-                                            label = { Text("$h", style = MaterialTheme.typography.labelSmall) },
-                                            selected = selectedHour == h,
-                                            modifier = Modifier.width(44.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text("分", style = MaterialTheme.typography.labelMedium)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(0, 30).forEach { m ->
-                            FilterChip(
-                                onClick = { selectedMinute = m },
-                                label = { Text(m.toString().padStart(2, '0')) },
-                                selected = selectedMinute == m
-                            )
-                        }
-                    }
-                }
+        ClockTimePickerDialog(
+            label = label,
+            initialHour = hours,
+            initialMinute = minutes,
+            onConfirm = { time ->
+                onTimeChanged(time)
+                showTimePicker = false
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    onTimeChanged("${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}")
-                    showTimePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text("キャンセル") }
-            }
+            onDismiss = { showTimePicker = false }
         )
     }
 }
