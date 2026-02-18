@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.settings
 
+import kotlin.math.roundToInt
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.Exercise
@@ -206,9 +207,9 @@ class TemplateSettingsScreenModel(
                 userId = userId,
                 items = enrichedItems,
                 totalCalories = enrichedItems.sumOf { it.calories },
-                totalProtein = enrichedItems.sumOf { it.protein.toDouble() }.toFloat(),
-                totalCarbs = enrichedItems.sumOf { it.carbs.toDouble() }.toFloat(),
-                totalFat = enrichedItems.sumOf { it.fat.toDouble() }.toFloat(),
+                totalProtein = enrichedItems.sumOf { it.protein.roundToInt() }.toFloat(),
+                totalCarbs = enrichedItems.sumOf { it.carbs.roundToInt() }.toFloat(),
+                totalFat = enrichedItems.sumOf { it.fat.roundToInt() }.toFloat(),
                 createdAt = com.yourcoach.plus.shared.util.DateUtil.currentTimestamp()
             )
             mealRepository.saveMealTemplate(copy)

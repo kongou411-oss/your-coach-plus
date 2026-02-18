@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.analysis
 
+import kotlin.math.roundToInt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -801,13 +802,13 @@ private fun ProfileSettingsSection(
                         fontWeight = FontWeight.Bold
                     )
                     val actualCal = score?.totalCalories ?: meals.sumOf { it.totalCalories }.toFloat()
-                    val actualP = score?.totalProtein ?: meals.sumOf { it.totalProtein.toDouble() }.toFloat()
-                    val actualF = score?.totalFat ?: meals.sumOf { it.totalFat.toDouble() }.toFloat()
-                    val actualC = score?.totalCarbs ?: meals.sumOf { it.totalCarbs.toDouble() }.toFloat()
-                    SettingRow("カロリー", "${actualCal.toInt()} kcal")
-                    SettingRow("タンパク質", "${actualP.toInt()} g")
-                    SettingRow("脂質", "${actualF.toInt()} g")
-                    SettingRow("炭水化物", "${actualC.toInt()} g")
+                    val actualP = score?.totalProtein ?: meals.sumOf { it.totalProtein.roundToInt() }.toFloat()
+                    val actualF = score?.totalFat ?: meals.sumOf { it.totalFat.roundToInt() }.toFloat()
+                    val actualC = score?.totalCarbs ?: meals.sumOf { it.totalCarbs.roundToInt() }.toFloat()
+                    SettingRow("カロリー", "${actualCal.roundToInt()} kcal")
+                    SettingRow("タンパク質", "${actualP.roundToInt()} g")
+                    SettingRow("脂質", "${actualF.roundToInt()} g")
+                    SettingRow("炭水化物", "${actualC.roundToInt()} g")
 
                     // Meal settings
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))

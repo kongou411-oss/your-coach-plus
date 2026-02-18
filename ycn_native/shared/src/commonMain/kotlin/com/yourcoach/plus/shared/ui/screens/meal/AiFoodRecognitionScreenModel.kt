@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.meal
 
+import kotlin.math.roundToInt
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.camera.CameraHelper
@@ -778,9 +779,9 @@ JSONのみ出力、説明文不要"""
                 }
 
                 val totalCalories = foods.sumOf { it.calories }
-                val totalProtein = foods.sumOf { it.protein.toDouble() }.toFloat()
-                val totalCarbs = foods.sumOf { it.carbs.toDouble() }.toFloat()
-                val totalFat = foods.sumOf { it.fat.toDouble() }.toFloat()
+                val totalProtein = foods.sumOf { it.protein.roundToInt() }.toFloat()
+                val totalCarbs = foods.sumOf { it.carbs.roundToInt() }.toFloat()
+                val totalFat = foods.sumOf { it.fat.roundToInt() }.toFloat()
                 val totalFiber = foods.sumOf { it.fiber.toDouble() }.toFloat()
                 val totalGL = foods.sumOf { (it.gi * it.carbs / 100f).toDouble() }.toFloat()
 
@@ -840,7 +841,7 @@ JSONのみ出力、説明文不要"""
     }
 
     private fun saveCustomFoodsFromRecognition(userId: String, foods: List<RecognizedFood>) {
-        screenModelScope.launch {
+        screenModelScope.launch(exceptionHandler) {
             foods.filter { !it.isFromDatabase }.forEach { food ->
                 try {
                     val ratio = 100f / food.amount.coerceAtLeast(1f)
@@ -855,7 +856,24 @@ JSONのみ出力、説明文不要"""
                     val existing = customFoodRepository.getCustomFoodByName(userId, cleanName).getOrNull()
 
                     if (existing != null) {
-                        customFoodRepository.incrementUsage(userId, existing.id)
+                        // incrementUsage が失敗した場合（削除済みドキュメント等）は新規作成にフォールバック
+                        val incrementResult = customFoodRepository.incrementUsage(userId, existing.id)
+                        if (incrementResult.isFailure) {
+                            val customFood = CustomFood(
+                                id = "",
+                                userId = userId,
+                                name = cleanName,
+                                calories = caloriesPer100g,
+                                protein = proteinPer100g,
+                                carbs = carbsPer100g,
+                                fat = fatPer100g,
+                                fiber = fiberPer100g,
+                                gi = food.gi,
+                                diaas = food.diaas,
+                                createdAt = DateUtil.currentTimestamp()
+                            )
+                            customFoodRepository.saveCustomFood(customFood)
+                        }
                     } else {
                         val customFood = CustomFood(
                             id = "",

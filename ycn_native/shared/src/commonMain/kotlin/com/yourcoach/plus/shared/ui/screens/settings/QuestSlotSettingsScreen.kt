@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.settings
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -815,7 +816,7 @@ private fun TemplatePickerItem(
                 )
                 if (template.totalMacros != null) {
                     Text(
-                        "P${template.totalMacros.protein.toInt()}g F${template.totalMacros.fat.toInt()}g C${template.totalMacros.carbs.toInt()}g",
+                        "P${template.totalMacros.protein.roundToInt()}g F${template.totalMacros.fat.roundToInt()}g C${template.totalMacros.carbs.roundToInt()}g",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.meal
 
+import kotlin.math.roundToInt
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.camera.CameraHelper
@@ -178,8 +179,22 @@ class AddMealScreenModel(
             // 既に同名のカスタム食品が存在するかチェック
             val existing = customFoodRepository.getCustomFoodByName(userId, name).getOrNull()
             if (existing != null) {
-                // 既存の場合は使用回数を増やす
-                customFoodRepository.incrementUsage(userId, existing.id)
+                // 既存の場合は使用回数を増やす（削除済みドキュメントの場合は新規作成にフォールバック）
+                val incrementResult = customFoodRepository.incrementUsage(userId, existing.id)
+                if (incrementResult.isFailure) {
+                    val customFood = CustomFood(
+                        id = "",
+                        userId = userId,
+                        name = name,
+                        calories = calories,
+                        protein = protein,
+                        carbs = carbs,
+                        fat = fat,
+                        fiber = fiber,
+                        createdAt = DateUtil.currentTimestamp()
+                    )
+                    customFoodRepository.saveCustomFood(customFood)
+                }
             } else {
                 // 新規作成
                 val customFood = CustomFood(
@@ -346,9 +361,9 @@ class AddMealScreenModel(
         return state.copy(
             items = items,
             totalCalories = items.sumOf { it.calories },
-            totalProtein = items.sumOf { it.protein.toDouble() }.toFloat(),
-            totalCarbs = items.sumOf { it.carbs.toDouble() }.toFloat(),
-            totalFat = items.sumOf { it.fat.toDouble() }.toFloat(),
+            totalProtein = items.sumOf { it.protein.roundToInt() }.toFloat(),
+            totalCarbs = items.sumOf { it.carbs.roundToInt() }.toFloat(),
+            totalFat = items.sumOf { it.fat.roundToInt() }.toFloat(),
             totalFiber = items.sumOf { it.fiber.toDouble() }.toFloat(),
             totalGL = totalGL
         )
@@ -405,9 +420,9 @@ class AddMealScreenModel(
                 mealName = template.name,
                 items = enrichedItems,
                 totalCalories = enrichedItems.sumOf { it.calories },
-                totalProtein = enrichedItems.sumOf { it.protein.toDouble() }.toFloat(),
-                totalCarbs = enrichedItems.sumOf { it.carbs.toDouble() }.toFloat(),
-                totalFat = enrichedItems.sumOf { it.fat.toDouble() }.toFloat(),
+                totalProtein = enrichedItems.sumOf { it.protein.roundToInt() }.toFloat(),
+                totalCarbs = enrichedItems.sumOf { it.carbs.roundToInt() }.toFloat(),
+                totalFat = enrichedItems.sumOf { it.fat.roundToInt() }.toFloat(),
                 totalFiber = enrichedItems.sumOf { it.fiber.toDouble() }.toFloat(),
                 totalGL = totalGL,
                 isFromTemplate = true,
@@ -734,7 +749,7 @@ class AddMealScreenModel(
      */
     private suspend fun analyzeFood(imageBase64: String, mimeType: String) {
         if (geminiService == null) {
-            _uiState.update { it.copy(error = "AI認識機能が利用できません") }
+            _uiState.update { it.copy(error = "写真解析機能が利用できません") }
             return
         }
 
@@ -758,10 +773,10 @@ class AddMealScreenModel(
                     _uiState.update { it.copy(isAnalyzing = false, error = "食品を認識できませんでした") }
                 }
             } else {
-                _uiState.update { it.copy(isAnalyzing = false, error = response.error ?: "AI認識に失敗しました") }
+                _uiState.update { it.copy(isAnalyzing = false, error = response.error ?: "写真解析に失敗しました") }
             }
         } catch (e: Exception) {
-            _uiState.update { it.copy(isAnalyzing = false, error = "AI認識エラー: ${e.message}") }
+            _uiState.update { it.copy(isAnalyzing = false, error = "写真解析エラー: ${e.message}") }
         }
     }
 

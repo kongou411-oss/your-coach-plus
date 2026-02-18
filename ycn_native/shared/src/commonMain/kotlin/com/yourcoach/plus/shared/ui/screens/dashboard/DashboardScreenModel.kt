@@ -340,9 +340,9 @@ class DashboardScreenModel(
 
                     // 栄養素を計算
                     val totalCalories = meals.sumOf { it.totalCalories }
-                    val totalProtein = meals.sumOf { it.totalProtein.toDouble() }.toFloat()
-                    val totalFat = meals.sumOf { it.totalFat.toDouble() }.toFloat()
-                    val totalCarbs = meals.sumOf { it.totalCarbs.toDouble() }.toFloat()
+                    val totalProtein = meals.sumOf { it.totalProtein.roundToInt() }.toFloat()
+                    val totalFat = meals.sumOf { it.totalFat.roundToInt() }.toFloat()
+                    val totalCarbs = meals.sumOf { it.totalCarbs.roundToInt() }.toFloat()
                     val totalFiber = meals.sumOf { it.totalFiber.toDouble() }.toFloat()
                     val totalGL = meals.sumOf { it.totalGL.toDouble() }.toFloat()
 
@@ -592,7 +592,7 @@ class DashboardScreenModel(
                 items[index] = existingItem.copy(
                     status = TimelineItemStatus.COMPLETED,
                     linkedMeal = meal,
-                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.toInt()} F${meal.totalFat.toInt()} C${meal.totalCarbs.toInt()}"
+                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.roundToInt()} F${meal.totalFat.roundToInt()} C${meal.totalCarbs.roundToInt()}"
                 )
             } else {
                 items.add(UnifiedTimelineItem(
@@ -601,7 +601,7 @@ class DashboardScreenModel(
                     timeMinutes = mealTime,
                     timeString = formatTimeMinutes(mealTime),
                     title = meal.name ?: getMealTypeName(meal.type),
-                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.toInt()} F${meal.totalFat.toInt()} C${meal.totalCarbs.toInt()}",
+                    subtitle = "${meal.totalCalories}kcal | P${meal.totalProtein.roundToInt()} F${meal.totalFat.roundToInt()} C${meal.totalCarbs.roundToInt()}",
                     status = TimelineItemStatus.COMPLETED,
                     linkedMeal = meal
                 ))
@@ -847,9 +847,9 @@ class DashboardScreenModel(
             state.copy(
                 meals = meals,
                 totalCalories = meals.sumOf { it.totalCalories },
-                totalProtein = meals.sumOf { it.totalProtein.toDouble() }.toFloat(),
-                totalFat = meals.sumOf { it.totalFat.toDouble() }.toFloat(),
-                totalCarbs = meals.sumOf { it.totalCarbs.toDouble() }.toFloat(),
+                totalProtein = meals.sumOf { it.totalProtein.roundToInt() }.toFloat(),
+                totalFat = meals.sumOf { it.totalFat.roundToInt() }.toFloat(),
+                totalCarbs = meals.sumOf { it.totalCarbs.roundToInt() }.toFloat(),
                 // 詳細栄養素
                 averageDiaas = detailedNutrition.averageDiaas,
                 saturatedFat = detailedNutrition.saturatedFat,

@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.history
 
+import kotlin.math.roundToInt
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.yourcoach.plus.shared.domain.model.Condition
@@ -408,9 +409,9 @@ class HistoryScreenModel(
 
             val dayMeals = allMeals.filter { it.timestamp in startOfDay until endOfDay }
             val totalCalories = dayMeals.sumOf { it.totalCalories }
-            val totalProtein = dayMeals.sumOf { it.totalProtein.toDouble() }.toFloat()
-            val totalCarbs = dayMeals.sumOf { it.totalCarbs.toDouble() }.toFloat()
-            val totalFat = dayMeals.sumOf { it.totalFat.toDouble() }.toFloat()
+            val totalProtein = dayMeals.sumOf { it.totalProtein.roundToInt() }.toFloat()
+            val totalCarbs = dayMeals.sumOf { it.totalCarbs.roundToInt() }.toFloat()
+            val totalFat = dayMeals.sumOf { it.totalFat.roundToInt() }.toFloat()
 
             val label = formatXAxisLabel(date, period)
             dailyCalories.add(GraphDataPoint(date, totalCalories.toFloat(), label))

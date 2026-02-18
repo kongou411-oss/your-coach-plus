@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.history
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -824,11 +825,11 @@ private fun MealCard(
                         color = ScoreCalories
                     )
                     Row {
-                        NutrientBadge("P", meal.totalProtein.toInt(), ScoreProtein)
+                        NutrientBadge("P", meal.totalProtein.roundToInt(), ScoreProtein)
                         Spacer(modifier = Modifier.width(4.dp))
-                        NutrientBadge("F", meal.totalFat.toInt(), ScoreFat)
+                        NutrientBadge("F", meal.totalFat.roundToInt(), ScoreFat)
                         Spacer(modifier = Modifier.width(4.dp))
-                        NutrientBadge("C", meal.totalCarbs.toInt(), ScoreCarbs)
+                        NutrientBadge("C", meal.totalCarbs.roundToInt(), ScoreCarbs)
                     }
                 }
             }

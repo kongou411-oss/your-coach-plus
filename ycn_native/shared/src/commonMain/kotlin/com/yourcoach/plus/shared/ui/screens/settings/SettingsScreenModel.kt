@@ -35,7 +35,7 @@ data class SettingsUiState(
     val user: User? = null,
     val isPremium: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val appVersion: String = "2.1.0",
+    val appVersion: String = "2.1.1",
     val error: String? = null,
     val isLoggedOut: Boolean = false,
     val isAccountDeleted: Boolean = false,

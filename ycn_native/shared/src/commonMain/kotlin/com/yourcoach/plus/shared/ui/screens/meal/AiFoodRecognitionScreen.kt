@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.meal
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -28,6 +29,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.camera.NativeCameraPreview
+import com.yourcoach.plus.shared.camera.PlatformCameraSetup
+import com.yourcoach.plus.shared.camera.decodeBase64ToImageBitmap
 import com.yourcoach.plus.shared.camera.startCameraPreview
 import com.yourcoach.plus.shared.camera.stopCameraPreview
 import com.yourcoach.plus.shared.data.database.FoodItem
@@ -80,11 +83,14 @@ data class AiFoodRecognitionScreen(
                 }
             ) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Text("AI認識機能が利用できません", style = MaterialTheme.typography.bodyLarge)
+                    Text("写真解析機能が利用できません", style = MaterialTheme.typography.bodyLarge)
                 }
             }
             return
         }
+
+        // プラットフォーム固有のカメラセットアップ（Android: ActivityResultLauncher登録）
+        PlatformCameraSetup()
 
         val screenModel = rememberScreenModel {
             AiFoodRecognitionScreenModel(
@@ -344,7 +350,7 @@ private fun CaptureContent(onCapture: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "食品を撮影してAIで認識",
+            text = "食品を撮影して写真解析",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -465,8 +471,7 @@ private fun ImageAnalysisContent(
         ) {
             // Base64からImageBitmapに変換して表示
             val imageBitmap = remember(imageBase64) {
-                // commonMainではSkia直接参照不可。プラットフォーム実装で表示する。
-                null
+                decodeBase64ToImageBitmap(imageBase64)
             }
 
             if (imageBitmap != null) {
@@ -591,9 +596,9 @@ private fun ImageAnalysisContent(
 
             // 合計
             val totalCalories = recognizedFoods.sumOf { it.calories }
-            val totalProtein = recognizedFoods.sumOf { it.protein.toDouble() }.toFloat()
-            val totalCarbs = recognizedFoods.sumOf { it.carbs.toDouble() }.toFloat()
-            val totalFat = recognizedFoods.sumOf { it.fat.toDouble() }.toFloat()
+            val totalProtein = recognizedFoods.sumOf { it.protein.roundToInt() }
+            val totalCarbs = recognizedFoods.sumOf { it.carbs.roundToInt() }
+            val totalFat = recognizedFoods.sumOf { it.fat.roundToInt() }
             val dbMatchCount = recognizedFoods.count { it.isFromDatabase }
             val aiEstimateCount = recognizedFoods.size - dbMatchCount
 
@@ -613,9 +618,9 @@ private fun ImageAnalysisContent(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         NutrientChip("${totalCalories}kcal", "カロリー", Primary)
-                        NutrientChip("${totalProtein.toInt()}g", "P", ScoreProtein)
-                        NutrientChip("${totalFat.toInt()}g", "F", ScoreFat)
-                        NutrientChip("${totalCarbs.toInt()}g", "C", ScoreCarbs)
+                        NutrientChip("${totalProtein}g", "P", ScoreProtein)
+                        NutrientChip("${totalFat}g", "F", ScoreFat)
+                        NutrientChip("${totalCarbs}g", "C", ScoreCarbs)
                     }
                 }
             }
@@ -861,9 +866,9 @@ private fun RecognizedFoodCard(
                         color = Primary
                     )
                     Row {
-                        Text("P${food.protein.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreProtein)
-                        Text(" F${food.fat.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreFat)
-                        Text(" C${food.carbs.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreCarbs)
+                        Text("P${food.protein.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreProtein)
+                        Text(" F${food.fat.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreFat)
+                        Text(" C${food.carbs.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreCarbs)
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.meal
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -188,9 +189,9 @@ data class AddMealScreen(
                     item {
                         NutritionSummaryCard(
                             calories = uiState.totalCalories,
-                            protein = uiState.totalProtein,
-                            carbs = uiState.totalCarbs,
-                            fat = uiState.totalFat
+                            protein = uiState.items.sumOf { it.protein.roundToInt() },
+                            carbs = uiState.items.sumOf { it.carbs.roundToInt() },
+                            fat = uiState.items.sumOf { it.fat.roundToInt() }
                         )
                     }
 
@@ -268,7 +269,7 @@ data class AddMealScreen(
                             ) {
                                 AddItemButton(
                                     icon = Icons.Default.CameraAlt,
-                                    label = "AI認識",
+                                    label = "写真解析",
                                     color = Secondary,
                                     onClick = { navigator.push(AiFoodRecognitionScreen(selectedDate = selectedDate)) },
                                     modifier = Modifier.weight(1f)
@@ -385,7 +386,7 @@ data class AddMealScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = if (uiState.isAnalyzing) "AI認識中..." else "保存中...",
+                                    text = if (uiState.isAnalyzing) "写真解析中..." else "保存中...",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -540,7 +541,7 @@ data class AddMealScreen(
 // ========== コンポーネント ==========
 
 @Composable
-private fun NutritionSummaryCard(calories: Int, protein: Float, carbs: Float, fat: Float) {
+private fun NutritionSummaryCard(calories: Int, protein: Int, carbs: Int, fat: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -551,9 +552,9 @@ private fun NutritionSummaryCard(calories: Int, protein: Float, carbs: Float, fa
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 NutrientValue("${calories}kcal", "カロリー", ScoreCalories)
-                NutrientValue("${protein.toInt()}g", "タンパク質", ScoreProtein)
-                NutrientValue("${carbs.toInt()}g", "炭水化物", ScoreCarbs)
-                NutrientValue("${fat.toInt()}g", "脂質", ScoreFat)
+                NutrientValue("${protein}g", "タンパク質", ScoreProtein)
+                NutrientValue("${carbs}g", "炭水化物", ScoreCarbs)
+                NutrientValue("${fat}g", "脂質", ScoreFat)
             }
         }
     }
@@ -597,7 +598,7 @@ private fun MealItemCard(item: MealItem, onEdit: () -> Unit, onDelete: () -> Uni
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("${item.calories}kcal", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ScoreCalories)
-                    Text("P${item.protein.toInt()} F${item.fat.toInt()} C${item.carbs.toInt()}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("P${item.protein.roundToInt()} F${item.fat.roundToInt()} C${item.carbs.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, "編集", tint = Primary) }
                 IconButton(onClick = onDelete) { Icon(Icons.Default.Close, "削除", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -794,9 +795,9 @@ private fun FoodAmountDialog(food: FoodItem, initialAmount: Float, onDismiss: ()
                 Text("100gあたり", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     NutrientValue("${food.calories.toInt()}", "kcal", ScoreCalories)
-                    NutrientValue("${food.protein.toInt()}g", "P", ScoreProtein)
-                    NutrientValue("${food.carbs.toInt()}g", "C", ScoreCarbs)
-                    NutrientValue("${food.fat.toInt()}g", "F", ScoreFat)
+                    NutrientValue("${food.protein.roundToInt()}g", "P", ScoreProtein)
+                    NutrientValue("${food.carbs.roundToInt()}g", "C", ScoreCarbs)
+                    NutrientValue("${food.fat.roundToInt()}g", "F", ScoreFat)
                 }
                 HorizontalDivider()
                 // 単位選択（2つ以上の単位がある場合のみ表示）
@@ -833,10 +834,10 @@ private fun FoodAmountDialog(food: FoodItem, initialAmount: Float, onDismiss: ()
                 val ratio = gramsEquivalent / 100f
                 Text("${amount.toInt()}${selectedUnit}あたり", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    NutrientValue("${(food.calories * ratio).toInt()}", "kcal", ScoreCalories)
-                    NutrientValue("${(food.protein * ratio).toInt()}g", "P", ScoreProtein)
-                    NutrientValue("${(food.carbs * ratio).toInt()}g", "C", ScoreCarbs)
-                    NutrientValue("${(food.fat * ratio).toInt()}g", "F", ScoreFat)
+                    NutrientValue("${(food.calories * ratio).roundToInt()}", "kcal", ScoreCalories)
+                    NutrientValue("${(food.protein * ratio).roundToInt()}g", "P", ScoreProtein)
+                    NutrientValue("${(food.carbs * ratio).roundToInt()}g", "C", ScoreCarbs)
+                    NutrientValue("${(food.fat * ratio).roundToInt()}g", "F", ScoreFat)
                 }
             }
         },
@@ -863,9 +864,9 @@ private fun CustomFoodAmountDialog(food: SearchResultFood, initialAmount: Float,
                 Text("100gあたり", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     NutrientValue("${food.calories}", "kcal", ScoreCalories)
-                    NutrientValue("${food.protein.toInt()}g", "P", ScoreProtein)
-                    NutrientValue("${food.carbs.toInt()}g", "C", ScoreCarbs)
-                    NutrientValue("${food.fat.toInt()}g", "F", ScoreFat)
+                    NutrientValue("${food.protein.roundToInt()}g", "P", ScoreProtein)
+                    NutrientValue("${food.carbs.roundToInt()}g", "C", ScoreCarbs)
+                    NutrientValue("${food.fat.roundToInt()}g", "F", ScoreFat)
                 }
                 HorizontalDivider()
                 Text("量を選択", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -881,10 +882,10 @@ private fun CustomFoodAmountDialog(food: SearchResultFood, initialAmount: Float,
                 val ratio = amount / 100f
                 Text("${amount.toInt()}gあたり", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    NutrientValue("${(food.calories * ratio).toInt()}", "kcal", ScoreCalories)
-                    NutrientValue("${(food.protein * ratio).toInt()}g", "P", ScoreProtein)
-                    NutrientValue("${(food.carbs * ratio).toInt()}g", "C", ScoreCarbs)
-                    NutrientValue("${(food.fat * ratio).toInt()}g", "F", ScoreFat)
+                    NutrientValue("${(food.calories * ratio).roundToInt()}", "kcal", ScoreCalories)
+                    NutrientValue("${(food.protein * ratio).roundToInt()}g", "P", ScoreProtein)
+                    NutrientValue("${(food.carbs * ratio).roundToInt()}g", "C", ScoreCarbs)
+                    NutrientValue("${(food.fat * ratio).roundToInt()}g", "F", ScoreFat)
                 }
             }
         },
@@ -903,7 +904,7 @@ private fun FoodItemCard(food: FoodItem, onClick: () -> Unit) {
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text("${food.calories.toInt()}kcal", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ScoreCalories)
-                Text("P${food.protein.toInt()} F${food.fat.toInt()} C${food.carbs.toInt()}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("P${food.protein.roundToInt()} F${food.fat.roundToInt()} C${food.carbs.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -927,7 +928,7 @@ private fun SearchResultFoodCard(food: SearchResultFood, onClick: () -> Unit) {
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text("${food.calories}kcal", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = ScoreCalories)
-                Text("P${food.protein.toInt()} F${food.fat.toInt()} C${food.carbs.toInt()}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("P${food.protein.roundToInt()} F${food.fat.roundToInt()} C${food.carbs.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -983,7 +984,7 @@ private fun TemplateSection(
                             Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(template.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                                    Text("${template.items.size}品 • ${template.totalCalories}kcal • P${template.totalProtein.toInt()} F${template.totalFat.toInt()} C${template.totalCarbs.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${template.items.size}品 • ${template.totalCalories}kcal • P${template.totalProtein.roundToInt()} F${template.totalFat.roundToInt()} C${template.totalCarbs.roundToInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -1059,9 +1060,9 @@ private fun EditMealItemDialog(item: MealItem, onDismiss: () -> Unit, onSave: (M
     var amount by remember { mutableStateOf(item.amount.toInt().toString()) }
     var unit by remember { mutableStateOf(item.unit) }
     var calories by remember { mutableStateOf(item.calories.toString()) }
-    var protein by remember { mutableStateOf(item.protein.toInt().toString()) }
-    var carbs by remember { mutableStateOf(item.carbs.toInt().toString()) }
-    var fat by remember { mutableStateOf(item.fat.toInt().toString()) }
+    var protein by remember { mutableStateOf(item.protein.roundToInt().toString()) }
+    var carbs by remember { mutableStateOf(item.carbs.roundToInt().toString()) }
+    var fat by remember { mutableStateOf(item.fat.roundToInt().toString()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,

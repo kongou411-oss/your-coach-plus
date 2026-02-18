@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.settings
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -336,9 +337,9 @@ private fun MealTemplateCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 NutrientChip("kcal", "${template.totalCalories}", ScoreCalories)
-                NutrientChip("P", "${template.totalProtein.toInt()}g", ScoreProtein)
-                NutrientChip("F", "${template.totalFat.toInt()}g", ScoreFat)
-                NutrientChip("C", "${template.totalCarbs.toInt()}g", ScoreCarbs)
+                NutrientChip("P", "${template.totalProtein.roundToInt()}g", ScoreProtein)
+                NutrientChip("F", "${template.totalFat.roundToInt()}g", ScoreFat)
+                NutrientChip("C", "${template.totalCarbs.roundToInt()}g", ScoreCarbs)
             }
 
             // 展開ボタン
@@ -367,9 +368,9 @@ private fun MealTemplateCard(
                                     Text("${item.amount.toInt()}g", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("P${item.protein.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreProtein)
-                                    Text("F${item.fat.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreFat)
-                                    Text("C${item.carbs.toInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreCarbs)
+                                    Text("P${item.protein.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreProtein)
+                                    Text("F${item.fat.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreFat)
+                                    Text("C${item.carbs.roundToInt()}", style = MaterialTheme.typography.labelSmall, color = ScoreCarbs)
                                 }
                             }
                             if (index < template.items.size - 1) {

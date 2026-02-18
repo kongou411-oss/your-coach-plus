@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.data.repository
 
+import kotlin.math.roundToInt
 import com.yourcoach.plus.shared.domain.model.*
 import kotlinx.datetime.Clock
 
@@ -308,9 +309,9 @@ object RoutinePresets {
             mealType = mealType,
             items = items.map { it.copy(id = generateUUID()) },
             totalCalories = items.sumOf { it.calories },
-            totalProtein = items.sumOf { it.protein.toDouble() }.toFloat(),
-            totalCarbs = items.sumOf { it.carbs.toDouble() }.toFloat(),
-            totalFat = items.sumOf { it.fat.toDouble() }.toFloat()
+            totalProtein = items.sumOf { it.protein.roundToInt() }.toFloat(),
+            totalCarbs = items.sumOf { it.carbs.roundToInt() }.toFloat(),
+            totalFat = items.sumOf { it.fat.roundToInt() }.toFloat()
         )
     }
 

@@ -447,9 +447,9 @@ class AnalysisScreenModel(
         targetCarbs: Float
     ): DailyScore {
         val totalCalories = meals.sumOf { it.totalCalories }.toFloat()
-        val totalProtein = meals.sumOf { it.totalProtein.toDouble() }.toFloat()
-        val totalFat = meals.sumOf { it.totalFat.toDouble() }.toFloat()
-        val totalCarbs = meals.sumOf { it.totalCarbs.toDouble() }.toFloat()
+        val totalProtein = meals.sumOf { it.totalProtein.roundToInt() }.toFloat()
+        val totalFat = meals.sumOf { it.totalFat.roundToInt() }.toFloat()
+        val totalCarbs = meals.sumOf { it.totalCarbs.roundToInt() }.toFloat()
 
         fun calcScore(actual: Float, target: Float): Int {
             if (target <= 0) return 100

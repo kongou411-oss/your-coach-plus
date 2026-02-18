@@ -87,6 +87,13 @@ kotlin {
             // Image loading (Coil)
             implementation(libs.coil.compose)
 
+            // CameraX (AI食品認識用)
+            implementation(libs.bundles.camera)
+            implementation("com.google.guava:guava:32.1.3-android")
+
+            // Activity Compose (ActivityResultLauncher / Photo Picker)
+            implementation(libs.activity.compose)
+
             // Firebase (Android native APIs used in androidMain)
             // BOMバージョンはlibs.versions.toml firebaseBom と統一
             implementation(project.dependencies.platform("com.google.firebase:firebase-bom:33.5.1"))

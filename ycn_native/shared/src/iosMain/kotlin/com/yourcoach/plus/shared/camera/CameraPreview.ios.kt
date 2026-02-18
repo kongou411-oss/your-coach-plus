@@ -53,3 +53,19 @@ actual suspend fun capturePhotoFromPreview(): Result<CameraResult> = suspendCanc
         }
     }
 }
+
+/**
+ * iOS版: カメラセットアップは Swift 側で行うため no-op
+ */
+@Composable
+actual fun PlatformCameraSetup() {
+    // iOS ではSwift側のCameraBridgeで初期化済み
+}
+
+/**
+ * iOS版: Base64→ImageBitmap変換
+ * iOSではSkiaが使えるため将来対応可能。現状はnull。
+ */
+actual fun decodeBase64ToImageBitmap(base64: String): androidx.compose.ui.graphics.ImageBitmap? {
+    return null
+}

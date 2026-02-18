@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.dashboard
 
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -591,9 +592,12 @@ private fun MealEditDialog(
     var mealName by remember { mutableStateOf(meal.name ?: "") }
 
     val totalCalories = editedItems.sumOf { it.calories }
-    val totalProtein = editedItems.sumOf { it.protein.toDouble() }.toFloat()
-    val totalCarbs = editedItems.sumOf { it.carbs.toDouble() }.toFloat()
-    val totalFat = editedItems.sumOf { it.fat.toDouble() }.toFloat()
+    val totalProtein = editedItems.sumOf { it.protein.roundToInt() }
+    val totalCarbs = editedItems.sumOf { it.carbs.roundToInt() }
+    val totalFat = editedItems.sumOf { it.fat.roundToInt() }
+    val totalProteinF = editedItems.sumOf { it.protein.roundToInt() }.toFloat()
+    val totalCarbsF = editedItems.sumOf { it.carbs.roundToInt() }.toFloat()
+    val totalFatF = editedItems.sumOf { it.fat.roundToInt() }.toFloat()
     val totalFiber = editedItems.sumOf { it.fiber.toDouble() }.toFloat()
 
     AlertDialog(
@@ -627,15 +631,15 @@ private fun MealEditDialog(
                             Text("kcal", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${totalProtein.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreProtein)
+                            Text("${totalProtein}g", fontWeight = FontWeight.Bold, color = ScoreProtein)
                             Text("P", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${totalCarbs.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreCarbs)
+                            Text("${totalCarbs}g", fontWeight = FontWeight.Bold, color = ScoreCarbs)
                             Text("C", style = MaterialTheme.typography.labelSmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("${totalFat.toInt()}g", fontWeight = FontWeight.Bold, color = ScoreFat)
+                            Text("${totalFat}g", fontWeight = FontWeight.Bold, color = ScoreFat)
                             Text("F", style = MaterialTheme.typography.labelSmall)
                         }
                     }
@@ -677,9 +681,9 @@ private fun MealEditDialog(
                         name = mealName.ifBlank { null },
                         items = editedItems,
                         totalCalories = totalCalories,
-                        totalProtein = totalProtein,
-                        totalCarbs = totalCarbs,
-                        totalFat = totalFat,
+                        totalProtein = totalProteinF,
+                        totalCarbs = totalCarbsF,
+                        totalFat = totalFatF,
                         totalFiber = totalFiber
                     )
                     onSave(updatedMeal)
@@ -719,7 +723,7 @@ private fun MealItemEditCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, maxLines = 1)
-                Text("${item.calories}kcal P${item.protein.toInt()} C${item.carbs.toInt()} F${item.fat.toInt()}",
+                Text("${item.calories}kcal P${item.protein.roundToInt()} C${item.carbs.roundToInt()} F${item.fat.roundToInt()}",
                     style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {

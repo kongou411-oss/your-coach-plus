@@ -120,7 +120,9 @@ class FirestoreCustomFoodRepository : CustomFoodRepository {
                 .where { "name" equalTo name }
                 .get()
 
-            val food = snapshot.documents.firstOrNull()?.toCustomFood()
+            val food = snapshot.documents.firstOrNull()?.let {
+                try { it.toCustomFood() } catch (_: Exception) { null }
+            }
             Result.success(food)
         } catch (e: Exception) {
             Result.failure(AppError.DatabaseError("カスタム食品の検索に失敗しました", e))

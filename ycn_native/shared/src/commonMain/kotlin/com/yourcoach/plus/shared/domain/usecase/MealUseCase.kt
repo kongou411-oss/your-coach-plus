@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.domain.usecase
 
+import kotlin.math.roundToInt
 import com.yourcoach.plus.shared.domain.model.Meal
 import com.yourcoach.plus.shared.domain.repository.MealRepository
 
@@ -44,9 +45,9 @@ class MealUseCase(
     fun calculateTotals(meals: List<Meal>): NutritionTotals {
         return NutritionTotals(
             calories = meals.sumOf { it.totalCalories },
-            protein = meals.sumOf { it.totalProtein.toDouble() }.toFloat(),
-            carbs = meals.sumOf { it.totalCarbs.toDouble() }.toFloat(),
-            fat = meals.sumOf { it.totalFat.toDouble() }.toFloat()
+            protein = meals.sumOf { it.totalProtein.roundToInt() }.toFloat(),
+            carbs = meals.sumOf { it.totalCarbs.roundToInt() }.toFloat(),
+            fat = meals.sumOf { it.totalFat.roundToInt() }.toFloat()
         )
     }
 }

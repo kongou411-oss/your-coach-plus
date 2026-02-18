@@ -1,5 +1,6 @@
 package com.yourcoach.plus.shared.ui.components
 
+import kotlin.math.roundToInt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -325,11 +326,11 @@ private fun MealCard(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PfcBadge(label = "P", value = meal.totalProtein.toInt(), color = ScoreProtein)
+                PfcBadge(label = "P", value = meal.totalProtein.roundToInt(), color = ScoreProtein)
                 Text(" / ", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                PfcBadge(label = "F", value = meal.totalFat.toInt(), color = ScoreFat)
+                PfcBadge(label = "F", value = meal.totalFat.roundToInt(), color = ScoreFat)
                 Text(" / ", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                PfcBadge(label = "C", value = meal.totalCarbs.toInt(), color = ScoreCarbs)
+                PfcBadge(label = "C", value = meal.totalCarbs.roundToInt(), color = ScoreCarbs)
             }
 
             Spacer(modifier = Modifier.height(8.dp))

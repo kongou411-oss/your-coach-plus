@@ -537,17 +537,17 @@ private fun CustomQuestSlotCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "P${macros.protein.toInt()}",
+                        text = "P${macros.protein.roundToInt()}",
                         style = MaterialTheme.typography.labelSmall,
                         color = ScoreProtein
                     )
                     Text(
-                        text = "F${macros.fat.toInt()}",
+                        text = "F${macros.fat.roundToInt()}",
                         style = MaterialTheme.typography.labelSmall,
                         color = ScoreFat
                     )
                     Text(
-                        text = "C${macros.carbs.toInt()}",
+                        text = "C${macros.carbs.roundToInt()}",
                         style = MaterialTheme.typography.labelSmall,
                         color = ScoreCarbs
                     )
@@ -828,17 +828,17 @@ private fun CustomFoodItem(
                         color = ScoreCalories
                     )
                     Text(
-                        text = "P${food.protein.toInt()}",
+                        text = "P${food.protein.roundToInt()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = ScoreProtein
                     )
                     Text(
-                        text = "F${food.fat.toInt()}",
+                        text = "F${food.fat.roundToInt()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = ScoreFat
                     )
                     Text(
-                        text = "C${food.carbs.toInt()}",
+                        text = "C${food.carbs.roundToInt()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = ScoreCarbs
                     )
