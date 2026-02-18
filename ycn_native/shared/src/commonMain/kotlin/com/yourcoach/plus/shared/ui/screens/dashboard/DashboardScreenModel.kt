@@ -184,6 +184,9 @@ class DashboardScreenModel(
     // ログインボーナス重複呼び出し防止
     private var loginBonusChecked = false
 
+    // 所属名チェック重複呼び出し防止
+    private var organizationChecked = false
+
     init {
         observeUser()
         updateCurrentTime()
@@ -216,6 +219,12 @@ class DashboardScreenModel(
                     if (!loginBonusChecked) {
                         loginBonusChecked = true
                         checkLoginBonus()
+                    }
+
+                    // 所属名の有効性チェック（一度だけ）
+                    if (!organizationChecked) {
+                        organizationChecked = true
+                        checkOrganizationStatus()
                     }
 
                     // Firestoreリスナーを開始
@@ -2778,6 +2787,29 @@ class DashboardScreenModel(
     }
 
     // ========== バッジ・ログインボーナス ==========
+
+    /**
+     * 所属名の有効性をサーバー側で検証（契約期限切れ等を即時反映）
+     */
+    private fun checkOrganizationStatus() {
+        screenModelScope.launch(exceptionHandler) {
+            try {
+                val result = invokeCloudFunction(
+                    region = "asia-northeast2",
+                    functionName = "checkOrganizationStatus",
+                    data = emptyMap()
+                )
+                val valid = result["valid"] as? Boolean ?: true
+                val removed = result["removed"] as? Boolean ?: false
+                if (!valid && removed) {
+                    println("DashboardScreenModel: 所属名が無効のため解除されました")
+                }
+            } catch (e: Exception) {
+                // エラー時は無視（Premium維持）
+                println("DashboardScreenModel: 所属チェックエラー: ${e.message}")
+            }
+        }
+    }
 
     private fun checkLoginBonus() {
         val userId = authRepository.getCurrentUserId() ?: return

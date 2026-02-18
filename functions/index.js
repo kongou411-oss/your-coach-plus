@@ -1019,6 +1019,65 @@ exports.adminCreateContract = onCall({
   }
 });
 
+// ===== 管理者機能: 法人契約更新 =====
+exports.adminUpdateContract = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const adminDoc = await admin.firestore().collection('admins').doc(request.auth.uid).get();
+  if (!adminDoc.exists) {
+    throw new HttpsError("permission-denied", "管理者権限がありません");
+  }
+
+  const {contractId, updates} = request.data;
+
+  if (!contractId) {
+    throw new HttpsError("invalid-argument", "契約IDは必須です");
+  }
+
+  try {
+    const contractRef = admin.firestore().collection('corporateContracts').doc(contractId);
+    const contractDoc = await contractRef.get();
+
+    if (!contractDoc.exists) {
+      throw new HttpsError("not-found", "契約が見つかりません");
+    }
+
+    const updateData = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedBy: request.auth.uid,
+    };
+
+    // 許可するフィールドのみ更新
+    if (updates.licenses !== undefined) {
+      updateData.licenses = parseInt(updates.licenses);
+    }
+    if (updates.status !== undefined) {
+      updateData.status = updates.status;
+    }
+    if (updates.validUntil !== undefined) {
+      updateData.validUntil = admin.firestore.Timestamp.fromDate(new Date(updates.validUntil));
+    }
+
+    await contractRef.update(updateData);
+
+    console.log(`[Admin] Contract updated: ${contractId}, updates: ${JSON.stringify(updates)}`);
+
+    return {
+      success: true,
+      contractId: contractId
+    };
+
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    console.error('[Admin] Update contract failed:', error);
+    throw new HttpsError("internal", "契約の更新に失敗しました: " + error.message);
+  }
+});
+
 // ===== デバッグ用: 自分自身にクレジット追加（後日削除予定） =====
 exports.debugAddCredits = onCall({
   region: "asia-northeast1",
@@ -2620,6 +2679,297 @@ exports.leaveOrganization = onCall({
       throw error;
     }
     throw new HttpsError("internal", "所属の解除に失敗しました", error.message);
+  }
+});
+
+// ===== 契約期限切れ自動無効化（毎日AM3:00 JST実行） =====
+exports.checkExpiredContracts = onSchedule({
+  schedule: "0 18 * * *",  // UTC 18:00 = JST 03:00
+  region: "asia-northeast1",
+  timeZone: "Asia/Tokyo",
+}, async () => {
+  console.log("[Contract Cleanup] Starting expired contract check...");
+
+  try {
+    const now = admin.firestore.Timestamp.now();
+
+    // 期限切れかつstatusがactiveな契約を取得
+    const expiredSnapshot = await admin.firestore()
+      .collection('corporateContracts')
+      .where('status', '==', 'active')
+      .where('validUntil', '<', now)
+      .get();
+
+    if (expiredSnapshot.empty) {
+      console.log("[Contract Cleanup] No expired contracts found.");
+      return;
+    }
+
+    console.log(`[Contract Cleanup] Found ${expiredSnapshot.size} expired contract(s).`);
+
+    for (const contractDoc of expiredSnapshot.docs) {
+      const contract = contractDoc.data();
+      const orgName = contract.organizationName;
+      const registeredUsers = contract.registeredUsers || [];
+
+      console.log(`[Contract Cleanup] Processing: ${orgName} (${registeredUsers.length} users)`);
+
+      // 契約ステータスをexpiredに更新
+      await contractDoc.ref.update({
+        status: 'expired',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // 所属ユーザーのorganizationNameを削除
+      const batch = admin.firestore().batch();
+      let batchCount = 0;
+
+      // registeredUsersから処理
+      for (const userId of registeredUsers) {
+        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+        if (!userDoc.exists) continue;
+
+        const userData = userDoc.data();
+        // この契約の所属名と一致する場合のみ削除
+        if (userData.organizationName !== orgName) continue;
+
+        const updateFields = {
+          organizationName: admin.firestore.FieldValue.delete(),
+          organizationJoinedAt: admin.firestore.FieldValue.delete(),
+        };
+
+        // 他のPremium要因がなければisPremiumもfalse
+        const hasStripe = userData.subscription?.status === 'active';
+        const hasGift = userData.giftCodeActive === true;
+        if (!hasStripe && !hasGift) {
+          updateFields.isPremium = false;
+        }
+
+        // トレーナーのCustom Claimsもクリア
+        if (userData.role === 'trainer') {
+          updateFields.role = admin.firestore.FieldValue.delete();
+          try {
+            await admin.auth().setCustomUserClaims(userId, {});
+          } catch (e) {
+            console.error(`[Contract Cleanup] Failed to clear claims for ${userId}:`, e.message);
+          }
+        }
+
+        batch.update(admin.firestore().collection('users').doc(userId), updateFields);
+        batchCount++;
+
+        // Firestoreバッチは500件制限
+        if (batchCount >= 450) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+
+      // registeredUsersにいないが同じorgNameを持つユーザーも処理
+      const orgUsersSnapshot = await admin.firestore()
+        .collection('users')
+        .where('organizationName', '==', orgName)
+        .get();
+
+      for (const userDoc of orgUsersSnapshot.docs) {
+        if (registeredUsers.includes(userDoc.id)) continue; // 既に処理済み
+
+        const userData = userDoc.data();
+        const updateFields = {
+          organizationName: admin.firestore.FieldValue.delete(),
+          organizationJoinedAt: admin.firestore.FieldValue.delete(),
+        };
+
+        const hasStripe = userData.subscription?.status === 'active';
+        const hasGift = userData.giftCodeActive === true;
+        if (!hasStripe && !hasGift) {
+          updateFields.isPremium = false;
+        }
+
+        if (userData.role === 'trainer') {
+          updateFields.role = admin.firestore.FieldValue.delete();
+          try {
+            await admin.auth().setCustomUserClaims(userDoc.id, {});
+          } catch (e) {
+            console.error(`[Contract Cleanup] Failed to clear claims for ${userDoc.id}:`, e.message);
+          }
+        }
+
+        batch.update(userDoc.ref, updateFields);
+        batchCount++;
+
+        if (batchCount >= 450) {
+          await batch.commit();
+          batchCount = 0;
+        }
+      }
+
+      if (batchCount > 0) {
+        await batch.commit();
+      }
+
+      console.log(`[Contract Cleanup] Completed: ${orgName} - expired and ${registeredUsers.length + orgUsersSnapshot.size} user(s) processed.`);
+    }
+
+    console.log("[Contract Cleanup] All expired contracts processed.");
+
+  } catch (error) {
+    console.error("[Contract Cleanup] Fatal error:", error);
+    throw error;
+  }
+});
+
+// ===== 所属名の有効性チェック（アプリ起動時用） =====
+exports.checkOrganizationStatus = onCall({
+  region: "asia-northeast2",
+}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "ログインが必要です");
+  }
+
+  const userId = request.auth.uid;
+
+  try {
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return { valid: false, reason: "user_not_found" };
+    }
+
+    const userData = userDoc.data();
+    const orgName = userData.organizationName;
+
+    // 所属名が設定されていない場合はチェック不要
+    if (!orgName) {
+      return { valid: true, hasOrganization: false };
+    }
+
+    // 法人契約を検索
+    const contractSnapshot = await admin.firestore()
+      .collection('corporateContracts')
+      .where('organizationName', '==', orgName)
+      .limit(1)
+      .get();
+
+    // 契約が見つからない場合（手動設定の可能性）→有効のまま
+    if (contractSnapshot.empty) {
+      return { valid: true, hasOrganization: true, organizationName: orgName };
+    }
+
+    const contract = contractSnapshot.docs[0].data();
+
+    // ステータスチェック
+    if (contract.status !== 'active') {
+      // 無効な契約 → 所属解除
+      await admin.firestore().collection('users').doc(userId).update({
+        organizationName: admin.firestore.FieldValue.delete(),
+        organizationJoinedAt: admin.firestore.FieldValue.delete(),
+        isPremium: !(userData.subscription?.status !== 'active' && userData.giftCodeActive !== true) || false,
+      });
+      console.log(`[Org Check] Removed expired org "${orgName}" from user ${userId}`);
+      return { valid: false, reason: "contract_inactive", removed: true };
+    }
+
+    // 有効期限チェック
+    if (contract.validUntil && contract.validUntil.toDate() < new Date()) {
+      await admin.firestore().collection('users').doc(userId).update({
+        organizationName: admin.firestore.FieldValue.delete(),
+        organizationJoinedAt: admin.firestore.FieldValue.delete(),
+        isPremium: !(userData.subscription?.status !== 'active' && userData.giftCodeActive !== true) || false,
+      });
+      console.log(`[Org Check] Removed expired org "${orgName}" from user ${userId}`);
+      return { valid: false, reason: "contract_expired", removed: true };
+    }
+
+    return { valid: true, hasOrganization: true, organizationName: orgName };
+
+  } catch (error) {
+    console.error(`[Org Check] Error for user ${userId}:`, error);
+    // エラー時はPremiumを維持（安全側に倒す）
+    return { valid: true, error: true };
+  }
+});
+
+// ===== B2B問い合わせ送信 =====
+exports.sendB2BInquiry = onCall({
+  region: "asia-northeast2",
+  secrets: [gmailUser, gmailAppPassword],
+}, async (request) => {
+  const {companyName, contactName, email, plan, message, source} = request.data;
+
+  if (!companyName || !contactName || !email) {
+    throw new HttpsError("invalid-argument", "企業名・担当者名・メールアドレスは必須です");
+  }
+
+  const planLabels = {
+    'standard': 'Standard（10名・¥108,000/年）',
+    'pro': 'Pro（30名・¥297,000/年）',
+    'elite': 'Elite（100名・¥594,000/年）',
+    'master': 'Master（100名以上・要相談）',
+    'undecided': 'まだ決まっていない',
+  };
+  const planLabel = planLabels[plan] || plan || '未選択';
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser.value(),
+        pass: gmailAppPassword.value(),
+      },
+    });
+
+    // 管理者へ通知
+    await transporter.sendMail({
+      from: `"Your Coach+ B2B" <${gmailUser.value()}>`,
+      to: gmailUser.value(),
+      replyTo: email,
+      subject: `【法人プラン問い合わせ】${companyName}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px;">
+          <h2 style="color: #4A9EFF;">法人プラン問い合わせ</h2>
+          <table style="border-collapse: collapse; width: 100%;">
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 140px;">企業・施設名</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${companyName}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">担当者名</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${contactName}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">メール</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><a href="mailto:${email}">${email}</a></td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">検討プラン</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${planLabel}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">ソース</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${source || 'b2b2c'}</td></tr>
+          </table>
+          ${message ? `<div style="margin-top: 16px; padding: 16px; background: #f5f7fa; border-radius: 8px;"><strong>ご質問・ご要望:</strong><br>${message.replace(/\n/g, '<br>')}</div>` : ''}
+        </div>
+      `,
+    });
+
+    // 自動返信メール
+    await transporter.sendMail({
+      from: `"Your Coach+" <${gmailUser.value()}>`,
+      to: email,
+      subject: '[Your Coach+] お問い合わせありがとうございます',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px;">
+          <h2 style="color: #4A9EFF;">お問い合わせを受け付けました</h2>
+          <p>${contactName} 様</p>
+          <p>Your Coach+ 法人プランにご関心をお寄せいただき、誠にありがとうございます。<br>1営業日以内に担当者よりご連絡いたします。</p>
+          <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #0369a1;">お問い合わせ内容</h3>
+            <p><strong>企業・施設名:</strong> ${companyName}</p>
+            <p><strong>ご検討プラン:</strong> ${planLabel}</p>
+            ${message ? `<p><strong>ご質問・ご要望:</strong><br>${message.replace(/\n/g, '<br>')}</p>` : ''}
+          </div>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+          <p style="color: #6b7280; font-size: 12px;">
+            Your Coach+ サポートチーム<br>
+            <a href="mailto:official@your-coach-plus.com" style="color: #4A9EFF;">official@your-coach-plus.com</a>
+          </p>
+        </div>
+      `,
+    });
+
+    console.log(`[B2B Inquiry] Received from ${companyName} (${email})`);
+    return { success: true };
+
+  } catch (error) {
+    console.error('[B2B Inquiry] Failed:', error);
+    throw new HttpsError("internal", "送信に失敗しました: " + error.message);
   }
 });
 

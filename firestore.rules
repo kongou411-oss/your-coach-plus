@@ -60,7 +60,7 @@ service cloud.firestore {
     // ============================================
     match /corporateContracts/{contractId} {
       allow read: if isAdmin();
-      allow write: if false; // Cloud Functionsのみ
+      allow write: if isAdmin();
     }
 
     // ============================================
