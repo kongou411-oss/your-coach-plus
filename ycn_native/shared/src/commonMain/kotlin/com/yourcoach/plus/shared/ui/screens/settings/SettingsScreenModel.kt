@@ -35,7 +35,7 @@ data class SettingsUiState(
     val user: User? = null,
     val isPremium: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val appVersion: String = "2.1.1",
+    val appVersion: String = "2.1.2",
     val error: String? = null,
     val isLoggedOut: Boolean = false,
     val isAccountDeleted: Boolean = false,
@@ -621,7 +621,8 @@ class SettingsScreenModel(
 - 炭水化物: ${food.carbs}g
 
 以下の栄養素を推定し、JSON形式で出力してください。
-不明な場合は0を入力してください。
+正確な値が不明でも、食品の特性から妥当な推定値を入力してください。
+0は栄養素が本当に含まれない場合のみ使用してください。
 
 出力形式（JSONのみ、説明文不要）:
 {
@@ -683,7 +684,7 @@ class SettingsScreenModel(
                 "solubleFiber" to floatVal("solubleFiber"),
                 "insolubleFiber" to floatVal("insolubleFiber"),
                 "sugar" to floatVal("sugar"),
-                "gi" to intVal("gi"),
+                "gi" to floatVal("gi").toInt(),
                 "diaas" to floatVal("diaas"),
                 "saturatedFat" to floatVal("saturatedFat"),
                 "monounsaturatedFat" to floatVal("monounsaturatedFat"),

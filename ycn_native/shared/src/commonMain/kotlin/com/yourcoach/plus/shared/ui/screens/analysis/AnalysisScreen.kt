@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,9 +32,14 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.yourcoach.plus.shared.domain.model.AnalysisResult
 import com.yourcoach.plus.shared.domain.model.DailyScore
 import com.yourcoach.plus.shared.domain.model.FitnessGoal
+import com.yourcoach.plus.shared.domain.model.ImprovementPoint
 import com.yourcoach.plus.shared.domain.model.Meal
+import com.yourcoach.plus.shared.domain.model.QuestBridge
+import com.yourcoach.plus.shared.domain.model.UserFacingSummary
+import com.yourcoach.plus.shared.domain.model.TrainingCalorieBonus
 import com.yourcoach.plus.shared.domain.model.UserProfile
 import com.yourcoach.plus.shared.domain.repository.AnalysisReport
 import com.yourcoach.plus.shared.domain.repository.ConversationEntry
@@ -171,9 +177,24 @@ private fun AnalysisContent(
     onUpdateQuestion: (String) -> Unit,
     onClearAnalysis: () -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val conversationSize = uiState.conversationHistory.size
+    val isQaLoading = uiState.isQaLoading
+
+    // Auto-scroll to bottom when conversation updates or Q&A loading starts
+    LaunchedEffect(conversationSize, isQaLoading) {
+        if (conversationSize > 0 || isQaLoading) {
+            val totalItems = listState.layoutInfo.totalItemsCount
+            if (totalItems > 0) {
+                listState.animateScrollToItem(totalItems - 1)
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Analysis result display area
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .weight(1f)
                 .padding(16.dp),
@@ -250,9 +271,7 @@ private fun AnalysisContent(
                 // Settings confirmation section (collapsible)
                 item {
                     ProfileSettingsSection(
-                        userProfile = uiState.userProfile,
-                        score = uiState.score,
-                        meals = uiState.meals
+                        uiState = uiState
                     )
                 }
 
@@ -260,11 +279,25 @@ private fun AnalysisContent(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                item {
-                    AnalysisResultCard(
-                        analysis = analysis,
-                        onClear = onClearAnalysis
-                    )
+                val parsed = uiState.parsedAnalysis
+                if (parsed != null) {
+                    // セクション別カード型レポート
+                    item { SummarySection(summary = parsed.userFacingSummary) }
+                    if (parsed.goodPoints.isNotEmpty()) {
+                        item { GoodPointsSection(points = parsed.goodPoints) }
+                    }
+                    if (parsed.improvementPoints.isNotEmpty()) {
+                        item { ImprovementPointsSection(points = parsed.improvementPoints) }
+                    }
+                    item { QuestBridgeSection(bridge = parsed.questBridge) }
+                } else {
+                    // フォールバック: プレーンテキスト表示
+                    item {
+                        AnalysisResultCard(
+                            analysis = analysis,
+                            onClear = onClearAnalysis
+                        )
+                    }
                 }
 
                 // Conversation history
@@ -521,6 +554,243 @@ private fun AnalysisResultCard(
     }
 }
 
+/**
+ * 総括セクション（Primary背景）
+ */
+@Composable
+private fun SummarySection(summary: UserFacingSummary) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Primary.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = Primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "今日の総括",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Primary
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = summary.readinessMessage,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = summary.mindsetReframing,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3
+            )
+        }
+    }
+}
+
+/**
+ * 良かった点セクション（AccentGreen）
+ */
+@Composable
+private fun GoodPointsSection(points: List<String>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = AccentGreen,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "良かった点",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentGreen
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            points.forEach { point ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = AccentGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = point,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 伸びしろセクション（AccentOrange）
+ */
+@Composable
+private fun ImprovementPointsSection(points: List<ImprovementPoint>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                @Suppress("DEPRECATION")
+                Icon(
+                    Icons.Default.TrendingUp,
+                    contentDescription = null,
+                    tint = AccentOrange,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "伸びしろ",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentOrange
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            points.forEachIndexed { index, item ->
+                if (index > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        @Suppress("DEPRECATION")
+                        Icon(
+                            Icons.Default.ArrowRight,
+                            contentDescription = null,
+                            tint = AccentOrange,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = item.point,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
+                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3
+                        )
+                    }
+                    if (item.suggestion.isNotBlank()) {
+                        Text(
+                            text = item.suggestion,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 22.dp, top = 2.dp),
+                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.3
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 明日へのクエスト橋渡しセクション（Tertiary背景）
+ */
+@Composable
+private fun QuestBridgeSection(bridge: QuestBridge) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = TertiaryContainer
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                @Suppress("DEPRECATION")
+                Icon(
+                    Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = TertiaryDark,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "明日へ",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TertiaryDark
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = bridge.message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = OnTertiaryContainer,
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3
+            )
+            if (bridge.closingCheer.isNotBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = bridge.closingCheer,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ConversationBubble(entry: ConversationEntry) {
     val isUser = entry.type == "user"
@@ -529,22 +799,24 @@ private fun ConversationBubble(entry: ConversationEntry) {
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
         Card(
-            modifier = Modifier.widthIn(max = 300.dp),
+            modifier = Modifier.widthIn(max = 320.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (isUser) Primary else MaterialTheme.colorScheme.surfaceVariant
+                containerColor = if (isUser) Primary else MaterialTheme.colorScheme.surface
             ),
             shape = RoundedCornerShape(
                 topStart = 16.dp,
                 topEnd = 16.dp,
                 bottomStart = if (isUser) 16.dp else 4.dp,
                 bottomEnd = if (isUser) 4.dp else 16.dp
-            )
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isUser) 0.dp else 2.dp)
         ) {
             Text(
                 text = entry.content,
-                modifier = Modifier.padding(12.dp),
-                color = if (isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                color = if (isUser) Color.White else MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.4
             )
         }
     }
@@ -710,11 +982,28 @@ private fun ReportCard(
  */
 @Composable
 private fun ProfileSettingsSection(
-    userProfile: UserProfile?,
-    score: DailyScore?,
-    meals: List<Meal>
+    uiState: AnalysisUiState
 ) {
+    val userProfile = uiState.userProfile
+    val score = uiState.score
+    val meals = uiState.meals
     var isExpanded by remember { mutableStateOf(false) }
+
+    // class加算を含む動的ターゲット計算
+    val weight = userProfile?.weight ?: 70f
+    val bodyFat = userProfile?.bodyFatPercentage ?: 20f
+    val lbm = weight * (1 - bodyFat / 100f)
+    val trainingBonus = TrainingCalorieBonus.fromSplitType(
+        uiState.todaySplitType, uiState.isRestDay, lbm
+    )
+    val baseCalories = userProfile?.targetCalories ?: 2000
+    val targetCalories = baseCalories + trainingBonus
+    val pRatio = (userProfile?.proteinRatioPercent ?: 30) / 100f
+    val fRatio = (userProfile?.fatRatioPercent ?: 25) / 100f
+    val cRatio = (userProfile?.carbRatioPercent ?: 45) / 100f
+    val targetP = (targetCalories * pRatio / 4f).roundToInt()
+    val targetF = (targetCalories * fRatio / 9f).roundToInt()
+    val targetC = (targetCalories * cRatio / 4f).roundToInt()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -767,31 +1056,28 @@ private fun ProfileSettingsSection(
                         .padding(top = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Goal
+                    // Goal（プロフィール設定画面と統一）
                     val goalText = when (userProfile?.goal) {
-                        FitnessGoal.LOSE_WEIGHT -> "減量"
-                        FitnessGoal.MAINTAIN -> "維持 / リコンプ"
-                        FitnessGoal.GAIN_MUSCLE -> "増量"
+                        FitnessGoal.LOSE_WEIGHT -> "ダイエット"
+                        FitnessGoal.MAINTAIN -> "メンテナンス・リコンプ"
+                        FitnessGoal.GAIN_MUSCLE -> "バルクアップ"
                         null -> "未設定"
                     }
                     SettingRow("目標", goalText)
 
-                    // Target macros
+                    // Target macros（class加算済み）
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Text(
-                        text = "目標マクロ",
+                        text = if (trainingBonus > 0) "目標マクロ（トレ加算+${trainingBonus}kcal込み）"
+                               else "目標マクロ",
                         style = MaterialTheme.typography.labelMedium,
                         color = Primary,
                         fontWeight = FontWeight.Bold
                     )
-                    SettingRow("カロリー", "${userProfile?.targetCalories ?: 2000} kcal")
-
-                    // Protein + LBM coefficient
-                    val targetP = userProfile?.targetProtein ?: 120f
-                    SettingRow("タンパク質", "${targetP.toInt()} g")
-
-                    SettingRow("脂質", "${userProfile?.targetFat?.toInt() ?: 60} g")
-                    SettingRow("炭水化物", "${userProfile?.targetCarbs?.toInt() ?: 250} g")
+                    SettingRow("カロリー", "${targetCalories} kcal")
+                    SettingRow("タンパク質", "${targetP} g")
+                    SettingRow("脂質", "${targetF} g")
+                    SettingRow("炭水化物", "${targetC} g")
 
                     // Actual results (from score or meal data)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))

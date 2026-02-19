@@ -2,7 +2,6 @@ package com.yourcoach.plus.shared.ui.screens.analysis
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.yourcoach.plus.shared.data.database.BodymakingFoodDatabase
 import com.yourcoach.plus.shared.domain.model.*
 import com.yourcoach.plus.shared.domain.repository.*
 import com.yourcoach.plus.shared.domain.service.GeminiService
@@ -16,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -37,6 +37,9 @@ data class AnalysisUiState(
     val isLoading: Boolean = false,
     val isAnalyzing: Boolean = false,
     val aiAnalysis: String? = null,
+    val parsedAnalysis: AnalysisResult? = null,
+    val tomorrowDirective: Directive? = null,
+    val tomorrowCustomQuest: CustomQuest? = null,
     val conversationHistory: List<ConversationEntry> = emptyList(),
     val savedReports: List<AnalysisReport> = emptyList(),
     val selectedReport: AnalysisReport? = null,
@@ -81,9 +84,10 @@ class AnalysisScreenModel(
     private val scoreRepository: ScoreRepository? = null,
     private val geminiService: GeminiService? = null,
     private val analysisRepository: AnalysisRepository? = null,
-    private val directiveRepository: DirectiveRepository? = null,
     private val badgeRepository: BadgeRepository? = null,
-    private val routineRepository: RoutineRepository? = null
+    private val routineRepository: RoutineRepository? = null,
+    private val directiveRepository: DirectiveRepository? = null,
+    private val customQuestRepository: CustomQuestRepository? = null
 ) : ScreenModel {
 
     private val _uiState = MutableStateFlow(AnalysisUiState())
@@ -156,6 +160,17 @@ class AnalysisScreenModel(
             routineRepository?.getRoutineForDate(userId, today)
                 ?.onSuccess { routineDay ->
                     _uiState.update { it.copy(todaySplitType = routineDay?.splitType) }
+                }
+
+            // Load tomorrow's quest for quest_bridge context
+            val tomorrow = DateUtil.nextDay(today)
+            directiveRepository?.getDirective(userId, tomorrow)
+                ?.onSuccess { directive ->
+                    _uiState.update { it.copy(tomorrowDirective = directive) }
+                }
+            customQuestRepository?.getCustomQuest(userId, tomorrow)
+                ?.onSuccess { customQuest ->
+                    _uiState.update { it.copy(tomorrowCustomQuest = customQuest) }
                 }
 
             // 微量栄養素を計算
@@ -266,10 +281,18 @@ class AnalysisScreenModel(
                 )
 
                 if (response?.success == true && response.text != null) {
-                    val analysisText = formatAnalysisResult(response.text)
+                    val parsed = parseAnalysisResult(response.text!!)
+                    val analysisText = if (parsed != null) {
+                        formatAnalysisForStorage(parsed)
+                    } else {
+                        // パース失敗時はraw textをフォールバック表示
+                        response.text!!
+                    }
+
                     _uiState.update {
                         it.copy(
                             aiAnalysis = analysisText,
+                            parsedAnalysis = parsed,
                             isAnalyzing = false,
                             creditInfo = it.creditInfo?.let { info ->
                                 val newFree = if (info.freeCredits >= 1) info.freeCredits - 1 else info.freeCredits
@@ -286,14 +309,12 @@ class AnalysisScreenModel(
                     // Auto-save report
                     autoSaveReport(userId, analysisText)
 
-                    // XP付与 (+10 XP)
-                    grantExperience(userId)
+                    // XP付与 (+10 XP) + ボーナスXP抽選
+                    grantExperience(userId, parsed?.internalAnalysis?.bonusXpEligible ?: false)
 
                     // バッジ統計更新
                     updateBadgeStats()
 
-                    // 指示書（クエスト）を抽出・保存
-                    extractAndSaveDirective(userId, analysisText)
                 } else {
                     _uiState.update {
                         it.copy(
@@ -314,18 +335,35 @@ class AnalysisScreenModel(
     }
 
     /**
-     * XP付与: 分析実行で+10 XP、レベルアップで+1クレジット
+     * XP付与: 分析実行で+10 XP
+     * ボーナスXP: bonus_xp_eligible時に20%の確率で+30 XP（変動比率スケジュール）
      */
-    private fun grantExperience(userId: String) {
+    private fun grantExperience(userId: String, bonusEligible: Boolean = false) {
         screenModelScope.launch(exceptionHandler) {
             try {
-                userRepository.addExperience(userId, UserProfile.XP_PER_ACTION)
+                var totalXp = UserProfile.XP_PER_ACTION
+                var bonusAwarded = false
+
+                // ボーナスXP抽選（20%の確率）
+                if (bonusEligible && kotlin.random.Random.nextFloat() < 0.2f) {
+                    totalXp += BONUS_XP_AMOUNT
+                    bonusAwarded = true
+                }
+
+                userRepository.addExperience(userId, totalXp)
                     .onSuccess { (newExp, leveledUp) ->
+                        val messages = mutableListOf<String>()
+                        if (bonusAwarded) {
+                            messages.add("ボーナスXP +${BONUS_XP_AMOUNT}！ 特に優れた取り組みでした")
+                        }
                         if (leveledUp) {
                             val profile = _uiState.value.userProfile
                             val newLevel = profile?.copy(experience = newExp)?.calculateLevel() ?: 1
+                            messages.add("レベル${newLevel}に上がりました！ 無料クレジット+1")
+                        }
+                        if (messages.isNotEmpty()) {
                             _uiState.update {
-                                it.copy(levelUpMessage = "レベル${newLevel}に上がりました！ 無料クレジット+1")
+                                it.copy(levelUpMessage = messages.joinToString("\n"))
                             }
                         }
                     }
@@ -349,90 +387,6 @@ class AnalysisScreenModel(
         }
     }
 
-    /**
-     * AI応答から指示書（クエスト）を抽出して翌日分として保存
-     */
-    private fun extractAndSaveDirective(userId: String, analysisText: String) {
-        screenModelScope.launch(exceptionHandler) {
-            try {
-                val bulletPoints = extractDirectiveBulletPoints(analysisText)
-                if (bulletPoints.isEmpty()) return@launch
-
-                val tomorrowDate = DateUtil.nextDay(DateUtil.todayString())
-                val message = bulletPoints.joinToString("\n") { "- $it" }
-
-                val directive = Directive(
-                    userId = userId,
-                    date = tomorrowDate,
-                    message = message,
-                    type = DirectiveType.MEAL,
-                    completed = false,
-                    createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
-                )
-
-                directiveRepository?.saveDirective(directive)
-            } catch (e: Exception) {
-                // 指示書保存失敗は分析結果に影響しないので無視
-            }
-        }
-    }
-
-    /**
-     * AI応答テキストから指示書のポイントを抽出
-     * Android版と同じパターンマッチング
-     */
-    private fun extractDirectiveBulletPoints(text: String): List<String> {
-        // パターン1: [結論]...[根拠] 形式
-        val conclusionPattern1 = Regex("""\[結論\](.*?)\[根拠\]""", RegexOption.DOT_MATCHES_ALL)
-        val match1 = conclusionPattern1.find(text)
-        if (match1 != null) {
-            return extractBullets(match1.groupValues[1])
-        }
-
-        // パターン1b: **結論**...**根拠** 形式
-        val conclusionPattern1b = Regex("""\*\*結論\*\*(.*?)\*\*根拠\*\*""", RegexOption.DOT_MATCHES_ALL)
-        val match1b = conclusionPattern1b.find(text)
-        if (match1b != null) {
-            return extractBullets(match1b.groupValues[1])
-        }
-
-        // パターン2: 【食事N】【運動】【睡眠】形式
-        val structuredPattern = Regex("""【(食事\d?|運動|睡眠|サプリ)】\s*(.+?)(?=【|$)""", RegexOption.DOT_MATCHES_ALL)
-        val structuredMatches = structuredPattern.findAll(text).toList()
-        if (structuredMatches.isNotEmpty()) {
-            return structuredMatches.flatMap { match ->
-                extractBullets(match.groupValues[2])
-            }
-        }
-
-        // パターン3: "明日の指示" / "アドバイス" セクション
-        val advicePattern = Regex("""(?:明日の(?:指示|アドバイス)|4\.\s*(?:明日|アドバイス))(.*?)(?=\n\n|\z)""", RegexOption.DOT_MATCHES_ALL)
-        val adviceMatch = advicePattern.find(text)
-        if (adviceMatch != null) {
-            return extractBullets(adviceMatch.groupValues[1])
-        }
-
-        return emptyList()
-    }
-
-    /**
-     * テキストから箇条書きポイントを抽出
-     */
-    private fun extractBullets(text: String): List<String> {
-        val bulletPattern = Regex("""^[-・•]\s*(.+)$""", RegexOption.MULTILINE)
-        val bullets = bulletPattern.findAll(text)
-            .map { it.groupValues[1].trim() }
-            .filter { it.isNotEmpty() }
-            .toList()
-
-        if (bullets.isNotEmpty()) return bullets
-
-        // 箇条書きがない場合、行単位で分割
-        return text.lines()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() && !it.startsWith("[") && !it.startsWith("*") }
-            .take(5)
-    }
 
     /**
      * Calculate score from meals
@@ -508,12 +462,9 @@ class AnalysisScreenModel(
             else -> "なし（+0）"
         }
 
-        // ベースターゲット（プロフィール保存値 = TDEE + 目標調整）
         val baseCalories = profile?.targetCalories ?: 2000
-        // 加算後の実際の日次ターゲット
         val targetCalories = baseCalories + trainingBonus
 
-        // PFC も加算後カロリーベースで再計算
         val pRatio = (profile?.proteinRatioPercent ?: 30) / 100f
         val fRatio = (profile?.fatRatioPercent ?: 25) / 100f
         val cRatio = (profile?.carbRatioPercent ?: 45) / 100f
@@ -523,7 +474,6 @@ class AnalysisScreenModel(
 
         val activityName = profile?.activityLevel?.displayName ?: "不明"
 
-        // 目標名と評価コンテキスト
         val goalKey = profile?.goal?.name ?: "MAINTAIN"
         val goalName = when (goalKey) {
             "LOSE_WEIGHT" -> "減量"
@@ -533,10 +483,10 @@ class AnalysisScreenModel(
             else -> "メンテナンス"
         }
         val goalContext = when (goalKey) {
-            "LOSE_WEIGHT" -> "※ 減量中＝カロリー超過に厳しく、不足に寛容。"
-            "GAIN_MUSCLE" -> "※ バルクアップ中＝カロリー不足に厳しく、超過に寛容。"
-            "MAINTAIN" -> "※ メンテナンス中＝過不足なくバランス重視。"
-            "IMPROVE_HEALTH" -> "※ 健康改善中＝ミクロ+指標を特に重視。"
+            "LOSE_WEIGHT" -> "減量中＝カロリー超過に厳しく、不足に寛容。"
+            "GAIN_MUSCLE" -> "バルクアップ中＝カロリー不足に厳しく、超過に寛容。"
+            "MAINTAIN" -> "メンテナンス中＝過不足なくバランス重視。"
+            "IMPROVE_HEALTH" -> "健康改善中＝ミクロ+指標を特に重視。"
             else -> ""
         }
 
@@ -549,7 +499,7 @@ class AnalysisScreenModel(
             }.joinToString("\n")
         } else ""
 
-        // 運動情報（消費カロリー付き）
+        // 運動情報
         val totalCaloriesBurned = workouts.sumOf { it.totalCaloriesBurned }
         val workoutsText = if (workouts.isNotEmpty()) {
             workouts.map { w ->
@@ -574,162 +524,172 @@ class AnalysisScreenModel(
             }.joinToString("\n")
         } else ""
 
-        // ミクロ+セクション
+        // ミクロ+
         val micro = state
         val diaasStr = if (micro.averageDiaas > 0) {
-            val rounded = (micro.averageDiaas * 100).roundToInt() / 100.0
-            "$rounded"
+            "${(micro.averageDiaas * 100).roundToInt() / 100.0}"
         } else "未計測"
         val fiberStr = "${(micro.totalFiber * 10).roundToInt() / 10.0}"
-        val lbm = lbmCalc
-        val lbmStr = "${(lbm * 10).roundToInt() / 10.0}"
+        val lbmStr = "${(lbmCalc * 10).roundToInt() / 10.0}"
 
-        val microSection = """
-## 今日の実績（ミクロ+ 品質指標）
-- DIAAS（タンパク質品質）: ${diaasStr}（基準: 1.0以上で良質）
-- 脂肪酸バランス: ${micro.fattyAcidLabel}（スコア: ${micro.fattyAcidScore}/5）
-- 食物繊維: ${fiberStr}g（目標: ${micro.fiberTarget.toDouble().roundToInt()}g）
-- GL値（血糖負荷）: ${micro.totalGL.toDouble().roundToInt()}（基準: 100以下で低負荷）
-- ビタミン充足率: ${micro.vitaminAvg.toDouble().roundToInt()}%
-- ミネラル充足率: ${micro.mineralAvg.toDouble().roundToInt()}%"""
-
-        // LBM予測セクション
+        // LBM予測
         val calorieDiff = score.totalCalories - targetCalories
         val predictionText = when {
             calorieDiff > 200 -> {
                 val muscleRatio = if (workouts.isNotEmpty()) 0.3f else 0.1f
                 val muscleGain = (calorieDiff * muscleRatio / 7700f * 1000).toInt()
                 val fatGain = (calorieDiff * (1 - muscleRatio) / 7700f * 1000).toInt()
-                "理論上、筋肉が約${muscleGain}g、体脂肪が約${fatGain}g増加するペースです。${if (goalKey == "LOSE_WEIGHT") "減量中のため脂肪増加に注意。" else ""}"
+                "理論上、筋肉+${muscleGain}g、体脂肪+${fatGain}gのペース。"
             }
             calorieDiff < -200 -> {
-                val proteinRatio = score.totalProtein / (lbm * 2f)
+                val proteinRatio = score.totalProtein / (lbmCalc * 2f)
                 val muscleRatio = if (proteinRatio >= 0.9f) 0.05f else 0.2f
                 val fatLoss = (-calorieDiff * (1 - muscleRatio) / 7700f * 1000).toInt()
-                val muscleLoss = (-calorieDiff * muscleRatio / 7700f * 1000).toInt()
-                "理論上、体脂肪が約${fatLoss}g減少するペースです。${if (muscleLoss > 10) "筋肉も約${muscleLoss}g減少の恐れ。タンパク質摂取を増やしましょう。" else "タンパク質は十分で筋肉維持できています。"}"
+                "理論上、体脂肪-${fatLoss}gのペース。${if (proteinRatio >= 0.9f) "タンパク質十分で筋肉維持。" else "タンパク質不足で筋肉減少リスクあり。"}"
             }
-            else -> "カロリー収支はほぼ均衡しており、体組成は安定しています。"
+            else -> "カロリー収支均衡、体組成安定。"
         }
-        val lbmSection = """
-## 今日の理論上の身体変化予測
-$predictionText
-※ この予測値に基づき、現在のペースが良いか悪いかを判断材料にすること。"""
 
-        // 達成率計算
+        // 達成率
         val calPercent = ((score.totalCalories / targetCalories.toFloat()) * 100).roundToInt()
         val pPercent = ((score.totalProtein / targetProtein) * 100).roundToInt()
         val fPercent = ((score.totalFat / targetFat) * 100).roundToInt()
         val cPercent = ((score.totalCarbs / targetCarbs) * 100).roundToInt()
 
-        // 食物繊維目標の60%
-        val fiberThreshold = (micro.fiberTarget * 0.6f).roundToInt()
+        // 自動判定ラベル（AIの誤解釈を防止）
+        fun judgeLabel(percent: Int): String = when {
+            percent in 95..105 -> "◎適正"
+            percent in 90..94 -> "○やや不足"
+            percent in 106..110 -> "○やや超過"
+            percent in 80..89 -> "△不足"
+            percent in 111..120 -> "△超過"
+            percent < 80 -> "×大幅不足"
+            else -> "×大幅超過"
+        }
+        val calJudge = judgeLabel(calPercent)
+        val pJudge = judgeLabel(pPercent)
+        val fJudge = judgeLabel(fPercent)
+        val cJudge = judgeLabel(cPercent)
 
-        return """あなたはボディメイク専門の、習慣化を成功させるパーソナルコーチです。
-ユーザーはアプリが提示した「食事・運動クエスト（メニュー）」を日々実行しています。
-本日の記録と詳細な栄養品質データ（ミクロ+）を分析し、PDCAサイクルを回すためのフィードバックをJSON形式で提供してください。
+        // タイミング情報
+        val wakeTime = profile?.wakeUpTime ?: "07:00"
+        val sleepTimeStr = profile?.sleepTime ?: "23:00"
+        val trainingTimeStr = profile?.trainingTime
+        val trainingDur = profile?.trainingDuration ?: 120
+        val trainingStyleStr = when (profile?.trainingStyle?.name) {
+            "POWER" -> "パワー型（高重量・低回数）"
+            "PUMP" -> "パンプ型（中重量・高回数）"
+            else -> "パンプ型"
+        }
 
-## トーンとマナー
-- **最優先事項:** ユーザーが「明日もアプリを開いてメニューを実行しよう」と思えるモチベーション管理。
-- 厳しい指導よりも、行動できたこと（Do）への称賛を優先する。
-- 専門用語（DIAAS, GL値など）を使う場合は、必ず「つまりどういうことか」をわかりやすく噛み砕くこと。
-- 目的（減量/増量）に合わせ、長期的な視点でのアドバイスを行う。
+        // 明日のクエスト情報（CustomQuest優先、なければDirective）
+        val tomorrowQuestText = state.tomorrowCustomQuest?.let { cq ->
+            val source = if (cq.assignedBy.isNotBlank() && cq.assignedBy != "system") "トレーナー設定" else "ユーザー設定"
+            val slotLines = cq.slots.entries.sortedBy { it.key }.map { (key, slot) ->
+                val items = slot.items.joinToString(", ") { "${it.foodName}${it.amount.toInt()}${it.unit}" }
+                "- ${slot.title}: $items"
+            }
+            "\n## 明日のクエスト（${source}・確定済み）\n${slotLines.joinToString("\n")}"
+        } ?: state.tomorrowDirective?.let { directive ->
+            val lines = directive.getMessageLines()
+            if (lines.isNotEmpty()) {
+                "\n## 明日のクエスト（AI生成・確定済み）\n${lines.joinToString("\n") { "- $it" }}"
+            } else null
+        } ?: "\n## 明日のクエスト\n未生成"
+
+        return """あなたは専属AIヘルスコーチです。行動心理学とスポーツ栄養学のエビデンスに基づき、ユーザーの長期的な健康習慣の構築を支援します。
+ユーザーはアプリが提示する「クエスト（食事・運動メニュー）」を毎日実行しています。
+
+## トーンとマナー（厳守）
+- 最優先: ユーザーが「明日もクエストを実行しよう」と思えるモチベーション管理
+- 常に温かく、共感的で、前向きなトーン
+- 失敗や未達は批判せず、成長マインドセットでリフレーミングする（「次への有益なデータ」として提示）
+- 専門用語（DIAAS, GL値等）は必ず「つまりどういうことか」を噛み砕く
+- gradeのアルファベットをユーザー向けテキストに直接書かない
+
+## 評価の生理学的視点（厳守）
+- カロリー不足時: DIAASが高く運動を実施していれば「筋肉の分解は最小限、脂肪燃焼優先」とポジティブに解釈
+- カロリー超過時: 運動を実施していれば「筋肉の回復燃料として活用される」とポジティブに解釈
+- 休養日の運動なし: 「中枢神経系の回復に必要な戦略的休養」として肯定
+- GL値が低い: 「安定したエネルギー供給で持久力向上に寄与」
+- 食物繊維・脂肪酸が良好: 「細胞レベルでの回復力と代謝効率が向上」
 
 ## ユーザープロファイル
-- 目的: $goalName
-  $goalContext
-- 性別: ${profile?.gender?.name ?: "不明"}
-- 年齢: ${profile?.age ?: "不明"}歳
-- 体重: ${profile?.weight ?: "不明"}kg（目標: ${profile?.targetWeight ?: "不明"}kg）
-- 体脂肪率: ${profile?.bodyFatPercentage ?: "不明"}%
-- LBM（除脂肪体重）: ${lbmStr}kg
-- 日常活動レベル: $activityName
-${if (state.todaySplitType != null) "- 本日のトレーニング部位: ${state.todaySplitType}（クラス: $trainingClass）" else "- 本日のトレーニング: なし"}
-${if (isRestDay) "- 本日は休養日（無理な運動は提案せず、回復を優先するコメントをすること）" else "- 本日はトレーニング推奨日"}
-$lbmSection
+- 目的: $goalName（$goalContext）
+- 性別: ${profile?.gender?.name ?: "不明"} / 年齢: ${profile?.age ?: "不明"}歳
+- 体重: ${profile?.weight ?: "不明"}kg（目標: ${profile?.targetWeight ?: "不明"}kg）/ 体脂肪率: ${profile?.bodyFatPercentage ?: "不明"}% / LBM: ${lbmStr}kg
+- 活動レベル: $activityName
+- 生活リズム: 起床${wakeTime} / 就寝${sleepTimeStr}${if (trainingTimeStr != null) " / トレーニング開始${trainingTimeStr}（${trainingDur}分）" else ""}
+${if (state.todaySplitType != null) "- 本日のトレーニング: ${state.todaySplitType}（クラス: $trainingClass / ${trainingStyleStr}）" else "- 本日のトレーニング: なし"}
+${if (isRestDay) "- 本日は休養日" else "- 本日はトレーニング推奨日"}
+- LBM変化予測: $predictionText
 
 ## 今日の目標（Plan）
-- ベースカロリー: ${baseCalories}kcal（TDEE ± 目標調整）
-- トレーニングclass加算: +${trainingBonus}kcal
-- **本日の摂取目標: ${targetCalories}kcal**（※運動消費を差し引かないこと）
-- P（タンパク質）: ${targetProtein.roundToInt()}g（${(pRatio * 100).roundToInt()}%）
-- F（脂質）: ${targetFat.roundToInt()}g（${(fRatio * 100).roundToInt()}%）
-- C（炭水化物）: ${targetCarbs.roundToInt()}g（${(cRatio * 100).roundToInt()}%）
+- 本日の摂取目標: ${targetCalories}kcal（ベース${baseCalories} + トレ加算${trainingBonus}）
+- P: ${targetProtein.roundToInt()}g / F: ${targetFat.roundToInt()}g / C: ${targetCarbs.roundToInt()}g
 
 ## 今日の実績（Do）
-- カロリー: ${score.totalCalories.roundToInt()}kcal（達成率: ${calPercent}%）
-- P: ${score.totalProtein.roundToInt()}g（達成率: ${pPercent}%）
-- F: ${score.totalFat.roundToInt()}g（達成率: ${fPercent}%）
-- C: ${score.totalCarbs.roundToInt()}g（達成率: ${cPercent}%）
-$microSection
+- カロリー: ${score.totalCalories.roundToInt()}kcal（${calPercent}%）→ $calJudge
+- P: ${score.totalProtein.roundToInt()}g（${pPercent}%）→ $pJudge / F: ${score.totalFat.roundToInt()}g（${fPercent}%）→ $fJudge / C: ${score.totalCarbs.roundToInt()}g（${cPercent}%）→ $cJudge
+※ 「カロリー超過/不足」は総カロリーの達成率のみで判定。個別マクロ（P/F/C）の超過を「カロリー超過」と表現しないこと。
+- DIAAS: $diaasStr / 脂肪酸: ${micro.fattyAcidLabel}（${micro.fattyAcidScore}/5）/ 食物繊維: ${fiberStr}g / GL値: ${micro.totalGL.toDouble().roundToInt()}
+- ビタミン充足率: ${micro.vitaminAvg.toDouble().roundToInt()}% / ミネラル充足率: ${micro.mineralAvg.toDouble().roundToInt()}%
 
 ## 入力データ
 【食事記録】
-${mealsText.ifEmpty { "記録なし（記録をつけるとより正確なアドバイスができます）" }}
-
+${mealsText.ifEmpty { "記録なし" }}
 【運動記録】
 ${workoutsText.ifEmpty { "記録なし" }}
+【運動消費】${totalCaloriesBurned}kcal（目標カロリーに加算済み。差し引き評価しないこと）
+$tomorrowQuestText
 
-【運動消費（参考）】
-- 運動消費: ${totalCaloriesBurned}kcal（MET計算）
-- ※ 目標カロリーにはトレーニング消費分が事前加算済み。摂取カロリーから運動消費を差し引いて評価しないこと。
-- ※ 評価は「摂取カロリー vs 目標カロリー」で行う。運動記録がない場合、計画した運動を実施していない可能性がある。
+## 内部評価ロジック（ユーザーには見せない）
+ステップ1 ベース評価: S(95-105%), A(90-110%), B(80-120%), C(70-130%), D(60%未満or140%超)
+ステップ2 品質補正: DIAAS<0.75, 食物繊維<目標60%, GL>120, 脂肪酸≤2 → ランク保留（例: A-）
+ステップ3 ボーナス判定: DIAAS>0.85、全マクロA以上、運動完遂など特筆すべき努力があればbonus_xp_eligible=true
+※ クエスト通りに行動した形跡があれば、多少の数値ズレでもランクを下げない
 
-## 評価ロジック（習慣化重視モード）
+## quest_bridgeの生成ルール（厳守）
+- 明日のクエストが確定済みの場合: 今日の実績と明日のクエスト内容を結びつけ、「クエストをそのまま実行すれば大丈夫」という確信を与えるメッセージを生成
+- 明日のクエストが未生成の場合: 「クエストを生成して、迷わず実行しましょう」と促すメッセージを生成
+- 絶対にクエストの食材・量・種目を変更する提案をしない
 
-### ステップ1: ベース評価（S/A/B/C/D）
-上から順に判定し、最初に該当したランクを採用:
-- **S**: 全マクロが目標の 95%〜105% 以内（完璧）
-- **A**: 全マクロが目標の 90%〜110% 以内
-- **B**: 全マクロが目標の 80%〜120% 以内
-- **C**: いずれかが目標の 70%〜130% 以内（Bの範囲外）
-- **D**: いずれかが目標の 60%未満 または 140%超
-
-※ ユーザーが提示されたメニュー通りに行動した形跡がある場合は、多少の数値ズレがあってもランクを下げないこと（努力点の加味）。
-※ 減量中のカロリー不足、増量中のオーバーカロリーは許容範囲を広く取る。
-
-### ステップ2: 品質補正（ミクロ視点）
-以下の基準で質が著しく低い場合は、ランクを保留評価（例: A-）とし、アドバイス欄で改善点を具体的に言及する:
-1. DIAASが 0.75未満 → つまり「タンパク質の種類が偏っている」
-2. 食物繊維が目標の60%未満（${fiberThreshold}g未満）→ つまり「野菜や穀物が足りていない」
-3. GL値が 120超 → つまり「血糖値が急上昇しやすい食事だった」
-4. 脂肪酸スコアが 2以下 → つまり「脂質の質が良くない（飽和脂肪酸が多い）」
-
-### ステップ3: 原因特定とフィードバック
-- 【食事記録】にある**具体的なメニュー名**を挙げて「何が良かった/悪かった」を指摘すること。
-- 【運動記録】があれば、実施内容を褒める。記録がない場合は「計画した運動が未実施の可能性があり、目標カロリーが過剰になっている」と指摘すること。
-- 摂取カロリー vs 目標カロリーで評価する（運動消費を差し引かない）。
-- ミクロ+指標が高ければそこも褒める。
-
-## 出力形式（JSON Schema）
+## 出力形式（JSON Schema・厳守）
 {
-  "daily_summary": {
-    "grade": "S/A/B/C/D（品質補正ありの場合はA-のように表記）",
-    "grade_adjustment_reason": "ランク判定の根拠（数値だけでなく、行動面も評価すること）。調整なしの場合は「なし」",
-    "comment": "50文字以内の総評（LBM変化予測にも触れると良い）"
+  "internal_analysis": {
+    "grade": "S/A/B/C/D（品質補正ありはA-等）",
+    "grade_adjustment_reason": "内部判定根拠",
+    "bonus_xp_eligible": true/false,
+    "bonus_reason": "ボーナス判定根拠（該当なしはnull）"
+  },
+  "user_facing_summary": {
+    "readiness_message": "共感的な総括。身体への影響を生理学的に解説。50文字以内",
+    "mindset_reframing": "未達を成長機会に変換、または完璧な場合は継続への賞賛。40文字以内"
   },
   "good_points": [
-    "良かった点（メニューの遵守、栄養バランス、運動への取り組みなど具体的に褒める）",
-    "良かった点2"
+    "具体的なメニュー名や運動種目を挙げて褒める。生理学的なメカニズムにも触れる",
+    "2つ目の良かった点"
   ],
   "improvement_points": [
     {
-      "point": "改善点（具体的なメニュー名を挙げて指摘）",
-      "suggestion": "具体的な改善策（例：明日のランチのドレッシングを半分にする、等）"
+      "point": "伸びしろ（批判ではなく未来への提案トーンで）",
+      "suggestion": "クエストの実行を前提とした具体策"
     }
   ],
-  "action_plan": "明日のクエスト（食事・運動）に向けた具体的な心構えや微調整の指示。抽象論ではなく『明日はこうして』と指示する形で・100文字以内"
+  "quest_bridge": {
+    "message": "今日の結果→明日のクエストへの橋渡し。クエスト通りに実行すれば大丈夫という確信を与える。80文字以内",
+    "closing_cheer": "励まし。20文字以内"
+  }
 }
 
-Output valid JSON only. Do not include markdown formatting or code blocks."""
+Output valid JSON only. No markdown formatting or code blocks."""
     }
 
     /**
-     * JSON形式の分析結果を表示用テキストに変換（Android版 formatAnalysisResult と同一）
+     * AI応答からAnalysisResultをパース
      */
-    private fun formatAnalysisResult(rawText: String): String {
-        try {
-            // ```json ... ``` のコードブロックを除去
+    private fun parseAnalysisResult(rawText: String): AnalysisResult? {
+        return try {
             val jsonStr = rawText
                 .replace(Regex("```json\\s*"), "")
                 .replace(Regex("```\\s*"), "")
@@ -738,52 +698,73 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
             val json = Json { ignoreUnknownKeys = true }
             val root = json.parseToJsonElement(jsonStr).jsonObject
 
-            return buildString {
-                // 今日の総括
-                val summary = root["daily_summary"]?.jsonObject
-                if (summary != null) {
-                    appendLine("## 今日の総括")
-                    appendLine("評価: ${summary["grade"]?.jsonPrimitive?.contentOrNull ?: "-"}")
-                    appendLine(summary["comment"]?.jsonPrimitive?.contentOrNull ?: "")
-                    appendLine()
-                }
+            // internal_analysis
+            val internal = root["internal_analysis"]?.jsonObject
+            val internalAnalysis = InternalAnalysis(
+                grade = internal?.get("grade")?.jsonPrimitive?.contentOrNull ?: "B",
+                gradeAdjustmentReason = internal?.get("grade_adjustment_reason")?.jsonPrimitive?.contentOrNull ?: "",
+                bonusXpEligible = internal?.get("bonus_xp_eligible")?.jsonPrimitive?.booleanOrNull ?: false,
+                bonusReason = internal?.get("bonus_reason")?.jsonPrimitive?.contentOrNull
+            )
 
-                // 良かった点
-                val goodPoints = root["good_points"]?.jsonArray
-                if (goodPoints != null && goodPoints.size > 0) {
-                    appendLine("## 良かった点")
-                    goodPoints.forEach { point ->
-                        appendLine("- ${point.jsonPrimitive.contentOrNull ?: ""}")
-                    }
-                    appendLine()
-                }
+            // user_facing_summary
+            val summary = root["user_facing_summary"]?.jsonObject
+            val userFacingSummary = UserFacingSummary(
+                readinessMessage = summary?.get("readiness_message")?.jsonPrimitive?.contentOrNull ?: "",
+                mindsetReframing = summary?.get("mindset_reframing")?.jsonPrimitive?.contentOrNull ?: ""
+            )
 
-                // 改善ポイント
-                val improvements = root["improvement_points"]?.jsonArray
-                if (improvements != null && improvements.size > 0) {
-                    appendLine("## 改善ポイント")
-                    improvements.forEach { item ->
-                        val imp = item.jsonObject
-                        val point = imp["point"]?.jsonPrimitive?.contentOrNull ?: ""
-                        val suggestion = imp["suggestion"]?.jsonPrimitive?.contentOrNull ?: ""
-                        appendLine("- $point: $suggestion")
-                    }
-                    appendLine()
-                }
+            // good_points
+            val goodPoints = root["good_points"]?.jsonArray?.mapNotNull {
+                it.jsonPrimitive.contentOrNull
+            } ?: emptyList()
 
-                // 明日のアクションプラン
-                val actionPlan = root["action_plan"]?.jsonPrimitive?.contentOrNull
-                    ?: root["advice"]?.jsonPrimitive?.contentOrNull
-                if (!actionPlan.isNullOrBlank()) {
-                    appendLine("---")
-                    appendLine()
-                    appendLine("## 明日のアクション")
-                    appendLine(actionPlan)
-                }
-            }
+            // improvement_points
+            val improvementPoints = root["improvement_points"]?.jsonArray?.mapNotNull { item ->
+                val obj = item.jsonObject
+                val point = obj["point"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                val suggestion = obj["suggestion"]?.jsonPrimitive?.contentOrNull ?: ""
+                ImprovementPoint(point = point, suggestion = suggestion)
+            } ?: emptyList()
+
+            // quest_bridge
+            val bridge = root["quest_bridge"]?.jsonObject
+            val questBridge = QuestBridge(
+                message = bridge?.get("message")?.jsonPrimitive?.contentOrNull ?: "",
+                closingCheer = bridge?.get("closing_cheer")?.jsonPrimitive?.contentOrNull ?: ""
+            )
+
+            AnalysisResult(
+                internalAnalysis = internalAnalysis,
+                userFacingSummary = userFacingSummary,
+                goodPoints = goodPoints,
+                improvementPoints = improvementPoints,
+                questBridge = questBridge
+            )
         } catch (e: Exception) {
-            // JSONパース失敗時は元テキストをそのまま返す
-            return rawText
+            println("AnalysisScreenModel: parseAnalysisResult error: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * AnalysisResultをテキスト形式に変換（レポート保存・Q&Aコンテキスト用）
+     */
+    private fun formatAnalysisForStorage(result: AnalysisResult): String {
+        return buildString {
+            appendLine(result.userFacingSummary.readinessMessage)
+            appendLine(result.userFacingSummary.mindsetReframing)
+            appendLine()
+            if (result.goodPoints.isNotEmpty()) {
+                result.goodPoints.forEach { appendLine("- $it") }
+                appendLine()
+            }
+            if (result.improvementPoints.isNotEmpty()) {
+                result.improvementPoints.forEach { appendLine("- ${it.point}: ${it.suggestion}") }
+                appendLine()
+            }
+            appendLine(result.questBridge.message)
+            append(result.questBridge.closingCheer)
         }
     }
 
@@ -819,6 +800,7 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
 
     private companion object {
         const val MAX_REPORTS = 30
+        const val BONUS_XP_AMOUNT = 30
     }
 
     /**
@@ -870,25 +852,23 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
             }
 
             try {
-                // 指示書変更検出
-                val isDirectiveModification = question.contains(
-                    Regex("変更|変えて|代わり|別の|違う|嫌|苦手|できない|アレルギー|好み")
-                )
-
-                val contextPrompt = if (isDirectiveModification) {
-                    buildDirectiveModificationPrompt(state, question)
-                } else {
-                    buildString {
-                        appendLine("以下のAI分析レポートについての質問に答えてください。")
+                val contextPrompt = buildString {
+                    appendLine("あなたは専属AIヘルスコーチです。以下の分析レポートに基づいてユーザーの質問に答えてください。")
+                    appendLine()
+                    appendLine("## 回答ルール（厳守）")
+                    appendLine("- クエスト（食事メニュー・運動メニュー）の食材・量・種目・タイミングを変更する提案は絶対にしない")
+                    appendLine("- 具体的な数値目標（カロリー、PFC等）を提示しない（クエストが自動最適化済みのため）")
+                    appendLine("- 「なぜそうなるか」の生理学的メカニズムの解説に徹する")
+                    appendLine("- 温かく共感的なトーンで、短く簡潔に回答する（200文字以内目安）")
+                    appendLine("- マークダウン記法（#, **, *等）を使わない。プレーンテキストで回答する")
+                    appendLine()
+                    state.aiAnalysis?.let {
+                        appendLine("【分析レポート】")
+                        appendLine(it)
                         appendLine()
-                        state.aiAnalysis?.let {
-                            appendLine("【分析レポート】")
-                            appendLine(it)
-                            appendLine()
-                        }
-                        appendLine("【ユーザーの要望】")
-                        appendLine(question)
                     }
+                    appendLine("【ユーザーの質問】")
+                    appendLine(question)
                 }
 
                 val response = geminiService?.sendMessageWithCredit(
@@ -899,9 +879,16 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
                 )
 
                 if (response?.success == true && response.text != null) {
+                    // マークダウン記法を除去（プレーンテキスト化）
+                    val cleanedText = response.text!!
+                        .replace(Regex("#{1,6}\\s*"), "")
+                        .replace(Regex("\\*\\*(.+?)\\*\\*"), "$1")
+                        .replace(Regex("\\*(.+?)\\*"), "$1")
+                        .replace(Regex("^\\s*[*-]\\s+", RegexOption.MULTILINE), "・")
+                        .trim()
                     val updatedHistory = newHistory + ConversationEntry(
                         type = "ai",
-                        content = response.text
+                        content = cleanedText
                     )
                     _uiState.update {
                         it.copy(
@@ -919,10 +906,6 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
                         )
                     }
 
-                    // 指示書変更検出時: 修正指示書を抽出・保存
-                    if (isDirectiveModification) {
-                        extractAndUpdateDirective(userId, response.text)
-                    }
                 } else {
                     _uiState.update {
                         it.copy(
@@ -984,6 +967,7 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
             it.copy(
                 selectedReport = report,
                 aiAnalysis = report?.content,
+                parsedAnalysis = null, // 過去レポートは構造化データなし（テキスト表示）
                 conversationHistory = report?.conversationHistory ?: emptyList()
             )
         }
@@ -1025,6 +1009,7 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
         _uiState.update {
             it.copy(
                 aiAnalysis = null,
+                parsedAnalysis = null,
                 conversationHistory = emptyList(),
                 selectedReport = null
             )
@@ -1045,121 +1030,7 @@ Output valid JSON only. Do not include markdown formatting or code blocks."""
         _uiState.update { it.copy(levelUpMessage = null) }
     }
 
-    /**
-     * 指示書変更リクエスト用プロンプト構築
-     */
-    private fun buildDirectiveModificationPrompt(state: AnalysisUiState, question: String): String {
-        val profile = state.userProfile
-        return buildString {
-            appendLine("以下の分析レポートの指示書を、ユーザーの要望に合わせて修正してください。")
-            appendLine()
-            appendLine("【重要ルール】")
-            appendLine("- 修正後の指示書を必ず出力する")
-            appendLine("- 形式: [修正後の指示書] で始め、箇条書きで出力")
-            appendLine("- アスタリスク(*)は使用しない")
-            appendLine("- 各項目は【食事N】【運動】【睡眠】で始める")
-            appendLine("- 食材変更時は同等のPFC量を維持する")
-            appendLine("- ユーザーが指定した食材は使用可")
-            appendLine("- NG食材は絶対に使用禁止")
-            appendLine()
 
-            // NG食材
-            val ngFoods = mutableListOf<String>()
-            profile?.ngFoods?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.let {
-                ngFoods.addAll(it)
-            }
-            if (ngFoods.isNotEmpty()) {
-                appendLine("【NG食材（絶対使用禁止）】${ngFoods.joinToString(", ")}")
-                appendLine()
-            }
-
-            // 代替食材候補
-            val alternativesInfo = buildAlternativesInfo(profile)
-            if (alternativesInfo.isNotEmpty()) {
-                appendLine("【利用可能な代替食材（PFC/100g）】")
-                appendLine(alternativesInfo)
-                appendLine()
-            }
-
-            // 現在の分析レポート
-            state.aiAnalysis?.let {
-                appendLine("【分析レポート】")
-                appendLine(it)
-                appendLine()
-            }
-
-            appendLine("【ユーザーの要望】")
-            appendLine(question)
-        }
-    }
-
-    /**
-     * 代替食材候補情報を構築（BodymakingFoodDatabase連携）
-     */
-    private fun buildAlternativesInfo(profile: UserProfile?): String = buildString {
-        appendLine("【ミニマリスト代替候補】")
-        appendLine("以下の固定メンバーから選択してください：")
-        appendLine()
-        appendLine("タンパク質:")
-        appendLine("- 鶏むね肉（常備）")
-        appendLine("- 全卵（常備）")
-        if ((profile?.budgetTier ?: 2) >= 2) {
-            appendLine("- 牛赤身肉（脚/背中の日）")
-            appendLine("- 鮭 or サバ缶（オフ日）")
-        }
-        appendLine()
-        appendLine("炭水化物:")
-        val mainCarb = BodymakingFoodDatabase.getCarbForGoal(profile?.goal)
-        appendLine("- ${mainCarb.displayName}（メイン）")
-        appendLine("- 切り餅（トレ前後）")
-        appendLine()
-        appendLine("※ 上記以外の食材はミニマリストリストに含まれません")
-    }
-
-    /**
-     * AI応答から修正指示書を抽出してFirestoreに保存
-     */
-    private fun extractAndUpdateDirective(userId: String, responseText: String) {
-        screenModelScope.launch(exceptionHandler) {
-            try {
-                // パターン1: [修正後の指示書] セクション抽出
-                val modifiedPattern = Regex("""\[修正後の指示書\]\s*([\s\S]*?)(?:\[|$)""")
-                var bulletPoints = modifiedPattern.find(responseText)?.let {
-                    Regex("""^[-・]\s*(.+)$""", RegexOption.MULTILINE)
-                        .findAll(it.groupValues[1].trim())
-                        .map { m -> m.groupValues[1].trim() }
-                        .filter { s -> s.isNotEmpty() }
-                        .toList()
-                } ?: emptyList()
-
-                // パターン2: 【食事N】【運動】【睡眠】行の直接抽出
-                if (bulletPoints.isEmpty()) {
-                    bulletPoints = Regex("""[-・]\s*(【(?:食事\d+|運動|睡眠)】[^\n]+)""")
-                        .findAll(responseText)
-                        .map { it.groupValues[1].trim() }
-                        .toList()
-                }
-
-                if (bulletPoints.isNotEmpty()) {
-                    val tomorrow = DateUtil.nextDay(DateUtil.todayString())
-                    val filteredPoints = bulletPoints.filter { it.startsWith("【") }
-                    val message = (if (filteredPoints.isNotEmpty()) filteredPoints else bulletPoints)
-                        .joinToString("\n") { "- $it" }
-                    val directive = Directive(
-                        userId = userId,
-                        date = tomorrow,
-                        message = message,
-                        type = DirectiveType.MEAL,
-                        completed = false,
-                        createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
-                    )
-                    directiveRepository?.saveDirective(directive)
-                }
-            } catch (e: Exception) {
-                // 指示書抽出・保存失敗はQ&A結果に影響しないので無視
-            }
-        }
-    }
 
     /**
      * 詳細栄養素を計算（DashboardScreenModelと同じロジック）

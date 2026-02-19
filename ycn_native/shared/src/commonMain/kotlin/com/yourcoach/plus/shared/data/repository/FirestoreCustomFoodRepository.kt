@@ -193,7 +193,7 @@ class FirestoreCustomFoodRepository : CustomFoodRepository {
             solubleFiber = get<Double?>("solubleFiber")?.toFloat() ?: 0f,
             insolubleFiber = get<Double?>("insolubleFiber")?.toFloat() ?: 0f,
             sugar = get<Double?>("sugar")?.toFloat() ?: 0f,
-            gi = get<Long?>("gi")?.toInt() ?: 0,
+            gi = (get<Long?>("gi")?.toInt() ?: get<Double?>("gi")?.toInt()) ?: 0,
             diaas = get<Double?>("diaas")?.toFloat() ?: 0f,
             saturatedFat = get<Double?>("saturatedFat")?.toFloat() ?: 0f,
             monounsaturatedFat = get<Double?>("monounsaturatedFat")?.toFloat() ?: 0f,
