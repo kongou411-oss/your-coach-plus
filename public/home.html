@@ -17,6 +17,15 @@
     <meta property="og:locale" content="ja_JP">
     <meta name="twitter:card" content="summary_large_image">
 
+    <!-- Microsoft Clarity Heatmap -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "vjx7906ho4");
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
@@ -196,6 +205,7 @@
                     <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Your Problem</span>
                 </div>
                 <h2 id="pain-heading" class="text-2xl md:text-4xl font-black text-white mb-4">こんな悩み、ありませんか？</h2>
+                <p class="text-gray-400 text-sm">調査によると、<span class="text-red-400 font-bold">80%のジム会員が1年以内に退会</span>。その理由は意志の弱さではありません。</p>
             </div>
 
             <div class="stagger-children grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -204,24 +214,27 @@
                     <div class="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
                     </div>
-                    <h3 class="text-white font-bold text-lg mb-2">情報過多で迷走</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">YouTube、SNS、雑誌…。情報が多すぎて何が正解か分からない。結局どれも中途半端になってしまう。</p>
+                    <p class="text-red-400 font-black text-2xl mb-2">59%</p>
+                    <h3 class="text-white font-bold text-lg mb-2">「通うのが面倒」で挫折</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">退会理由の第1位。モチベーションが続かず、ジムに行く行為自体がストレスに。仕組みがなければ継続は不可能。</p>
                 </div>
                 <!-- Pain 2 -->
                 <div class="fade-up bg-gray-900/50 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition">
                     <div class="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     </div>
-                    <h3 class="text-white font-bold text-lg mb-2">何度もリバウンド</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">短期間のダイエットで落としても、すぐ戻る。知識が断片的で、持続可能な方法が分からない。</p>
+                    <p class="text-orange-400 font-black text-2xl mb-2">36%</p>
+                    <h3 class="text-white font-bold text-lg mb-2">「忙しい」が言い訳に</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">仕事で疲れた日、残業の日、予定がある日…。「忙しい」を理由に1日休むと、そのまま行かなくなる悪循環。</p>
                 </div>
                 <!-- Pain 3 -->
                 <div class="fade-up bg-gray-900/50 border border-gray-800 rounded-2xl p-6 hover:border-gray-700 transition">
                     <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
-                    <h3 class="text-white font-bold text-lg mb-2">記録しても変わらない</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">カロリーや体重を記録するアプリは使っている。でもデータを見ても「次に何をすればいいか」が分からない。</p>
+                    <p class="text-purple-400 font-black text-2xl mb-2">23%</p>
+                    <h3 class="text-white font-bold text-lg mb-2">「効果が出ない」で離脱</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">頑張って記録しても、数字を見ても「次に何をすべきか」が分からない。成果を実感できず、モチベーションが消える。</p>
                 </div>
             </div>
 
@@ -279,6 +292,10 @@
                                 <li class="flex items-center gap-2"><span class="text-[#4A9EFF]">&#10003;</span> 食事・運動・コンディションを総合的にナビゲート</li>
                                 <li class="flex items-center gap-2"><span class="text-[#4A9EFF]">&#10003;</span> AIが「次に何をすべきか」を毎日指示</li>
                             </ul>
+                            <div class="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-3">
+                                <p class="text-[#4A9EFF] text-xs font-bold">ゲーミフィケーションで継続率+40%</p>
+                                <p class="text-gray-500 text-xs">クエスト形式が「面倒」を「達成感」に変える</p>
+                            </div>
                         </div>
                         <div class="flex-1 flex justify-center">
                             <img src="/guide-images/FEATURE1_new.png" alt="クエスト画面 - 今日のタスクがリスト表示されている" class="w-auto h-[400px] md:h-[550px] object-contain rounded-3xl shadow-lg" loading="lazy">
@@ -333,6 +350,10 @@
                                 <li class="flex items-center gap-2"><span class="text-emerald-600">&#10003;</span> カテゴリ別投稿 - 質問、経過報告、レシピなど多彩に使い分け</li>
                                 <li class="flex items-center gap-2"><span class="text-emerald-600">&#10003;</span> 生けるコミュニティ - 競技全国レベルの開発者が使い、進化し続ける</li>
                             </ul>
+                            <div class="mt-4 bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+                                <p class="text-emerald-600 text-xs font-bold">ソーシャル機能で継続率+30%</p>
+                                <p class="text-gray-500 text-xs">「一人じゃない」という実感が最大の継続要因</p>
+                            </div>
                         </div>
                         <div class="flex-1 flex justify-center">
                             <img src="/guide-images/FEATURE3_new.png" alt="COMYコミュニティ画面 - ユーザー同士の投稿一覧" class="w-auto h-[400px] md:h-[550px] object-contain rounded-3xl shadow-lg" loading="lazy">

@@ -58,6 +58,34 @@ class AnalysisScreen : Screen {
         val uiState by screenModel.uiState.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val snackbarHostState = remember { SnackbarHostState() }
+        var showAiConsentDialog by remember { mutableStateOf(false) }
+        var pendingAiAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+        // AI同意ダイアログ
+        if (showAiConsentDialog) {
+            com.yourcoach.plus.shared.ui.components.AiConsentDialog(
+                onConsent = {
+                    showAiConsentDialog = false
+                    screenModel.saveAiConsent()
+                    pendingAiAction?.invoke()
+                    pendingAiAction = null
+                },
+                onDecline = {
+                    showAiConsentDialog = false
+                    pendingAiAction = null
+                }
+            )
+        }
+
+        // AI操作の同意チェックラッパー
+        fun requireAiConsent(action: () -> Unit) {
+            if (uiState.aiDataConsent) {
+                action()
+            } else {
+                pendingAiAction = action
+                showAiConsentDialog = true
+            }
+        }
 
         // Error display
         LaunchedEffect(uiState.error) {
@@ -147,8 +175,8 @@ class AnalysisScreen : Screen {
                     AnalysisTab.ANALYSIS -> {
                         AnalysisContent(
                             uiState = uiState,
-                            onGenerateAnalysis = screenModel::generateAnalysis,
-                            onSendQuestion = screenModel::sendQuestion,
+                            onGenerateAnalysis = { requireAiConsent { screenModel.generateAnalysis() } },
+                            onSendQuestion = { requireAiConsent { screenModel.sendQuestion() } },
                             onUpdateQuestion = screenModel::updateQuestion,
                             onClearAnalysis = screenModel::clearAnalysis
                         )

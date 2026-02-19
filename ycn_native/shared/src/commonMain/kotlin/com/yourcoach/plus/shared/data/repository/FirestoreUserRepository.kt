@@ -420,6 +420,25 @@ class FirestoreUserRepository : UserRepository {
     }
 
     /**
+     * AIデータ共有同意を保存
+     */
+    override suspend fun saveAiDataConsent(userId: String): Result<Unit> {
+        return try {
+            val now = com.yourcoach.plus.shared.util.DateUtil.currentTimestamp()
+            usersCollection.document(userId).update(
+                mapOf(
+                    "aiDataConsent" to true,
+                    "aiDataConsentDate" to now
+                )
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            println("FirestoreUserRepository: saveAiDataConsent failed: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
      * スロット設定を更新
      */
     override suspend fun updateSlotConfig(
@@ -542,7 +561,9 @@ class FirestoreUserRepository : UserRepository {
             b2b2cOrgId = get<String?>("b2b2cOrgId"),
             b2b2cOrgName = get<String?>("b2b2cOrgName"),
             organizationName = get<String?>("organizationName"),
-            role = get<String?>("role")
+            role = get<String?>("role"),
+            aiDataConsent = get<Boolean?>("aiDataConsent") ?: false,
+            aiDataConsentDate = get<Long?>("aiDataConsentDate") ?: 0
         )
     }
 

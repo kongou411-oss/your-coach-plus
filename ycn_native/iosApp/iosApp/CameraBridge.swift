@@ -35,6 +35,13 @@ import PhotosUI
             // Retain delegate
             objc_setAssociatedObject(picker, &AssociatedKeys.delegateKey, delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
 
+            // iPad対応: ポップオーバー設定
+            if let popover = picker.popoverPresentationController {
+                popover.sourceView = viewController.view
+                popover.sourceRect = CGRect(x: viewController.view.bounds.midX, y: viewController.view.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+
             viewController.present(picker, animated: true)
         }
     }
@@ -59,6 +66,8 @@ import PhotosUI
             picker.sourceType = .camera
             picker.cameraCaptureMode = .photo
             picker.allowsEditing = false
+            // iPad対応: カメラはフルスクリーン表示が必須
+            picker.modalPresentationStyle = .fullScreen
 
             let delegate = ImagePickerDelegate(completion: completion)
             picker.delegate = delegate

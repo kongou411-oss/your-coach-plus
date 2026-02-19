@@ -100,6 +100,11 @@ interface UserRepository {
     ): Result<Unit>
 
     /**
+     * AIデータ共有同意を保存（App Store Guideline 5.1.1/5.1.2対応）
+     */
+    suspend fun saveAiDataConsent(userId: String): Result<Unit>
+
+    /**
      * タイムライン設定を更新（起床・就寝・トレーニング時刻）
      */
     suspend fun updateTimelineConfig(

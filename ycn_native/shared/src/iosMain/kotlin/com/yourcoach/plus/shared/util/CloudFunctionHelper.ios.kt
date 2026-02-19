@@ -29,10 +29,32 @@ actual suspend fun invokeCloudFunction(
         suspendCancellableCoroutine { continuation ->
             handler(region, functionName, data) { result, error ->
                 if (error != null) {
+                    println("[CloudFunction-iOS] $functionName error: $error")
                     continuation.resumeWithException(Exception(error))
                 } else {
-                    val map = result as? Map<String, Any?> ?: emptyMap()
-                    continuation.resume(map)
+                    try {
+                        val map = when (result) {
+                            is Map<*, *> -> result as Map<String, Any?>
+                            null -> {
+                                println("[CloudFunction-iOS] $functionName returned null result, using emptyMap")
+                                emptyMap()
+                            }
+                            else -> {
+                                // NSDictionary等がMapにキャストできない場合のフォールバック
+                                println("[CloudFunction-iOS] $functionName unexpected result type: ${result::class.simpleName}, value: $result")
+                                val converted = mutableMapOf<String, Any?>()
+                                // Kotlin/NativeではNSDictionaryがMap互換のため通常ここには来ない
+                                // 安全策としてemptyMapを返す
+                                converted
+                            }
+                        }
+                        continuation.resume(map)
+                    } catch (e: Exception) {
+                        println("[CloudFunction-iOS] $functionName result casting failed: ${e.message}")
+                        continuation.resumeWithException(
+                            Exception("Cloud Function result parsing error: ${e.message}")
+                        )
+                    }
                 }
             }
         }

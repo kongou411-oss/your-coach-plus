@@ -60,7 +60,35 @@ class DashboardScreen : Screen {
         val navigator = LocalMainNavigator.current
         val snackbarHostState = remember { SnackbarHostState() }
         var showMicroDetailDialog by remember { mutableStateOf(false) }
+        var showAiConsentDialog by remember { mutableStateOf(false) }
+        var pendingAiAction by remember { mutableStateOf<(() -> Unit)?>(null) }
         val updateBottomBar = LocalBottomBarStateUpdater.current
+
+        // AI同意ダイアログ
+        if (showAiConsentDialog) {
+            AiConsentDialog(
+                onConsent = {
+                    showAiConsentDialog = false
+                    screenModel.saveAiConsent()
+                    pendingAiAction?.invoke()
+                    pendingAiAction = null
+                },
+                onDecline = {
+                    showAiConsentDialog = false
+                    pendingAiAction = null
+                }
+            )
+        }
+
+        // AI操作の同意チェックラッパー
+        fun requireAiConsent(action: () -> Unit) {
+            if (screenModel.hasAiConsent()) {
+                action()
+            } else {
+                pendingAiAction = action
+                showAiConsentDialog = true
+            }
+        }
 
         // MainScreenのExpandableBottomBarに状態を反映
         val expProgress = uiState.user?.profile?.calculateExpProgress()
@@ -75,8 +103,8 @@ class DashboardScreen : Screen {
                 freeCredits = uiState.user?.freeCredits ?: 0,
                 paidCredits = uiState.user?.paidCredits ?: 0,
                 isPremium = uiState.user?.isEffectivePremium ?: false,
-                onAnalysisClick = { navigator?.push(AnalysisScreen()) },
-                onGenerateQuestClick = { screenModel.generateQuest() },
+                onAnalysisClick = { requireAiConsent { navigator?.push(AnalysisScreen()) } },
+                onGenerateQuestClick = { requireAiConsent { screenModel.generateQuest() } },
                 isGeneratingQuest = uiState.isGeneratingQuest,
                 hasCustomQuest = uiState.customQuest != null
             ))

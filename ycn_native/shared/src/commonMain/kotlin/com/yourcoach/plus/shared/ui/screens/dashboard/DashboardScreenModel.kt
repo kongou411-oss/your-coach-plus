@@ -1961,6 +1961,23 @@ class DashboardScreenModel(
         }
     }
 
+    // ========== AI同意 ==========
+
+    /** AIデータ共有の同意状態を取得 */
+    fun hasAiConsent(): Boolean = _uiState.value.user?.aiDataConsent == true
+
+    /** AIデータ共有同意を保存してFirestoreに反映 */
+    fun saveAiConsent() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            userRepository.saveAiDataConsent(userId)
+            // ローカル状態も即時更新
+            _uiState.update { state ->
+                state.copy(user = state.user?.copy(aiDataConsent = true))
+            }
+        }
+    }
+
     // ========== クエスト生成 ==========
 
     /**
@@ -2031,26 +2048,26 @@ class DashboardScreenModel(
                 val sleepTime = profile?.sleepTime ?: "23:00"
                 val trainingDuration = profile?.trainingDuration ?: 120
 
-                // null値をフィルタリング（iOS GitLive SDKのシリアライズ対策）
+                // null値をフィルタリング + 数値型をDoubleに統一（iOS Kotlin/Native↔Swift bridging対策）
                 val data = mutableMapOf<String, Any>(
                     "goal" to goal,
-                    "budgetTier" to budgetTier,
-                    "mealsPerDay" to mealsPerDay,
+                    "budgetTier" to budgetTier.toDouble(),
+                    "mealsPerDay" to mealsPerDay.toDouble(),
                     "splitType" to splitType,
                     "targetDate" to targetDate,
-                    "targetProtein" to targets.protein,
-                    "targetCarbs" to targets.carbs,
-                    "targetFat" to targets.fat,
-                    "targetCalories" to targets.calories,
-                    "fiberTarget" to fiberTarget,
+                    "targetProtein" to targets.protein.toDouble(),
+                    "targetCarbs" to targets.carbs.toDouble(),
+                    "targetFat" to targets.fat.toDouble(),
+                    "targetCalories" to targets.calories.toDouble(),
+                    "fiberTarget" to fiberTarget.toDouble(),
                     "wakeUpTime" to wakeUpTime,
                     "sleepTime" to sleepTime,
-                    "trainingDuration" to trainingDuration,
-                    "weight" to weight,
-                    "bodyFatPercentage" to bodyFatPercentage
+                    "trainingDuration" to trainingDuration.toDouble(),
+                    "weight" to weight.toDouble(),
+                    "bodyFatPercentage" to bodyFatPercentage.toDouble()
                 )
                 // nullable値は存在する場合のみ追加
-                profile?.trainingAfterMeal?.let { data["trainingAfterMeal"] = it }
+                profile?.trainingAfterMeal?.let { data["trainingAfterMeal"] = it.toDouble() }
                 profile?.trainingTime?.let { data["trainingTime"] = it }
 
                 val result = invokeCloudFunction(

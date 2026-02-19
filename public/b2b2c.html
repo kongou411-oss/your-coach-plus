@@ -34,6 +34,15 @@
     <meta property="og:image" content="https://your-coach-plus.com/guide-images/FEATURE1_new.png">
     <meta name="twitter:card" content="summary_large_image">
 
+    <!-- Microsoft Clarity Heatmap -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "vjx7906ho4");
+    </script>
+
     <style>
         html { scroll-behavior: smooth; }
         body { margin: 0; padding: 0; }
@@ -115,6 +124,98 @@
             background: linear-gradient(to bottom, rgba(74,158,255,0.3), transparent);
         }
         .benefit-step:last-child::before { display: none; }
+
+        /* Directional fade animations */
+        .fade-left {
+            opacity: 0; transform: translateX(-40px);
+            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+        }
+        .fade-right {
+            opacity: 0; transform: translateX(40px);
+            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+        }
+        .fade-left.visible, .fade-right.visible { opacity: 1; transform: translateX(0); }
+
+        /* Image placeholder styling */
+        .img-placeholder {
+            background: linear-gradient(135deg, rgba(74,158,255,0.08) 0%, rgba(74,158,255,0.02) 100%);
+            border: 2px dashed rgba(74,158,255,0.2);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 0.5rem;
+            color: rgba(74,158,255,0.4);
+            min-height: 280px;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .img-placeholder:hover {
+            border-color: rgba(74,158,255,0.4);
+        }
+        .img-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.875rem;
+        }
+        .img-placeholder.has-image {
+            border: none;
+            background: none;
+            overflow: hidden;
+        }
+
+        /* Image hover effect */
+        .img-hover {
+            transition: transform 0.4s ease-out, box-shadow 0.4s ease-out;
+        }
+        .img-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -10px rgba(74,158,255,0.2);
+        }
+
+        /* Reduced motion for new animations */
+        @media (prefers-reduced-motion: reduce) {
+            .fade-left, .fade-right { opacity: 1; transform: none; transition: none; }
+        }
+
+        /* ROI Simulator range sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 9999px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #4A9EFF;
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 0 8px rgba(74,158,255,0.5);
+            transition: transform 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4A9EFF;
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 0 8px rgba(74,158,255,0.5);
+        }
+        input[type="range"]::-moz-range-track {
+            height: 8px;
+            border-radius: 9999px;
+            background: #374151;
+        }
     </style>
 </head>
 <body class="bg-black">
@@ -129,6 +230,7 @@
                     <a href="#problem" class="text-sm text-gray-350 hover:text-white transition">課題</a>
                     <a href="#mechanism" class="text-sm text-gray-350 hover:text-white transition">仕組み</a>
                     <a href="#competition" class="text-sm text-gray-350 hover:text-white transition">比較</a>
+                    <a href="#roi" class="text-sm text-gray-350 hover:text-white transition">ROI試算</a>
                     <a href="#pricing" class="text-sm text-gray-350 hover:text-white transition">料金</a>
                     <a href="#contact" class="bg-[#4A9EFF] text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#3A8EEF] transition">お問い合わせ</a>
                 </div>
@@ -145,6 +247,7 @@
                     <a href="#problem" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">課題</a>
                     <a href="#mechanism" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">仕組み</a>
                     <a href="#competition" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">比較</a>
+                    <a href="#roi" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">ROI試算</a>
                     <a href="#pricing" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">料金</a>
                     <a href="#contact" class="block bg-[#4A9EFF] text-white text-sm font-bold px-4 py-2 rounded-lg text-center" role="menuitem">お問い合わせ</a>
                 </div>
@@ -154,9 +257,9 @@
 
     <main>
 
-    <!-- ==================== Hero ==================== -->
-    <section class="min-h-screen flex items-center justify-center bg-black relative pt-14">
-        <div class="max-w-4xl mx-auto px-6 text-center">
+    <!-- ==================== Hero: Data-Driven ==================== -->
+    <section class="min-h-screen flex items-center bg-black relative pt-14">
+        <div class="max-w-5xl mx-auto px-6 w-full text-center">
             <div class="fade-up">
                 <!-- Urgency badge -->
                 <div class="inline-flex items-center gap-2 mb-4 px-5 py-2 rounded-full border border-red-500/30 bg-red-500/10">
@@ -167,36 +270,45 @@
                 <div class="inline-block mb-6 px-4 py-1 rounded-full border border-white/10 bg-white/5">
                     <span class="text-xs font-bold tracking-widest text-gray-350 uppercase">For Gyms &amp; Trainers</span>
                 </div>
-                <h1 class="font-heading text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
-                    週1回のパーソナルで、<br><span class="text-red-500">身体が変わるわけがない。</span>
+
+                <h1 class="font-heading text-3xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight">
+                    導入するだけで<br>年間売上が<span class="text-[#4A9EFF]">最大75%</span>伸びる
                 </h1>
                 <p class="text-base md:text-lg text-gray-350 mb-10 max-w-2xl mx-auto">
-                    週168時間のうち、あなたが指導できるのはわずか1時間。<br>
-                    残りの<span class="text-white font-bold">「167時間」</span>を支配した者だけが、会員に成果を届けられる。
+                    会員の継続率を仕組みで改善。<span class="text-white font-bold">投資対効果100倍超</span>のAI栄養管理システム。
                 </p>
             </div>
 
-            <!-- Stats -->
-            <div class="fade-up grid grid-cols-3 gap-6 max-w-lg mx-auto mb-10">
-                <div>
-                    <p class="font-heading stat-number text-4xl md:text-5xl font-black text-red-500 mb-1">167</p>
-                    <p class="text-gray-350 text-xs">時間の空白/週</p>
+            <!-- Hero KPI Cards -->
+            <div class="fade-up grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-3xl mx-auto mb-10">
+                <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <p class="font-heading stat-number text-3xl md:text-4xl font-black text-emerald-400 mb-1">+75<span class="text-lg">%</span></p>
+                    <p class="text-gray-350 text-xs">継続率向上</p>
                 </div>
-                <div>
-                    <p class="font-heading stat-number text-4xl md:text-5xl font-black text-[#4A9EFF] mb-1">24<span class="text-xl">h</span></p>
-                    <p class="text-gray-350 text-xs">AIが常時ナビ</p>
+                <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <p class="font-heading stat-number text-3xl md:text-4xl font-black text-[#4A9EFF] mb-1">100<span class="text-lg">倍+</span></p>
+                    <p class="text-gray-350 text-xs">ROI（投資対効果）</p>
                 </div>
-                <div>
-                    <p class="font-heading stat-number text-4xl md:text-5xl font-black text-emerald-500 mb-1">0</p>
-                    <p class="text-gray-350 text-xs">会員の迷い</p>
+                <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <p class="font-heading stat-number text-3xl md:text-4xl font-black text-white mb-1">¥9<span class="text-lg">k〜</span></p>
+                    <p class="text-gray-350 text-xs">月額コスト</p>
+                </div>
+                <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <p class="font-heading stat-number text-3xl md:text-4xl font-black text-red-500 mb-1">0</p>
+                    <p class="text-gray-350 text-xs">導入の手間</p>
                 </div>
             </div>
 
-            <div class="fade-up">
-                <a href="#pricing" class="inline-block bg-[#4A9EFF] text-white font-bold py-3 px-8 rounded-xl hover:bg-[#3A8EEF] transition shadow-lg text-base">
+            <div class="fade-up flex flex-col sm:flex-row gap-3 justify-center mb-6">
+                <a href="#roi" class="inline-block bg-[#4A9EFF] text-white font-bold py-4 px-10 rounded-xl hover:bg-[#3A8EEF] transition shadow-lg text-base text-center">
+                    あなたのジムのROIを試算する
+                </a>
+                <a href="#pricing" class="inline-block border-2 border-white/20 text-gray-350 font-bold py-4 px-10 rounded-xl hover:border-white/40 hover:text-white transition text-base text-center">
                     料金プランを見る
                 </a>
             </div>
+
+            <p class="fade-up text-gray-600 text-xs">※ 30名・月額¥30,000・継続4ヶ月のジムの場合の試算値</p>
         </div>
 
         <!-- Scroll indicator -->
@@ -207,6 +319,276 @@
         </div>
     </section>
 
+    <!-- ==================== Trust Badge Bar ==================== -->
+    <section class="bg-black border-t border-b border-gray-800/50 py-6">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="fade-up flex flex-wrap items-center justify-center gap-6 md:gap-10">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-[#4A9EFF]/10 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-[#4A9EFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <span class="text-gray-350 text-xs font-bold">AI搭載</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </div>
+                    <span class="text-gray-350 text-xs font-bold">40+栄養素追跡</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    </div>
+                    <span class="text-gray-350 text-xs font-bold">PGBASE教科書</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <span class="text-gray-350 text-xs font-bold">コミュニティ機能</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <span class="text-gray-350 text-xs font-bold">即日サポート</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== ROI Simulator ==================== -->
+    <section class="bg-gradient-to-b from-gray-950 to-black py-20 md:py-28" id="roi">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="fade-up text-center mb-12">
+                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-white/10 bg-white/5">
+                    <span class="text-xs font-bold tracking-widest text-gray-350 uppercase">ROI Simulator</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-4xl font-black text-white mb-4">あなたのジムで<span class="text-[#4A9EFF]">いくら増えるか</span></h2>
+                <p class="text-gray-350 text-sm">数字を入れるだけ。継続率改善による年間売上インパクトを即座に算出します。</p>
+            </div>
+
+            <!-- Sliders -->
+            <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 mb-8">
+                <div class="space-y-8">
+                    <!-- 会員数 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-white font-bold text-sm">現在の会員数</label>
+                            <span class="text-[#4A9EFF] font-bold text-lg font-heading" id="roi-members-val">30名</span>
+                        </div>
+                        <input type="range" id="roi-members" min="5" max="200" value="30" step="1"
+                            class="w-full h-2 rounded-full appearance-none cursor-pointer"
+                            style="background: linear-gradient(to right, #4A9EFF 12.8%, #374151 12.8%);"
+                            oninput="updateSliders()">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1"><span>5名</span><span>200名</span></div>
+                    </div>
+
+                    <!-- 月額会員費 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-white font-bold text-sm">月額会員費</label>
+                            <span class="text-[#4A9EFF] font-bold text-lg font-heading" id="roi-fee-val">¥30,000</span>
+                        </div>
+                        <input type="range" id="roi-fee" min="5000" max="100000" value="30000" step="1000"
+                            class="w-full h-2 rounded-full appearance-none cursor-pointer"
+                            style="background: linear-gradient(to right, #4A9EFF 26.3%, #374151 26.3%);"
+                            oninput="updateSliders()">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1"><span>¥5,000</span><span>¥100,000</span></div>
+                    </div>
+
+                    <!-- 平均継続月数 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-white font-bold text-sm">現在の平均継続月数</label>
+                            <span class="text-[#4A9EFF] font-bold text-lg font-heading" id="roi-months-val">4ヶ月</span>
+                        </div>
+                        <input type="range" id="roi-months" min="1" max="12" value="4" step="1"
+                            class="w-full h-2 rounded-full appearance-none cursor-pointer"
+                            style="background: linear-gradient(to right, #4A9EFF 27.3%, #374151 27.3%);"
+                            oninput="updateSliders()">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1"><span>1ヶ月</span><span>12ヶ月</span></div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <div class="text-center mt-8">
+                    <button onclick="calculateROI()" id="roi-calc-btn" class="bg-[#4A9EFF] text-white font-bold py-4 px-12 rounded-xl hover:bg-[#3A8EEF] transition shadow-lg text-base">
+                        導入効果を算出する
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results (hidden by default) -->
+            <div id="roi-results" class="hidden">
+            <div class="grid md:grid-cols-2 gap-5 mb-8">
+                <!-- Before -->
+                <div class="bg-gray-900/60 border border-gray-700 rounded-2xl p-6 relative">
+                    <div class="absolute top-4 right-4">
+                        <span class="text-xs font-bold tracking-widest text-gray-500 uppercase">Before</span>
+                    </div>
+                    <p class="text-gray-400 text-xs mb-1">現在の年間売上</p>
+                    <p class="font-heading text-2xl md:text-3xl font-black text-gray-300 mb-3" id="roi-before-revenue">¥43,200,000</p>
+                    <div class="flex items-center gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500 text-xs">平均継続</p>
+                            <p class="text-gray-400 font-bold" id="roi-before-months">4ヶ月</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs">月間売上</p>
+                            <p class="text-gray-400 font-bold" id="roi-before-monthly">¥900,000</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- After -->
+                <div class="bg-[#4A9EFF]/10 border-2 border-[#4A9EFF]/40 rounded-2xl p-6 relative">
+                    <div class="absolute top-4 right-4">
+                        <span class="text-xs font-bold tracking-widest text-[#4A9EFF] uppercase">After</span>
+                    </div>
+                    <p class="text-gray-400 text-xs mb-1">改善後の年間売上</p>
+                    <p class="font-heading text-2xl md:text-3xl font-black text-[#4A9EFF] mb-3" id="roi-after-revenue">¥75,600,000</p>
+                    <div class="flex items-center gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500 text-xs">改善後継続</p>
+                            <p class="text-[#4A9EFF] font-bold" id="roi-after-months">7ヶ月</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs">月間売上</p>
+                            <p class="text-[#4A9EFF] font-bold" id="roi-after-monthly">¥900,000</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Impact Summary -->
+            <div class="bg-gradient-to-r from-[#4A9EFF]/20 to-emerald-500/20 border border-[#4A9EFF]/30 rounded-2xl p-6 md:p-8 text-center">
+                <p class="text-gray-350 text-sm mb-2">Your Coach+ 導入による年間売上増加額</p>
+                <p class="font-heading text-4xl md:text-5xl font-black text-white mb-1" id="roi-increase">+¥32,400,000</p>
+                <p class="text-emerald-400 font-bold text-sm mb-6" id="roi-increase-pct">+75% アップ</p>
+
+                <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+                    <div class="bg-black/30 rounded-xl px-5 py-3 min-w-[160px]">
+                        <p class="text-gray-500 text-xs mb-1">推奨プラン</p>
+                        <p class="text-white font-bold text-lg" id="roi-plan">Pro</p>
+                        <p class="text-gray-400 text-xs" id="roi-plan-price">¥297,000 / 年</p>
+                    </div>
+                    <div class="bg-black/30 rounded-xl px-5 py-3 min-w-[160px]">
+                        <p class="text-gray-500 text-xs mb-1">ROI（投資対効果）</p>
+                        <p class="font-heading text-2xl font-black text-emerald-400" id="roi-multiple">109.1倍</p>
+                    </div>
+                    <div class="bg-black/30 rounded-xl px-5 py-3 min-w-[160px]">
+                        <p class="text-gray-500 text-xs mb-1">回収まで</p>
+                        <p class="font-heading text-2xl font-black text-[#4A9EFF]" id="roi-payback">即日</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                    <a href="#pricing" class="inline-block bg-[#4A9EFF] text-white font-bold py-3 px-8 rounded-lg hover:bg-[#3b8fef] transition shadow-lg">
+                        料金プランを見る
+                    </a>
+                    <a href="#problem" class="inline-block border-2 border-white/20 text-gray-350 font-bold py-3 px-8 rounded-lg hover:border-white/40 hover:text-white transition">
+                        なぜ継続率が上がるのか？
+                    </a>
+                </div>
+            </div>
+
+            <p class="text-center text-gray-600 text-xs mt-4 max-w-2xl mx-auto leading-relaxed">※ 継続率75%向上は、デジタル介入（リマインダー・トラッキング・ゲーミフィケーション）によるフィットネス継続率改善に関する複数の学術研究（40〜100%改善）を参考にした目安値です。実際の成果は運用状況により異なります。</p>
+            </div><!-- /roi-results -->
+        </div>
+    </section>
+
+    <script>
+    // Slider labels + track fill only (no results calculation)
+    function updateSliders() {
+        const members = parseInt(document.getElementById('roi-members').value);
+        const fee = parseInt(document.getElementById('roi-fee').value);
+        const months = parseInt(document.getElementById('roi-months').value);
+        const fmt = (n) => '¥' + Math.round(n).toLocaleString('ja-JP');
+
+        document.getElementById('roi-members-val').textContent = members + '名';
+        document.getElementById('roi-fee-val').textContent = fmt(fee);
+        document.getElementById('roi-months-val').textContent = months + 'ヶ月';
+
+        updateSliderFill('roi-members', 5, 200);
+        updateSliderFill('roi-fee', 5000, 100000);
+        updateSliderFill('roi-months', 1, 12);
+    }
+
+    // Full calculation + show results
+    function calculateROI() {
+        const members = parseInt(document.getElementById('roi-members').value);
+        const fee = parseInt(document.getElementById('roi-fee').value);
+        const months = parseInt(document.getElementById('roi-months').value);
+
+        const improvedMonths = Math.min(Math.round(months * 1.75 * 10) / 10, 12);
+        const improvedMonthsDisplay = Math.round(improvedMonths);
+
+        const monthlyRevenue = members * fee;
+        const beforeAnnual = monthlyRevenue * months;
+        const afterAnnual = monthlyRevenue * improvedMonths;
+        const increase = afterAnnual - beforeAnnual;
+        const increasePct = months > 0 ? Math.round((increase / beforeAnnual) * 100) : 0;
+
+        let planName, planPrice, planPriceNum;
+        if (members <= 10) {
+            planName = 'Standard'; planPrice = '¥108,000 / 年'; planPriceNum = 108000;
+        } else if (members <= 30) {
+            planName = 'Pro'; planPrice = '¥297,000 / 年'; planPriceNum = 297000;
+        } else if (members <= 100) {
+            planName = 'Elite'; planPrice = '¥594,000 / 年'; planPriceNum = 594000;
+        } else {
+            planName = 'Master'; planPrice = '要お問い合わせ'; planPriceNum = 594000;
+        }
+
+        const roiMultiple = planPriceNum > 0 ? (increase / planPriceNum) : 0;
+        const paybackDays = increase > 0 ? Math.max(1, Math.round((planPriceNum / increase) * 365)) : 0;
+        const fmt = (n) => '¥' + Math.round(n).toLocaleString('ja-JP');
+
+        // Update result values
+        document.getElementById('roi-before-revenue').textContent = fmt(beforeAnnual);
+        document.getElementById('roi-before-months').textContent = months + 'ヶ月';
+        document.getElementById('roi-before-monthly').textContent = fmt(monthlyRevenue);
+        document.getElementById('roi-after-revenue').textContent = fmt(afterAnnual);
+        document.getElementById('roi-after-months').textContent = improvedMonthsDisplay + 'ヶ月';
+        document.getElementById('roi-after-monthly').textContent = fmt(monthlyRevenue);
+        document.getElementById('roi-increase').textContent = '+' + fmt(increase);
+        document.getElementById('roi-increase-pct').textContent = '+' + increasePct + '% アップ';
+        document.getElementById('roi-plan').textContent = planName;
+        document.getElementById('roi-plan-price').textContent = planPrice;
+        document.getElementById('roi-multiple').textContent = roiMultiple >= 1 ? roiMultiple.toFixed(1) + '倍' : '—';
+        document.getElementById('roi-payback').textContent = paybackDays <= 1 ? '即日' : paybackDays + '日';
+
+        // Show results with animation
+        const results = document.getElementById('roi-results');
+        results.classList.remove('hidden');
+        results.style.opacity = '0';
+        results.style.transform = 'translateY(20px)';
+        results.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+        requestAnimationFrame(() => {
+            results.style.opacity = '1';
+            results.style.transform = 'translateY(0)';
+        });
+
+        // Scroll to results
+        setTimeout(() => {
+            results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
+        // Change button text
+        document.getElementById('roi-calc-btn').textContent = '再計算する';
+    }
+
+    function updateSliderFill(id, min, max) {
+        const el = document.getElementById(id);
+        const pct = ((el.value - min) / (max - min)) * 100;
+        el.style.background = 'linear-gradient(to right, #4A9EFF ' + pct + '%, #374151 ' + pct + '%)';
+    }
+
+    // Initialize slider visuals on load (results stay hidden)
+    document.addEventListener('DOMContentLoaded', function() { updateSliders(); });
+    </script>
+
     <!-- ==================== Problem: 3 Pain Points ==================== -->
     <section class="bg-black py-20 md:py-28" id="problem">
         <div class="max-w-4xl mx-auto px-6">
@@ -215,7 +597,7 @@
                     <span class="text-xs font-bold tracking-widest text-gray-350 uppercase">Problem</span>
                 </div>
                 <h2 class="font-heading text-2xl md:text-4xl font-black text-white mb-4">ジム経営を蝕む<span class="text-red-500">3つの構造的課題</span></h2>
-                <p class="text-gray-350 text-sm">どれだけ指導力があっても、仕組みがなければ成果は属人化する。</p>
+                <p class="text-gray-350 text-sm">入会者の<span class="text-red-400 font-bold">80%が1年以内に退会</span>。継続率は入会時37%→12ヶ月後わずか4%。どれだけ指導力があっても、仕組みがなければ成果は属人化する。</p>
             </div>
 
             <div class="fade-up grid md:grid-cols-3 gap-5">
@@ -232,16 +614,23 @@
                 <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-6">
                     <div class="text-red-500 font-black text-lg mb-3">03</div>
                     <h3 class="text-white font-bold mb-2">早期退会（LTV損失）</h3>
-                    <p class="text-gray-350 text-sm">成果が出る前にモチベーション低下。3ヶ月で退会は大きな機会損失。</p>
+                    <p class="text-gray-350 text-sm">退会理由の59%は「通うのが面倒」。パーソナルジムの継続率はわずか18.8%。顧客獲得コストの5〜25倍を継続に投資すべき理由がここにある。</p>
                 </div>
+            </div>
+
+            <!-- Section CTA -->
+            <div class="fade-up text-center mt-10">
+                <a href="#solution" class="inline-block border-2 border-[#4A9EFF]/40 text-[#4A9EFF] font-bold py-3 px-8 rounded-xl hover:bg-[#4A9EFF] hover:text-white transition text-sm">
+                    Your Coach+ の解決策を見る
+                </a>
             </div>
         </div>
     </section>
 
     <!-- ==================== Solution: 3 Weapons ==================== -->
     <section class="bg-black py-20 md:py-28" id="solution">
-        <div class="max-w-4xl mx-auto px-6">
-            <div class="fade-up text-center mb-12">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="fade-up text-center mb-16">
                 <div class="inline-block mb-4 px-4 py-1 rounded-full border border-[#4A9EFF]/30 bg-[#4A9EFF]/5">
                     <span class="text-xs font-bold tracking-widest text-[#4A9EFF] uppercase">Solution</span>
                 </div>
@@ -249,42 +638,67 @@
                 <p class="text-gray-350 text-sm">ツールではない。会員の行動を変える「システム」を導入する。</p>
             </div>
 
-            <div class="fade-up space-y-6">
-                <!-- Weapon 1 -->
-                <div class="bg-black border-2 border-[#4A9EFF]/20 rounded-2xl p-6 md:p-8 relative overflow-hidden">
-                    <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-600/10 rounded-full blur-[60px] pointer-events-none"></div>
-                    <div class="relative z-10 md:flex md:items-center md:gap-8">
-                        <div class="text-[#4A9EFF] font-black text-5xl md:text-6xl mb-4 md:mb-0 md:w-24 text-center shrink-0">01</div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-2">教育コスト削減</h3>
-                            <p class="text-gray-350 text-sm">基礎知識はアプリ内「PGBASE教科書」が担当。新人トレーナーでもプロ並みの知識提供が可能に。<span class="text-[#4A9EFF] font-bold">同じ説明を繰り返す時間を、本質的な指導に。</span></p>
+            <div class="space-y-20">
+                <!-- Weapon 1: Text Left + Image Right -->
+                <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+                    <div class="fade-left">
+                        <div class="text-[#4A9EFF] font-black text-5xl mb-4 font-heading">01</div>
+                        <h3 class="text-2xl font-bold text-white mb-3">教育コスト削減</h3>
+                        <p class="text-gray-350 text-sm mb-4">基礎知識はアプリ内「PGBASE教科書」が担当。新人トレーナーでもプロ並みの知識提供が可能に。</p>
+                        <p class="text-[#4A9EFF] font-bold text-sm">同じ説明を繰り返す時間を、本質的な指導に。</p>
+                    </div>
+                    <div class="fade-right">
+                        <div class="img-placeholder img-hover" id="solution-img-1">
+                            <!-- 画像を配置: <img src="/images/dashboard.png" alt="ダッシュボード画面"> -->
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span class="text-sm">dashboard.png</span>
+                            <span class="text-xs opacity-60">1200 x 800px 推奨</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Weapon 2 -->
-                <div class="bg-black border-2 border-[#4A9EFF]/20 rounded-2xl p-6 md:p-8 relative overflow-hidden">
-                    <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-600/10 rounded-full blur-[60px] pointer-events-none"></div>
-                    <div class="relative z-10 md:flex md:items-center md:gap-8">
-                        <div class="text-[#4A9EFF] font-black text-5xl md:text-6xl mb-4 md:mb-0 md:w-24 text-center shrink-0">02</div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-2">認知リソース保護</h3>
-                            <p class="text-gray-350 text-sm">「面倒」「難しい」を排除。AI写真解析で1秒入力、クエストで今日やるべきことを自動指示。<span class="text-[#4A9EFF] font-bold">会員が「続けられない」を構造的に解消。</span></p>
+                <!-- Weapon 2: Image Left + Text Right (alternate) -->
+                <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+                    <div class="fade-left order-2 md:order-1">
+                        <div class="img-placeholder img-hover" id="solution-img-2">
+                            <!-- 画像を配置: <img src="/images/quest.png" alt="クエスト画面"> -->
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span class="text-sm">quest.png</span>
+                            <span class="text-xs opacity-60">1200 x 800px 推奨</span>
                         </div>
+                    </div>
+                    <div class="fade-right order-1 md:order-2">
+                        <div class="text-emerald-500 font-black text-5xl mb-4 font-heading">02</div>
+                        <h3 class="text-2xl font-bold text-white mb-3">認知リソース保護</h3>
+                        <p class="text-gray-350 text-sm mb-4">「面倒」「難しい」を排除。AI写真解析で1秒入力、クエストで今日やるべきことを自動指示。</p>
+                        <p class="text-emerald-400 font-bold text-sm">会員が「続けられない」を構造的に解消。</p>
                     </div>
                 </div>
 
-                <!-- Weapon 3 -->
-                <div class="bg-black border-2 border-[#4A9EFF]/20 rounded-2xl p-6 md:p-8 relative overflow-hidden">
-                    <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-600/10 rounded-full blur-[60px] pointer-events-none"></div>
-                    <div class="relative z-10 md:flex md:items-center md:gap-8">
-                        <div class="text-[#4A9EFF] font-black text-5xl md:text-6xl mb-4 md:mb-0 md:w-24 text-center shrink-0">03</div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white mb-2">退会防止・LTV最大化</h3>
-                            <p class="text-gray-350 text-sm">結果が出るから続く。AI分析が毎日フィードバックを提供し、指導時間外でも成長を実感させ続ける。<span class="text-[#4A9EFF] font-bold">「結果が出るジム」というブランディングを。</span></p>
+                <!-- Weapon 3: Text Left + Image Right -->
+                <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+                    <div class="fade-left">
+                        <div class="text-purple-500 font-black text-5xl mb-4 font-heading">03</div>
+                        <h3 class="text-2xl font-bold text-white mb-3">退会防止・LTV最大化</h3>
+                        <p class="text-gray-350 text-sm mb-4">継続率を5%改善するだけで利益は25〜95%増加（Bain & Company調査）。クエストのゲーミフィケーションで継続率+40%、COMYのソーシャル機能で+30%、プッシュ通知でエンゲージメント+88%。</p>
+                        <p class="text-purple-400 font-bold text-sm">「結果が出るジム」というブランディングを。</p>
+                    </div>
+                    <div class="fade-right">
+                        <div class="img-placeholder img-hover" id="solution-img-3">
+                            <!-- 画像を配置: <img src="/images/analysis.png" alt="AI分析画面"> -->
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span class="text-sm">analysis.png</span>
+                            <span class="text-xs opacity-60">1200 x 800px 推奨</span>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Section CTA -->
+            <div class="fade-up text-center mt-14">
+                <a href="#mechanism" class="inline-block border-2 border-[#4A9EFF]/40 text-[#4A9EFF] font-bold py-3 px-8 rounded-xl hover:bg-[#4A9EFF] hover:text-white transition text-sm">
+                    仕組みを詳しく見る
+                </a>
             </div>
         </div>
     </section>
@@ -371,6 +785,13 @@
                         <span class="text-gray-350 text-xs font-bold">クエスト → 記録 → AI分析 → 改善の気づき → 翌日のクエストへ</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Section CTA -->
+            <div class="fade-up text-center mt-10">
+                <a href="#competition" class="inline-block border-2 border-[#4A9EFF]/40 text-[#4A9EFF] font-bold py-3 px-8 rounded-xl hover:bg-[#4A9EFF] hover:text-white transition text-sm">
+                    他社との比較を見る
+                </a>
             </div>
         </div>
     </section>
@@ -506,6 +927,13 @@
             <!-- Summary -->
             <div class="fade-up mt-8 text-center">
                 <p class="text-gray-350 text-sm">既存手法は「記録」はできても<span class="text-white font-bold">「行動変容」</span>までは責任を持たない。<br>Your Coach+ は<span class="text-[#4A9EFF] font-bold">クエスト→記録→分析→改善のループ</span>で、会員の成果にコミットする唯一のシステム。</p>
+            </div>
+
+            <!-- Section CTA -->
+            <div class="fade-up text-center mt-10">
+                <a href="#pricing" class="inline-block bg-[#4A9EFF] text-white font-bold py-3 px-8 rounded-xl hover:bg-[#3A8EEF] transition shadow-lg text-sm">
+                    料金プランを見る
+                </a>
             </div>
         </div>
     </section>
@@ -654,6 +1082,13 @@
                         </p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Section CTA -->
+            <div class="fade-up text-center mt-10">
+                <a href="#pricing" class="inline-block bg-[#4A9EFF] text-white font-bold py-3 px-8 rounded-xl hover:bg-[#3A8EEF] transition shadow-lg text-sm">
+                    料金プランを見る
+                </a>
             </div>
         </div>
     </section>
@@ -1112,18 +1547,30 @@
                 </div>
             </div>
 
-            <!-- Trainer Portal (full width) -->
-            <div class="fade-up mt-5">
+            <!-- Trainer Portal (full width with image) -->
+            <div class="fade-up mt-8">
                 <div class="bg-black border-2 border-[#4A9EFF]/20 rounded-2xl p-6 md:p-8 relative overflow-hidden">
                     <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-600/10 rounded-full blur-[60px] pointer-events-none"></div>
-                    <div class="relative z-10 md:flex md:items-center md:gap-8">
+                    <div class="relative z-10 grid md:grid-cols-2 gap-6 items-center">
                         <div>
                             <div class="text-[#4A9EFF] font-black text-sm mb-2">PORTAL</div>
                             <h3 class="text-lg font-bold text-white mb-2">トレーナーポータル</h3>
                             <p class="text-gray-350 text-sm">会員の食事・運動・コンディション記録をリアルタイムで確認。トレーナー専用の管理画面で、167時間の空白を可視化し指導に活かす。</p>
                         </div>
+                        <div class="img-placeholder img-hover min-h-[200px]" id="features-portal-img">
+                            <!-- 画像を配置: <img src="/images/portal.png" alt="トレーナーポータル画面"> -->
+                            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span class="text-xs">portal.png</span>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Section CTA -->
+            <div class="fade-up text-center mt-10">
+                <a href="#contact" class="inline-block bg-[#4A9EFF] text-white font-bold py-3 px-8 rounded-xl hover:bg-[#3A8EEF] transition shadow-lg text-sm">
+                    お問い合わせはこちら
+                </a>
             </div>
         </div>
     </section>
@@ -1243,13 +1690,13 @@
             });
         });
 
-        // Scroll fade-in
+        // Scroll fade-in (supports fade-up, fade-left, fade-right)
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) entry.target.classList.add('visible');
             });
         }, { threshold: 0.15 });
-        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+        document.querySelectorAll('.fade-up, .fade-left, .fade-right').forEach(el => observer.observe(el));
 
         // Firebase
         let functions = null;

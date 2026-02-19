@@ -99,7 +99,9 @@ data class AiFoodRecognitionUiState(
     val mealsPerDay: Int = 5,
     val recordedMealsToday: Int = 0,
     val isPremiumRequired: Boolean = false,
-    val selectedDate: String = DateUtil.todayString()
+    val selectedDate: String = DateUtil.todayString(),
+    // AI同意
+    val aiDataConsent: Boolean = false
 )
 
 /**
@@ -135,6 +137,26 @@ class AiFoodRecognitionScreenModel(
         checkPremiumStatus()
         loadMealSettings()
         loadCustomFoods()
+        loadAiConsent()
+    }
+
+    /** AIデータ共有同意を読み込み */
+    private fun loadAiConsent() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            userRepository.getUser(userId).onSuccess { user ->
+                _uiState.update { it.copy(aiDataConsent = user?.aiDataConsent ?: false) }
+            }
+        }
+    }
+
+    /** AIデータ共有同意を保存してFirestoreに反映 */
+    fun saveAiConsent() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            userRepository.saveAiDataConsent(userId)
+            _uiState.update { it.copy(aiDataConsent = true) }
+        }
     }
 
     /**

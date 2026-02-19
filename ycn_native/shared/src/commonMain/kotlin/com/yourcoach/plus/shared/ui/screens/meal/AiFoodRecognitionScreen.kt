@@ -99,6 +99,34 @@ data class AiFoodRecognitionScreen(
             )
         }
         val uiState by screenModel.uiState.collectAsState()
+        var showAiConsentDialog by remember { mutableStateOf(false) }
+        var pendingAiAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+        // AI同意ダイアログ
+        if (showAiConsentDialog) {
+            com.yourcoach.plus.shared.ui.components.AiConsentDialog(
+                onConsent = {
+                    showAiConsentDialog = false
+                    screenModel.saveAiConsent()
+                    pendingAiAction?.invoke()
+                    pendingAiAction = null
+                },
+                onDecline = {
+                    showAiConsentDialog = false
+                    pendingAiAction = null
+                }
+            )
+        }
+
+        // AI操作の同意チェックラッパー
+        fun requireAiConsent(action: () -> Unit) {
+            if (uiState.aiDataConsent) {
+                action()
+            } else {
+                pendingAiAction = action
+                showAiConsentDialog = true
+            }
+        }
 
         // カメラプレビュー開始/停止
         DisposableEffect(Unit) {
@@ -156,7 +184,7 @@ data class AiFoodRecognitionScreen(
                             analysisComplete = uiState.analysisComplete,
                             selectedMealNumber = uiState.selectedMealNumber,
                             mealsPerDay = uiState.mealsPerDay,
-                            onAnalyze = { screenModel.analyzeImage() },
+                            onAnalyze = { requireAiConsent { screenModel.analyzeImage() } },
                             onRetake = {
                                 screenModel.retakePhoto()
                                 startCameraPreview()

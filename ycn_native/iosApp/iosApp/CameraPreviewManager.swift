@@ -56,6 +56,11 @@ class CameraPreviewManager: NSObject, AVCapturePhotoCaptureDelegate {
         }
         self.photoOutput = output
 
+        // iPad対応: プレビュー接続のオリエンテーション設定
+        if let connection = output.connection(with: .video) {
+            updateOrientation(for: connection)
+        }
+
         let layer = AVCaptureVideoPreviewLayer(session: session)
         layer.videoGravity = .resizeAspectFill
 
@@ -65,6 +70,11 @@ class CameraPreviewManager: NSObject, AVCapturePhotoCaptureDelegate {
             layer.frame = self.previewView.bounds
             self.previewView.layer.addSublayer(layer)
             self.previewLayer = layer
+
+            // iPad対応: プレビューレイヤーの接続オリエンテーション
+            if let previewConnection = layer.connection {
+                self.updateOrientation(for: previewConnection)
+            }
         }
 
         self.captureSession = session
@@ -74,11 +84,33 @@ class CameraPreviewManager: NSObject, AVCapturePhotoCaptureDelegate {
         }
     }
 
+    /// デバイスの向きに合わせてビデオオリエンテーションを更新
+    private func updateOrientation(for connection: AVCaptureConnection) {
+        guard connection.isVideoOrientationSupported else { return }
+        let deviceOrientation = UIDevice.current.orientation
+        switch deviceOrientation {
+        case .portrait:
+            connection.videoOrientation = .portrait
+        case .portraitUpsideDown:
+            connection.videoOrientation = .portraitUpsideDown
+        case .landscapeLeft:
+            connection.videoOrientation = .landscapeRight
+        case .landscapeRight:
+            connection.videoOrientation = .landscapeLeft
+        default:
+            connection.videoOrientation = .portrait
+        }
+    }
+
     /// プレビューレイヤーのフレーム更新
     func updatePreviewFrame() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.previewLayer?.frame = self.previewView.bounds
+            // iPad対応: リサイズ時にオリエンテーション再適用
+            if let connection = self.previewLayer?.connection {
+                self.updateOrientation(for: connection)
+            }
         }
     }
 
@@ -87,6 +119,11 @@ class CameraPreviewManager: NSObject, AVCapturePhotoCaptureDelegate {
         guard let photoOutput = self.photoOutput else {
             completion(nil, nil, "カメラが初期化されていません")
             return
+        }
+
+        // iPad対応: 撮影時にオリエンテーションを更新
+        if let connection = photoOutput.connection(with: .video) {
+            updateOrientation(for: connection)
         }
 
         self.captureCompletion = completion

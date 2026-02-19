@@ -67,7 +67,9 @@ data class AnalysisUiState(
     // 運動部位
     val todaySplitType: String? = null,
     // Level
-    val levelUpMessage: String? = null
+    val levelUpMessage: String? = null,
+    // AI同意
+    val aiDataConsent: Boolean = false
 ) {
     val totalCredits: Int get() = creditInfo?.availableCredits ?: 0
 }
@@ -123,7 +125,10 @@ class AnalysisScreenModel(
             // Load user profile
             userRepository.getUser(userId)
                 .onSuccess { user ->
-                    _uiState.update { it.copy(userProfile = user?.profile) }
+                    _uiState.update { it.copy(
+                        userProfile = user?.profile,
+                        aiDataConsent = user?.aiDataConsent ?: false
+                    ) }
                 }
 
             // Load meals
@@ -209,6 +214,17 @@ class AnalysisScreenModel(
                 ?.onFailure { e ->
                     _uiState.update { it.copy(error = "クレジット情報の取得に失敗しました") }
                 }
+        }
+    }
+
+    // ========== AI同意 ==========
+
+    /** AIデータ共有同意を保存してFirestoreに反映 */
+    fun saveAiConsent() {
+        val userId = authRepository.getCurrentUserId() ?: return
+        screenModelScope.launch(exceptionHandler) {
+            userRepository.saveAiDataConsent(userId)
+            _uiState.update { it.copy(aiDataConsent = true) }
         }
     }
 
