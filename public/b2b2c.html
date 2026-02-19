@@ -81,6 +81,29 @@
             text-decoration-thickness: 2px;
         }
 
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .fade-up { opacity: 1; transform: none; transition: none; }
+            .animate-bounce { animation: none; }
+            .urgency-pulse { animation: none; }
+        }
+
+        /* Focus visible for accessibility */
+        :focus-visible {
+            outline: 2px solid #4A9EFF;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        /* Mobile comparison cards */
+        @media (max-width: 767px) {
+            .comparison-table-desktop { display: none; }
+            .comparison-cards-mobile { display: block; }
+        }
+        @media (min-width: 768px) {
+            .comparison-cards-mobile { display: none; }
+        }
+
         /* Timeline connector */
         .benefit-step::before {
             content: '';
@@ -97,10 +120,10 @@
 <body class="bg-black">
 
     <!-- ==================== Navigation ==================== -->
-    <nav class="nav-fixed" id="navbar">
+    <nav class="nav-fixed" id="navbar" role="navigation" aria-label="メインナビゲーション">
         <div class="max-w-5xl mx-auto px-4 md:px-6">
             <div class="flex items-center justify-between h-14">
-                <a href="/home.html" class="text-lg font-bold text-white">Your Coach<span class="text-[#4A9EFF]">+</span> <span class="text-xs text-gray-350 font-normal ml-1">for Business</span></a>
+                <a href="/home.html" class="text-lg font-bold text-white font-['Montserrat']">Your Coach<span class="text-[#4A9EFF]">+</span> <span class="text-xs text-gray-350 font-normal ml-1">for Business</span></a>
                 <!-- Desktop -->
                 <div class="hidden md:flex items-center gap-6">
                     <a href="#problem" class="text-sm text-gray-350 hover:text-white transition">課題</a>
@@ -110,24 +133,26 @@
                     <a href="#contact" class="bg-[#4A9EFF] text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#3A8EEF] transition">お問い合わせ</a>
                 </div>
                 <!-- Mobile hamburger -->
-                <button class="md:hidden text-gray-350 hover:text-white" id="mobile-toggle" aria-label="メニュー">
+                <button class="md:hidden text-gray-350 hover:text-white" id="mobile-toggle" aria-label="メニューを開く" aria-expanded="false">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
             </div>
             <!-- Mobile menu -->
-            <div class="mobile-menu md:hidden" id="mobile-menu">
+            <div class="mobile-menu md:hidden" id="mobile-menu" role="menu">
                 <div class="pb-4 space-y-2">
-                    <a href="#problem" class="block text-sm text-gray-350 hover:text-white py-2">課題</a>
-                    <a href="#mechanism" class="block text-sm text-gray-350 hover:text-white py-2">仕組み</a>
-                    <a href="#competition" class="block text-sm text-gray-350 hover:text-white py-2">比較</a>
-                    <a href="#pricing" class="block text-sm text-gray-350 hover:text-white py-2">料金</a>
-                    <a href="#contact" class="block bg-[#4A9EFF] text-white text-sm font-bold px-4 py-2 rounded-lg text-center">お問い合わせ</a>
+                    <a href="#problem" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">課題</a>
+                    <a href="#mechanism" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">仕組み</a>
+                    <a href="#competition" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">比較</a>
+                    <a href="#pricing" class="block text-sm text-gray-350 hover:text-white py-2" role="menuitem">料金</a>
+                    <a href="#contact" class="block bg-[#4A9EFF] text-white text-sm font-bold px-4 py-2 rounded-lg text-center" role="menuitem">お問い合わせ</a>
                 </div>
             </div>
         </div>
     </nav>
+
+    <main>
 
     <!-- ==================== Hero ==================== -->
     <section class="min-h-screen flex items-center justify-center bg-black relative pt-14">
@@ -361,7 +386,7 @@
                 <p class="text-gray-350 text-sm">スプレッドシートも汎用アプリもAIチャットも、構造的に解決できない課題がある。</p>
             </div>
 
-            <div class="fade-up overflow-x-auto">
+            <div class="fade-up overflow-x-auto comparison-table-desktop">
                 <table class="w-full text-sm min-w-[780px]">
                     <thead>
                         <tr class="border-b-2 border-gray-800">
@@ -442,6 +467,40 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Mobile comparison cards -->
+            <div class="comparison-cards-mobile fade-up space-y-4">
+                <div class="bg-black border-2 border-[#4A9EFF] rounded-2xl p-5" style="box-shadow: 0 0 20px -5px rgba(74,158,255,0.2);">
+                    <h4 class="text-[#4A9EFF] font-bold text-sm mb-3">毎日の行動指示（クエスト）</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">LINE・手動報告</span><span class="text-red-500 text-sm">&#10005;</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">Excel</span><span class="text-red-500 text-sm">&#10005;</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">汎用フィットネスアプリ</span><span class="text-red-500 text-sm">&#10005;</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">汎用AI</span><span class="text-yellow-500 text-sm">&#9651;</span></div>
+                        <div class="flex justify-between items-center bg-[#4A9EFF]/10 rounded-lg px-3 py-1.5"><span class="text-white text-xs font-bold">Your Coach+</span><span class="text-emerald-400 text-sm font-bold">&#9678; 自動生成</span></div>
+                    </div>
+                </div>
+                <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
+                    <h4 class="text-white font-bold text-sm mb-3">AI栄養分析・スコアリング</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">LINE・手動報告</span><span class="text-red-500 text-sm">&#10005;</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">Excel</span><span class="text-red-500 text-sm">&#10005;</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">汎用フィットネスアプリ</span><span class="text-yellow-500 text-sm">&#9651;</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">汎用AI</span><span class="text-yellow-500 text-sm">&#9651;</span></div>
+                        <div class="flex justify-between items-center bg-[#4A9EFF]/10 rounded-lg px-3 py-1.5"><span class="text-white text-xs font-bold">Your Coach+</span><span class="text-emerald-400 text-sm font-bold">&#9678; 10+指標</span></div>
+                    </div>
+                </div>
+                <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
+                    <h4 class="text-white font-bold text-sm mb-3">トレーナーの負荷</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">LINE・手動報告</span><span class="text-red-500 text-xs font-bold">大</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">Excel</span><span class="text-red-500 text-xs font-bold">大</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">汎用フィットネスアプリ</span><span class="text-yellow-500 text-xs font-bold">中</span></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400 text-xs">汎用AI</span><span class="text-yellow-500 text-xs font-bold">中</span></div>
+                        <div class="flex justify-between items-center bg-[#4A9EFF]/10 rounded-lg px-3 py-1.5"><span class="text-white text-xs font-bold">Your Coach+</span><span class="text-emerald-400 text-xs font-bold">極小</span></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Summary -->
@@ -1134,15 +1193,22 @@
         </div>
     </section>
 
+    </main>
+
     <!-- ==================== Footer ==================== -->
-    <footer class="bg-black border-t border-gray-800 py-12">
+    <footer class="bg-black border-t border-gray-800 py-12" aria-label="フッター">
         <div class="max-w-4xl mx-auto px-6 text-center">
             <div class="mb-6">
-                <a href="/home.html" class="text-2xl font-bold text-white">Your Coach<span class="text-[#4A9EFF]">+</span></a>
+                <a href="/home.html" class="text-2xl font-bold text-white font-['Montserrat']">Your Coach<span class="text-[#4A9EFF]">+</span></a>
                 <p class="text-gray-350 text-sm mt-1">空白の167時間を、成果の167時間へ。</p>
             </div>
+            <!-- Cross-links -->
+            <div class="flex flex-wrap justify-center gap-4 mb-6">
+                <a href="/home.html" class="text-gray-350 hover:text-[#4A9EFF] transition text-sm font-bold">個人向けページ</a>
+                <span class="text-gray-700">|</span>
+                <a href="/whitepaper.html" class="text-gray-350 hover:text-[#4A9EFF] transition text-sm font-bold">ホワイトペーパー</a>
+            </div>
             <div class="flex flex-wrap justify-center gap-6 mb-6">
-                <a href="/home.html" class="text-gray-350 hover:text-white transition text-sm">個人向けページ</a>
                 <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-gray-350 hover:text-white transition text-sm">プライバシーポリシー</a>
                 <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-gray-350 hover:text-white transition text-sm">利用規約</a>
                 <a href="/tokushoho.html" target="_blank" rel="noopener noreferrer" class="text-gray-350 hover:text-white transition text-sm">特定商取引法</a>
@@ -1167,10 +1233,14 @@
         const mobileToggle = document.getElementById('mobile-toggle');
         const mobileMenu = document.getElementById('mobile-menu');
         mobileToggle.addEventListener('click', () => {
-            mobileMenu.classList.toggle('open');
+            const isOpen = mobileMenu.classList.toggle('open');
+            mobileToggle.setAttribute('aria-expanded', isOpen);
         });
         mobileMenu.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => mobileMenu.classList.remove('open'));
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                mobileToggle.setAttribute('aria-expanded', 'false');
+            });
         });
 
         // Scroll fade-in
