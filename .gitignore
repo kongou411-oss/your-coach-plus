@@ -45,3 +45,11 @@ functions/.env
 nul
 *.p8
 ycn_native/androidApp/yourcoach-release-key.jks
+
+# iOS / Xcode
+ycn_native/iosApp/Pods/
+ycn_native/iosApp/iosApp.xcworkspace/
+ycn_native/iosApp/iosApp.xcodeproj/xcuserdata/
+ycn_native/iosApp/iosApp.xcodeproj/project.xcworkspace/
+ycn_native/iosApp/iosApp.xcodeproj/*.bak
+*.png.bak
