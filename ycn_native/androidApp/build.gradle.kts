@@ -23,8 +23,8 @@ android {
         applicationId = "com.yourcoach.plus"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 96
-        versionName = "2.1.2"
+        versionCode = 97
+        versionName = "2.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
