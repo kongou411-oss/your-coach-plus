@@ -9,12 +9,24 @@ import com.yourcoach.plus.shared.util.DateUtil
 import com.yourcoach.plus.shared.util.invokeCloudFunction
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.Direction
+import dev.gitlive.firebase.firestore.DocumentSnapshot
 import dev.gitlive.firebase.firestore.FieldValue
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.*
+import kotlinx.serialization.Serializable
+
+/**
+ * Firestore badges フィールドのデシリアライズ用
+ * GitLive SDK は get<List<Map<String,Any?>>>() が不可のため @Serializable クラスを使用
+ */
+@Serializable
+internal data class FirestoreBadgeEntry(
+    val badgeId: String = "",
+    val earnedAt: Double = 0.0
+)
 
 /**
  * Firestore バッジリポジトリ実装 (GitLive KMP版)
@@ -34,27 +46,11 @@ class FirestoreBadgeRepository : BadgeRepository {
     private fun userDocument(userId: String) =
         firestore.collection("users").document(userId)
 
-    @Suppress("UNCHECKED_CAST")
     override suspend fun getUserBadges(userId: String): Result<List<Badge>> {
         return try {
             val doc = userDocument(userId).get()
             if (doc.exists) {
-                val earnedBadges = try {
-                    doc.get<List<Map<String, Any?>>?>("badges") ?: emptyList()
-                } catch (e: Exception) {
-                    emptyList()
-                }
-
-                val badges = earnedBadges.mapNotNull { badgeData ->
-                    val badgeId = badgeData["badgeId"] as? String ?: return@mapNotNull null
-                    val earnedAt = (badgeData["earnedAt"] as? Number)?.toLong() ?: DateUtil.currentTimestamp()
-
-                    BadgeDefinitions.getBadgeById(badgeId)?.copy(
-                        earnedAt = earnedAt,
-                        isEarned = true
-                    )
-                }
-                Result.success(badges)
+                Result.success(parseBadgesFromDocument(doc))
             } else {
                 Result.success(emptyList())
             }
@@ -63,31 +59,42 @@ class FirestoreBadgeRepository : BadgeRepository {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     override fun observeUserBadges(userId: String): Flow<List<Badge>> {
         return userDocument(userId)
             .snapshots
             .map { doc ->
                 if (doc.exists) {
-                    val earnedBadges = try {
-                        doc.get<List<Map<String, Any?>>?>("badges") ?: emptyList()
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
-
-                    earnedBadges.mapNotNull { badgeData ->
-                        val badgeId = badgeData["badgeId"] as? String ?: return@mapNotNull null
-                        val earnedAt = (badgeData["earnedAt"] as? Number)?.toLong() ?: DateUtil.currentTimestamp()
-
-                        BadgeDefinitions.getBadgeById(badgeId)?.copy(
-                            earnedAt = earnedAt,
-                            isEarned = true
-                        )
-                    }
+                    parseBadgesFromDocument(doc)
                 } else {
                     emptyList()
                 }
             }
+    }
+
+    /**
+     * GitLive SDK の get<List<Map>>() / get<Any?>() は SerializationException になるため、
+     * @Serializable クラス (FirestoreBadgeEntry) でデシリアライズする
+     */
+    private fun parseBadgesFromDocument(doc: DocumentSnapshot): List<Badge> {
+        return try {
+            val entries = try {
+                doc.get<List<FirestoreBadgeEntry>?>("badges") ?: emptyList()
+            } catch (e: Exception) {
+                println("FirestoreBadgeRepository: badges parse error: ${e.message}")
+                emptyList()
+            }
+
+            entries.mapNotNull { entry ->
+                if (entry.badgeId.isBlank()) return@mapNotNull null
+                BadgeDefinitions.getBadgeById(entry.badgeId)?.copy(
+                    earnedAt = entry.earnedAt.toLong(),
+                    isEarned = true
+                )
+            }
+        } catch (e: Exception) {
+            println("FirestoreBadgeRepository: parseBadgesFromDocument error: ${e.message}")
+            emptyList()
+        }
     }
 
     override suspend fun getAllBadges(): Result<List<Badge>> {

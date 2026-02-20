@@ -172,22 +172,21 @@ class FirestoreScoreRepository : ScoreRepository {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     override suspend fun getBadges(userId: String): Result<List<Badge>> {
         return try {
             val doc = userDocument(userId).get()
             if (doc.exists) {
-                val earnedBadges = try {
-                    doc.get<List<Map<String, Any?>>?>("badges") ?: emptyList()
+                val entries = try {
+                    doc.get<List<FirestoreBadgeEntry>?>("badges") ?: emptyList()
                 } catch (e: Exception) {
+                    println("FirestoreScoreRepository: badges parse error: ${e.message}")
                     emptyList()
                 }
-                val badges = earnedBadges.mapNotNull { badgeData ->
-                    val badgeId = badgeData["badgeId"] as? String ?: return@mapNotNull null
-                    val earnedAt = (badgeData["earnedAt"] as? Number)?.toLong()
-                    com.yourcoach.plus.shared.domain.repository.BadgeDefinitions.getBadgeById(badgeId)?.copy(
+                val badges = entries.mapNotNull { entry ->
+                    if (entry.badgeId.isBlank()) return@mapNotNull null
+                    com.yourcoach.plus.shared.domain.repository.BadgeDefinitions.getBadgeById(entry.badgeId)?.copy(
                         isEarned = true,
-                        earnedAt = earnedAt
+                        earnedAt = entry.earnedAt.toLong()
                     )
                 }
                 Result.success(badges)
