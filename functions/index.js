@@ -2018,34 +2018,44 @@ exports.getAdminUserList = onCall({
   }
 
   try {
-    // Firebase Authから全ユーザーを取得
-    const listUsersResult = await admin.auth().listUsers(1000);
+    // Firebase Authから全ユーザーを取得（ページネーション対応）
     const authUsers = {};
-    listUsersResult.users.forEach(user => {
-      authUsers[user.uid] = {
-        email: user.email,
-        displayName: user.displayName,
-        creationTime: user.metadata.creationTime,
-        lastSignInTime: user.metadata.lastSignInTime,
-      };
-    });
+    let nextPageToken;
+    do {
+      const listResult = await admin.auth().listUsers(1000, nextPageToken);
+      listResult.users.forEach(user => {
+        authUsers[user.uid] = {
+          email: user.email || null,
+          displayName: user.displayName || null,
+          creationTime: user.metadata.creationTime || null,
+          lastSignInTime: user.metadata.lastSignInTime || null,
+        };
+      });
+      nextPageToken = listResult.pageToken;
+    } while (nextPageToken);
+
+    const totalAuthCount = Object.keys(authUsers).length;
 
     // Firestoreからユーザー情報を取得
     const snapshot = await admin.firestore().collection('users').get();
+    const firestoreUids = new Set();
     const users = [];
 
+    // 1) Firestoreユーザーを処理（Auth情報があればマージ）
     snapshot.forEach(doc => {
       const data = doc.data();
-      const authInfo = authUsers[doc.id] || {};
+      const uid = doc.id;
+      firestoreUids.add(uid);
+      const authInfo = authUsers[uid];
+      const hasAuth = !!authInfo;
 
       users.push({
-        id: doc.id,
-        email: data.email || authInfo.email || null,
-        displayName: data.displayName || data.nickname || authInfo.displayName || null,
-        // 登録日はFirebase Auth優先、最終ログインはFirestore優先（アプリ起動時に更新されるため）
-        createdAt: authInfo.creationTime || data.createdAt || data.registrationDate || null,
-        lastLoginAt: data.lastLoginAt || authInfo.lastSignInTime || null,
-        // Firestoreデータ
+        id: uid,
+        syncStatus: hasAuth ? 'ok' : 'auth_missing',
+        email: data.email || (authInfo && authInfo.email) || null,
+        displayName: data.displayName || data.nickname || (authInfo && authInfo.displayName) || null,
+        createdAt: (authInfo && authInfo.creationTime) || data.createdAt || data.registrationDate || null,
+        lastLoginAt: data.lastLoginAt || (authInfo && authInfo.lastSignInTime) || null,
         freeCredits: data.freeCredits || 0,
         paidCredits: data.paidCredits || 0,
         subscription: data.subscription || null,
@@ -2058,7 +2068,30 @@ exports.getAdminUserList = onCall({
       });
     });
 
-    return { success: true, users };
+    // 2) Auth-onlyユーザー（Firestoreにドキュメントなし）
+    for (const [uid, authInfo] of Object.entries(authUsers)) {
+      if (!firestoreUids.has(uid)) {
+        users.push({
+          id: uid,
+          syncStatus: 'firestore_missing',
+          email: authInfo.email || null,
+          displayName: authInfo.displayName || null,
+          createdAt: authInfo.creationTime || null,
+          lastLoginAt: authInfo.lastSignInTime || null,
+          freeCredits: 0,
+          paidCredits: 0,
+          subscription: null,
+          b2b2cOrgId: null,
+          referralCode: null,
+          referredBy: null,
+          organizationName: null,
+          isPremium: false,
+          role: null,
+        });
+      }
+    }
+
+    return { success: true, users, totalAuthCount };
   } catch (error) {
     console.error('[Admin] Get user list error:', error);
     throw new HttpsError("internal", "ユーザー一覧の取得に失敗しました", error.message);

@@ -434,6 +434,14 @@
                     <div class="value" id="total-users">-</div>
                 </div>
                 <div class="stat-card">
+                    <h3>Auth総数</h3>
+                    <div class="value" id="auth-total-users">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>⚠️ 不整合</h3>
+                    <div class="value" id="mismatch-users" style="color:#dc2626;">-</div>
+                </div>
+                <div class="stat-card">
                     <h3>Premium会員</h3>
                     <div class="value" id="premium-users">-</div>
                 </div>
@@ -459,6 +467,9 @@
                                 <option value="affiliation">所属名利用者</option>
                                 <option value="billing">Google Play課金者</option>
                                 <option value="trainer">トレーナーのみ</option>
+                                <option value="mismatch">⚠️ 不整合ユーザー</option>
+                                <option value="auth_missing">🔴 Auth欠落のみ</option>
+                                <option value="firestore_missing">🟡 Firestore未作成のみ</option>
                             </select>
                         </label>
                         <button onclick="loadUsers()" class="btn-secondary">🔄 更新</button>
@@ -480,6 +491,7 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">ユーザー</th>
+                                        <th class="px-4 py-3 text-left font-medium text-gray-600">同期</th>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">ステータス</th>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">登録日</th>
                                         <th class="px-4 py-3 text-left font-medium text-gray-600">最終ログイン</th>
@@ -1260,16 +1272,19 @@
                 let premiumCount = 0;
                 let orgCount = 0;
                 let billingCount = 0;
+                let mismatchCount = 0;
 
                 result.data.users.forEach(user => {
                     // Premium判定（所属名があるか、isPremiumがtrue）
                     const hasOrganization = user.organizationName && user.organizationName.trim();
                     const isPremium = user.isPremium === true || hasOrganization;
 
-                    // 登録日・ログイン日（Firebase Authから取得済み）
-                    const regDate = user.createdAt ? new Date(user.createdAt) : new Date();
-                    const lastLogin = user.lastLoginAt ? new Date(user.lastLoginAt) : null;
-                    const daysSinceReg = Math.floor((now - regDate) / (1000 * 60 * 60 * 24));
+                    // 登録日・ログイン日 — Invalid Date対策: パース結果を検証
+                    let regDate = user.createdAt ? new Date(user.createdAt) : null;
+                    if (regDate && isNaN(regDate.getTime())) regDate = null;
+                    let lastLogin = user.lastLoginAt ? new Date(user.lastLoginAt) : null;
+                    if (lastLogin && isNaN(lastLogin.getTime())) lastLogin = null;
+                    const daysSinceReg = regDate ? Math.floor((now - regDate) / (1000 * 60 * 60 * 24)) : null;
 
                     user._isPremium = isPremium;
                     user._hasOrganization = hasOrganization;
@@ -1282,10 +1297,13 @@
                     if (isPremium) premiumCount++;
                     if (hasOrganization) orgCount++;
                     if (user.isPremium === true && !hasOrganization) billingCount++;
+                    if (user.syncStatus && user.syncStatus !== 'ok') mismatchCount++;
                 });
 
                 // 統計更新
                 document.getElementById('total-users').textContent = allUsers.length;
+                document.getElementById('auth-total-users').textContent = result.data.totalAuthCount || '-';
+                document.getElementById('mismatch-users').textContent = mismatchCount;
                 document.getElementById('premium-users').textContent = premiumCount;
                 document.getElementById('org-users').textContent = orgCount;
                 document.getElementById('billing-users').textContent = billingCount;
@@ -1304,6 +1322,15 @@
                         break;
                     case 'trainer':
                         filtered = allUsers.filter(u => u.role === 'trainer');
+                        break;
+                    case 'mismatch':
+                        filtered = allUsers.filter(u => u.syncStatus && u.syncStatus !== 'ok');
+                        break;
+                    case 'auth_missing':
+                        filtered = allUsers.filter(u => u.syncStatus === 'auth_missing');
+                        break;
+                    case 'firestore_missing':
+                        filtered = allUsers.filter(u => u.syncStatus === 'firestore_missing');
                         break;
                 }
 
@@ -1327,6 +1354,19 @@
             }
         }
 
+        function getSyncBadge(syncStatus) {
+            switch (syncStatus) {
+                case 'ok':
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">✓</span>';
+                case 'auth_missing':
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700" title="Firebase Authにユーザーが存在しない">🔴 Auth欠落</span>';
+                case 'firestore_missing':
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700" title="Firestoreにドキュメントが未作成（Auth-only）">🟡 Firestore未作成</span>';
+                default:
+                    return '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-500">-</span>';
+            }
+        }
+
         function renderUsers(users) {
             const tbody = document.getElementById('users-tbody');
             tbody.innerHTML = users.map(user => {
@@ -1346,6 +1386,9 @@
 
                 const freeCredits = user.freeCredits || 0;
                 const paidCredits = user.paidCredits || 0;
+                const regDateStr = user._regDate ? user._regDate.toLocaleDateString('ja-JP') : '-';
+                const daysSinceStr = user._daysSinceReg !== null ? user._daysSinceReg + '日目' : '';
+                const lastLoginStr = user._lastLogin ? user._lastLogin.toLocaleDateString('ja-JP') : '-';
 
                 return `
                     <tr class="hover:bg-gray-50">
@@ -1354,16 +1397,19 @@
                             <div class="text-xs text-gray-500">${user.email || 'メール未設定'}</div>
                         </td>
                         <td class="px-4 py-3">
+                            ${getSyncBadge(user.syncStatus)}
+                        </td>
+                        <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1">
                                 ${status.join('')}
                             </div>
                         </td>
                         <td class="px-4 py-3 text-gray-600">
-                            ${user._regDate.toLocaleDateString('ja-JP')}
-                            <div class="text-xs text-gray-400">${user._daysSinceReg}日目</div>
+                            ${regDateStr}
+                            ${daysSinceStr ? '<div class="text-xs text-gray-400">' + daysSinceStr + '</div>' : ''}
                         </td>
                         <td class="px-4 py-3 text-gray-600">
-                            ${user._lastLogin ? user._lastLogin.toLocaleDateString('ja-JP') : '-'}
+                            ${lastLoginStr}
                         </td>
                         <td class="px-4 py-3">
                             <div class="text-xs">
@@ -1416,11 +1462,17 @@
                 <div style="background:white;border-radius:16px;padding:24px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;">
                     <button onclick="document.getElementById('user-detail-overlay').remove()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999;">&times;</button>
                     <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;">ユーザー詳細</h3>
+                    <div style="margin-bottom:12px;">${getSyncBadge(user.syncStatus)} <span style="font-size:12px;color:#6b7280;margin-left:4px;">${
+                        user.syncStatus === 'ok' ? 'Auth・Firestore同期済み' :
+                        user.syncStatus === 'auth_missing' ? 'Firebase Authにユーザーなし（孤児データ）' :
+                        user.syncStatus === 'firestore_missing' ? 'Firestoreにドキュメントなし（Auth-only）' : '不明'
+                    }</span></div>
                     <div style="font-size:13px;line-height:2;">
                         <div><strong>ID:</strong> <span style="font-family:monospace;font-size:11px;">${user.id}</span></div>
                         <div><strong>メール:</strong> ${user.email || '未設定'}</div>
                         <div><strong>名前:</strong> ${user.displayName || user.nickname || '未設定'}</div>
-                        <div><strong>登録日:</strong> ${user._regDate.toLocaleDateString('ja-JP')}</div>
+                        <div><strong>登録日:</strong> ${user._regDate ? user._regDate.toLocaleDateString('ja-JP') : '-'}</div>
+                        <div><strong>最終ログイン:</strong> ${user._lastLogin ? user._lastLogin.toLocaleDateString('ja-JP') : '-'}</div>
                         <div><strong>無料クレジット:</strong> ${user.freeCredits || 0} / <strong>有償:</strong> ${user.paidCredits || 0}</div>
                         <div><strong>Premium:</strong> ${user.isPremium ? 'はい' : 'いいえ'}</div>
                         <div><strong>所属名:</strong> ${user.organizationName || 'なし'}</div>
