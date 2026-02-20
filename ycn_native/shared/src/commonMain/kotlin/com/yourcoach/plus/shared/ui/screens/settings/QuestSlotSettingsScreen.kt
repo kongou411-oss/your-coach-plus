@@ -552,7 +552,7 @@ private fun SlotRow(
             }
         } else {
             Text(
-                "AI生成",
+                "自動生成",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier

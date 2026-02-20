@@ -2,10 +2,18 @@ package com.yourcoach.plus.shared.camera
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.interop.UIKitView
 import com.yourcoach.plus.shared.util.AppError
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.suspendCancellableCoroutine
+import org.jetbrains.skia.Image
+import platform.Foundation.NSData
+import platform.Foundation.NSDataBase64DecodingIgnoreUnknownCharacters
+import platform.Foundation.create
 import kotlin.coroutines.resume
 
 @OptIn(ExperimentalForeignApi::class)
@@ -64,8 +72,29 @@ actual fun PlatformCameraSetup() {
 
 /**
  * iOS版: Base64→ImageBitmap変換
- * iOSではSkiaが使えるため将来対応可能。現状はnull。
+ * Skia Image経由でComposeのImageBitmapに変換
  */
-actual fun decodeBase64ToImageBitmap(base64: String): androidx.compose.ui.graphics.ImageBitmap? {
-    return null
+actual fun decodeBase64ToImageBitmap(base64: String): ImageBitmap? {
+    return try {
+        val nsData = NSData.create(
+            base64EncodedString = base64,
+            options = NSDataBase64DecodingIgnoreUnknownCharacters
+        ) ?: return null
+        val bytes = nsData.toByteArray()
+        val skiaImage = Image.makeFromEncoded(bytes)
+        skiaImage.toComposeImageBitmap()
+    } catch (e: Exception) {
+        null
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun NSData.toByteArray(): ByteArray {
+    val size = this.length.toInt()
+    if (size == 0) return ByteArray(0)
+    val bytes = ByteArray(size)
+    bytes.usePinned { pinned ->
+        platform.posix.memcpy(pinned.addressOf(0), this.bytes, this.length)
+    }
+    return bytes
 }

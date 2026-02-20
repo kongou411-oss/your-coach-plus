@@ -169,7 +169,7 @@ class SignInBridgeManager {
 
             let functions = Functions.functions(region: region)
             let callable = functions.httpsCallable(functionName)
-            callable.timeoutInterval = 180 // 3分（Gemini AI生成用）
+            callable.timeoutInterval = 180 // 3分（クエスト生成・分析用）
 
             print("[CloudFunction] Calling \(functionName) with timeout=180s, bgTask=\(backgroundTaskID.rawValue)")
 

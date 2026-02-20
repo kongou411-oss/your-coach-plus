@@ -73,6 +73,12 @@ class AnalysisScreen : Screen {
                 onDecline = {
                     showAiConsentDialog = false
                     pendingAiAction = null
+                },
+                onDontShowAgain = {
+                    showAiConsentDialog = false
+                    screenModel.saveAiConsent()
+                    pendingAiAction?.invoke()
+                    pendingAiAction = null
                 }
             )
         }
@@ -176,7 +182,7 @@ class AnalysisScreen : Screen {
                         AnalysisContent(
                             uiState = uiState,
                             onGenerateAnalysis = { requireAiConsent { screenModel.generateAnalysis() } },
-                            onSendQuestion = { requireAiConsent { screenModel.sendQuestion() } },
+                            onSendQuestion = { question -> requireAiConsent { screenModel.sendQuestion(question) } },
                             onUpdateQuestion = screenModel::updateQuestion,
                             onClearAnalysis = screenModel::clearAnalysis
                         )

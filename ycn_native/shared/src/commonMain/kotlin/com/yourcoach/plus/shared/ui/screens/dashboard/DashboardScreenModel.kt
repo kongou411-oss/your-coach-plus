@@ -1981,7 +1981,7 @@ class DashboardScreenModel(
     // ========== クエスト生成 ==========
 
     /**
-     * 明日のクエストを生成
+     * 明日のクエストを生成（ロジックベース）
      * Cloud Function generateQuestを呼び出し、Directiveとして保存
      */
     fun generateQuest() {
@@ -2008,7 +2008,7 @@ class DashboardScreenModel(
 
         // クレジット残高チェック
         if (user.availableCredits < 1) {
-            if (!silent) _uiState.update { it.copy(questGenerationError = "クレジットが不足しています") }
+            if (!silent) _uiState.update { it.copy(questGenerationError = "クレジットが不足しています。設定からクレジットを購入できます。") }
             return
         }
 

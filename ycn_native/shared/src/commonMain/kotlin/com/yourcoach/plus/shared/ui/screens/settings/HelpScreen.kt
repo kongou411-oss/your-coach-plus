@@ -188,7 +188,7 @@ private fun HelpUsageLevelCard(level: String, levelColor: Color, description: St
 @Composable
 private fun HelpFeaturesContent() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        HelpFeatureItem(Icons.Default.AutoAwesome, "クエスト（明日の指示書）", "AIが翌日の食事・運動プランを自動生成。迷わずボディメイクを実行できます。")
+        HelpFeatureItem(Icons.Default.AutoAwesome, "クエスト（明日の指示書）", "あなたのプロフィールと記録データに基づき、翌日の食事・運動プランを自動生成。迷わずボディメイクを実行できます。")
         HelpFeatureItem(Icons.Default.Restaurant, "食事記録", "写真から自動で栄養素を計算。手入力も可能です。")
         HelpFeatureItem(Icons.Default.FitnessCenter, "運動記録", "トレーニング内容を記録。セット数・重量・レップ数を管理できます。")
         HelpFeatureItem(Icons.Default.Analytics, "AI分析", "記録データをAIが分析し、改善点やアドバイスを提供します。")

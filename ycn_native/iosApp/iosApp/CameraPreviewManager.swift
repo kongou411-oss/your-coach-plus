@@ -43,8 +43,16 @@ class CameraPreviewManager: NSObject, AVCapturePhotoCaptureDelegate {
         let session = AVCaptureSession()
         session.sessionPreset = .photo
 
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
-              let input = try? AVCaptureDeviceInput(device: camera) else { return }
+        // バックカメラ優先、失敗時はフロントカメラにフォールバック（iPad対応）
+        let camera: AVCaptureDevice? =
+            AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+            ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+
+        guard let device = camera,
+              let input = try? AVCaptureDeviceInput(device: device) else {
+            print("[CameraPreview] No camera device available")
+            return
+        }
 
         if session.canAddInput(input) {
             session.addInput(input)

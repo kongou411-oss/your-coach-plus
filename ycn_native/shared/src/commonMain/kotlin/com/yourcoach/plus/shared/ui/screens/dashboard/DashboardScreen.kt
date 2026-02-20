@@ -76,6 +76,12 @@ class DashboardScreen : Screen {
                 onDecline = {
                     showAiConsentDialog = false
                     pendingAiAction = null
+                },
+                onDontShowAgain = {
+                    showAiConsentDialog = false
+                    screenModel.saveAiConsent()
+                    pendingAiAction?.invoke()
+                    pendingAiAction = null
                 }
             )
         }
@@ -104,7 +110,7 @@ class DashboardScreen : Screen {
                 paidCredits = uiState.user?.paidCredits ?: 0,
                 isPremium = uiState.user?.isEffectivePremium ?: false,
                 onAnalysisClick = { requireAiConsent { navigator?.push(AnalysisScreen()) } },
-                onGenerateQuestClick = { requireAiConsent { screenModel.generateQuest() } },
+                onGenerateQuestClick = { screenModel.generateQuest() },
                 isGeneratingQuest = uiState.isGeneratingQuest,
                 hasCustomQuest = uiState.customQuest != null
             ))

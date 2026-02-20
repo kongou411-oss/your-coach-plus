@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 /**
  * 指示書データ
- * AI分析の結果から生成される翌日の具体的な行動目標
+ * ロジックベースで生成される翌日の具体的な行動目標
  */
 @Serializable
 data class Directive(
@@ -180,7 +180,7 @@ enum class DirectiveType {
  * 指示書の生成パラメータ
  */
 data class DirectiveGenerationParams(
-    val analysisResult: String,     // AI分析結果テキスト
+    val analysisResult: String,     // 分析結果テキスト
     val userGoal: String,           // ユーザー目標
     val currentDate: String,        // 現在の日付
     val targetDate: String          // 指示書の実行日

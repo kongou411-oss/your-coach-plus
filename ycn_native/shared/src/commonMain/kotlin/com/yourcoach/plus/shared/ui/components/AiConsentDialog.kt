@@ -22,7 +22,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AiConsentDialog(
     onConsent: () -> Unit,
-    onDecline: () -> Unit
+    onDecline: () -> Unit,
+    onDontShowAgain: () -> Unit = {}
 ) {
     AlertDialog(
         onDismissRequest = onDecline,
@@ -62,7 +63,6 @@ fun AiConsentDialog(
                 SectionHeader("利用目的")
                 BulletText("食品画像の自動認識・栄養素推定")
                 BulletText("パーソナライズされた栄養・運動アドバイスの生成")
-                BulletText("日々のクエスト（行動指示書）の生成")
 
                 // 注意事項
                 Spacer(modifier = Modifier.height(4.dp))
@@ -85,8 +85,13 @@ fun AiConsentDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDecline) {
-                Text("キャンセル", color = Color(0xFF999999))
+            Row {
+                TextButton(onClick = onDontShowAgain) {
+                    Text("次回から表示しない", color = Color(0xFF4A9EFF))
+                }
+                TextButton(onClick = onDecline) {
+                    Text("キャンセル", color = Color(0xFF999999))
+                }
             }
         }
     )

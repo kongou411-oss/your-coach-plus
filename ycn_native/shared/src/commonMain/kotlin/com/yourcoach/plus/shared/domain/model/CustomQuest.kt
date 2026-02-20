@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 data class CustomQuest(
     val date: String,                          // YYYY-MM-DD
     val assignedBy: String,                    // トレーナーUID
-    val isCustom: Boolean = true,              // trueならAI生成をブロック
+    val isCustom: Boolean = true,              // trueなら自動生成をブロック
     val slots: Map<String, CustomQuestSlot>,   // "meal_1", "meal_2", "workout" など
     val executedItems: Map<String, List<Int>> = emptyMap(), // 完了済みスロット: "meal_1" -> [0,1,2]
     val createdAt: Long = 0

@@ -8,6 +8,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -57,7 +58,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yourcoach.plus.shared.ui.theme.AccentOrange
 import com.yourcoach.plus.shared.ui.theme.Primary
-import com.yourcoach.plus.shared.util.getSafeAreaBottomPadding
 
 /**
  * 展開可能な統合ボトムバー
@@ -87,7 +87,7 @@ fun ExpandableBottomBar(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(true) }  // デフォルト展開
-    val safeAreaBottom = getSafeAreaBottomPadding()
+    val hasExpandableContent = level != null || onAnalysisClick != null || onGenerateQuestClick != null
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -98,117 +98,113 @@ fun ExpandableBottomBar(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // シェブロンハンドル（常に表示）
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { isExpanded = !isExpanded }
-                    .padding(top = 12.dp, bottom = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isExpanded)
-                        Icons.Default.KeyboardArrowDown
-                    else
-                        Icons.Default.KeyboardArrowUp,
-                    contentDescription = if (isExpanded) "格納" else "展開",
-                    modifier = Modifier.size(28.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // 展開コンテンツ（格納時はシェブロンのみになる）
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                ) + fadeIn(animationSpec = tween(150)),
-                exit = shrinkVertically(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioNoBouncy,
-                        stiffness = Spring.StiffnessHigh
-                    )
-                ) + fadeOut(animationSpec = tween(100))
-            ) {
-                Column(
+            // シェブロンハンドル（展開可能コンテンツがある場合のみ表示）
+            if (hasExpandableContent) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { isExpanded = !isExpanded }
+                        .padding(vertical = 6.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    // レベルバナー
-                    if (level != null) {
-                        LevelSection(
-                            level = level,
-                            expCurrent = expCurrent ?: 0,
-                            expRequired = expRequired ?: 100,
-                            progressPercent = progressPercent ?: 0,
-                            freeCredits = freeCredits ?: 0,
-                            paidCredits = paidCredits ?: 0,
-                            isPremium = isPremium
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    // アクションボタン
-                    if (onAnalysisClick != null || onGenerateQuestClick != null) {
-                        ActionButtonsSection(
-                            onAnalysisClick = onAnalysisClick,
-                            onGenerateQuestClick = onGenerateQuestClick,
-                            isGeneratingQuest = isGeneratingQuest,
-                            hasCustomQuest = hasCustomQuest
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
-                        thickness = 1.dp
+                    Icon(
+                        imageVector = if (isExpanded)
+                            Icons.Default.KeyboardArrowDown
+                        else
+                            Icons.Default.KeyboardArrowUp,
+                        contentDescription = if (isExpanded) "格納" else "展開",
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
 
-                    // ナビゲーションバー（展開時）
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        contentColor = MaterialTheme.colorScheme.onSurface
+                // 展開コンテンツ
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = expandVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        )
+                    ) + fadeIn(animationSpec = tween(150)),
+                    exit = shrinkVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessHigh
+                        )
+                    ) + fadeOut(animationSpec = tween(100))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                     ) {
-                        navItems.forEach { item ->
-                            val selected = currentRoute == item.route
-
-                            NavigationBarItem(
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                                        contentDescription = item.label
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = item.label,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                },
-                                selected = selected,
-                                onClick = { onNavItemClick(item.route) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        // レベルバナー
+                        if (level != null) {
+                            LevelSection(
+                                level = level,
+                                expCurrent = expCurrent ?: 0,
+                                expRequired = expRequired ?: 100,
+                                progressPercent = progressPercent ?: 0,
+                                freeCredits = freeCredits ?: 0,
+                                paidCredits = paidCredits ?: 0,
+                                isPremium = isPremium
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
+                        // アクションボタン
+                        if (onAnalysisClick != null || onGenerateQuestClick != null) {
+                            ActionButtonsSection(
+                                onAnalysisClick = onAnalysisClick,
+                                onGenerateQuestClick = onGenerateQuestClick,
+                                isGeneratingQuest = isGeneratingQuest,
+                                hasCustomQuest = hasCustomQuest
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
                         }
                     }
                 }
             }
 
-            // システムナビゲーション領域の余白（ジェスチャーナビ/ホームインジケータ）
-            Spacer(modifier = Modifier.height(safeAreaBottom))
+            // ナビゲーションバー（常に表示・最下部固定）
+            NavigationBar(
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                windowInsets = WindowInsets(0)
+            ) {
+                navItems.forEach { item ->
+                    val selected = currentRoute == item.route
+
+                    NavigationBarItem(
+                        icon = {
+                            Icon(
+                                imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = item.label,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        },
+                        selected = selected,
+                        onClick = { onNavItemClick(item.route) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                }
+            }
+
         }
     }
 }
@@ -234,14 +230,14 @@ private fun LevelSection(
         // 左側: レベル・XP
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f)
         ) {
             // レベルバッジ
             Surface(
                 shape = CircleShape,
                 color = Primary,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
@@ -287,7 +283,7 @@ private fun LevelSection(
             modifier = Modifier.padding(start = 8.dp)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -333,7 +329,7 @@ private fun ActionButtonsSection(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // 分析ボタン
         if (onAnalysisClick != null) {

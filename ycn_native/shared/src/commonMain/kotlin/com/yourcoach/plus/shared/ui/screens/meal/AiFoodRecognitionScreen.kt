@@ -114,6 +114,12 @@ data class AiFoodRecognitionScreen(
                 onDecline = {
                     showAiConsentDialog = false
                     pendingAiAction = null
+                },
+                onDontShowAgain = {
+                    showAiConsentDialog = false
+                    screenModel.saveAiConsent()
+                    pendingAiAction?.invoke()
+                    pendingAiAction = null
                 }
             )
         }

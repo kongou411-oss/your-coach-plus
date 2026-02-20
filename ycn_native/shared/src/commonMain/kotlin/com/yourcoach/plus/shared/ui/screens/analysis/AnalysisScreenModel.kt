@@ -609,7 +609,7 @@ class AnalysisScreenModel(
         } ?: state.tomorrowDirective?.let { directive ->
             val lines = directive.getMessageLines()
             if (lines.isNotEmpty()) {
-                "\n## 明日のクエスト（AI生成・確定済み）\n${lines.joinToString("\n") { "- $it" }}"
+                "\n## 明日のクエスト（ロジック生成・確定済み）\n${lines.joinToString("\n") { "- $it" }}"
             } else null
         } ?: "\n## 明日のクエスト\n未生成"
 
