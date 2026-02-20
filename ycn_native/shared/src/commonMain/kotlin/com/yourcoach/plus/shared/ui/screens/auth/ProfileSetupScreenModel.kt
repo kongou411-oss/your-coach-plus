@@ -510,6 +510,10 @@ class ProfileSetupScreenModel(
                     // RM保存失敗でも続行
                 }
 
+                // Firestoreへの書き込み反映を待ってからダッシュボードへ遷移
+                // （リアルタイムリスナーがプロフィールを受信できるようにする）
+                kotlinx.coroutines.delay(500)
+
                 _state.update { it.copy(isLoading = false) }
                 onComplete()
             } catch (e: Throwable) {

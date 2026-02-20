@@ -245,6 +245,8 @@ class DashboardScreenModel(
                                     targetCarbs = targets.carbs
                                 )
                             }
+                            // プロフィール・クレジットが揃った時点でクエスト自動生成を再チェック
+                            checkAndAutoGenerateQuest()
                         }
                     } catch (e: Throwable) {
                         println("DashboardScreenModel: observeUser Firestore error: ${e::class.simpleName}: ${e.message}")

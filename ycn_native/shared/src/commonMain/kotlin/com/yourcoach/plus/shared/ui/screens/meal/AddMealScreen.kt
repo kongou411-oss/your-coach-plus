@@ -134,7 +134,11 @@ data class AddMealScreen(
                     actions = {
                         if (!templateMode) {
                             IconButton(onClick = { screenModel.toggleTemplates() }) {
-                                Icon(Icons.Default.Bookmark, "テンプレート")
+                                Icon(
+                                    imageVector = Icons.Default.BookmarkAdd,
+                                    contentDescription = "テンプレート",
+                                    tint = Color(0xFF8B5CF6)
+                                )
                             }
                         }
                     }

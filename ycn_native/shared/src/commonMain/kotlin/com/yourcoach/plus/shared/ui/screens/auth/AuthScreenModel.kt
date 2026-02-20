@@ -14,25 +14,33 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
+ * ナビゲーション先（1回だけ消費される）
+ */
+sealed class AuthNavTarget {
+    data class Onboarding(val userId: String) : AuthNavTarget()
+    object Main : AuthNavTarget()
+}
+
+/**
  * 認証画面の状態
  */
 data class AuthUiState(
     val email: String = "",
     val password: String = "",
-    val confirmPassword: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isLoggedIn: Boolean = false,
     val emailError: String? = null,
     val passwordError: String? = null,
-    val isNewUser: Boolean = false,
-    val userId: String? = null,
-    val needsOnboarding: Boolean = false,
-    val passwordResetSent: Boolean = false
+    val passwordResetSent: Boolean = false,
+    // 規約同意ダイアログ
+    val showTermsDialog: Boolean = false,
+    // ナビゲーションイベント（1回消費）
+    val navTarget: AuthNavTarget? = null
 )
 
 /**
  * 認証ScreenModel (Voyager)
+ * ログイン・新規登録を1画面で統合処理
  */
 class AuthScreenModel(
     private val authRepository: AuthRepository,
@@ -42,64 +50,52 @@ class AuthScreenModel(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    // iOS対応: コルーチン例外ハンドラー（NULLクラッシュ防止）
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         println("AuthScreenModel: Coroutine exception: ${throwable.message}")
         throwable.printStackTrace()
         _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました: ${throwable.message}") }
     }
 
-    init {
-        checkCurrentUser()
-    }
+    // 保留中の新規ユーザー情報（規約同意ダイアログ用）
+    private var pendingNewUserUid: String? = null
+    private var pendingNewUserEmail: String = ""
+    private var pendingNewUserDisplayName: String? = null
+    private var pendingEmailSignUp: Boolean = false
 
-    /**
-     * 現在のログイン状態をチェック
-     */
-    private fun checkCurrentUser() {
-        val currentUser = authRepository.getCurrentUser()
-        if (currentUser != null) {
-            _uiState.update { it.copy(isLoggedIn = true, userId = currentUser.uid) }
-        }
-    }
-
-    /**
-     * メールアドレスを更新
-     */
     fun updateEmail(email: String) {
-        _uiState.update {
-            it.copy(
-                email = email,
-                emailError = null,
-                error = null
-            )
-        }
+        _uiState.update { it.copy(email = email, emailError = null, error = null) }
     }
 
-    /**
-     * パスワードを更新
-     */
     fun updatePassword(password: String) {
-        _uiState.update {
-            it.copy(
-                password = password,
-                passwordError = null,
-                error = null
-            )
+        _uiState.update { it.copy(password = password, passwordError = null, error = null) }
+    }
+
+    /**
+     * ナビゲーションイベントを消費
+     */
+    fun consumeNavTarget() {
+        _uiState.update { it.copy(navTarget = null) }
+    }
+
+    /**
+     * 認証成功時の共通処理 → ナビゲーションイベントを発火
+     */
+    private fun navigateAfterAuth(userId: String, needsOnboarding: Boolean) {
+        val target = if (needsOnboarding) {
+            AuthNavTarget.Onboarding(userId)
+        } else {
+            AuthNavTarget.Main
         }
+        _uiState.update { it.copy(isLoading = false, navTarget = target) }
     }
 
-    /**
-     * 確認用パスワードを更新
-     */
-    fun updateConfirmPassword(confirmPassword: String) {
-        _uiState.update { it.copy(confirmPassword = confirmPassword) }
-    }
+    // ─── メール認証（統合） ───
 
     /**
-     * メール/パスワードでログイン
+     * メール/パスワードで認証
+     * signIn試行 → 未登録なら規約同意ダイアログ → signUp
      */
-    fun signInWithEmail(onSuccess: () -> Unit) {
+    fun authenticateWithEmail() {
         if (!validateInput()) return
 
         screenModelScope.launch(exceptionHandler) {
@@ -112,43 +108,31 @@ class AuthScreenModel(
 
             result.fold(
                 onSuccess = { user ->
-                    // ユーザー情報を取得してオンボーディング状態をチェック
                     val existingUser = userRepository.getUser(user.uid).getOrNull()
                     val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isLoggedIn = true,
-                            isNewUser = false,
-                            userId = user.uid,
-                            needsOnboarding = needsOnboarding
-                        )
-                    }
-                    onSuccess()
+                    navigateAfterAuth(user.uid, needsOnboarding)
                 },
                 onFailure = { error ->
-                    val message = when (error) {
-                        is AppError.InvalidCredentials -> "メールアドレスまたはパスワードが正しくありません"
-                        is AppError.NetworkError -> "ネットワークエラーが発生しました"
-                        is AppError.AccountDisabled -> "このアカウントは無効化されています"
-                        else -> error.message ?: "ログインに失敗しました"
-                    }
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = message
-                        )
+                    if (error is AppError.InvalidCredentials) {
+                        // 未登録 → 規約同意ダイアログ
+                        pendingEmailSignUp = true
+                        _uiState.update { it.copy(isLoading = false, showTermsDialog = true) }
+                    } else {
+                        val message = when (error) {
+                            is AppError.NetworkError -> "ネットワークエラーが発生しました"
+                            is AppError.AccountDisabled -> "このアカウントは無効化されています"
+                            else -> error.message ?: "ログインに失敗しました"
+                        }
+                        _uiState.update { it.copy(isLoading = false, error = message) }
                     }
                 }
             )
         }
     }
 
-    /**
-     * Googleでログイン（IDトークンを受け取る）
-     */
-    fun signInWithGoogleToken(idToken: String, onSuccess: () -> Unit) {
+    // ─── Google認証 ───
+
+    fun signInWithGoogleToken(idToken: String) {
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
@@ -156,275 +140,193 @@ class AuthScreenModel(
 
             authResult.fold(
                 onSuccess = { user ->
-                    // 既存ユーザーかチェック
                     val getUserResult = userRepository.getUser(user.uid)
                     val existingUser = getUserResult.getOrNull()
-                    val isNew = existingUser == null && getUserResult.isSuccess
+                    // getUser失敗（ネットワークエラー等）も新規ユーザーとして扱う
+                    // → 規約同意ダイアログを表示してcreateUserを確実に実行
+                    val isNew = existingUser == null
 
-                    // 新規ユーザーの場合、Firestoreにドキュメント作成
                     if (isNew) {
-                        val createResult = userRepository.createUser(
-                            userId = user.uid,
-                            email = user.email,
-                            displayName = user.displayName
-                        )
-                        if (createResult.isFailure) {
-                            println("AuthScreenModel: Google createUser failed: ${createResult.exceptionOrNull()?.message}")
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = "アカウント作成に失敗しました。再度お試しください"
-                                )
-                            }
-                            return@fold
-                        }
+                        println("AuthScreenModel: Google new user detected (uid=${user.uid}, getUserResult.isSuccess=${getUserResult.isSuccess})")
+                        pendingNewUserUid = user.uid
+                        pendingNewUserEmail = user.email
+                        pendingNewUserDisplayName = user.displayName
+                        _uiState.update { it.copy(isLoading = false, showTermsDialog = true) }
+                        return@fold
                     }
 
                     val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isLoggedIn = true,
-                            isNewUser = isNew,
-                            userId = user.uid,
-                            needsOnboarding = needsOnboarding
-                        )
-                    }
-                    onSuccess()
+                    navigateAfterAuth(user.uid, needsOnboarding)
                 },
                 onFailure = { error ->
                     val message = when (error) {
-                        is AppError.Cancelled -> null // キャンセルはエラー表示しない
+                        is AppError.Cancelled -> null
                         is AppError.NetworkError -> "ネットワークエラーが発生しました"
-                        is AppError.AuthenticationError -> error.message ?: "Googleログインに失敗しました"
                         else -> error.message ?: "Googleログインに失敗しました"
                     }
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = message
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = message) }
                 }
             )
         }
     }
 
-    /**
-     * Appleでログイン（IDトークンとnonceを受け取る）
-     * iOSではネイティブFirebase SDKを直接使用（GitLiveのバグ回避）
-     */
-    fun signInWithAppleToken(idToken: String, nonce: String, fullName: String? = null, onSuccess: () -> Unit) {
+    // ─── Apple認証 ───
+
+    fun signInWithAppleToken(idToken: String, nonce: String, fullName: String? = null) {
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            // ネイティブFirebase SDKを使用（iOS: ASAuthorizationAppleID, Android: OAuthProvider Webフロー）
             val directAuthResult = signInToFirebaseWithApple(idToken, nonce, fullName)
 
             directAuthResult.fold(
                 onSuccess = { uid ->
-                    // 既存ユーザーかチェック
                     val getUserResult = userRepository.getUser(uid)
                     val existingUser = getUserResult.getOrNull()
-                    val isNew = existingUser == null && getUserResult.isSuccess
+                    // getUser失敗（ネットワークエラー等）も新規ユーザーとして扱う
+                    val isNew = existingUser == null
 
-                    // 新規ユーザーの場合、Firestoreにドキュメント作成
                     if (isNew) {
-                        val createResult = userRepository.createUser(
-                            userId = uid,
-                            email = "", // Apple Sign-Inではemailがnullになることがあるため空文字
-                            displayName = fullName
-                        )
-                        if (createResult.isFailure) {
-                            val errorMsg = createResult.exceptionOrNull()?.message ?: "不明なエラー"
-                            println("AuthScreenModel: createUser failed: $errorMsg")
-                            // ドキュメント作成失敗 → エラー表示（オンボーディングは進めない）
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = "アカウント作成に失敗しました。再度お試しください"
-                                )
-                            }
-                            return@fold
-                        }
+                        println("AuthScreenModel: Apple new user detected (uid=$uid, getUserResult.isSuccess=${getUserResult.isSuccess})")
+                        pendingNewUserUid = uid
+                        pendingNewUserEmail = ""
+                        pendingNewUserDisplayName = fullName
+                        _uiState.update { it.copy(isLoading = false, showTermsDialog = true) }
+                        return@fold
                     }
 
-                    // getUser失敗時（ネットワークエラー等）でも認証済みなら進める
                     val needsOnboarding = existingUser?.profile?.onboardingCompleted != true
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isLoggedIn = true,
-                            isNewUser = isNew,
-                            userId = uid,
-                            needsOnboarding = needsOnboarding
-                        )
-                    }
-                    onSuccess()
-                },
-                onFailure = { error ->
-                    handleAppleSignInError(error)
-                }
-            )
-        }
-    }
-
-    private fun handleAppleSignInError(error: Throwable) {
-        val message = when (error) {
-            is AppError.Cancelled -> null // キャンセルはエラー表示しない
-            is AppError.NetworkError -> "ネットワークエラーが発生しました"
-            is AppError.AuthenticationError -> error.message ?: "Appleログインに失敗しました"
-            else -> error.message ?: "Appleログインに失敗しました"
-        }
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                error = message
-            )
-        }
-    }
-
-    /**
-     * メール/パスワードでサインアップ
-     */
-    fun signUpWithEmail(onSuccess: () -> Unit) {
-        if (!validateInput(isSignUp = true)) return
-
-        screenModelScope.launch(exceptionHandler) {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            val result = authRepository.signUpWithEmail(
-                _uiState.value.email,
-                _uiState.value.password
-            )
-
-            result.fold(
-                onSuccess = { user ->
-                    // Firestoreにユーザードキュメントを作成
-                    userRepository.createUser(
-                        userId = user.uid,
-                        email = user.email,
-                        displayName = user.displayName
-                    )
-
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isLoggedIn = true,
-                            isNewUser = true,
-                            userId = user.uid,
-                            needsOnboarding = true
-                        )
-                    }
-                    onSuccess()
+                    navigateAfterAuth(uid, needsOnboarding)
                 },
                 onFailure = { error ->
                     val message = when (error) {
-                        is AppError.ValidationError -> error.message ?: "入力内容に問題があります"
+                        is AppError.Cancelled -> null
                         is AppError.NetworkError -> "ネットワークエラーが発生しました"
-                        else -> error.message ?: "アカウント作成に失敗しました"
+                        else -> error.message ?: "Appleログインに失敗しました"
                     }
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = message
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = message) }
                 }
             )
         }
     }
 
-    /**
-     * パスワードリセットメールを送信
-     */
+    // ─── 規約同意ダイアログ ───
+
+    fun acceptTermsAndCreateUser() {
+        screenModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(isLoading = true, showTermsDialog = false) }
+            println("AuthScreenModel: acceptTermsAndCreateUser called (pendingEmailSignUp=$pendingEmailSignUp, pendingUid=$pendingNewUserUid)")
+
+            if (pendingEmailSignUp) {
+                // メール新規登録
+                val result = authRepository.signUpWithEmail(
+                    _uiState.value.email,
+                    _uiState.value.password
+                )
+                result.fold(
+                    onSuccess = { user ->
+                        println("AuthScreenModel: Email signUp success (uid=${user.uid})")
+                        val createResult = userRepository.createUser(user.uid, user.email, user.displayName)
+                        println("AuthScreenModel: createUser result: success=${createResult.isSuccess}")
+                        clearPendingState()
+                        navigateAfterAuth(user.uid, needsOnboarding = true)
+                    },
+                    onFailure = { error ->
+                        println("AuthScreenModel: Email signUp failed: ${error.message}")
+                        val message = when (error) {
+                            is AppError.ValidationError -> error.message ?: "入力内容に問題があります"
+                            is AppError.NetworkError -> "ネットワークエラーが発生しました"
+                            else -> error.message ?: "アカウント作成に失敗しました"
+                        }
+                        clearPendingState()
+                        _uiState.update { it.copy(isLoading = false, error = message) }
+                    }
+                )
+            } else {
+                // Google/Apple新規登録
+                val uid = pendingNewUserUid
+                if (uid == null) {
+                    println("AuthScreenModel: ERROR pendingNewUserUid is null!")
+                    clearPendingState()
+                    _uiState.update { it.copy(isLoading = false, error = "エラーが発生しました") }
+                    return@launch
+                }
+
+                println("AuthScreenModel: Creating user doc (uid=$uid, email=$pendingNewUserEmail)")
+                val createResult = userRepository.createUser(uid, pendingNewUserEmail, pendingNewUserDisplayName)
+                if (createResult.isFailure) {
+                    println("AuthScreenModel: createUser FAILED: ${createResult.exceptionOrNull()?.message}")
+                    try { authRepository.signOut() } catch (_: Exception) {}
+                    clearPendingState()
+                    _uiState.update { it.copy(isLoading = false, error = "アカウント作成に失敗しました") }
+                    return@launch
+                }
+
+                println("AuthScreenModel: createUser SUCCESS, navigating to onboarding")
+                clearPendingState()
+                navigateAfterAuth(uid, needsOnboarding = true)
+            }
+        }
+    }
+
+    fun declineTerms() {
+        screenModelScope.launch(exceptionHandler) {
+            _uiState.update { it.copy(showTermsDialog = false, isLoading = true) }
+            if (!pendingEmailSignUp) {
+                try { authRepository.signOut() } catch (_: Exception) {}
+            }
+            clearPendingState()
+            _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    private fun clearPendingState() {
+        pendingNewUserUid = null
+        pendingNewUserEmail = ""
+        pendingNewUserDisplayName = null
+        pendingEmailSignUp = false
+    }
+
+    // ─── その他 ───
+
     fun sendPasswordResetEmail(onSuccess: () -> Unit) {
         val email = _uiState.value.email
         if (!isValidEmail(email)) {
             _uiState.update { it.copy(emailError = "正しいメールアドレスを入力してください") }
             return
         }
-
         screenModelScope.launch(exceptionHandler) {
             _uiState.update { it.copy(isLoading = true, error = null) }
-
             val result = authRepository.sendPasswordResetEmail(email)
-
             result.fold(
                 onSuccess = {
                     _uiState.update { it.copy(isLoading = false, passwordResetSent = true) }
                     onSuccess()
                 },
                 onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message ?: "メール送信に失敗しました"
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = error.message ?: "メール送信に失敗しました") }
                 }
             )
         }
     }
 
-    /**
-     * エラーをクリア
-     */
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
-    }
+    fun clearError() { _uiState.update { it.copy(error = null) } }
+    fun setError(message: String?) { _uiState.update { it.copy(error = message, isLoading = false) } }
+    fun resetPasswordResetSent() { _uiState.update { it.copy(passwordResetSent = false) } }
 
-    /**
-     * エラーを設定
-     */
-    fun setError(message: String?) {
-        _uiState.update { it.copy(error = message, isLoading = false) }
-    }
-
-    /**
-     * 状態をリセット
-     */
-    fun resetState() {
-        _uiState.update { AuthUiState() }
-    }
-
-    /**
-     * パスワードリセット送信状態をリセット
-     */
-    fun resetPasswordResetSent() {
-        _uiState.update { it.copy(passwordResetSent = false) }
-    }
-
-    /**
-     * 入力バリデーション
-     */
-    private fun validateInput(isSignUp: Boolean = false): Boolean {
+    private fun validateInput(): Boolean {
         var isValid = true
         val state = _uiState.value
-
         if (!isValidEmail(state.email)) {
             _uiState.update { it.copy(emailError = "正しいメールアドレスを入力してください") }
             isValid = false
         }
-
         if (state.password.length < 6) {
             _uiState.update { it.copy(passwordError = "パスワードは6文字以上で入力してください") }
             isValid = false
         }
-
-        if (isSignUp && state.password != state.confirmPassword) {
-            _uiState.update { it.copy(passwordError = "パスワードが一致しません") }
-            isValid = false
-        }
-
         return isValid
     }
 
-    /**
-     * メールアドレスの形式チェック (KMP対応)
-     */
     private fun isValidEmail(email: String): Boolean {
         val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
         return emailRegex.matches(email)

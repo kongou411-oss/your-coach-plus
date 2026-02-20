@@ -37,8 +37,6 @@ data class SettingsUiState(
     val notificationsEnabled: Boolean = true,
     val appVersion: String = "2.1.2",
     val error: String? = null,
-    val isLoggedOut: Boolean = false,
-    val isAccountDeleted: Boolean = false,
     val isDeletingAccount: Boolean = false,
     val needsReauthentication: Boolean = false,
     val pendingDeleteUserId: String? = null,
@@ -176,86 +174,42 @@ class SettingsScreenModel(
     }
 
     /**
-     * Logout
+     * サインアウト（結果を直接返す。UI側でナビゲーション処理）
      */
-    fun logout() {
-        // 二重呼び出し防止（iOS タッチイベント伝播対策）
-        if (_uiState.value.isLoggedOut || _uiState.value.isLoading) return
-        screenModelScope.launch(exceptionHandler) {
-            _uiState.update { it.copy(isLoading = true) }
-            try {
-                val result = authRepository.signOut()
-                if (result.isSuccess) {
-                    _uiState.update { it.copy(isLoggedOut = true, isLoading = false) }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            error = result.exceptionOrNull()?.message ?: "ログアウトに失敗しました",
-                            isLoading = false
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        error = e.message ?: "ログアウトに失敗しました",
-                        isLoading = false
-                    )
-                }
-            }
+    suspend fun signOutAndReturn(): Result<Unit> {
+        return try {
+            authRepository.signOut()
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
     /**
-     * Delete account via Cloud Function
+     * アカウント削除（結果を直接返す。UI側でナビゲーション処理）
      * CF側でStripeサブスク解約・Firestoreデータ削除・Firebase Auth削除を一括実行
      */
-    fun deleteAccount() {
-        screenModelScope.launch(exceptionHandler) {
-            _uiState.update { it.copy(isDeletingAccount = true, needsReauthentication = false) }
-            try {
-                val userId = authRepository.getCurrentUserId()
-                if (userId == null) {
-                    _uiState.update {
-                        it.copy(isDeletingAccount = false, error = "ログイン状態を確認できません")
-                    }
-                    return@launch
-                }
-
-                // CF deleteAccount を呼び出し（Stripe解約・Firestore削除・Auth削除を一括実行）
-                invokeCloudFunction(
-                    region = "asia-northeast2",
-                    functionName = "deleteAccount",
-                    data = emptyMap()
-                )
-
-                // CF成功 → ローカルサインアウト
-                authRepository.signOut()
-
-                _uiState.update {
-                    it.copy(
-                        isDeletingAccount = false,
-                        isAccountDeleted = true,
-                        pendingDeleteUserId = null
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isDeletingAccount = false,
-                        pendingDeleteUserId = null,
-                        error = "アカウント削除に失敗しました: ${e.message}"
-                    )
-                }
+    suspend fun deleteAccountAndReturn(): Result<Unit> {
+        _uiState.update { it.copy(isDeletingAccount = true) }
+        return try {
+            val userId = authRepository.getCurrentUserId()
+            if (userId == null) {
+                _uiState.update { it.copy(isDeletingAccount = false) }
+                return Result.failure(Exception("ログイン状態を確認できません"))
             }
-        }
-    }
 
-    /**
-     * Clear re-authentication request
-     */
-    fun clearReauthenticationRequest() {
-        _uiState.update { it.copy(needsReauthentication = false) }
+            invokeCloudFunction(
+                region = "asia-northeast2",
+                functionName = "deleteAccount",
+                data = emptyMap()
+            )
+            authRepository.signOut()
+
+            _uiState.update { it.copy(isDeletingAccount = false) }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            _uiState.update { it.copy(isDeletingAccount = false) }
+            Result.failure(Exception("アカウント削除に失敗しました: ${e.message}"))
+        }
     }
 
     /**

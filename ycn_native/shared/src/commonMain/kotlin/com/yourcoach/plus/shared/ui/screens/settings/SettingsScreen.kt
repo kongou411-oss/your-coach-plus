@@ -94,19 +94,8 @@ class SettingsScreen : Screen {
             }
         }
 
-        // Logout/Account deletion → TabNavigator外でナビゲーション
+        // ログアウト/アカウント削除 → TabNavigator外でナビゲーション
         val logoutHandler = LocalLogoutHandler.current
-        LaunchedEffect(uiState.isLoggedOut) {
-            if (uiState.isLoggedOut) {
-                logoutHandler()
-            }
-        }
-
-        LaunchedEffect(uiState.isAccountDeleted) {
-            if (uiState.isAccountDeleted) {
-                logoutHandler()
-            }
-        }
 
         // Error display
         LaunchedEffect(uiState.error) {
@@ -133,21 +122,31 @@ class SettingsScreen : Screen {
         }
 
         // Logout confirmation dialog
+        var isLoggingOut by remember { mutableStateOf(false) }
         if (showLogoutDialog) {
             AlertDialog(
                 onDismissRequest = {
-                    if (!uiState.isLoading) {
-                        showLogoutDialog = false
-                    }
+                    if (!isLoggingOut) showLogoutDialog = false
                 },
                 title = { Text("ログアウト") },
                 text = { Text("ログアウトしますか？") },
                 confirmButton = {
                     TextButton(
-                        onClick = { screenModel.logout() },
-                        enabled = !uiState.isLoading
+                        onClick = {
+                            isLoggingOut = true
+                            scope.launch {
+                                val result = screenModel.signOutAndReturn()
+                                if (result.isSuccess) {
+                                    logoutHandler()
+                                } else {
+                                    isLoggingOut = false
+                                    snackbarHostState.showSnackbar("ログアウトに失敗しました")
+                                }
+                            }
+                        },
+                        enabled = !isLoggingOut
                     ) {
-                        if (uiState.isLoading) {
+                        if (isLoggingOut) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp
@@ -160,7 +159,7 @@ class SettingsScreen : Screen {
                 dismissButton = {
                     TextButton(
                         onClick = { showLogoutDialog = false },
-                        enabled = !uiState.isLoading
+                        enabled = !isLoggingOut
                     ) {
                         Text("キャンセル")
                     }
@@ -172,9 +171,7 @@ class SettingsScreen : Screen {
         if (showDeleteAccountDialog) {
             AlertDialog(
                 onDismissRequest = {
-                    if (!uiState.isDeletingAccount) {
-                        showDeleteAccountDialog = false
-                    }
+                    if (!uiState.isDeletingAccount) showDeleteAccountDialog = false
                 },
                 title = { Text("アカウント削除") },
                 text = {
@@ -191,7 +188,16 @@ class SettingsScreen : Screen {
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            screenModel.deleteAccount()
+                            scope.launch {
+                                val result = screenModel.deleteAccountAndReturn()
+                                if (result.isSuccess) {
+                                    logoutHandler()
+                                } else {
+                                    snackbarHostState.showSnackbar(
+                                        result.exceptionOrNull()?.message ?: "アカウント削除に失敗しました"
+                                    )
+                                }
+                            }
                         },
                         enabled = !uiState.isDeletingAccount
                     ) {

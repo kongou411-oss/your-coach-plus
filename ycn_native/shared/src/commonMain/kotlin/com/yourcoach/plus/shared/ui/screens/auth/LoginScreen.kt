@@ -1,10 +1,8 @@
 package com.yourcoach.plus.shared.ui.screens.auth
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,11 +37,14 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.yourcoach.plus.shared.auth.AppleSignInButtonHandler
 import com.yourcoach.plus.shared.auth.GoogleSignInButtonHandler
 import com.yourcoach.plus.shared.auth.isAppleSignInAvailable
+import com.yourcoach.plus.shared.ui.components.TermsConsentDialog
 import com.yourcoach.plus.shared.ui.screens.main.MainScreen
+import com.yourcoach.plus.shared.ui.screens.settings.LegalPageType
+import com.yourcoach.plus.shared.ui.screens.settings.LegalWebViewScreen
 import com.yourcoach.plus.shared.ui.theme.Primary
 
 /**
- * ログイン画面 (Compose Multiplatform)
+ * ログイン/新規登録 統合画面
  */
 class LoginScreen : Screen {
 
@@ -57,12 +58,39 @@ class LoginScreen : Screen {
         val snackbarHostState = remember { SnackbarHostState() }
         var passwordVisible by remember { mutableStateOf(false) }
 
+        // ナビゲーションイベント（状態ベース・1回消費）
+        LaunchedEffect(uiState.navTarget) {
+            when (val target = uiState.navTarget) {
+                is AuthNavTarget.Onboarding -> {
+                    println("LoginScreen: Navigating to ProfileSetupScreen (userId=${target.userId})")
+                    screenModel.consumeNavTarget()
+                    navigator.replace(ProfileSetupScreen(target.userId))
+                }
+                is AuthNavTarget.Main -> {
+                    println("LoginScreen: Navigating to MainScreen")
+                    screenModel.consumeNavTarget()
+                    navigator.replace(MainScreen())
+                }
+                null -> {}
+            }
+        }
+
         // エラー表示
         LaunchedEffect(uiState.error) {
             uiState.error?.let { error ->
                 snackbarHostState.showSnackbar(error)
                 screenModel.clearError()
             }
+        }
+
+        // 規約同意ダイアログ
+        if (uiState.showTermsDialog) {
+            TermsConsentDialog(
+                onAccept = { screenModel.acceptTermsAndCreateUser() },
+                onDecline = { screenModel.declineTerms() },
+                onTermsClick = { navigator.push(LegalWebViewScreen(LegalPageType.TERMS)) },
+                onPrivacyClick = { navigator.push(LegalWebViewScreen(LegalPageType.PRIVACY)) }
+            )
         }
 
         Scaffold(
@@ -103,22 +131,20 @@ class LoginScreen : Screen {
                 )
 
                 Text(
-                    text = "あなたの健康をサポート",
+                    text = "ログイン / 新規登録",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                // メールアドレス入力
+                // メールアドレス
                 OutlinedTextField(
                     value = uiState.email,
                     onValueChange = screenModel::updateEmail,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("メールアドレス") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Email, contentDescription = null)
-                    },
+                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                     isError = uiState.emailError != null,
                     supportingText = uiState.emailError?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(
@@ -138,20 +164,18 @@ class LoginScreen : Screen {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // パスワード入力
+                // パスワード
                 OutlinedTextField(
                     value = uiState.password,
                     onValueChange = screenModel::updatePassword,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("パスワード") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Lock, contentDescription = null)
-                    },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (passwordVisible) "パスワードを隠す" else "パスワードを表示"
+                                contentDescription = null
                             )
                         }
                     },
@@ -165,10 +189,7 @@ class LoginScreen : Screen {
                     keyboardActions = KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()
-                            screenModel.signInWithEmail {
-                                val state = screenModel.uiState.value
-                                handleLoginSuccess(navigator, state.userId, state.needsOnboarding)
-                            }
+                            screenModel.authenticateWithEmail()
                         }
                     ),
                     singleLine = true,
@@ -179,27 +200,18 @@ class LoginScreen : Screen {
                     )
                 )
 
-                // パスワードを忘れた
                 TextButton(
                     onClick = { navigator.push(ForgotPasswordScreen()) },
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text(
-                        text = "パスワードをお忘れですか？",
-                        color = Primary
-                    )
+                    Text(text = "パスワードをお忘れですか？", color = Primary)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // ログインボタン
+                // メインボタン
                 Button(
-                    onClick = {
-                        screenModel.signInWithEmail {
-                            val state = screenModel.uiState.value
-                            handleLoginSuccess(navigator, state.userId, state.needsOnboarding)
-                        }
-                    },
+                    onClick = { screenModel.authenticateWithEmail() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -215,7 +227,7 @@ class LoginScreen : Screen {
                         )
                     } else {
                         Text(
-                            text = "ログイン",
+                            text = "ログイン / 新規登録",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -229,45 +241,28 @@ class LoginScreen : Screen {
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
                     Text(
                         text = "または",
                         modifier = Modifier.padding(horizontal = 16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Googleログインボタン
+                // Google
                 GoogleSignInButtonHandler(
                     onSignInResult = { result ->
                         result.fold(
                             onSuccess = { idToken ->
-                                screenModel.signInWithGoogleToken(idToken) {
-                                    val state = screenModel.uiState.value
-                                    handleLoginSuccess(navigator, state.userId, state.needsOnboarding)
-                                }
+                                screenModel.signInWithGoogleToken(idToken)
                             },
                             onFailure = { error ->
-                                // キャンセル以外のエラーを日本語で表示
                                 if (error !is com.yourcoach.plus.shared.util.AppError.Cancelled) {
-                                    val message = when {
-                                        error.message?.contains("初期化されていません") == true ->
-                                            "Google Sign-Inの初期化に失敗しました"
-                                        error.message?.contains("ViewController") == true ->
-                                            "画面の読み込みに失敗しました。再度お試しください"
-                                        else -> error.message ?: "Googleログインに失敗しました"
-                                    }
-                                    screenModel.setError(message)
+                                    screenModel.setError(error.message ?: "Googleログインに失敗しました")
                                 }
                             }
                         )
@@ -276,9 +271,7 @@ class LoginScreen : Screen {
                 ) { onClick ->
                     OutlinedButton(
                         onClick = onClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         enabled = !uiState.isLoading,
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -289,14 +282,14 @@ class LoginScreen : Screen {
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Googleでログイン",
+                            text = "Googleで続ける",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
 
-                // Apple Sign-In (iOS only)
+                // Apple (iOS only)
                 if (isAppleSignInAvailable()) {
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -308,22 +301,11 @@ class LoginScreen : Screen {
                                         idToken = appleResult.idToken,
                                         nonce = appleResult.nonce,
                                         fullName = appleResult.fullName
-                                    ) {
-                                        val state = screenModel.uiState.value
-                                        handleLoginSuccess(navigator, state.userId, state.needsOnboarding)
-                                    }
+                                    )
                                 },
                                 onFailure = { error ->
-                                    // キャンセル以外のエラーを日本語で表示
                                     if (error !is com.yourcoach.plus.shared.util.AppError.Cancelled) {
-                                        val message = when {
-                                            error.message?.contains("初期化されていません") == true ->
-                                                "Apple Sign-Inの初期化に失敗しました"
-                                            error.message?.contains("ViewController") == true ->
-                                                "画面の読み込みに失敗しました。再度お試しください"
-                                            else -> error.message ?: "Appleログインに失敗しました"
-                                        }
-                                        screenModel.setError(message)
+                                        screenModel.setError(error.message ?: "Appleログインに失敗しました")
                                     }
                                 }
                             )
@@ -332,9 +314,7 @@ class LoginScreen : Screen {
                     ) { onClick ->
                         Button(
                             onClick = onClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
                             enabled = !uiState.isLoading,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
@@ -350,48 +330,14 @@ class LoginScreen : Screen {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Appleでログイン",
+                                text = "Appleで続ける",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium
                             )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // サインアップへのリンク
-                Row(
-                    modifier = Modifier.padding(vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "アカウントをお持ちでない方は",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    TextButton(onClick = { navigator.push(SignUpScreen()) }) {
-                        Text(
-                            text = "新規登録",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Primary
-                        )
-                    }
-                }
             }
-        }
-    }
-
-    private fun handleLoginSuccess(
-        navigator: cafe.adriel.voyager.navigator.Navigator,
-        userId: String?,
-        needsOnboarding: Boolean
-    ) {
-        if (needsOnboarding && userId != null) {
-            navigator.replace(ProfileSetupScreen(userId))
-        } else {
-            navigator.replace(MainScreen())
         }
     }
 }

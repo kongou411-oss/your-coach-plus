@@ -185,6 +185,7 @@ class FirestoreUserRepository : UserRepository {
             fieldMap["profile.sleepTime"] = profile.sleepTime
             fieldMap["profile.trainingTime"] = profile.trainingTime
             fieldMap["profile.trainingDuration"] = profile.trainingDuration
+            fieldMap["profile.questAutoGenEnabled"] = profile.questAutoGenEnabled
 
             // MealSlotConfigをマップとして保存
             profile.mealSlotConfig?.let { config ->
@@ -563,7 +564,8 @@ class FirestoreUserRepository : UserRepository {
             organizationName = get<String?>("organizationName"),
             role = get<String?>("role"),
             aiDataConsent = get<Boolean?>("aiDataConsent") ?: false,
-            aiDataConsentDate = get<Long?>("aiDataConsentDate") ?: 0
+            aiDataConsentDate = get<Long?>("aiDataConsentDate") ?: 0,
+            termsAcceptedAt = getTimestampOrLong("termsAgreedAt")
         )
     }
 

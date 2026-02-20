@@ -27,7 +27,9 @@ data class User(
     val followingCount: Int = 0,
     // AI データ共有同意（App Store Guideline 5.1.1/5.1.2対応）
     val aiDataConsent: Boolean = false,
-    val aiDataConsentDate: Long = 0
+    val aiDataConsentDate: Long = 0,
+    // 利用規約同意
+    val termsAcceptedAt: Long = 0
 ) {
     // 所属による Premium 判定
     val hasCorporatePremium: Boolean get() = !organizationName.isNullOrEmpty() || !b2b2cOrgId.isNullOrEmpty()

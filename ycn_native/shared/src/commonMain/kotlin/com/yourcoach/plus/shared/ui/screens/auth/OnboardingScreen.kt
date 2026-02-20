@@ -1,7 +1,6 @@
 package com.yourcoach.plus.shared.ui.screens.auth
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,11 +39,8 @@ class OnboardingScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
 
         OnboardingContent(
-            onLogin = {
+            onStart = {
                 navigator.push(LoginScreen())
-            },
-            onSignUp = {
-                navigator.push(SignUpScreen())
             }
         )
     }
@@ -52,8 +48,7 @@ class OnboardingScreen : Screen {
 
 @Composable
 private fun OnboardingContent(
-    onLogin: () -> Unit,
-    onSignUp: () -> Unit
+    onStart: () -> Unit
 ) {
     Scaffold { paddingValues ->
         Column(
@@ -109,9 +104,9 @@ private fun OnboardingContent(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // 新規登録ボタン
+            // 統合ボタン（ログイン/新規登録）
             Button(
-                onClick = onSignUp,
+                onClick = onStart,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -119,27 +114,9 @@ private fun OnboardingContent(
                 colors = ButtonDefaults.buttonColors(containerColor = Primary)
             ) {
                 Text(
-                    text = "新規登録",
+                    text = "はじめる",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // ログインボタン
-            OutlinedButton(
-                onClick = onLogin,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = "ログイン",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Primary
                 )
             }
         }
