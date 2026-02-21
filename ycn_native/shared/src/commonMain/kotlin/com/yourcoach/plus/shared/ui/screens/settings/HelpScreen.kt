@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -125,6 +126,8 @@ private fun HelpSection(
 
 @Composable
 private fun HelpUsageGuideContent() {
+    val uriHandler = LocalUriHandler.current
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         HelpUsageLevelCard(
             level = "初心者",
@@ -148,6 +151,28 @@ private fun HelpUsageGuideContent() {
                 "データを見ながら調整"
             )
         )
+
+        // YouTube公式チャンネル
+        Button(
+            onClick = { uriHandler.openUri("https://www.youtube.com/@YourCoachPlusOFFICIAL") },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000))
+        ) {
+            Icon(
+                Icons.Default.PlayArrow,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "YouTube公式チャンネル",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
     }
 }
 

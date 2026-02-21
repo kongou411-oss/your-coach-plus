@@ -947,7 +947,7 @@ private fun RoutineStep(state: ProfileSetupState, screenModel: ProfileSetupScree
                             ) {
                                 Checkbox(
                                     checked = day.isRestDay,
-                                    onCheckedChange = { screenModel.updateRoutineDayRestDay(day.dayNumber, it) },
+                                    onCheckedChange = null,
                                     colors = CheckboxDefaults.colors(checkedColor = ScoreSleep)
                                 )
                                 Text(

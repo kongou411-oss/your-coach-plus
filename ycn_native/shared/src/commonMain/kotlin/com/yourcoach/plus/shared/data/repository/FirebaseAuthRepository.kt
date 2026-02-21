@@ -66,7 +66,17 @@ class FirebaseAuthRepository : AuthRepository {
 
             Result.success(firebaseUser.toUser())
         } catch (e: Exception) {
-            Result.failure(mapFirebaseAuthError(e))
+            val error = mapFirebaseAuthError(e)
+            val msg = e.message ?: ""
+            // Apple/Google削除後の同メール再登録時、INVALID_CREDENTIAL/トークンエラーが
+            // 返る場合がある → InvalidCredentials に再マッピングして新規登録フローへ進ませる
+            if (error is AppError.AuthenticationError && (
+                msg.contains("INVALID_CREDENTIAL") || msg.contains("17020") ||
+                msg.contains("Unable to parse") || msg.contains("17004"))) {
+                Result.failure(AppError.InvalidCredentials())
+            } else {
+                Result.failure(error)
+            }
         }
     }
 
