@@ -224,6 +224,19 @@
                         <h3 class="font-bold text-gray-800 text-sm mb-2" id="cq-assign-list-title">割当履歴</h3>
                         <div id="cq-assign-list" class="text-xs max-h-[300px] overflow-y-auto"><span class="text-gray-400">データなし</span></div>
                     </div>
+                    <!-- Meal History -->
+                    <div class="bento-card bento-card-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-gray-800 text-sm">🍽 食事履歴</h3>
+                            <div class="flex items-center gap-1">
+                                <button onclick="shiftMealDate(-1)" class="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">◀</button>
+                                <span id="meal-history-date-label" class="text-[11px] font-bold text-teal-700 px-2 min-w-[40px] text-center">今日</span>
+                                <button onclick="shiftMealDate(1)" id="meal-history-fwd-btn" class="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold" disabled style="opacity:0.3">▶</button>
+                                <input type="date" id="meal-history-date-picker" onchange="onMealDatePick(this.value)" class="text-[10px] border border-gray-300 rounded px-1 py-0.5 ml-1 w-[110px]">
+                            </div>
+                        </div>
+                        <div id="meal-history-content" class="text-xs max-h-[400px] overflow-y-auto"><span class="text-gray-400">クライアントを選択してください</span></div>
+                    </div>
                     <!-- Condition Records -->
                     <div class="bento-card bento-card-md">
                         <div class="flex items-center justify-between mb-2">

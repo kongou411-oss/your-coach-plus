@@ -674,6 +674,7 @@ async function loadUserSlots() {
         renderUserRoutinePanel(uid, profile);
         renderUserCustomItemsPanel(uid);
         loadConditionRecords();
+        loadMealHistory();
 
         // Timeline
         const absoluteTimes = {};
@@ -1147,4 +1148,195 @@ function renderConditionRecords(records) {
         listHtml += '</div></div>';
     });
     el.innerHTML = trendHtml + listHtml;
+}
+
+// ========== Meal History ==========
+let mealHistoryDateOffset = 0; // 0=today, -1=yesterday, etc.
+
+const MEAL_TYPE_ORDER = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK', 'SUPPLEMENT'];
+const MEAL_TYPE_LABELS = { BREAKFAST: '朝食', LUNCH: '昼食', DINNER: '夕食', SNACK: '間食', SUPPLEMENT: 'サプリ' };
+const MEAL_TYPE_ICONS = { BREAKFAST: '🌅', LUNCH: '☀️', DINNER: '🌙', SNACK: '🍪', SUPPLEMENT: '💊' };
+
+function getMealHistoryDate() {
+    const d = new Date();
+    d.setDate(d.getDate() + mealHistoryDateOffset);
+    return d;
+}
+
+function formatMealDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function getMealDateLabel() {
+    if (mealHistoryDateOffset === 0) return '今日';
+    if (mealHistoryDateOffset === -1) return '昨日';
+    const d = getMealHistoryDate();
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function shiftMealDate(delta) {
+    mealHistoryDateOffset += delta;
+    if (mealHistoryDateOffset > 0) mealHistoryDateOffset = 0;
+    loadMealHistory();
+}
+
+function onMealDatePick(val) {
+    if (!val) return;
+    const picked = new Date(val + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffMs = picked.getTime() - today.getTime();
+    mealHistoryDateOffset = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (mealHistoryDateOffset > 0) mealHistoryDateOffset = 0;
+    loadMealHistory();
+}
+
+async function loadMealHistory() {
+    const uid = loadedUserUid;
+    const el = document.getElementById('meal-history-content');
+    if (!el) return;
+    if (!uid) { el.innerHTML = '<span class="text-gray-400">クライアントを選択してください</span>'; return; }
+    el.innerHTML = '<span class="text-gray-400">読み込み中...</span>';
+
+    // Update date label and picker
+    const targetDate = getMealHistoryDate();
+    const dateStr = formatMealDate(targetDate);
+    const labelEl = document.getElementById('meal-history-date-label');
+    if (labelEl) labelEl.textContent = getMealDateLabel();
+    const pickerEl = document.getElementById('meal-history-date-picker');
+    if (pickerEl) pickerEl.value = dateStr;
+    // Disable forward button if today
+    const fwdBtn = document.getElementById('meal-history-fwd-btn');
+    if (fwdBtn) { fwdBtn.disabled = mealHistoryDateOffset >= 0; fwdBtn.style.opacity = mealHistoryDateOffset >= 0 ? '0.3' : '1'; }
+
+    try {
+        // JST timestamp range for the target date
+        const startOfDay = new Date(dateStr + 'T00:00:00+09:00').getTime();
+        const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
+
+        const snap = await db.collection('users').doc(uid).collection('meals')
+            .where('timestamp', '>=', startOfDay)
+            .where('timestamp', '<', endOfDay)
+            .orderBy('timestamp', 'asc')
+            .get();
+
+        const meals = [];
+        snap.forEach(doc => { meals.push({ id: doc.id, ...doc.data() }); });
+        renderMealHistory(meals, dateStr);
+    } catch (e) {
+        el.innerHTML = `<span class="text-red-500">エラー: ${e.message}</span>`;
+        console.error('loadMealHistory error:', e);
+    }
+}
+
+function renderMealHistory(meals, dateStr) {
+    const el = document.getElementById('meal-history-content');
+    if (meals.length === 0) {
+        el.innerHTML = `<div class="text-center py-6 text-gray-400"><div class="text-2xl mb-1">📭</div><div class="text-sm">この日の食事記録はありません</div></div>`;
+        return;
+    }
+
+    // Group by type
+    const grouped = {};
+    MEAL_TYPE_ORDER.forEach(t => { grouped[t] = []; });
+    meals.forEach(m => {
+        const t = m.type || 'SNACK';
+        if (!grouped[t]) grouped[t] = [];
+        grouped[t].push(m);
+    });
+
+    // Totals
+    let totalCal = 0, totalP = 0, totalF = 0, totalC = 0;
+    meals.forEach(m => {
+        totalCal += m.totalCalories || 0;
+        totalP += m.totalProtein || 0;
+        totalF += m.totalFat || 0;
+        totalC += m.totalCarbs || 0;
+    });
+
+    let html = '';
+    MEAL_TYPE_ORDER.forEach(type => {
+        const group = grouped[type];
+        if (group.length === 0) return;
+        group.forEach((m, idx) => {
+            const mealCal = m.totalCalories || 0;
+            const mealP = (m.totalProtein || 0).toFixed(1);
+            const mealF = (m.totalFat || 0).toFixed(1);
+            const mealC = (m.totalCarbs || 0).toFixed(1);
+            const time = m.time || '';
+            const timeLabel = time ? ` (${time})` : '';
+            const icon = MEAL_TYPE_ICONS[type] || '🍽';
+            const label = MEAL_TYPE_LABELS[type] || type;
+
+            // Source badge
+            let sourceBadge = '';
+            if (m.isPredicted) sourceBadge = '<span class="text-[9px] bg-purple-100 text-purple-700 px-1 rounded ml-1">📷 AI</span>';
+            else if (m.isRoutine) sourceBadge = `<span class="text-[9px] bg-blue-100 text-blue-700 px-1 rounded ml-1">📋 指示書${m.routineName ? ' ' + escapeHtml(m.routineName) : ''}</span>`;
+            else if (m.isTemplate) sourceBadge = '<span class="text-[9px] bg-green-100 text-green-700 px-1 rounded ml-1">📄 テンプレ</span>';
+
+            const mealId = `meal-detail-${m.id}`;
+            html += `<div class="border-b border-gray-100 last:border-b-0">`;
+            html += `<div class="flex items-center justify-between py-2 cursor-pointer select-none" onclick="toggleMealDetail('${mealId}')">`;
+            html += `<div class="flex items-center gap-1.5"><span>${icon}</span><span class="font-bold text-gray-700">${label}${timeLabel}</span>${sourceBadge}</div>`;
+            html += `<div class="flex items-center gap-2"><span class="font-bold text-gray-800">${mealCal}kcal</span><span class="text-gray-400 text-[10px] transition-transform" id="${mealId}-arrow">▼</span></div>`;
+            html += `</div>`;
+
+            // Detail (items) — collapsed by default
+            html += `<div id="${mealId}" class="hidden pb-2 pl-6">`;
+            const items = m.items || [];
+            if (items.length > 0) {
+                items.forEach(item => {
+                    const iName = item.name || item.foodName || '?';
+                    const iAmt = item.amount || 0;
+                    const iUnit = item.unit || 'g';
+                    const iCal = item.calories || 0;
+                    let aiMark = '';
+                    if (item.isAiRecognized) aiMark = ' <span class="text-[9px] text-purple-500">📷</span>';
+                    html += `<div class="flex items-center justify-between text-[11px] py-0.5">`;
+                    html += `<span class="text-gray-600">${escapeHtml(iName)} <span class="text-gray-400">${iAmt}${iUnit}</span>${aiMark}</span>`;
+                    html += `<span class="text-gray-500">${iCal}kcal</span>`;
+                    html += `</div>`;
+                });
+                html += `<div class="text-[10px] text-gray-400 mt-1">P:${mealP}g F:${mealF}g C:${mealC}g</div>`;
+            } else {
+                html += `<div class="text-[11px] text-gray-400">食品データなし</div>`;
+            }
+            if (m.note) html += `<div class="text-[10px] text-gray-400 mt-1 italic">💬 ${escapeHtml(m.note)}</div>`;
+            if (m.imageUrl) html += `<div class="mt-1"><img src="${escapeHtml(m.imageUrl)}" class="w-16 h-16 object-cover rounded" onerror="this.style.display='none'" /></div>`;
+            html += `</div></div>`;
+        });
+    });
+
+    // Total bar
+    html += `<div class="mt-2 pt-2 border-t-2 border-gray-200 flex items-center justify-between">`;
+    html += `<span class="font-bold text-gray-700 text-sm">合計</span>`;
+    html += `<div class="text-right"><span class="font-black text-gray-900">${totalCal.toLocaleString()}kcal</span>`;
+    html += `<div class="text-[10px] text-gray-500">P:${totalP.toFixed(1)}g F:${totalF.toFixed(1)}g C:${totalC.toFixed(1)}g</div></div>`;
+    html += `</div>`;
+
+    // Target comparison if profile loaded
+    if (loadedUserProfile) {
+        const target = calculateUserTargetCalories(loadedUserProfile);
+        const pct = target > 0 ? Math.round(totalCal / target * 100) : 0;
+        const pctColor = pct >= 90 && pct <= 110 ? '#22c55e' : pct < 70 ? '#ef4444' : '#f59e0b';
+        html += `<div class="mt-1 flex items-center gap-2">`;
+        html += `<div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all" style="width:${Math.min(pct, 100)}%;background:${pctColor}"></div></div>`;
+        html += `<span class="text-[10px] font-bold" style="color:${pctColor}">${pct}%</span>`;
+        html += `<span class="text-[10px] text-gray-400">/ ${target}kcal</span>`;
+        html += `</div>`;
+    }
+
+    el.innerHTML = html;
+}
+
+function toggleMealDetail(id) {
+    const el = document.getElementById(id);
+    const arrow = document.getElementById(id + '-arrow');
+    if (!el) return;
+    const isHidden = el.classList.contains('hidden');
+    el.classList.toggle('hidden');
+    if (arrow) arrow.textContent = isHidden ? '▲' : '▼';
 }

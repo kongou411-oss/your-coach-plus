@@ -256,7 +256,10 @@ service cloud.firestore {
 
       // サブコレクション: meals（食事記録）
       match /meals/{mealId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId)
+                    || (isTrainer()
+                        && get(/databases/$(database)/documents/users/$(userId)).data.organizationName == request.auth.token.organizationName);
+        allow write: if isOwner(userId);
       }
 
       // サブコレクション: workouts（運動記録）
