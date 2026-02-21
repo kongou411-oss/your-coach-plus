@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>法人・ジム向けプラン - Your Coach+</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -55,70 +55,134 @@
     </script>
 
     <style>
+        :root {
+            --bg: #08080d;
+            --bg-elevated: #0c0c13;
+            --accent: #4A9EFF;
+            --accent-glow: rgba(74,158,255,0.4);
+        }
+
         html { scroll-behavior: smooth; }
-        body { margin: 0; padding: 0; font-family: 'Noto Sans JP', system-ui, sans-serif; }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Noto Sans JP', system-ui, sans-serif;
+            background: var(--bg); color: #e2e8f0;
+        }
+
+        /* Scroll progress */
+        .scroll-progress {
+            position: fixed; top: 0; left: 0; height: 2px; z-index: 100;
+            background: linear-gradient(90deg, var(--accent), #7c3aed);
+            width: 0%;
+        }
+
+        /* Noise overlay */
+        body::after {
+            content: ''; position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 1; opacity: 0.4;
+        }
+        body > * { position: relative; z-index: 2; }
 
         /* Navigation */
         .nav-fixed {
             position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-            background-color: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            background: rgba(8,8,13,0.8);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
             transition: box-shadow 0.3s;
         }
-        .nav-fixed.scrolled {
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
+        .nav-fixed.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
 
-        /* Scroll fade-in */
+        /* Animations */
         .fade-up {
             opacity: 0; transform: translateY(40px);
-            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
         }
         .fade-up.visible { opacity: 1; transform: translateY(0); }
 
         .fade-left {
-            opacity: 0; transform: translateX(-40px);
-            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+            opacity: 0; transform: translateX(-60px);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
         }
+        .fade-left.visible { opacity: 1; transform: translateX(0); }
+
         .fade-right {
-            opacity: 0; transform: translateX(40px);
-            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+            opacity: 0; transform: translateX(60px);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
         }
-        .fade-left.visible, .fade-right.visible { opacity: 1; transform: translateX(0); }
+        .fade-right.visible { opacity: 1; transform: translateX(0); }
+
+        .scale-up {
+            opacity: 0; transform: scale(0.92);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
+        }
+        .scale-up.visible { opacity: 1; transform: scale(1); }
+
+        .stagger-children > *:nth-child(2) { transition-delay: 0.12s; }
+        .stagger-children > *:nth-child(3) { transition-delay: 0.24s; }
+        .stagger-children > *:nth-child(4) { transition-delay: 0.36s; }
+
+        /* Section layout */
+        .section {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .section-content { max-width: 56rem; width: 100%; padding: 1.5rem; }
+        @media (min-width: 768px) { .section-content { padding: 2rem; } }
+
+        /* Glass card */
+        .glass {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: border-color 0.4s, box-shadow 0.4s, transform 0.4s;
+        }
+        .glass:hover {
+            border-color: rgba(255,255,255,0.15);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Ambient orbs */
+        .orb {
+            position: absolute; border-radius: 50%;
+            filter: blur(80px); pointer-events: none;
+            animation: orb-float 20s ease-in-out infinite;
+        }
+        @keyframes orb-float {
+            0%, 100% { transform: translate(0,0) scale(1); }
+            33% { transform: translate(30px,-30px) scale(1.05); }
+            66% { transform: translate(-20px,20px) scale(0.95); }
+        }
+
+        /* CTA glow */
+        .cta-glow {
+            box-shadow: 0 0 20px rgba(74,158,255,0.3), 0 0 60px rgba(74,158,255,0.1);
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+        .cta-glow:hover {
+            box-shadow: 0 0 30px rgba(74,158,255,0.5), 0 0 80px rgba(74,158,255,0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Mobile nav */
+        .mobile-menu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .mobile-menu.open { max-height: 400px; }
+
+        /* Section divider */
+        .section-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); }
 
         /* Stat numbers */
         .stat-number { font-variant-numeric: tabular-nums; }
-
-        /* Mobile nav */
-        .mobile-menu {
-            max-height: 0; overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-        .mobile-menu.open { max-height: 300px; }
-
-        /* Reduced motion */
-        @media (prefers-reduced-motion: reduce) {
-            .fade-up, .fade-left, .fade-right { opacity: 1; transform: none; transition: none; }
-            .animate-bounce { animation: none; }
-        }
-
-        /* Focus visible for accessibility */
-        :focus-visible {
-            outline: 2px solid #4A9EFF;
-            outline-offset: 2px;
-            border-radius: 4px;
-        }
-
-        /* Mobile comparison cards */
-        @media (max-width: 767px) {
-            .comparison-table-desktop { display: none; }
-            .comparison-cards-mobile { display: block; }
-        }
-        @media (min-width: 768px) {
-            .comparison-cards-mobile { display: none; }
-        }
 
         /* ROI Simulator range sliders */
         input[type="range"] {
@@ -136,8 +200,8 @@
             border-radius: 50%;
             background: #4A9EFF;
             cursor: pointer;
-            border: 3px solid #fff;
-            box-shadow: 0 0 8px rgba(74,158,255,0.5);
+            border: 3px solid #1a1a2e;
+            box-shadow: 0 0 12px rgba(74,158,255,0.5);
             transition: transform 0.15s;
         }
         input[type="range"]::-webkit-slider-thumb:hover {
@@ -149,13 +213,13 @@
             border-radius: 50%;
             background: #4A9EFF;
             cursor: pointer;
-            border: 3px solid #fff;
-            box-shadow: 0 0 8px rgba(74,158,255,0.5);
+            border: 3px solid #1a1a2e;
+            box-shadow: 0 0 12px rgba(74,158,255,0.5);
         }
         input[type="range"]::-moz-range-track {
             height: 8px;
             border-radius: 9999px;
-            background: #e2e8f0;
+            background: rgba(255,255,255,0.1);
         }
 
         /* Image hover effect */
@@ -164,41 +228,57 @@
         }
         .img-hover:hover {
             transform: translateY(-4px);
-            box-shadow: 0 20px 40px -10px rgba(74,158,255,0.15);
+            box-shadow: 0 20px 40px -10px rgba(74,158,255,0.2);
         }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .fade-up, .fade-left, .fade-right, .scale-up { opacity: 1; transform: none; transition: none; }
+            .orb { animation: none; }
+            .animate-bounce { animation: none; }
+        }
+
+        /* Focus */
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
     </style>
 </head>
-<body class="bg-white">
+<body>
+    <!-- Scroll progress bar -->
+    <div class="scroll-progress" id="scroll-progress"></div>
 
     <!-- ==================== Navigation ==================== -->
     <nav class="nav-fixed" id="navbar" role="navigation" aria-label="メインナビゲーション">
         <div class="max-w-5xl mx-auto px-4 md:px-6">
             <div class="flex items-center justify-between h-14">
-                <a href="/home.html" class="text-lg font-bold text-slate-900 font-heading">Your Coach<span class="text-teal-500">+</span> <span class="text-xs text-slate-400 font-normal ml-1">for Business</span></a>
+                <a href="/home.html" class="text-lg font-bold text-white font-heading">Your Coach<span class="text-teal-500">+</span> <span class="text-xs text-slate-500 font-normal ml-1">for Business</span></a>
                 <!-- Desktop -->
                 <div class="hidden md:flex items-center gap-6">
-                    <a href="#problem" class="text-sm text-slate-600 hover:text-slate-900 transition">課題</a>
-                    <a href="#solution" class="text-sm text-slate-600 hover:text-slate-900 transition">ソリューション</a>
-                    <a href="#competition" class="text-sm text-slate-600 hover:text-slate-900 transition">比較</a>
-                    <a href="#roi" class="text-sm text-slate-600 hover:text-slate-900 transition">ROI試算</a>
-                    <a href="#pricing" class="text-sm text-slate-600 hover:text-slate-900 transition">料金</a>
-                    <a href="#contact" class="bg-teal-500 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-600 transition">お問い合わせ</a>
+                    <a href="#problem" class="text-sm text-slate-400 hover:text-white transition">課題</a>
+                    <a href="#solution" class="text-sm text-slate-400 hover:text-white transition">ソリューション</a>
+                    <a href="#roi" class="text-sm text-slate-400 hover:text-white transition">ROI試算</a>
+                    <a href="#pricing" class="text-sm text-slate-400 hover:text-white transition">料金</a>
+                    <a href="#contact" class="bg-teal-500 text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-teal-600 transition cta-glow">お問い合わせ</a>
                 </div>
                 <!-- Mobile hamburger -->
-                <button class="md:hidden text-slate-600 hover:text-slate-900" id="mobile-toggle" aria-label="メニューを開く" aria-expanded="false">
+                <button class="md:hidden text-slate-400 hover:text-white" id="mobile-toggle" aria-label="メニューを開く" aria-expanded="false">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
             </div>
             <!-- Mobile menu -->
-            <div class="mobile-menu md:hidden bg-white" id="mobile-menu" role="menu">
+            <div class="mobile-menu md:hidden" id="mobile-menu" role="menu">
                 <div class="pb-4 space-y-2">
-                    <a href="#problem" class="block text-sm text-slate-600 hover:text-slate-900 py-2" role="menuitem">課題</a>
-                    <a href="#solution" class="block text-sm text-slate-600 hover:text-slate-900 py-2" role="menuitem">ソリューション</a>
-                    <a href="#competition" class="block text-sm text-slate-600 hover:text-slate-900 py-2" role="menuitem">比較</a>
-                    <a href="#roi" class="block text-sm text-slate-600 hover:text-slate-900 py-2" role="menuitem">ROI試算</a>
-                    <a href="#pricing" class="block text-sm text-slate-600 hover:text-slate-900 py-2" role="menuitem">料金</a>
+                    <a href="#problem" class="block text-sm text-slate-400 hover:text-white py-2" role="menuitem">課題</a>
+                    <a href="#solution" class="block text-sm text-slate-400 hover:text-white py-2" role="menuitem">ソリューション</a>
+                    <a href="#roi" class="block text-sm text-slate-400 hover:text-white py-2" role="menuitem">ROI試算</a>
+                    <a href="#pricing" class="block text-sm text-slate-400 hover:text-white py-2" role="menuitem">料金</a>
                     <a href="#contact" class="block bg-teal-500 text-white text-sm font-bold px-4 py-2 rounded-lg text-center" role="menuitem">お問い合わせ</a>
                 </div>
             </div>
@@ -208,48 +288,46 @@
     <main>
 
     <!-- ==================== 1. Hero ==================== -->
-    <section class="min-h-screen flex items-center relative pt-14" style="background: linear-gradient(rgba(15,61,122,0.72), rgba(15,61,122,0.72)), url('/images/gym-evolved.png') center/cover no-repeat;">
-        <div class="max-w-5xl mx-auto px-6 w-full text-center">
+    <section class="section relative overflow-hidden" id="hero" aria-labelledby="hero-heading">
+        <!-- Hero background image with dark gradient overlay -->
+        <div class="absolute inset-0 z-0" aria-hidden="true">
+            <img src="/images/gym-evolved.png" alt="" class="w-full h-full object-cover object-center" loading="eager">
+            <div class="absolute inset-0 bg-gradient-to-r from-[#08080d] via-[#08080dcc] to-[#08080d99]"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#08080d] via-transparent to-[#08080d88]"></div>
+        </div>
+        <!-- Ambient orbs -->
+        <div class="orb" style="width:600px;height:600px;background:radial-gradient(circle,rgba(74,158,255,0.15) 0%,transparent 70%);top:-10%;right:-10%;animation-delay:0s;" aria-hidden="true"></div>
+        <div class="orb" style="width:400px;height:400px;background:radial-gradient(circle,rgba(124,58,237,0.1) 0%,transparent 70%);bottom:-5%;left:-5%;animation-delay:-10s;" aria-hidden="true"></div>
+
+        <div class="section-content text-center flex flex-col justify-center relative z-10 pt-14">
             <div class="fade-up">
                 <div class="inline-block mb-6 px-4 py-1 rounded-full border border-white/20 bg-white/10">
                     <span class="text-xs font-bold tracking-widest text-white/80 uppercase">For Gyms &amp; Trainers</span>
                 </div>
 
-                <h1 class="font-heading text-3xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight">
-                    指導時間外の<span class="text-teal-300">167時間</span>を<br>成果に変える
+                <h1 id="hero-heading" class="font-heading text-3xl md:text-5xl lg:text-6xl font-black mb-4 leading-tight gradient-text">
+                    指導時間外の<br class="md:hidden"><span class="text-teal-400" style="-webkit-text-fill-color:unset;">167時間</span>を<br>成果に変える
                 </h1>
-                <p class="text-base md:text-lg text-white/80 mb-10 max-w-2xl mx-auto">
+                <p class="text-base md:text-lg text-white font-bold mb-3 max-w-2xl mx-auto">
                     会員の継続率を仕組みで改善。AIが食事・運動・コンディションを毎日管理し、トレーナーの指導効果を最大化します。
                 </p>
             </div>
 
-            <!-- Hero KPI Cards (5) -->
-            <div class="fade-up grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 max-w-4xl mx-auto mb-10">
-                <div class="bg-white/10 backdrop-blur border border-white/20 rounded-xl p-4">
-                    <p class="font-heading stat-number text-2xl md:text-3xl font-black text-white mb-1">60<span class="text-base">名+</span></p>
-                    <p class="text-white/70 text-xs">利用者数</p>
+            <!-- Hero KPI Cards (2 only) -->
+            <div class="fade-up grid grid-cols-2 gap-4 max-w-md mx-auto mb-10">
+                <div class="glass rounded-xl p-5">
+                    <p class="font-heading stat-number text-3xl md:text-4xl font-black text-emerald-400 mb-1">+75<span class="text-lg">%</span></p>
+                    <p class="text-slate-400 text-xs">継続率向上</p>
                 </div>
-                <div class="bg-white/10 backdrop-blur border border-white/20 rounded-xl p-4">
-                    <p class="font-heading stat-number text-2xl md:text-3xl font-black text-emerald-300 mb-1">+75<span class="text-base">%</span></p>
-                    <p class="text-white/70 text-xs">継続率向上</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur border border-white/20 rounded-xl p-4">
-                    <p class="font-heading stat-number text-2xl md:text-3xl font-black text-teal-300 mb-1">100<span class="text-base">倍+</span></p>
-                    <p class="text-white/70 text-xs">ROI（投資対効果）</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur border border-white/20 rounded-xl p-4">
-                    <p class="font-heading stat-number text-2xl md:text-3xl font-black text-white mb-1">¥9<span class="text-base">k〜</span></p>
-                    <p class="text-white/70 text-xs">月額コスト</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur border border-white/20 rounded-xl p-4 col-span-2 sm:col-span-1">
-                    <p class="font-heading stat-number text-2xl md:text-3xl font-black text-white mb-1">0</p>
-                    <p class="text-white/70 text-xs">導入の手間</p>
+                <div class="glass rounded-xl p-5">
+                    <p class="font-heading stat-number text-3xl md:text-4xl font-black text-teal-400 mb-1">100<span class="text-lg">倍+</span></p>
+                    <p class="text-slate-400 text-xs">ROI（投資対効果）</p>
                 </div>
             </div>
 
             <!-- Hero CTAs -->
-            <div class="fade-up flex flex-col sm:flex-row gap-3 justify-center mb-8">
-                <a href="#roi" class="inline-block bg-teal-500 text-white font-bold py-4 px-10 rounded-xl hover:bg-teal-600 transition shadow-lg text-base text-center">
+            <div class="fade-up flex flex-col sm:flex-row gap-3 justify-center mb-6">
+                <a href="#roi" class="inline-block bg-teal-500 text-white font-bold py-4 px-10 rounded-xl hover:bg-teal-600 transition text-base text-center cta-glow">
                     あなたのジムのROIを試算する
                 </a>
                 <a href="#pricing" class="inline-block border-2 border-white/30 text-white font-bold py-4 px-10 rounded-xl hover:border-white/60 transition text-base text-center">
@@ -257,254 +335,292 @@
                 </a>
             </div>
 
-            <!-- Trust badges (integrated) -->
-            <div class="fade-up flex flex-wrap items-center justify-center gap-4 md:gap-6">
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                    <span class="text-white/70 text-xs font-bold">AI搭載</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    <span class="text-white/70 text-xs font-bold">40+栄養素追跡</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                    <span class="text-white/70 text-xs font-bold">PGBASE教科書</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span class="text-white/70 text-xs font-bold">コミュニティ機能</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span class="text-white/70 text-xs font-bold">即日サポート</span>
-                </div>
-            </div>
-
-            <p class="fade-up text-white/40 text-xs mt-6">※ 30名・月額¥30,000・継続4ヶ月のジムの場合の試算値</p>
+            <p class="fade-up text-slate-500 text-xs">※ 30名・月額¥30,000・継続4ヶ月のジムの場合の試算値</p>
         </div>
 
         <!-- Scroll indicator -->
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <svg class="w-6 h-6 mx-auto text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce" aria-hidden="true">
+            <svg class="w-6 h-6 mx-auto text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
             </svg>
         </div>
     </section>
 
     <!-- ==================== 2. Problem ==================== -->
-    <section class="bg-white py-20 md:py-28" id="problem">
+    <div class="section-divider"></div>
+
+    <section class="py-20 md:py-28 relative" id="problem">
         <div class="max-w-4xl mx-auto px-6">
             <div class="fade-up text-center mb-12">
-                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-slate-200 bg-slate-50">
-                    <span class="text-xs font-bold tracking-widest text-slate-500 uppercase">Problem</span>
+                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-white/10 bg-white/5">
+                    <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">Problem</span>
                 </div>
-                <h2 class="font-heading text-2xl md:text-4xl font-black text-slate-900 mb-4">ジム経営を蝕む<span class="text-red-500">3つの構造的課題</span></h2>
-                <p class="text-slate-600 text-sm">入会者の<span class="text-red-500 font-bold">80%が1年以内に退会</span>。継続率は入会時37%→12ヶ月後わずか4%。<br>どれだけ指導力があっても、仕組みがなければ成果は属人化する。</p>
+                <h2 class="font-heading text-2xl md:text-4xl font-black text-white mb-4">ジム経営を蝕む<span class="text-red-400">3つの構造的課題</span></h2>
+                <p class="text-slate-400 text-sm mb-3">入会者の<span class="text-red-400 font-bold">80%が1年以内に退会</span>。継続率は入会時37%→12ヶ月後わずか4%。</p>
+                <p class="text-slate-300 text-sm font-bold">退会理由は「やる気がないから」ではありません。<br class="hidden md:inline"><strong class="text-white">指導時間外の167時間が管理不能</strong>という構造的課題です。</p>
             </div>
 
-            <div class="fade-up grid md:grid-cols-3 gap-5">
-                <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <!-- Developer Episode -->
+            <div class="fade-up bg-white/[0.03] border-l-4 border-teal-500 rounded-r-2xl p-5 md:p-6 mb-8" style="box-shadow: -4px 0 20px rgba(74,158,255,0.1);">
+                <p class="text-slate-300 text-sm leading-relaxed mb-3">
+                    元24hジム現場責任者として、毎月何十人もの退会届を見てきました。会員は真剣にトレーニングしていた。でもセッション後の食事が見えない。LINEで写真を送ってもらう仕組みを作っても、3日で既読スルーになる。
+                </p>
+                <p class="text-teal-400 text-sm font-bold">
+                    それは会員の怠慢ではなく、「毎回送る」という手間が続かないだけ。仕組みで解決すべき課題でした。
+                </p>
+            </div>
+
+            <div class="stagger-children fade-up grid md:grid-cols-3 gap-5">
+                <div class="glass rounded-2xl p-6">
+                    <div class="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
-                    <h3 class="text-slate-900 font-bold mb-2">指導時間外の管理不能</h3>
-                    <p class="text-slate-600 text-sm">会員のジム外での食事・生活習慣を把握できず、成果にバラつきが出る。</p>
+                    <h3 class="text-white font-bold mb-2">指導時間外の管理不能</h3>
+                    <p class="text-slate-400 text-sm mb-2">30人の会員×167時間×40以上の栄養素。この情報量は人間の認知限界を超えている。どれだけ優秀なトレーナーでも、全員の食事を追いきれない。</p>
+                    <p class="text-slate-500 text-xs italic">「食事管理してますか？」「はい、頑張ってます」―― その"順調です"を信じて待っていたら、翌月に退会届が届いた。</p>
                 </div>
-                <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <div class="glass rounded-2xl p-6">
+                    <div class="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     </div>
-                    <h3 class="text-slate-900 font-bold mb-2">同じ説明の無限ループ</h3>
-                    <p class="text-slate-600 text-sm">「タンパク質は...」「PFCバランスは...」基礎指導を何十回も繰り返す非効率。</p>
+                    <h3 class="text-white font-bold mb-2">同じ説明の無限ループ</h3>
+                    <p class="text-slate-400 text-sm mb-2">「タンパク質は...」「PFCバランスは...」基礎指導を何十回も繰り返す非効率。</p>
+                    <p class="text-slate-500 text-xs italic">「同じ説明を30人に。それは自転車で同じ道を30往復しているのと同じ。」</p>
                 </div>
-                <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-4">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                <div class="glass rounded-2xl p-6">
+                    <div class="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
                     </div>
-                    <h3 class="text-slate-900 font-bold mb-2">早期退会（LTV損失）</h3>
-                    <p class="text-slate-600 text-sm">退会理由の59%は「通うのが面倒」。パーソナルジムの継続率はわずか18.8%。顧客獲得コストの5〜25倍を継続に投資すべき理由がここにある。</p>
+                    <h3 class="text-white font-bold mb-2">早期退会（LTV損失）</h3>
+                    <p class="text-slate-400 text-sm mb-2">退会理由の59%は「通うのが面倒」。パーソナルジムの継続率はわずか18.8%。顧客獲得コストの5〜25倍を継続に投資すべき理由がここにある。</p>
+                    <p class="text-slate-500 text-xs italic">「頑張ってるつもりなのに、何が正解か分からなくなった」―― 3ヶ月通い続けた会員の、最後の言葉。</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ==================== 3. Solution + Mechanism ==================== -->
-    <section class="bg-slate-50 py-20 md:py-28" id="solution">
+    <!-- ==================== 3. Solution ==================== -->
+    <div class="section-divider"></div>
+
+    <section class="py-20 md:py-28 relative" id="solution">
+        <div class="orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(74,158,255,0.08) 0%,transparent 70%);top:10%;right:-15%;animation-delay:-5s;" aria-hidden="true"></div>
+
         <div class="max-w-5xl mx-auto px-6">
             <div class="fade-up text-center mb-16">
-                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-teal-200 bg-teal-50">
-                    <span class="text-xs font-bold tracking-widest text-teal-600 uppercase">Solution</span>
+                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-teal-500/30 bg-teal-500/10">
+                    <span class="text-xs font-bold tracking-widest text-teal-400 uppercase">Solution</span>
                 </div>
-                <h2 class="font-heading text-2xl md:text-4xl font-black text-slate-900 mb-4">Your Coach+ が提供する<span class="text-teal-500">「3つの武器」</span></h2>
-                <p class="text-slate-600 text-sm">ツールではない。会員の行動を変える「システム」を導入する。</p>
+                <h2 class="font-heading text-2xl md:text-4xl font-black text-white mb-3">Your Coach+ が提供する<br><span class="gradient-text">167時間を管理する仕組み</span></h2>
+                <p class="text-slate-400 text-sm mb-3">ツールではなく、会員の行動を変える「システム」。<br>クエスト完了で記録も集計も全自動。継続率を構造的に改善します。</p>
             </div>
 
             <div class="space-y-16">
-                <!-- Weapon 1: Text Left + Image Right -->
-                <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-                    <div class="fade-left">
-                        <h3 class="text-2xl font-bold text-slate-900 mb-3">教育コスト削減</h3>
-                        <p class="text-slate-600 text-sm mb-4">基礎知識はアプリ内「PGBASE教科書」が担当。新人トレーナーでもプロ並みの知識提供が可能に。</p>
-                        <p class="text-teal-500 font-bold text-sm">同じ説明を繰り返す時間を、本質的な指導に。</p>
-                    </div>
-                    <div class="fade-right">
-                        <img src="/images/wp/trainer-tablet.png" alt="トレーナーがタブレットを使用" class="rounded-2xl shadow-lg w-full img-hover" loading="lazy">
-                    </div>
-                </div>
-
-                <!-- Weapon 2: Image Left + Text Right -->
-                <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-                    <div class="fade-left order-2 md:order-1">
-                        <img src="/images/group-training.png" alt="グループトレーニング" class="rounded-2xl shadow-lg w-full img-hover" loading="lazy">
-                    </div>
-                    <div class="fade-right order-1 md:order-2">
-                        <h3 class="text-2xl font-bold text-slate-900 mb-3">認知リソース保護</h3>
-                        <p class="text-slate-600 text-sm mb-4">「面倒」「難しい」を排除。クエストで1秒記録、写真解析でどんな食事もエフォートレス。</p>
-                        <p class="text-emerald-500 font-bold text-sm">会員が「続けられない」を構造的に解消。</p>
+                <!-- Main message: 退会防止・LTV最大化 -->
+                <div class="scale-up glass rounded-2xl p-6 md:p-10" style="box-shadow: 0 0 60px -10px rgba(74,158,255,0.15);">
+                    <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+                        <div class="fade-left">
+                            <div class="inline-block mb-3 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10">
+                                <span class="text-xs font-bold tracking-widest text-purple-400 uppercase">Core Value</span>
+                            </div>
+                            <h3 class="text-2xl md:text-3xl font-black text-white mb-4">退会防止・LTV最大化</h3>
+                            <p class="text-slate-300 text-sm mb-4">継続率を5%改善するだけで利益は25〜95%増加（Bain &amp; Company調査）。クエストのゲーミフィケーションで継続率+40%、COMYのソーシャル機能で+30%、プッシュ通知でエンゲージメント+88%。</p>
+                            <p class="text-purple-400 font-bold text-sm">「結果が出るジム」というブランディングを。</p>
+                        </div>
+                        <div class="fade-right">
+                            <img src="/images/wp/wellness-ai.png" alt="AI分析画面" class="rounded-2xl w-full img-hover" style="box-shadow: 0 10px 50px rgba(124,58,237,0.15);" loading="lazy">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Weapon 3: Text Left + Image Right -->
-                <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-                    <div class="fade-left">
-                        <h3 class="text-2xl font-bold text-slate-900 mb-3">退会防止・LTV最大化</h3>
-                        <p class="text-slate-600 text-sm mb-4">継続率を5%改善するだけで利益は25〜95%増加（Bain &amp; Company調査）。クエストのゲーミフィケーションで継続率+40%、COMYのソーシャル機能で+30%、プッシュ通知でエンゲージメント+88%。</p>
-                        <p class="text-purple-500 font-bold text-sm">「結果が出るジム」というブランディングを。</p>
-                    </div>
-                    <div class="fade-right">
-                        <img src="/images/wp/wellness-ai.png" alt="AI分析画面" class="rounded-2xl shadow-lg w-full img-hover" loading="lazy">
+                <!-- Support cards (格下げ) -->
+                <div class="fade-up">
+                    <p class="text-center text-slate-500 text-sm tracking-widest uppercase font-bold mb-8">それを支える仕組み</p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Card 1: 教育コスト削減 -->
+                        <div class="glass rounded-2xl p-6">
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 bg-teal-500/15 rounded-lg flex items-center justify-center flex-shrink-0 border border-teal-500/20">
+                                    <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-bold mb-2">教育コスト削減</h4>
+                                    <p class="text-slate-400 text-sm">「PFCとは？」「タンパク質はどれくらい？」―― PGBASE教科書が基礎教育を担当し、トレーナーは本質的な指導に集中できます。</p>
+                                    <p class="text-teal-400 font-bold text-xs mt-2">同じ説明を繰り返す時間を、本質的な指導に。</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Card 2: クエスト完了で全自動集計 -->
+                        <div class="glass rounded-2xl p-6">
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 bg-emerald-500/15 rounded-lg flex items-center justify-center flex-shrink-0 border border-emerald-500/20">
+                                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-bold mb-2">クエスト完了で全自動集計</h4>
+                                    <p class="text-slate-400 text-sm">クエストが「今日やること」を1つだけ提示。会員は完了するだけで、マクロもミクロも全自動で集計。考える必要をなくすことで、続けられる仕組みを作ります。</p>
+                                    <p class="text-emerald-400 font-bold text-xs mt-2">「面倒」を排除すれば、継続率は変わる。</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 4-Step Behavioral Change Loop (integrated from mechanism) -->
+            <!-- 4-Step Behavioral Change Loop -->
             <div class="mt-20" id="mechanism">
                 <div class="fade-up text-center mb-10">
-                    <h3 class="font-heading text-xl md:text-3xl font-black text-slate-900 mb-3">4ステップで<span class="text-teal-500">迷いをゼロにする</span>仕組み</h3>
-                    <p class="text-slate-600 text-sm">クエスト・記録・分析・フィードバックで会員の行動を毎日ナビゲート。</p>
+                    <h3 class="font-heading text-xl md:text-3xl font-black text-white mb-3">4ステップで<span class="text-teal-400">迷いをゼロにする</span>仕組み</h3>
+                    <p class="text-slate-400 text-sm">クエスト・実行・分析・フィードバックで会員の行動を毎日ナビゲート。</p>
                 </div>
 
                 <div class="fade-up max-w-3xl mx-auto">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <!-- Step 1: Quest -->
-                        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                        <div class="glass rounded-2xl p-6">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
                                     <span class="text-white font-black text-sm font-heading">1</span>
                                 </div>
-                                <div class="text-xs font-bold tracking-widest text-teal-500 uppercase">Quest</div>
+                                <div class="text-xs font-bold tracking-widest text-teal-400 uppercase">Quest</div>
                             </div>
-                            <h4 class="text-base font-bold text-slate-900 mb-2">クエストを毎日自動生成</h4>
-                            <p class="text-slate-600 text-sm">会員のプロフィールと当日のトレーニング種目に基づき、今日やるべき食事・運動を「クエスト」として毎日自動で指示。迷いをゼロに。</p>
+                            <h4 class="text-base font-bold text-white mb-2">「今日やること」を1つだけ毎日提示</h4>
+                            <p class="text-slate-400 text-sm">プロフィールでゴールを設定すれば、AIが逆算した食事・運動を「クエスト」として毎日自動で指示。会員は迷わず行動するだけ。</p>
                         </div>
 
                         <!-- Step 2: Action -->
-                        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                        <div class="glass rounded-2xl p-6">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
                                     <span class="text-white font-black text-sm font-heading">2</span>
                                 </div>
-                                <div class="text-xs font-bold tracking-widest text-emerald-500 uppercase">Action</div>
+                                <div class="text-xs font-bold tracking-widest text-emerald-400 uppercase">Action</div>
                             </div>
-                            <h4 class="text-base font-bold text-slate-900 mb-2">会員が実行・1秒記録</h4>
-                            <p class="text-slate-600 text-sm">クエストに従って行動し、食事は写真1枚のAI解析で記録完了。運動はテンプレート選択で入力の手間を極限まで排除。</p>
+                            <h4 class="text-base font-bold text-white mb-2">クエスト通りに実行→完了するだけ</h4>
+                            <p class="text-slate-400 text-sm">マクロもミクロも自動集計。運動はテンプレート選択。入力の手間を極限まで排除し、続けられる設計。</p>
                         </div>
 
                         <!-- Step 3: Analysis -->
-                        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                        <div class="glass rounded-2xl p-6">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center shrink-0">
                                     <span class="text-white font-black text-sm font-heading">3</span>
                                 </div>
-                                <div class="text-xs font-bold tracking-widest text-purple-500 uppercase">Analysis</div>
+                                <div class="text-xs font-bold tracking-widest text-purple-400 uppercase">Analysis</div>
                             </div>
-                            <h4 class="text-base font-bold text-slate-900 mb-2">AIが10+指標で毎日スコア化</h4>
-                            <p class="text-slate-600 text-sm">PFC・DIAAS・脂肪酸・GL・食物繊維・ビタミン・ミネラルなど10項目の栄養指標に加え、運動・コンディションを総合分析。</p>
+                            <h4 class="text-base font-bold text-white mb-2">40の栄養素 → S〜Dスコアに圧縮</h4>
+                            <p class="text-slate-400 text-sm">AIが40以上の栄養素データをS〜Dの1文字に圧縮。「今日何がズレているか」が一目で分かり、データに基づく具体的な改善点を提示します。</p>
                         </div>
 
                         <!-- Step 4: Feedback -->
-                        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                        <div class="glass rounded-2xl p-6">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center shrink-0">
                                     <span class="text-white font-black text-sm font-heading">4</span>
                                 </div>
-                                <div class="text-xs font-bold tracking-widest text-orange-500 uppercase">Feedback</div>
+                                <div class="text-xs font-bold tracking-widest text-orange-400 uppercase">Feedback</div>
                             </div>
-                            <h4 class="text-base font-bold text-slate-900 mb-2">毎日のフィードバックで気づきを提供</h4>
-                            <p class="text-slate-600 text-sm">S〜Dのグレード評価と具体的な改善提案をAIが毎日フィードバック。自己改善サイクルを支える。</p>
+                            <h4 class="text-base font-bold text-white mb-2">毎日のフィードバックで気づきを提供</h4>
+                            <p class="text-slate-400 text-sm">S〜Dのグレード評価と具体的な改善提案をAIが毎日フィードバック。「何をすればいいか考える」という認知負荷をゼロにし、会員は行動だけに集中できる。</p>
                         </div>
                     </div>
 
                     <!-- Loop indicator -->
                     <div class="text-center mt-6">
-                        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm">
-                            <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            <span class="text-slate-600 text-xs font-bold">クエスト → 記録 → AI分析 → 改善の気づき → 翌日のクエストへ</span>
+                        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass">
+                            <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span class="text-slate-300 text-xs font-bold">クエスト → 実行 → AI分析 → 改善の気づき → 翌日のクエストへ</span>
+                        </div>
+                        <p class="text-slate-500 text-xs mt-2">このサイクルが毎日自動で回ることで、会員の行動変容を継続的に支えます。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trainer Portal (moved from Features) -->
+            <div class="fade-up mt-16">
+                <div class="glass rounded-2xl p-6 md:p-8" style="border-color: rgba(74,158,255,0.15); box-shadow: 0 0 40px -10px rgba(74,158,255,0.1);">
+                    <div class="grid md:grid-cols-2 gap-6 items-center">
+                        <div>
+                            <div class="text-teal-400 font-black text-xs mb-2">PORTAL</div>
+                            <h3 class="text-lg font-bold text-white mb-2">トレーナーポータル</h3>
+                            <p class="text-slate-400 text-sm mb-3">会員の毎日の食事データ・スコアをリアルタイムで確認。月1回の体重測定ではなく、日々のデータに基づいた具体的な声がけが可能になります。</p>
+                            <p class="text-slate-500 text-xs leading-relaxed">「昨日のタンパク質、目標に届いてましたね」―― データに基づく声がけが、信頼と継続を生む。</p>
+                        </div>
+                        <div>
+                            <img src="/images/wp/dashboard.png" alt="トレーナーポータル画面" class="rounded-xl w-full img-hover" style="box-shadow: 0 10px 40px rgba(74,158,255,0.15);" loading="lazy">
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Unique value banner (absorbed from Competition) -->
+            <div class="fade-up mt-12">
+                <div class="bg-teal-500/10 border border-teal-500/30 rounded-2xl p-6 md:p-8 text-center">
+                    <p class="text-white text-lg md:text-xl font-black mb-2">毎日の行動指示を自動で出せるのは<span class="text-teal-400">Your Coach+</span>だけ。</p>
+                    <p class="text-slate-400 text-sm">既存手法は「記録」まで。Your Coach+は「記録→分析→明日の指示」まで毎日自動で回します。</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- ==================== 4. ROI Simulator ==================== -->
-    <section class="bg-white py-20 md:py-28" id="roi">
+    <div class="section-divider"></div>
+
+    <section class="py-20 md:py-28 relative" id="roi">
         <div class="max-w-4xl mx-auto px-6">
             <div class="fade-up text-center mb-12">
-                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-slate-200 bg-slate-50">
-                    <span class="text-xs font-bold tracking-widest text-slate-500 uppercase">ROI Simulator</span>
+                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-white/10 bg-white/5">
+                    <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">ROI Simulator</span>
                 </div>
-                <h2 class="font-heading text-2xl md:text-4xl font-black text-slate-900 mb-4">あなたのジムで<span class="text-teal-500">いくら増えるか</span></h2>
-                <p class="text-slate-600 text-sm">数字を入れるだけ。継続率改善による年間売上インパクトを即座に算出します。</p>
+                <h2 class="font-heading text-2xl md:text-4xl font-black text-white mb-4">あなたのジムで<span class="text-teal-400">いくら増えるか</span></h2>
+                <p class="text-slate-400 text-sm">数字を入れるだけ。継続率改善による年間売上インパクトを即座に算出します。</p>
             </div>
 
             <!-- Sliders -->
-            <div class="fade-up bg-white border border-slate-200 rounded-2xl p-6 md:p-8 mb-8 shadow-sm">
+            <div class="fade-up glass rounded-2xl p-6 md:p-8 mb-8">
                 <div class="space-y-8">
                     <!-- 会員数 -->
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <label class="text-slate-900 font-bold text-sm">現在の会員数</label>
-                            <span class="text-teal-500 font-bold text-lg font-heading" id="roi-members-val">30名</span>
+                            <label class="text-white font-bold text-sm">現在の会員数</label>
+                            <span class="text-teal-400 font-bold text-lg font-heading" id="roi-members-val">30名</span>
                         </div>
                         <input type="range" id="roi-members" min="5" max="200" value="30" step="1"
                             class="w-full h-2 rounded-full appearance-none cursor-pointer"
-                            style="background: linear-gradient(to right, #4A9EFF 12.8%, #e2e8f0 12.8%);"
+                            style="background: linear-gradient(to right, #4A9EFF 12.8%, rgba(255,255,255,0.1) 12.8%);"
                             oninput="updateSliders()">
-                        <div class="flex justify-between text-xs text-slate-400 mt-1"><span>5名</span><span>200名</span></div>
+                        <div class="flex justify-between text-xs text-slate-500 mt-1"><span>5名</span><span>200名</span></div>
                     </div>
 
                     <!-- 月額会員費 -->
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <label class="text-slate-900 font-bold text-sm">月額会員費</label>
-                            <span class="text-teal-500 font-bold text-lg font-heading" id="roi-fee-val">¥30,000</span>
+                            <label class="text-white font-bold text-sm">月額会員費</label>
+                            <span class="text-teal-400 font-bold text-lg font-heading" id="roi-fee-val">¥30,000</span>
                         </div>
                         <input type="range" id="roi-fee" min="5000" max="100000" value="30000" step="1000"
                             class="w-full h-2 rounded-full appearance-none cursor-pointer"
-                            style="background: linear-gradient(to right, #4A9EFF 26.3%, #e2e8f0 26.3%);"
+                            style="background: linear-gradient(to right, #4A9EFF 26.3%, rgba(255,255,255,0.1) 26.3%);"
                             oninput="updateSliders()">
-                        <div class="flex justify-between text-xs text-slate-400 mt-1"><span>¥5,000</span><span>¥100,000</span></div>
+                        <div class="flex justify-between text-xs text-slate-500 mt-1"><span>¥5,000</span><span>¥100,000</span></div>
                     </div>
 
                     <!-- 平均継続月数 -->
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <label class="text-slate-900 font-bold text-sm">現在の平均継続月数</label>
-                            <span class="text-teal-500 font-bold text-lg font-heading" id="roi-months-val">4ヶ月</span>
+                            <label class="text-white font-bold text-sm">現在の平均継続月数</label>
+                            <span class="text-teal-400 font-bold text-lg font-heading" id="roi-months-val">4ヶ月</span>
                         </div>
                         <input type="range" id="roi-months" min="1" max="12" value="4" step="1"
                             class="w-full h-2 rounded-full appearance-none cursor-pointer"
-                            style="background: linear-gradient(to right, #4A9EFF 27.3%, #e2e8f0 27.3%);"
+                            style="background: linear-gradient(to right, #4A9EFF 27.3%, rgba(255,255,255,0.1) 27.3%);"
                             oninput="updateSliders()">
-                        <div class="flex justify-between text-xs text-slate-400 mt-1"><span>1ヶ月</span><span>12ヶ月</span></div>
+                        <div class="flex justify-between text-xs text-slate-500 mt-1"><span>1ヶ月</span><span>12ヶ月</span></div>
                     </div>
                 </div>
 
                 <!-- Calculate Button -->
                 <div class="text-center mt-8">
-                    <button onclick="calculateROI()" id="roi-calc-btn" class="bg-teal-500 text-white font-bold py-4 px-12 rounded-xl hover:bg-teal-600 transition shadow-lg text-base">
+                    <button onclick="calculateROI()" id="roi-calc-btn" class="bg-teal-500 text-white font-bold py-4 px-12 rounded-xl hover:bg-teal-600 transition text-base cta-glow">
                         導入効果を算出する
                     </button>
                 </div>
@@ -514,78 +630,78 @@
             <div id="roi-results" class="hidden">
             <div class="grid md:grid-cols-2 gap-5 mb-8">
                 <!-- Before -->
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative">
+                <div class="glass rounded-2xl p-6 relative">
                     <div class="absolute top-4 right-4">
-                        <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">Before</span>
+                        <span class="text-xs font-bold tracking-widest text-slate-500 uppercase">Before</span>
                     </div>
                     <p class="text-slate-500 text-xs mb-1">現在の年間売上</p>
-                    <p class="font-heading text-2xl md:text-3xl font-black text-slate-700 mb-3" id="roi-before-revenue">¥43,200,000</p>
+                    <p class="font-heading text-2xl md:text-3xl font-black text-slate-300 mb-3" id="roi-before-revenue">¥43,200,000</p>
                     <div class="flex items-center gap-4 text-sm">
                         <div>
-                            <p class="text-slate-400 text-xs">平均継続</p>
-                            <p class="text-slate-600 font-bold" id="roi-before-months">4ヶ月</p>
+                            <p class="text-slate-500 text-xs">平均継続</p>
+                            <p class="text-slate-300 font-bold" id="roi-before-months">4ヶ月</p>
                         </div>
                         <div>
-                            <p class="text-slate-400 text-xs">月間売上</p>
-                            <p class="text-slate-600 font-bold" id="roi-before-monthly">¥900,000</p>
+                            <p class="text-slate-500 text-xs">月間売上</p>
+                            <p class="text-slate-300 font-bold" id="roi-before-monthly">¥900,000</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- After -->
-                <div class="bg-teal-50 border-2 border-teal-300 rounded-2xl p-6 relative">
+                <div class="rounded-2xl p-6 relative" style="background:rgba(74,158,255,0.05); border: 2px solid rgba(74,158,255,0.3); box-shadow: 0 0 40px -10px rgba(74,158,255,0.2);">
                     <div class="absolute top-4 right-4">
-                        <span class="text-xs font-bold tracking-widest text-teal-500 uppercase">After</span>
+                        <span class="text-xs font-bold tracking-widest text-teal-400 uppercase">After</span>
                     </div>
-                    <p class="text-slate-500 text-xs mb-1">改善後の年間売上</p>
-                    <p class="font-heading text-2xl md:text-3xl font-black text-teal-600 mb-3" id="roi-after-revenue">¥75,600,000</p>
+                    <p class="text-slate-400 text-xs mb-1">改善後の年間売上</p>
+                    <p class="font-heading text-2xl md:text-3xl font-black text-teal-400 mb-3" id="roi-after-revenue">¥75,600,000</p>
                     <div class="flex items-center gap-4 text-sm">
                         <div>
-                            <p class="text-slate-400 text-xs">改善後継続</p>
-                            <p class="text-teal-600 font-bold" id="roi-after-months">7ヶ月</p>
+                            <p class="text-slate-500 text-xs">改善後継続</p>
+                            <p class="text-teal-400 font-bold" id="roi-after-months">7ヶ月</p>
                         </div>
                         <div>
-                            <p class="text-slate-400 text-xs">月間売上</p>
-                            <p class="text-teal-600 font-bold" id="roi-after-monthly">¥900,000</p>
+                            <p class="text-slate-500 text-xs">月間売上</p>
+                            <p class="text-teal-400 font-bold" id="roi-after-monthly">¥900,000</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Impact Summary -->
-            <div class="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-2xl p-6 md:p-8 text-center">
-                <p class="text-slate-600 text-sm mb-2">Your Coach+ 導入による年間売上増加額</p>
-                <p class="font-heading text-4xl md:text-5xl font-black text-slate-900 mb-1" id="roi-increase">+¥32,400,000</p>
-                <p class="text-emerald-600 font-bold text-sm mb-6" id="roi-increase-pct">+75% アップ</p>
+            <div class="glass rounded-2xl p-6 md:p-8 text-center" style="border-color: rgba(74,158,255,0.15); box-shadow: 0 0 60px -10px rgba(74,158,255,0.15);">
+                <p class="text-slate-400 text-sm mb-2">Your Coach+ 導入による年間売上増加額</p>
+                <p class="font-heading text-4xl md:text-5xl font-black text-white mb-1" id="roi-increase">+¥32,400,000</p>
+                <p class="text-emerald-400 font-bold text-sm mb-6" id="roi-increase-pct">+75% アップ</p>
 
                 <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
-                    <div class="bg-white rounded-xl px-5 py-3 min-w-[160px] shadow-sm border border-slate-100">
-                        <p class="text-slate-400 text-xs mb-1">推奨プラン</p>
-                        <p class="text-slate-900 font-bold text-lg" id="roi-plan">Pro</p>
-                        <p class="text-slate-500 text-xs" id="roi-plan-price">¥297,000 / 年</p>
+                    <div class="glass rounded-xl px-5 py-3 min-w-[160px]">
+                        <p class="text-slate-500 text-xs mb-1">推奨プラン</p>
+                        <p class="text-white font-bold text-lg" id="roi-plan">Pro</p>
+                        <p class="text-slate-400 text-xs" id="roi-plan-price">¥297,000 / 年</p>
                     </div>
-                    <div class="bg-white rounded-xl px-5 py-3 min-w-[160px] shadow-sm border border-slate-100">
-                        <p class="text-slate-400 text-xs mb-1">ROI（投資対効果）</p>
-                        <p class="font-heading text-2xl font-black text-emerald-600" id="roi-multiple">109.1倍</p>
+                    <div class="glass rounded-xl px-5 py-3 min-w-[160px]">
+                        <p class="text-slate-500 text-xs mb-1">ROI（投資対効果）</p>
+                        <p class="font-heading text-2xl font-black text-emerald-400" id="roi-multiple">109.1倍</p>
                     </div>
-                    <div class="bg-white rounded-xl px-5 py-3 min-w-[160px] shadow-sm border border-slate-100">
-                        <p class="text-slate-400 text-xs mb-1">回収まで</p>
-                        <p class="font-heading text-2xl font-black text-teal-500" id="roi-payback">即日</p>
+                    <div class="glass rounded-xl px-5 py-3 min-w-[160px]">
+                        <p class="text-slate-500 text-xs mb-1">回収まで</p>
+                        <p class="font-heading text-2xl font-black text-teal-400" id="roi-payback">即日</p>
                     </div>
                 </div>
 
                 <!-- CTA after ROI -->
                 <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-                    <a href="#pricing" class="inline-block bg-teal-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-teal-600 transition shadow-lg">
+                    <a href="#pricing" class="inline-block bg-teal-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-teal-600 transition cta-glow">
                         料金プランを見る
                     </a>
-                    <a href="#contact" class="inline-block border-2 border-teal-300 text-teal-600 font-bold py-3 px-8 rounded-lg hover:bg-teal-50 transition">
+                    <a href="#contact" class="inline-block border-2 border-white/30 text-white font-bold py-3 px-8 rounded-lg hover:border-white/60 transition">
                         お問い合わせ
                     </a>
                 </div>
             </div>
 
-            <p class="text-center text-slate-400 text-xs mt-4 max-w-2xl mx-auto leading-relaxed">※ 継続率75%向上は、デジタル介入（リマインダー・トラッキング・ゲーミフィケーション）によるフィットネス継続率改善に関する複数の学術研究（40〜100%改善）を参考にした目安値です。実際の成果は運用状況により異なります。</p>
+            <p class="text-center text-slate-500 text-xs mt-4 max-w-2xl mx-auto leading-relaxed">※ 継続率75%向上は、デジタル介入（リマインダー・トラッキング・ゲーミフィケーション）によるフィットネス継続率改善に関する複数の学術研究（40〜100%改善）を参考にした目安値です。実際の成果は運用状況により異なります。</p>
             </div><!-- /roi-results -->
         </div>
     </section>
@@ -674,340 +790,121 @@
     function updateSliderFill(id, min, max) {
         const el = document.getElementById(id);
         const pct = ((el.value - min) / (max - min)) * 100;
-        el.style.background = 'linear-gradient(to right, #4A9EFF ' + pct + '%, #e2e8f0 ' + pct + '%)';
+        el.style.background = 'linear-gradient(to right, #4A9EFF ' + pct + '%, rgba(255,255,255,0.1) ' + pct + '%)';
     }
 
     // Initialize slider visuals on load (results stay hidden)
     document.addEventListener('DOMContentLoaded', function() { updateSliders(); });
     </script>
 
-    <!-- ==================== 5. Competition ==================== -->
-    <section class="bg-slate-50 py-20 md:py-28" id="competition">
-        <div class="max-w-5xl mx-auto px-6">
-            <div class="fade-up text-center mb-12">
-                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-slate-200 bg-white">
-                    <span class="text-xs font-bold tracking-widest text-slate-500 uppercase">Competition</span>
-                </div>
-                <h2 class="font-heading text-2xl md:text-4xl font-black text-slate-900 mb-4">既存手法との<span class="text-red-500">決定的な差</span></h2>
-                <p class="text-slate-600 text-sm">スプレッドシートも汎用アプリもAIチャットも、構造的に解決できない課題がある。</p>
-            </div>
+    <!-- ==================== 5. Pricing ==================== -->
+    <div class="section-divider"></div>
 
-            <!-- Desktop Table -->
-            <div class="fade-up overflow-x-auto comparison-table-desktop">
-                <table class="w-full text-sm min-w-[780px] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <thead>
-                        <tr class="border-b-2 border-slate-200 bg-slate-50">
-                            <th class="text-left text-slate-500 font-bold py-4 px-4 w-[180px]"></th>
-                            <th class="text-center text-slate-500 font-bold py-4 px-3">
-                                <div class="text-xs">LINE・メール<br>手動報告</div>
-                            </th>
-                            <th class="text-center text-slate-500 font-bold py-4 px-3">
-                                <div class="text-xs">Excel<br>スプレッドシート</div>
-                            </th>
-                            <th class="text-center text-slate-500 font-bold py-4 px-3">
-                                <div class="text-xs">汎用フィットネス<br>アプリ</div>
-                            </th>
-                            <th class="text-center text-slate-500 font-bold py-4 px-3">
-                                <div class="text-xs">GPT・Gemini等<br>汎用AI</div>
-                            </th>
-                            <th class="text-center py-4 px-3">
-                                <div class="text-teal-500 font-bold text-xs">Your Coach+</div>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-slate-600">
-                        <tr class="border-b-2 border-teal-200 bg-teal-50/50">
-                            <td class="py-3 px-4 font-bold text-teal-600 text-xs">毎日の行動指示（クエスト）</td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span><span class="text-slate-500 text-xs block">なし</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span><span class="text-slate-500 text-xs block">なし</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span><span class="text-slate-500 text-xs block">なし</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">毎回プロンプト必要</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 font-bold text-lg">&#9678;</span><span class="text-emerald-600 text-xs font-bold block">自動生成・入力不要</span></td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-3 px-4 font-bold text-slate-800 text-xs">時間外の食事・生活管理</td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">手動・属人的</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span><span class="text-slate-500 text-xs block">会員が入力しない</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">記録のみ</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">記録が残らない</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 font-bold">&#9678;</span><span class="text-emerald-600 text-xs block">永続保存・写真記録</span></td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-3 px-4 font-bold text-slate-800 text-xs">AI栄養分析・スコアリング</td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">簡易的</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">ハルシネーションリスク</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 font-bold">&#9678;</span><span class="text-emerald-600 text-xs block">10+指標・誤情報0</span></td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-3 px-4 font-bold text-slate-800 text-xs">栄養学の体系的教育機能</td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">断片的・体系性なし</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 font-bold">&#9678;</span><span class="text-emerald-600 text-xs block">PGBASE教科書</span></td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-3 px-4 font-bold text-slate-800 text-xs">トレーナーの負荷</td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500 text-xs font-bold">大</span><span class="text-slate-500 text-xs block">逐一対応</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500 text-xs font-bold">大</span><span class="text-slate-500 text-xs block">データ整理</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500 text-xs font-bold">中</span><span class="text-slate-500 text-xs block">確認のみ</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500 text-xs font-bold">中</span><span class="text-slate-500 text-xs block">使い方指導が必要</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 text-xs font-bold">極小</span><span class="text-emerald-600 text-xs block">自動で完結</span></td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-3 px-4 font-bold text-slate-800 text-xs">サポート対応</td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span><span class="text-slate-500 text-xs block">なし</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span><span class="text-slate-500 text-xs block">なし</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500">&#9651;</span><span class="text-slate-500 text-xs block">問合せフォーム</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-red-500">&#10005;</span><span class="text-slate-500 text-xs block">なし</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 font-bold">&#9678;</span><span class="text-emerald-600 text-xs block">開発者直通・即日修正</span></td>
-                        </tr>
-                        <tr>
-                            <td class="py-3 px-4 font-bold text-slate-800 text-xs">導入の手間</td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 text-xs">小</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500 text-xs">中</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-yellow-500 text-xs">中</span><span class="text-slate-500 text-xs block">個別DL必要</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 text-xs">小</span><span class="text-slate-500 text-xs block">アカウント作成</span></td>
-                            <td class="py-3 px-3 text-center"><span class="text-emerald-500 font-bold text-xs">極小</span><span class="text-emerald-600 text-xs block">所属登録のみ</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Mobile comparison cards -->
-            <div class="comparison-cards-mobile fade-up space-y-4">
-                <div class="bg-white border-2 border-teal-500 rounded-2xl p-5 shadow-sm">
-                    <h4 class="text-teal-500 font-bold text-sm mb-3">毎日の行動指示（クエスト）</h4>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">LINE・手動報告</span><span class="text-red-500 text-sm">&#10005;</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">Excel</span><span class="text-red-500 text-sm">&#10005;</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">汎用フィットネスアプリ</span><span class="text-red-500 text-sm">&#10005;</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">汎用AI</span><span class="text-yellow-500 text-sm">&#9651;</span></div>
-                        <div class="flex justify-between items-center bg-teal-50 rounded-lg px-3 py-1.5"><span class="text-slate-900 text-xs font-bold">Your Coach+</span><span class="text-emerald-600 text-sm font-bold">&#9678; 自動生成</span></div>
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <h4 class="text-slate-900 font-bold text-sm mb-3">AI栄養分析・スコアリング</h4>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">LINE・手動報告</span><span class="text-red-500 text-sm">&#10005;</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">Excel</span><span class="text-red-500 text-sm">&#10005;</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">汎用フィットネスアプリ</span><span class="text-yellow-500 text-sm">&#9651;</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">汎用AI</span><span class="text-yellow-500 text-sm">&#9651;</span></div>
-                        <div class="flex justify-between items-center bg-teal-50 rounded-lg px-3 py-1.5"><span class="text-slate-900 text-xs font-bold">Your Coach+</span><span class="text-emerald-600 text-sm font-bold">&#9678; 10+指標</span></div>
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <h4 class="text-slate-900 font-bold text-sm mb-3">トレーナーの負荷</h4>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">LINE・手動報告</span><span class="text-red-500 text-xs font-bold">大</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">Excel</span><span class="text-red-500 text-xs font-bold">大</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">汎用フィットネスアプリ</span><span class="text-yellow-500 text-xs font-bold">中</span></div>
-                        <div class="flex justify-between items-center"><span class="text-slate-500 text-xs">汎用AI</span><span class="text-yellow-500 text-xs font-bold">中</span></div>
-                        <div class="flex justify-between items-center bg-teal-50 rounded-lg px-3 py-1.5"><span class="text-slate-900 text-xs font-bold">Your Coach+</span><span class="text-emerald-600 text-xs font-bold">極小</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Summary -->
-            <div class="fade-up mt-8 text-center">
-                <p class="text-slate-600 text-sm">既存手法は「記録」はできても<span class="text-slate-900 font-bold">「行動変容」</span>までは責任を持たない。<br>Your Coach+ は<span class="text-teal-500 font-bold">クエスト→記録→分析→改善のループ</span>で、会員の成果にコミットする唯一のシステム。</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ==================== 6. Features + Support ==================== -->
-    <section class="bg-white py-20 md:py-28" id="features">
-        <div class="max-w-4xl mx-auto px-6">
-            <div class="fade-up text-center mb-12">
-                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-slate-200 bg-slate-50">
-                    <span class="text-xs font-bold tracking-widest text-slate-500 uppercase">Features</span>
-                </div>
-                <h2 class="font-heading text-2xl md:text-4xl font-black text-slate-900 mb-4">全プラン共通 Premium機能</h2>
-            </div>
-
-            <!-- Feature cards with images -->
-            <div class="fade-up grid md:grid-cols-2 gap-5">
-                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <img src="/images/wp/meal-photo.png" alt="AI写真解析" class="w-full h-40 object-cover" loading="lazy">
-                    <div class="p-5">
-                        <div class="text-teal-500 font-black text-xs mb-2">AI</div>
-                        <h3 class="text-base font-bold text-slate-900 mb-2">AI分析 + 写真解析</h3>
-                        <p class="text-slate-600 text-sm">Gemini AIによる栄養分析、写真1枚で食事を自動記録。毎月100クレジット付与。</p>
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <img src="/images/wp/gym-phone.png" alt="クエスト機能" class="w-full h-40 object-cover" loading="lazy">
-                    <div class="p-5">
-                        <div class="text-emerald-500 font-black text-xs mb-2">QUEST</div>
-                        <h3 class="text-base font-bold text-slate-900 mb-2">クエスト + 無制限の記録</h3>
-                        <p class="text-slate-600 text-sm">毎日のクエスト自動生成。食事・運動・コンディションを無制限に記録し、長期トレンドをグラフで分析。</p>
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="text-purple-500 font-black text-xs mb-2">KNOWLEDGE</div>
-                    <h3 class="text-base font-bold text-slate-900 mb-2">PGBASE 教科書</h3>
-                    <p class="text-slate-600 text-sm">ボディメイクの理論と知識を体系的に学べる教科書。基礎指導をアプリに委任し、トレーナーは高度な指導に集中。</p>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="text-orange-500 font-black text-xs mb-2">COMMUNITY</div>
-                    <h3 class="text-base font-bold text-slate-900 mb-2">COMY コミュニティ</h3>
-                    <p class="text-slate-600 text-sm">同じ目標を持つユーザーと交流。モチベーション維持と継続率向上をサポート。</p>
-                </div>
-            </div>
-
-            <!-- Trainer Portal (full width with image) -->
-            <div class="fade-up mt-8">
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 md:p-8">
-                    <div class="grid md:grid-cols-2 gap-6 items-center">
-                        <div>
-                            <div class="text-teal-500 font-black text-xs mb-2">PORTAL</div>
-                            <h3 class="text-lg font-bold text-slate-900 mb-2">トレーナーポータル</h3>
-                            <p class="text-slate-600 text-sm">会員の食事・運動・コンディション記録をリアルタイムで確認。トレーナー専用の管理画面で、167時間の空白を可視化し指導に活かす。</p>
-                        </div>
-                        <div>
-                            <img src="/images/wp/dashboard.png" alt="トレーナーポータル画面" class="rounded-xl shadow-md w-full img-hover" loading="lazy">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Support (integrated) -->
-            <div class="fade-up mt-12">
-                <h3 class="font-heading text-xl md:text-2xl font-black text-slate-900 text-center mb-8">大手SaaSにはできない<span class="text-teal-500">サポート体制</span></h3>
-                <div class="grid md:grid-cols-3 gap-5">
-                    <div class="bg-white border border-slate-200 rounded-xl p-5 text-center shadow-sm">
-                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-red-50 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <h4 class="text-sm font-bold text-slate-900 mb-1">バグ即日修正</h4>
-                        <p class="text-slate-600 text-xs">不具合の報告から修正まで最短即日。</p>
-                    </div>
-                    <div class="bg-white border border-slate-200 rounded-xl p-5 text-center shadow-sm">
-                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-teal-50 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        </div>
-                        <h4 class="text-sm font-bold text-slate-900 mb-1">高速PDCA</h4>
-                        <p class="text-slate-600 text-xs">現場のフィードバックを日単位で反映。</p>
-                    </div>
-                    <div class="bg-white border border-slate-200 rounded-xl p-5 text-center shadow-sm">
-                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-emerald-50 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                        </div>
-                        <h4 class="text-sm font-bold text-slate-900 mb-1">開発者に直接届く</h4>
-                        <p class="text-slate-600 text-xs">伝言ゲーム不要。意思決定者に直通。</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ==================== 7. Pricing ==================== -->
-    <section class="bg-slate-50 py-20 md:py-28" id="pricing">
+    <section class="py-20 md:py-28 relative" id="pricing">
         <div class="max-w-6xl mx-auto px-6">
             <div class="fade-up text-center mb-12">
-                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-slate-200 bg-white">
-                    <span class="text-xs font-bold tracking-widest text-slate-500 uppercase">Pricing</span>
+                <div class="inline-block mb-4 px-4 py-1 rounded-full border border-white/10 bg-white/5">
+                    <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">Pricing</span>
                 </div>
-                <h2 class="font-heading text-2xl md:text-4xl font-black text-slate-900 mb-4">料金プラン</h2>
-                <p class="text-slate-600 text-sm">すべてのプランで全Premium機能をご利用いただけます。年間契約・税込価格。</p>
+                <h2 class="font-heading text-2xl md:text-4xl font-black text-white mb-4">料金プラン</h2>
+                <p class="text-slate-400 text-sm">すべてのプランで全Premium機能をご利用いただけます。年間契約・税込価格。</p>
                 <p class="text-slate-500 text-xs mt-2 flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span>60名以上にご利用いただいています</span>
                 </p>
             </div>
 
             <div class="fade-up grid md:grid-cols-3 gap-6 mb-10">
                 <!-- Standard -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-7 hover:shadow-md transition" data-plan="standard">
+                <div class="glass rounded-2xl p-7" data-plan="standard">
                     <p class="text-xs text-slate-500 mb-1">個人トレーナー・小規模向け</p>
-                    <h3 class="text-2xl font-bold mb-4 text-slate-900">Standard</h3>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Standard</h3>
 
-                    <div class="text-4xl font-bold text-teal-500 mb-1">¥108,000</div>
+                    <div class="text-4xl font-bold text-teal-400 mb-1">¥108,000</div>
                     <p class="text-slate-500 text-sm mb-5">年間プラン（税込）</p>
 
                     <div class="space-y-3 mb-8">
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">最大<strong>10名</strong>までご利用可能</span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">最大<strong class="text-white">10名</strong>までご利用可能</span>
                         </div>
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">1人あたり<strong>¥900/月</strong></span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">1人あたり<strong class="text-white">¥900/月</strong></span>
                         </div>
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">全Premium機能利用可能</span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">全Premium機能利用可能</span>
                         </div>
                     </div>
 
-                    <button onclick="selectPlan('standard')" class="w-full border-2 border-teal-500 text-teal-500 font-bold py-3 rounded-lg hover:bg-teal-500 hover:text-white transition">
+                    <button onclick="selectPlan('standard')" class="w-full border-2 border-teal-500 text-teal-400 font-bold py-3 rounded-lg hover:bg-teal-500 hover:text-white transition">
                         このプランを選択
                     </button>
                 </div>
 
                 <!-- Pro -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-7 hover:shadow-md transition" data-plan="pro">
+                <div class="glass rounded-2xl p-7" data-plan="pro">
                     <p class="text-xs text-slate-500 mb-1">スタジオ・中小企業向け</p>
-                    <h3 class="text-2xl font-bold mb-4 text-slate-900">Pro</h3>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Pro</h3>
 
-                    <div class="text-4xl font-bold text-teal-500 mb-1">¥297,000</div>
+                    <div class="text-4xl font-bold text-teal-400 mb-1">¥297,000</div>
                     <p class="text-slate-500 text-sm mb-1">年間プラン（税込）</p>
-                    <p class="text-emerald-600 text-xs font-bold mb-4">少額減価償却特例内</p>
+                    <p class="text-emerald-400 text-xs font-bold mb-4">少額減価償却特例内</p>
 
                     <div class="space-y-3 mb-8">
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">最大<strong>30名</strong>までご利用可能</span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">最大<strong class="text-white">30名</strong>までご利用可能</span>
                         </div>
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">1人あたり<strong>¥825/月</strong> <span class="text-emerald-600 text-xs font-bold ml-1">8% OFF</span></span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">1人あたり<strong class="text-white">¥825/月</strong> <span class="text-emerald-400 text-xs font-bold ml-1">8% OFF</span></span>
                         </div>
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">全Premium機能利用可能</span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">全Premium機能利用可能</span>
                         </div>
                     </div>
 
-                    <button onclick="selectPlan('pro')" class="w-full border-2 border-teal-500 text-teal-500 font-bold py-3 rounded-lg hover:bg-teal-500 hover:text-white transition">
+                    <button onclick="selectPlan('pro')" class="w-full border-2 border-teal-500 text-teal-400 font-bold py-3 rounded-lg hover:bg-teal-500 hover:text-white transition">
                         このプランを選択
                     </button>
                 </div>
 
-                <!-- Elite (highlighted) -->
-                <div class="bg-white rounded-2xl shadow-lg border-2 border-teal-500 p-7 relative hover:shadow-xl transition" data-plan="elite">
+                <!-- Elite (highlighted with teal glow) -->
+                <div class="rounded-2xl p-7 relative" data-plan="elite"
+                     style="background:rgba(74,158,255,0.03); border: 2px solid rgba(74,158,255,0.3); box-shadow: 0 0 60px -10px rgba(74,158,255,0.25);">
                     <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <span class="bg-teal-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">最高コスパ</span>
+                        <span class="bg-teal-500 text-white text-xs font-bold px-4 py-1 rounded-full" style="box-shadow:0 0 15px rgba(74,158,255,0.4);">最高コスパ</span>
                     </div>
                     <p class="text-xs text-slate-500 mb-1 mt-2">大規模ジム・高コスパ導入</p>
-                    <h3 class="text-2xl font-bold mb-4 text-slate-900">Elite</h3>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Elite</h3>
 
-                    <div class="text-4xl font-bold text-teal-500 mb-1">¥594,000</div>
+                    <div class="text-4xl font-bold text-teal-400 mb-1">¥594,000</div>
                     <p class="text-slate-500 text-sm mb-5">年間プラン（税込）</p>
 
                     <div class="space-y-3 mb-5">
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">最大<strong>100名</strong>までご利用可能</span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">最大<strong class="text-white">100名</strong>までご利用可能</span>
                         </div>
                         <div class="flex items-start gap-2">
-                            <span class="text-teal-500 mt-0.5">&#10003;</span>
-                            <span class="text-sm text-slate-700">全Premium機能利用可能</span>
+                            <span class="text-teal-400 mt-0.5">&#10003;</span>
+                            <span class="text-sm text-slate-300">全Premium機能利用可能</span>
                         </div>
                     </div>
 
                     <!-- Highlight -->
-                    <div class="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-5">
+                    <div class="bg-teal-500/10 border border-teal-500/30 rounded-lg p-3 mb-5">
                         <p class="text-center">
-                            <span class="text-sm text-slate-600">1人あたり</span><br>
-                            <span class="text-2xl font-bold text-teal-600">¥495/月</span><br>
+                            <span class="text-sm text-slate-400">1人あたり</span><br>
+                            <span class="text-2xl font-bold text-teal-400">¥495/月</span><br>
                             <span class="bg-teal-500 text-white text-xs font-bold px-2 py-0.5 rounded mt-1 inline-block">45% OFF</span>
                         </p>
                     </div>
 
-                    <button onclick="selectPlan('elite')" class="w-full bg-teal-500 text-white font-bold py-3 rounded-lg hover:bg-teal-600 transition shadow-lg">
+                    <button onclick="selectPlan('elite')" class="w-full bg-teal-500 text-white font-bold py-3 rounded-lg hover:bg-teal-600 transition cta-glow">
                         このプランを選択
                     </button>
                 </div>
@@ -1015,19 +912,19 @@
 
             <!-- Master Plan -->
             <div class="fade-up max-w-4xl mx-auto mb-10">
-                <div class="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm">
+                <div class="glass rounded-2xl p-6 md:p-8">
                     <div class="md:flex md:items-center md:justify-between">
                         <div class="mb-6 md:mb-0">
-                            <h3 class="text-2xl font-bold text-slate-900 mb-2">Master プラン</h3>
-                            <p class="text-slate-600 text-sm">複数店舗展開・100名以上の大規模導入をご検討の方へ</p>
+                            <h3 class="text-2xl font-bold text-white mb-2">Master プラン</h3>
+                            <p class="text-slate-400 text-sm">複数店舗展開・100名以上の大規模導入をご検討の方へ</p>
                             <div class="flex flex-wrap gap-4 mt-3">
-                                <span class="flex items-center gap-1 text-slate-600 text-sm"><span class="text-teal-500">&#10003;</span> ライセンス数無制限</span>
-                                <span class="flex items-center gap-1 text-slate-600 text-sm"><span class="text-teal-500">&#10003;</span> 専任サポート</span>
-                                <span class="flex items-center gap-1 text-slate-600 text-sm"><span class="text-teal-500">&#10003;</span> カスタマイズ対応</span>
+                                <span class="flex items-center gap-1 text-slate-300 text-sm"><span class="text-teal-400">&#10003;</span> ライセンス数無制限</span>
+                                <span class="flex items-center gap-1 text-slate-300 text-sm"><span class="text-teal-400">&#10003;</span> 専任サポート</span>
+                                <span class="flex items-center gap-1 text-slate-300 text-sm"><span class="text-teal-400">&#10003;</span> カスタマイズ対応</span>
                             </div>
                         </div>
                         <div class="text-center md:text-right shrink-0">
-                            <a href="#contact" class="inline-block bg-teal-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-teal-600 transition">
+                            <a href="#contact" class="inline-block bg-teal-500 text-white font-bold py-3 px-8 rounded-lg hover:bg-teal-600 transition cta-glow">
                                 お問い合わせ
                             </a>
                         </div>
@@ -1036,117 +933,121 @@
             </div>
 
             <!-- 企業情報入力フォーム -->
-            <div id="company-form" class="fade-up max-w-2xl mx-auto mt-10 bg-white rounded-2xl shadow-lg p-8 border border-slate-200 hidden">
-                <h2 class="text-2xl font-bold mb-6 text-slate-900">企業情報の入力</h2>
+            <div id="company-form" class="fade-up max-w-2xl mx-auto mt-10 glass rounded-2xl p-8 hidden">
+                <h2 class="text-2xl font-bold mb-6 text-white">企業情報の入力</h2>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">企業・施設名 <span class="text-red-500">*</span></label>
-                        <input type="text" id="companyName" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: 東京フィットネスジム" required>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">企業・施設名 <span class="text-red-400">*</span></label>
+                        <input type="text" id="companyName" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-teal-500 text-white placeholder-slate-500" placeholder="例: 東京フィットネスジム" required>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">メールアドレス <span class="text-red-500">*</span></label>
-                        <input type="email" id="companyEmail" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: info@example.com" required>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">メールアドレス <span class="text-red-400">*</span></label>
+                        <input type="email" id="companyEmail" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-teal-500 text-white placeholder-slate-500" placeholder="例: info@example.com" required>
                         <p class="text-xs text-slate-500 mt-1">契約確認メールの送付先となります</p>
                     </div>
 
-                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                        <p class="text-sm text-slate-700">
+                    <div class="bg-white/5 border border-white/10 rounded-lg p-4">
+                        <p class="text-sm text-slate-300">
                             <strong>選択中のプラン:</strong> <span id="selected-plan-name"></span><br>
                             <strong>料金:</strong> <span id="selected-plan-price"></span>
                         </p>
                     </div>
 
                     <div class="flex gap-4">
-                        <button onclick="cancelSelection()" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-300 transition">
+                        <button onclick="cancelSelection()" class="flex-1 bg-white/10 text-slate-300 font-bold py-3 rounded-lg hover:bg-white/20 transition">
                             キャンセル
                         </button>
-                        <button onclick="proceedToCheckout()" id="checkout-btn" class="flex-1 bg-teal-500 text-white font-bold py-3 rounded-lg hover:bg-teal-600 transition">
+                        <button onclick="proceedToCheckout()" id="checkout-btn" class="flex-1 bg-teal-500 text-white font-bold py-3 rounded-lg hover:bg-teal-600 transition cta-glow">
                             お支払いページへ
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Easy Start (integrated) -->
+            <!-- Easy Start -->
             <div class="fade-up max-w-3xl mx-auto mt-12">
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
+                <div class="glass rounded-2xl p-6 md:p-8">
                     <div class="text-center mb-6">
-                        <div class="inline-block mb-3 px-4 py-1 rounded-full border border-emerald-200 bg-emerald-50">
-                            <span class="text-xs font-bold tracking-widest text-emerald-600 uppercase">Easy Start</span>
+                        <div class="inline-block mb-3 px-4 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
+                            <span class="text-xs font-bold tracking-widest text-emerald-400 uppercase">Easy Start</span>
                         </div>
-                        <h3 class="text-xl md:text-2xl font-bold text-slate-900">導入コストゼロ。即日運用開始。</h3>
+                        <h3 class="text-xl md:text-2xl font-bold text-white">導入コストゼロ。即日運用開始。</h3>
                     </div>
 
                     <div class="max-w-md mx-auto">
                         <div class="flex items-center gap-4 mb-6">
-                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-500 shrink-0">
-                                <span class="text-emerald-600 font-black text-sm">1</span>
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/15 border-2 border-emerald-500 shrink-0">
+                                <span class="text-emerald-400 font-black text-sm">1</span>
                             </div>
                             <div>
-                                <p class="text-slate-900 font-bold text-sm">ご契約完了</p>
+                                <p class="text-white font-bold text-sm">ご契約完了</p>
                                 <p class="text-slate-500 text-xs">メールで所属名をお知らせ</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-4 mb-6">
-                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-500 shrink-0">
-                                <span class="text-emerald-600 font-black text-sm">2</span>
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/15 border-2 border-emerald-500 shrink-0">
+                                <span class="text-emerald-400 font-black text-sm">2</span>
                             </div>
                             <div>
-                                <p class="text-slate-900 font-bold text-sm">会員がアプリ内で所属名を入力</p>
+                                <p class="text-white font-bold text-sm">会員がアプリ内で所属名を入力</p>
                                 <p class="text-slate-500 text-xs">入力するだけでPremiumプランが自動適用</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
-                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-500 shrink-0">
-                                <span class="text-emerald-600 font-black text-sm">3</span>
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/15 border-2 border-emerald-500 shrink-0">
+                                <span class="text-emerald-400 font-black text-sm">3</span>
                             </div>
                             <div>
-                                <p class="text-slate-900 font-bold text-sm">運用開始</p>
+                                <p class="text-white font-bold text-sm">運用開始</p>
                                 <p class="text-slate-500 text-xs">面倒な設定は一切なし。すぐに全機能が利用可能</p>
                             </div>
                         </div>
                     </div>
 
-                    <p class="text-slate-400 text-xs mt-6 text-center">サーバー設定・データ移行・外部ツール連携など、面倒な初期設定は一切不要です。</p>
+                    <p class="text-slate-500 text-xs mt-6 text-center">サーバー設定・データ移行・外部ツール連携など、面倒な初期設定は一切不要です。</p>
                 </div>
             </div>
 
             <!-- CTA after Pricing -->
             <div class="fade-up text-center mt-10">
-                <a href="#contact" class="inline-block bg-teal-500 text-white font-bold py-4 px-10 rounded-xl hover:bg-teal-600 transition shadow-lg text-base">
+                <a href="#contact" class="inline-block bg-teal-500 text-white font-bold py-4 px-10 rounded-xl hover:bg-teal-600 transition text-base cta-glow">
                     導入のご相談はこちら
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- ==================== 8. Contact ==================== -->
-    <section class="relative py-20 md:py-28" id="contact" style="background: linear-gradient(rgba(15,61,122,0.82), rgba(15,61,122,0.82)), url('/images/wp/collage.png') center/cover no-repeat;">
-        <div class="max-w-2xl mx-auto px-6">
+    <!-- ==================== 6. Contact ==================== -->
+    <div class="section-divider"></div>
+
+    <section class="relative py-20 md:py-28" id="contact">
+        <div class="orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(74,158,255,0.1) 0%,transparent 70%);bottom:-10%;right:-10%;animation-delay:-8s;" aria-hidden="true"></div>
+
+        <div class="max-w-2xl mx-auto px-6 relative z-10">
             <div class="fade-up text-center mb-10">
                 <h2 class="font-heading text-2xl md:text-4xl font-black text-white mb-4">お問い合わせ</h2>
-                <p class="text-white/80 text-sm">プランのご相談・導入に関するご質問はお気軽にどうぞ。<br>開発者が直接ご対応いたします。</p>
+                <p class="text-slate-400 text-sm">プランのご相談・導入に関するご質問はお気軽にどうぞ。<br>開発者が直接ご対応いたします。</p>
             </div>
 
-            <div class="fade-up bg-white rounded-2xl shadow-2xl p-6 md:p-8">
+            <div class="fade-up glass rounded-2xl p-6 md:p-8">
                 <form id="contact-form" class="space-y-5">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">企業・施設名 <span class="text-red-500">*</span></label>
-                        <input type="text" id="contactCompany" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: 東京フィットネスジム" required>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">企業・施設名 <span class="text-red-400">*</span></label>
+                        <input type="text" id="contactCompany" class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: 東京フィットネスジム" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">ご担当者名 <span class="text-red-500">*</span></label>
-                        <input type="text" id="contactName" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: 山田 太郎" required>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">ご担当者名 <span class="text-red-400">*</span></label>
+                        <input type="text" id="contactName" class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: 山田 太郎" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">メールアドレス <span class="text-red-500">*</span></label>
-                        <input type="email" id="contactEmail" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: info@example.com" required>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">メールアドレス <span class="text-red-400">*</span></label>
+                        <input type="email" id="contactEmail" class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="例: info@example.com" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">ご検討中のプラン</label>
-                        <select id="contactPlan" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900 bg-white">
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">ご検討中のプラン</label>
+                        <select id="contactPlan" class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900">
                             <option value="">選択してください</option>
                             <option value="standard">Standard（10名・¥108,000/年）</option>
                             <option value="pro">Pro（30名・¥297,000/年）</option>
@@ -1156,48 +1057,48 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">ご質問・ご要望</label>
-                        <textarea id="contactMessage" rows="3" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="会員数、導入時期、ご不明点などお気軽にどうぞ"></textarea>
+                        <label class="block text-sm font-semibold text-slate-300 mb-2">ご質問・ご要望</label>
+                        <textarea id="contactMessage" rows="3" class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 text-slate-900" placeholder="会員数、導入時期、ご不明点などお気軽にどうぞ"></textarea>
                     </div>
 
-                    <button type="submit" id="contact-submit" class="w-full bg-teal-500 text-white font-bold py-3 rounded-lg hover:bg-teal-600 transition shadow-lg text-base">
+                    <button type="submit" id="contact-submit" class="w-full bg-teal-500 text-white font-bold py-3 rounded-lg hover:bg-teal-600 transition cta-glow text-base">
                         送信する
                     </button>
-                    <p class="text-xs text-slate-400 text-center">通常1営業日以内にご返信いたします。</p>
+                    <p class="text-xs text-slate-500 text-center">通常1営業日以内にご返信いたします。</p>
                 </form>
 
                 <!-- Success message (hidden) -->
                 <div id="contact-success" class="hidden text-center py-8">
-                    <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <div class="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">送信完了</h3>
-                    <p class="text-slate-600 text-sm">お問い合わせありがとうございます。<br>1営業日以内にご返信いたします。</p>
+                    <h3 class="text-xl font-bold text-white mb-2">送信完了</h3>
+                    <p class="text-slate-400 text-sm">お問い合わせありがとうございます。<br>1営業日以内にご返信いたします。</p>
                 </div>
             </div>
 
-            <!-- Developer info (compact) -->
-            <div class="fade-up mt-8 bg-white/10 backdrop-blur border border-white/20 rounded-xl p-5">
+            <!-- Developer info (glass) -->
+            <div class="fade-up mt-8 glass rounded-xl p-5">
                 <div class="grid grid-cols-3 gap-4 text-center mb-4">
                     <div>
                         <p class="font-heading stat-number text-xl font-black text-white">-20<span class="text-sm">kg</span></p>
-                        <p class="text-white/60 text-xs">開発者自身が5ヶ月で達成</p>
+                        <p class="text-slate-500 text-xs">開発者自身が5ヶ月で達成</p>
                     </div>
                     <div>
                         <p class="font-heading stat-number text-xl font-black text-white">SQ 240<span class="text-sm">kg</span></p>
-                        <p class="text-white/60 text-xs">現役競技者レベル</p>
+                        <p class="text-slate-500 text-xs">現役競技者レベル</p>
                     </div>
                     <div>
                         <p class="font-heading stat-number text-xl font-black text-white">20<span class="text-sm">年</span></p>
-                        <p class="text-white/60 text-xs">スポーツ・フィットネス歴</p>
+                        <p class="text-slate-500 text-xs">スポーツ・フィットネス歴</p>
                     </div>
                 </div>
-                <p class="text-white/70 text-xs text-center">元24hジム現場責任者 / 国体入賞アスリート・大阪WL協会役員 / 競技現役の開発者が毎日使用</p>
+                <p class="text-slate-500 text-xs text-center">元24hジム現場責任者 / 国体入賞アスリート・大阪WL協会役員 / 競技現役の開発者が毎日使用</p>
             </div>
 
             <!-- Direct email fallback -->
-            <p class="text-white/60 text-sm text-center mt-6">
-                メールでのお問い合わせ: <a href="mailto:official@your-coach-plus.com?subject=法人プラン問い合わせ" class="text-teal-300 hover:underline font-bold">official@your-coach-plus.com</a>
+            <p class="text-slate-500 text-sm text-center mt-6">
+                メールでのお問い合わせ: <a href="mailto:official@your-coach-plus.com?subject=法人プラン問い合わせ" class="text-teal-400 hover:underline font-bold">official@your-coach-plus.com</a>
             </p>
         </div>
     </section>
@@ -1205,25 +1106,31 @@
     </main>
 
     <!-- ==================== Footer ==================== -->
-    <footer class="bg-slate-900 py-12" aria-label="フッター">
+    <div class="section-divider"></div>
+
+    <footer class="py-16 md:py-20 bg-[#060609]" aria-label="フッター">
         <div class="max-w-4xl mx-auto px-6 text-center">
-            <div class="mb-6">
+            <div class="mb-8">
                 <a href="/home.html" class="text-2xl font-bold text-white font-heading">Your Coach<span class="text-teal-400">+</span></a>
-                <p class="text-slate-400 text-sm mt-1">空白の167時間を、成果の167時間へ。</p>
+                <p class="text-slate-400 text-sm mt-2">空白の167時間を、成果の167時間へ。</p>
             </div>
+
             <!-- Cross-links -->
-            <div class="flex flex-wrap justify-center gap-4 mb-6">
+            <div class="flex flex-wrap justify-center gap-4 mb-8">
                 <a href="/home.html" class="text-slate-400 hover:text-teal-400 transition text-sm font-bold">個人向けページ</a>
                 <span class="text-slate-700">|</span>
                 <a href="/whitepaper.html" class="text-slate-400 hover:text-teal-400 transition text-sm font-bold">ホワイトペーパー</a>
             </div>
-            <div class="flex flex-wrap justify-center gap-6 mb-6">
-                <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition text-sm">プライバシーポリシー</a>
-                <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition text-sm">利用規約</a>
-                <a href="/tokushoho.html" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition text-sm">特定商取引法</a>
+
+            <div class="border-t border-white/10 pt-8">
+                <div class="flex flex-wrap justify-center gap-6 mb-6">
+                    <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-white transition text-sm">プライバシーポリシー</a>
+                    <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-white transition text-sm">利用規約</a>
+                    <a href="/tokushoho.html" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-white transition text-sm">特定商取引法</a>
+                </div>
+                <p class="text-slate-500 text-sm mb-4">お問い合わせ: official@your-coach-plus.com</p>
+                <p class="text-slate-600 text-xs">&copy; 2026 Your Coach+. All rights reserved.</p>
             </div>
-            <p class="text-slate-400 text-sm mb-4">お問い合わせ: official@your-coach-plus.com</p>
-            <p class="text-slate-600 text-xs">&copy; 2026 Your Coach+. All rights reserved.</p>
         </div>
     </footer>
 
@@ -1233,6 +1140,14 @@
     <script src="/config.js"></script>
 
     <script>
+        // Scroll progress bar
+        const progressBar = document.getElementById('scroll-progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            progressBar.style.width = (scrollTop / docHeight * 100) + '%';
+        });
+
         // Navigation
         const navbar = document.getElementById('navbar');
         window.addEventListener('scroll', () => {
@@ -1252,13 +1167,13 @@
             });
         });
 
-        // Scroll fade-in (supports fade-up, fade-left, fade-right)
-        const observer = new IntersectionObserver((entries) => {
+        // Scroll animations (fade-up, fade-left, fade-right, scale-up)
+        const animObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) entry.target.classList.add('visible');
             });
-        }, { threshold: 0.15 });
-        document.querySelectorAll('.fade-up, .fade-left, .fade-right').forEach(el => observer.observe(el));
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.fade-up, .fade-left, .fade-right, .scale-up').forEach(el => animObserver.observe(el));
 
         // Firebase
         let functions = null;

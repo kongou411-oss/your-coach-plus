@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ホワイトペーパー - AIパーソナルコーチングが法人ウェルネスを変革する | Your Coach+</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <meta name="description" content="AIパーソナルコーチングが法人ウェルネスを変革する。データで見る次世代フィットネスの全容。Your Coach+ B2B2Cモデルの詳細解説。">
@@ -55,23 +55,45 @@
     </script>
 
     <style>
+        :root {
+            --bg: #08080d;
+            --bg-elevated: #0c0c13;
+            --accent: #4A9EFF;
+            --accent-glow: rgba(74,158,255,0.4);
+        }
+
         html { scroll-behavior: smooth; }
-        body { margin: 0; padding: 0; font-family: 'Noto Sans JP', sans-serif; }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg); color: #e2e8f0;
+        }
+
+        /* Noise overlay */
+        body::after {
+            content: ''; position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 1; opacity: 0.4;
+        }
+        body > * { position: relative; z-index: 2; }
 
         /* Progress bar */
         .progress-bar {
-            position: fixed; top: 0; left: 0; height: 3px; z-index: 100;
-            background: linear-gradient(90deg, #4A9EFF, #1E3A5F);
+            position: fixed; top: 0; left: 0; height: 2px; z-index: 100;
+            background: linear-gradient(90deg, var(--accent), #7c3aed);
             width: 0%; transition: width 0.1s linear;
         }
 
         /* Sidebar */
         .sidebar {
             position: fixed; top: 0; left: 0; width: 260px; height: 100vh; z-index: 40;
-            overflow-y: auto; background: #fff; border-right: 1px solid #e2e8f0;
+            overflow-y: auto;
+            background: rgba(8,8,13,0.95);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.06);
         }
         .sidebar::-webkit-scrollbar { width: 4px; }
-        .sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
         .main-content { margin-left: 260px; }
         @media (max-width: 1023px) {
             .sidebar { display: none; }
@@ -87,8 +109,8 @@
             transition: all 0.2s ease; border-left: 3px solid transparent;
         }
         .toc-link.active {
-            border-left-color: #4A9EFF; color: #0F172A;
-            background: rgba(74,158,255,0.06); font-weight: 700;
+            border-left-color: var(--accent); color: #fff;
+            background: rgba(74,158,255,0.1); font-weight: 700;
         }
 
         /* Mobile TOC */
@@ -103,21 +125,39 @@
         }
         .section-divider::before {
             content: ''; position: absolute; inset: 0;
-            background: linear-gradient(120deg, rgba(74,158,255,0.82) 0%, rgba(15,43,70,0.82) 50%, rgba(30,58,95,0.45) 100%);
+            background: linear-gradient(120deg, rgba(8,8,13,0.92) 0%, rgba(8,8,13,0.85) 50%, rgba(15,61,122,0.45) 100%);
         }
         .section-divider::after {
             content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 50%;
-            background: linear-gradient(90deg, transparent, rgba(200,210,220,0.3));
-            mix-blend-mode: overlay;
+            background: linear-gradient(90deg, transparent, rgba(74,158,255,0.08));
+            mix-blend-mode: screen;
         }
 
         /* Gradient top bar */
         .gradient-bar {
-            height: 4px; background: linear-gradient(90deg, #4A9EFF, #1E3A5F);
+            height: 4px; background: linear-gradient(90deg, var(--accent), #7c3aed);
+        }
+
+        /* Glass card */
+        .glass {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: border-color 0.4s, box-shadow 0.4s;
+        }
+
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         /* Fade in */
-        .fade-up { opacity: 0; transform: translateY(30px); transition: 0.6s ease-out; }
+        .fade-up {
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
+        }
         .fade-up.visible { opacity: 1; transform: translateY(0); }
 
         /* Bar chart */
@@ -125,15 +165,13 @@
         .bar-animate.visible { width: var(--bar-width); }
 
         /* Focus */
-        :focus-visible { outline: 2px solid #4A9EFF; outline-offset: 2px; border-radius: 4px; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-        /* Section number styling like PDF */
+        /* Section number styling */
         .section-num {
             font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 2.5rem;
             line-height: 1;
         }
-        .section-num .teal { color: #4A9EFF; }
-        .section-num .navy { color: #0F172A; }
 
         /* Image section with overlay text */
         .img-section {
@@ -142,6 +180,15 @@
         .img-section img {
             width: 100%; height: 100%; object-fit: cover;
         }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        /* Section divider line */
+        .section-line { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); }
 
         @media (prefers-reduced-motion: reduce) {
             .fade-up { opacity: 1; transform: none; transition: none; }
@@ -155,62 +202,62 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body>
 
     <!-- Progress Bar -->
     <div class="progress-bar" id="progressBar"></div>
 
     <!-- ==================== Sidebar (Desktop) ==================== -->
     <aside class="sidebar pt-8 pb-12 px-5" aria-label="目次ナビゲーション">
-        <a href="/home.html" class="text-lg font-bold text-slate-900 font-['Montserrat'] block mb-1">Your Coach<span class="text-teal-500">+</span></a>
-        <p class="text-[10px] text-slate-400 uppercase tracking-widest mb-8">Whitepaper 2026</p>
+        <a href="/home.html" class="text-lg font-bold text-white font-['Montserrat'] block mb-1">Your Coach<span class="text-teal-500">+</span></a>
+        <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-8">Whitepaper 2026</p>
         <div class="gradient-bar mb-6 rounded-full"></div>
 
         <nav>
             <ul class="space-y-0.5" id="toc-desktop">
-                <li><a href="#cover" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">Cover</a></li>
-                <li><a href="#summary" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">01. エグゼクティブサマリー</a></li>
-                <li><a href="#market" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">02. 市場概況</a></li>
-                <li><a href="#challenges" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">03. 課題の深掘り</a></li>
-                <li><a href="#chasm" class="toc-link block px-3 py-2 text-xs text-teal-600 hover:text-slate-900 rounded transition font-bold">WHY NOW</a></li>
-                <li><a href="#solution" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">04. ソリューション</a></li>
-                <li><a href="#loop" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">05. 行動変容ループ</a></li>
-                <li><a href="#features-detail" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">06. 機能詳細</a></li>
-                <li><a href="#roi" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">07. ROI分析</a></li>
-                <li><a href="#cases" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">08. 導入事例</a></li>
-                <li><a href="#tech" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">09. 技術基盤</a></li>
-                <li><a href="#conclusion" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-slate-900 rounded transition">10. 結論</a></li>
+                <li><a href="#cover" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">Cover</a></li>
+                <li><a href="#summary" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">01. エグゼクティブサマリー</a></li>
+                <li><a href="#market" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">02. 市場概況</a></li>
+                <li><a href="#challenges" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">03. 課題の深掘り</a></li>
+                <li><a href="#chasm" class="toc-link block px-3 py-2 text-xs text-teal-400 hover:text-white rounded transition font-bold">WHY NOW</a></li>
+                <li><a href="#solution" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">04. ソリューション</a></li>
+                <li><a href="#loop" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">05. 行動変容ループ</a></li>
+                <li><a href="#features-detail" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">06. 機能詳細</a></li>
+                <li><a href="#roi" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">07. ROI分析</a></li>
+                <li><a href="#cases" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">08. 導入事例</a></li>
+                <li><a href="#tech" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">09. 技術基盤</a></li>
+                <li><a href="#conclusion" class="toc-link block px-3 py-2 text-xs text-slate-500 hover:text-white rounded transition">10. 結論</a></li>
             </ul>
         </nav>
 
-        <div class="mt-8 pt-6 border-t border-slate-200">
-            <a href="/b2b2c.html" class="block text-xs text-teal-600 hover:underline mb-2 font-bold">法人向けプラン &rarr;</a>
-            <a href="/home.html" class="block text-xs text-slate-400 hover:text-slate-700">アプリダウンロード &rarr;</a>
+        <div class="mt-8 pt-6 border-t border-white/10">
+            <a href="/b2b2c.html" class="block text-xs text-teal-400 hover:underline mb-2 font-bold">法人向けプラン &rarr;</a>
+            <a href="/home.html" class="block text-xs text-slate-500 hover:text-slate-300">アプリダウンロード &rarr;</a>
         </div>
     </aside>
 
     <!-- ==================== Mobile TOC Bar ==================== -->
-    <div class="mobile-toc-bar fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 items-center justify-between px-4 h-12" style="display:none;">
-        <a href="/home.html" class="text-sm font-bold text-slate-900 font-['Montserrat']">Your Coach<span class="text-teal-500">+</span></a>
-        <button id="mobile-toc-toggle" class="text-slate-500 hover:text-slate-900" aria-label="目次を開く" aria-expanded="false">
+    <div class="mobile-toc-bar fixed top-0 left-0 right-0 z-40 bg-[#08080d]/95 backdrop-blur-md border-b border-white/6 items-center justify-between px-4 h-12" style="display:none;">
+        <a href="/home.html" class="text-sm font-bold text-white font-['Montserrat']">Your Coach<span class="text-teal-500">+</span></a>
+        <button id="mobile-toc-toggle" class="text-slate-400 hover:text-white" aria-label="目次を開く" aria-expanded="false">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
     </div>
-    <div class="mobile-toc lg:hidden fixed top-12 left-0 right-0 z-30 bg-white border-b border-slate-200" id="mobile-toc">
+    <div class="mobile-toc lg:hidden fixed top-12 left-0 right-0 z-30 bg-[#08080d]/95 backdrop-blur-md border-b border-white/6" id="mobile-toc">
         <nav class="px-4 py-3">
             <ul class="space-y-1">
-                <li><a href="#cover" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">Cover</a></li>
-                <li><a href="#summary" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">01. エグゼクティブサマリー</a></li>
-                <li><a href="#market" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">02. 市場概況</a></li>
-                <li><a href="#challenges" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">03. 課題の深掘り</a></li>
-                <li><a href="#chasm" class="mobile-toc-link block px-3 py-1.5 text-xs text-teal-600 hover:text-slate-900 rounded font-bold">WHY NOW</a></li>
-                <li><a href="#solution" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">04. ソリューション</a></li>
-                <li><a href="#loop" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">05. 行動変容ループ</a></li>
-                <li><a href="#features-detail" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">06. 機能詳細</a></li>
-                <li><a href="#roi" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">07. ROI分析</a></li>
-                <li><a href="#cases" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">08. 導入事例</a></li>
-                <li><a href="#tech" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">09. 技術基盤</a></li>
-                <li><a href="#conclusion" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 rounded">10. 結論</a></li>
+                <li><a href="#cover" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">Cover</a></li>
+                <li><a href="#summary" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">01. エグゼクティブサマリー</a></li>
+                <li><a href="#market" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">02. 市場概況</a></li>
+                <li><a href="#challenges" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">03. 課題の深掘り</a></li>
+                <li><a href="#chasm" class="mobile-toc-link block px-3 py-1.5 text-xs text-teal-400 hover:text-white rounded font-bold">WHY NOW</a></li>
+                <li><a href="#solution" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">04. ソリューション</a></li>
+                <li><a href="#loop" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">05. 行動変容ループ</a></li>
+                <li><a href="#features-detail" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">06. 機能詳細</a></li>
+                <li><a href="#roi" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">07. ROI分析</a></li>
+                <li><a href="#cases" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">08. 導入事例</a></li>
+                <li><a href="#tech" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">09. 技術基盤</a></li>
+                <li><a href="#conclusion" class="mobile-toc-link block px-3 py-1.5 text-xs text-slate-500 hover:text-white rounded">10. 結論</a></li>
             </ul>
         </nav>
     </div>
@@ -222,17 +269,17 @@
         <section id="cover" class="relative min-h-screen flex items-center justify-center overflow-hidden">
             <div class="absolute inset-0">
                 <img src="/images/wp/data-analytics.jpg" alt="" class="w-full h-full object-cover" loading="eager">
-                <div class="absolute inset-0 bg-gradient-to-br from-teal-600/90 via-slate-900/85 to-slate-900/90"></div>
+                <div class="absolute inset-0 bg-gradient-to-br from-[#08080d]/95 via-[#08080d]/90 to-teal-900/40"></div>
             </div>
             <div class="relative z-10 max-w-3xl mx-auto text-center px-6 fade-up">
                 <div class="inline-block mb-6 px-5 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
                     <span class="text-xs font-bold tracking-widest text-teal-300 uppercase">Whitepaper 2026</span>
                 </div>
-                <h1 class="text-3xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight font-['Montserrat'] text-white">
-                    AIパーソナルコーチングが<br><span class="text-teal-300">法人ウェルネス</span>を変革する
+                <h1 class="text-3xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight font-['Montserrat'] gradient-text">
+                    AIパーソナルコーチングが<br><span class="text-teal-400" style="-webkit-text-fill-color:unset;">法人ウェルネス</span>を変革する
                 </h1>
-                <p class="text-lg md:text-xl text-slate-200 mb-10">データで見る次世代フィットネスの全容</p>
-                <div class="flex flex-wrap justify-center gap-4 text-xs text-slate-300/70 mb-14">
+                <p class="text-lg md:text-xl text-slate-300 mb-10">データで見る次世代フィットネスの全容</p>
+                <div class="flex flex-wrap justify-center gap-4 text-xs text-slate-500 mb-14">
                     <span>発行: Your Coach+</span>
                     <span>|</span>
                     <span>2026年2月</span>
@@ -240,62 +287,62 @@
                     <span>Ver. 1.0</span>
                 </div>
                 <div class="animate-bounce">
-                    <svg class="w-6 h-6 mx-auto text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                    <svg class="w-6 h-6 mx-auto text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
                 </div>
             </div>
         </section>
 
         <!-- ===== Agenda / Table of Contents ===== -->
-        <section class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-3xl mx-auto fade-up">
                 <div class="text-center mb-10">
-                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">目 次</h2>
+                    <h2 class="text-2xl md:text-3xl font-black text-white mb-2">目 次</h2>
                     <div class="w-12 h-1 bg-teal-500 mx-auto rounded-full"></div>
                 </div>
                 <div class="space-y-0">
-                    <a href="#summary" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">1</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">エグゼクティブサマリー</span>
+                    <a href="#summary" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">1</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">エグゼクティブサマリー</span>
                     </a>
-                    <a href="#market" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">2</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">市場概況</span>
+                    <a href="#market" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">2</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">市場概況</span>
                     </a>
-                    <a href="#challenges" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">3</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">課題の深掘り</span>
+                    <a href="#challenges" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">3</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">課題の深掘り</span>
                     </a>
-                    <a href="#chasm" class="flex items-center gap-5 py-4 border-b border-slate-100 bg-gradient-to-r from-teal-50/50 to-transparent hover:from-teal-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl text-teal-500">!</span>
-                        <span class="text-lg font-bold text-teal-700 group-hover:text-teal-600 transition">なぜ今、導入すべきか</span>
+                    <a href="#chasm" class="flex items-center gap-5 py-4 border-b border-white/6 bg-teal-500/5 hover:bg-teal-500/10 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl text-teal-400">!</span>
+                        <span class="text-lg font-bold text-teal-400 group-hover:text-teal-300 transition">なぜ今、導入すべきか</span>
                     </a>
-                    <a href="#solution" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">4</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">ソリューション</span>
+                    <a href="#solution" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">4</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">ソリューション</span>
                     </a>
-                    <a href="#loop" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">5</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">行動変容ループ</span>
+                    <a href="#loop" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">5</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">行動変容ループ</span>
                     </a>
-                    <a href="#features-detail" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">6</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">機能詳細</span>
+                    <a href="#features-detail" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">6</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">機能詳細</span>
                     </a>
-                    <a href="#roi" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">7</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">ROI分析</span>
+                    <a href="#roi" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">7</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">ROI分析</span>
                     </a>
-                    <a href="#cases" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">8</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">導入事例</span>
+                    <a href="#cases" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">8</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">導入事例</span>
                     </a>
-                    <a href="#tech" class="flex items-center gap-5 py-4 border-b border-slate-100 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-800">0</span><span class="text-teal-500">9</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">技術基盤</span>
+                    <a href="#tech" class="flex items-center gap-5 py-4 border-b border-white/6 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-slate-300">0</span><span class="text-teal-400">9</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">技術基盤</span>
                     </a>
-                    <a href="#conclusion" class="flex items-center gap-5 py-4 hover:bg-slate-50 px-4 rounded-lg transition group">
-                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-teal-500">1</span><span class="text-teal-500">0</span></span>
-                        <span class="text-lg font-bold text-slate-800 group-hover:text-teal-600 transition">結論</span>
+                    <a href="#conclusion" class="flex items-center gap-5 py-4 hover:bg-white/5 px-4 rounded-lg transition group">
+                        <span class="font-['Montserrat'] font-black text-2xl"><span class="text-teal-400">1</span><span class="text-teal-400">0</span></span>
+                        <span class="text-lg font-bold text-slate-300 group-hover:text-teal-400 transition">結論</span>
                     </a>
                 </div>
             </div>
@@ -303,41 +350,45 @@
 
         <!-- ===== 01 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/executives.jpg')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">1</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">エグゼクティブサマリー</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">1</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">エグゼクティブサマリー</span>
             </div>
         </div>
 
         <!-- 01. Executive Summary -->
-        <section id="summary" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="summary" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">エグゼクティブサマリー</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-slate-900">パーソナルジムの構造的課題は<br class="hidden md:block"><span class="text-teal-600">「指導時間外の167時間」</span>にある</h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">エグゼクティブサマリー</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-white">パーソナルジムの構造的課題は<br class="hidden md:block"><span class="text-teal-400">「指導時間外の167時間」</span>にある</h2>
                 </div>
                 <div class="fade-up">
-                    <p class="text-slate-600 text-sm leading-relaxed mb-4">世界のフィットネスアプリ市場は2024年時点で約68.6億ドルの収益を上げ、2028年には100億ドルを突破すると予測されています。しかし、この急成長市場において、パーソナルジムは深刻な構造的課題に直面しています。</p>
-                    <p class="text-slate-600 text-sm leading-relaxed mb-4">週168時間のうちトレーナーが指導できるのはわずか1時間。残りの167時間における会員の食事・生活習慣を管理できないことが、成果のバラつきと早期退会の根本原因です。実際、入会者の80%が1年以内に退会し、継続率は入会時37%から12ヶ月後にはわずか4%まで低下します。</p>
-                    <p class="text-slate-600 text-sm leading-relaxed mb-8">本ホワイトペーパーでは、AIパーソナルコーチングプラットフォーム「Your Coach+」のB2B2Cモデルが、この構造的課題をどのように解決し、法人ウェルネスの新たなスタンダードを構築するかを、データと事例に基づき解説します。</p>
+                    <p class="text-white text-base md:text-lg font-black leading-relaxed mb-6 pb-4 border-b border-white/10">結論：会員が成果を出せない原因は、トレーナーの質でも会員の意志でもなく、指導時間外167時間が管理不能であるという「構造」にある。AIがこの空白を埋める。</p>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">世界のフィットネスアプリ市場は2024年時点で約68.6億ドルの収益を上げ、2028年には100億ドルを突破すると予測されています。しかし、この急成長市場において、パーソナルジムは深刻な構造的課題に直面しています。</p>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">週168時間のうちトレーナーが指導できるのはわずか1時間。残りの167時間における会員の食事・生活習慣を管理できないことが、成果のバラつきと早期退会の根本原因です。実際、入会者の80%が1年以内に退会し、継続率は入会時37%から12ヶ月後にはわずか4%まで低下します。</p>
+                    <div class="bg-white/[0.03] border-l-3 rounded-r-lg p-4 mb-4" style="border-left: 3px solid rgba(255,255,255,0.15);">
+                        <p class="text-slate-500 text-xs italic leading-relaxed">「セッション中は完璧なフォームで追い込める会員が、翌日のコンビニで何を手に取るかは分からない。LINEで食事指導を送っても3日で既読スルー。それは怠慢ではなく、構造の問題だった。」 ― Your Coach+ 開発者・元24hジム現場責任者</p>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-8">本ホワイトペーパーでは、AIパーソナルコーチングプラットフォーム「Your Coach+」のB2B2Cモデルが、この構造的課題をどのように解決し、法人ウェルネスの新たなスタンダードを構築するかを、データと事例に基づき解説します。</p>
                 </div>
                 <div class="fade-up grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-slate-50 rounded-2xl p-5 text-center border border-slate-100">
-                        <p class="text-3xl font-black text-teal-500 font-['Montserrat']">167<span class="text-base">h</span></p>
+                    <div class="glass rounded-2xl p-5 text-center">
+                        <p class="text-3xl font-black text-teal-400 font-['Montserrat']">167<span class="text-base">h</span></p>
                         <p class="text-xs text-slate-500 mt-2">週あたりの管理空白</p>
                     </div>
-                    <div class="bg-slate-50 rounded-2xl p-5 text-center border border-slate-100">
-                        <p class="text-3xl font-black text-red-500 font-['Montserrat']">80<span class="text-base">%</span></p>
+                    <div class="glass rounded-2xl p-5 text-center">
+                        <p class="text-3xl font-black text-red-400 font-['Montserrat']">80<span class="text-base">%</span></p>
                         <p class="text-xs text-slate-500 mt-2">1年以内退会率</p>
                     </div>
-                    <div class="bg-slate-50 rounded-2xl p-5 text-center border border-slate-100">
-                        <p class="text-3xl font-black text-emerald-500 font-['Montserrat']">25-95<span class="text-base">%</span></p>
+                    <div class="glass rounded-2xl p-5 text-center">
+                        <p class="text-3xl font-black text-emerald-400 font-['Montserrat']">25-95<span class="text-base">%</span></p>
                         <p class="text-xs text-slate-500 mt-2">5%継続改善時の利益増</p>
                     </div>
-                    <div class="bg-teal-50 rounded-2xl p-5 text-center border-2 border-teal-200">
-                        <p class="text-3xl font-black text-teal-600 font-['Montserrat']">60<span class="text-base">名+</span></p>
-                        <p class="text-xs text-teal-700 mt-2 font-bold">リリース初期の利用者数</p>
+                    <div class="rounded-2xl p-5 text-center" style="background:rgba(74,158,255,0.05); border: 2px solid rgba(74,158,255,0.3);">
+                        <p class="text-3xl font-black text-teal-400 font-['Montserrat']">60<span class="text-base">名+</span></p>
+                        <p class="text-xs text-teal-400 mt-2 font-bold">リリース初期の利用者数</p>
                     </div>
                 </div>
             </div>
@@ -345,61 +396,62 @@
 
         <!-- ===== 02 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/data-analytics.jpg')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">2</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">市場概況</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">2</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">市場概況</span>
             </div>
         </div>
 
         <!-- 02. Market Overview -->
-        <section id="market" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="market" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">市場概況</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-slate-900">世界のフィットネスアプリ市場規模推移</h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">市場概況</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-4 text-white">世界のフィットネスアプリ市場規模推移</h2>
+                    <p class="text-white text-sm font-black leading-relaxed mb-8 pb-4 border-b border-white/10">結論：市場は2028年に100億ドル超へ成長。しかし継続率は壊滅的 ― 「記録型」では生き残れない。</p>
                 </div>
-                <div class="fade-up bg-slate-50 rounded-2xl p-6 md:p-8 border border-slate-100 mb-8">
+                <div class="fade-up glass rounded-2xl p-6 md:p-8 mb-8">
                     <div class="space-y-5">
                         <div>
-                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>2022</span><span class="font-bold">$5.2B</span></div>
-                            <div class="bg-slate-200 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-slate-400 h-full rounded-full" style="--bar-width:52%"></div></div>
+                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>2022</span><span class="font-bold text-slate-300">$5.2B</span></div>
+                            <div class="bg-white/10 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-slate-400 h-full rounded-full" style="--bar-width:52%"></div></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>2024</span><span class="font-bold">$6.86B</span></div>
-                            <div class="bg-slate-200 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-teal-400/70 h-full rounded-full" style="--bar-width:68%"></div></div>
+                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>2024</span><span class="font-bold text-slate-300">$6.86B</span></div>
+                            <div class="bg-white/10 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-teal-500/70 h-full rounded-full" style="--bar-width:68%"></div></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>2026（予測）</span><span class="font-bold">$8.5B</span></div>
-                            <div class="bg-slate-200 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-teal-500/80 h-full rounded-full" style="--bar-width:85%"></div></div>
+                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>2026（予測）</span><span class="font-bold text-slate-300">$8.5B</span></div>
+                            <div class="bg-white/10 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-teal-500/80 h-full rounded-full" style="--bar-width:85%"></div></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-xs font-bold text-slate-700 mb-1.5"><span>2028（予測）</span><span>$10B+</span></div>
-                            <div class="bg-slate-200 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-gradient-to-r from-teal-500 to-blue-600 h-full rounded-full" style="--bar-width:100%"></div></div>
+                            <div class="flex justify-between text-xs font-bold text-white mb-1.5"><span>2028（予測）</span><span>$10B+</span></div>
+                            <div class="bg-white/10 rounded-full h-7 overflow-hidden"><div class="bar-animate bg-gradient-to-r from-teal-500 to-blue-600 h-full rounded-full" style="--bar-width:100%"></div></div>
                         </div>
                     </div>
                 </div>
                 <div class="fade-up">
-                    <p class="text-slate-600 text-sm leading-relaxed mb-6">フィットネスアプリ市場はCAGR（年平均成長率）約14.3%で成長を続けています。特にAI搭載のパーソナライズ型アプリの需要が急増しており、従来の「記録型」から「指導型」へのパラダイムシフトが進行中です。</p>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-6">フィットネスアプリ市場はCAGR（年平均成長率）約14.3%で成長を続けています。特にAI搭載のパーソナライズ型アプリの需要が急増しており、従来の「記録型」から「指導型」へのパラダイムシフトが進行中です。</p>
                 </div>
-                <div class="fade-up bg-red-50 border border-red-100 rounded-2xl p-6 mb-6">
-                    <p class="text-xs text-red-600 font-bold mb-4">フィットネスアプリの継続率課題</p>
+                <div class="fade-up rounded-2xl p-6 mb-6" style="background:rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15);">
+                    <p class="text-xs text-red-400 font-bold mb-4">フィットネスアプリの継続率課題</p>
                     <div class="grid grid-cols-3 gap-4 text-center">
-                        <div><p class="text-2xl font-black text-slate-900 font-['Montserrat']">30-35%</p><p class="text-xs text-slate-500 mt-1">Day 1 継続率</p></div>
-                        <div><p class="text-2xl font-black text-red-600 font-['Montserrat']">8-12%</p><p class="text-xs text-slate-500 mt-1">Day 30 継続率</p></div>
-                        <div><p class="text-2xl font-black text-red-700 font-['Montserrat']">33%</p><p class="text-xs text-slate-500 mt-1">年間サブスク継続率</p></div>
+                        <div><p class="text-2xl font-black text-white font-['Montserrat']">30-35%</p><p class="text-xs text-slate-500 mt-1">Day 1 継続率</p></div>
+                        <div><p class="text-2xl font-black text-red-400 font-['Montserrat']">8-12%</p><p class="text-xs text-slate-500 mt-1">Day 30 継続率</p></div>
+                        <div><p class="text-2xl font-black text-red-400 font-['Montserrat']">33%</p><p class="text-xs text-slate-500 mt-1">年間サブスク継続率</p></div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-3 text-center">※業界平均。無料トライアル→有料転換率は一桁台が一般的</p>
+                    <p class="text-xs text-slate-500 mt-3 text-center">※業界平均。無料トライアル→有料転換率は一桁台が一般的</p>
                 </div>
                 <div class="fade-up grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div class="bg-teal-50 rounded-2xl p-6 border border-teal-100">
-                        <p class="text-xs text-teal-600 font-bold mb-1">日本国内市場</p>
-                        <p class="text-3xl font-black text-slate-900 font-['Montserrat']">6,430<span class="text-base">億円</span></p>
+                    <div class="glass rounded-2xl p-6">
+                        <p class="text-xs text-teal-400 font-bold mb-1">日本国内市場</p>
+                        <p class="text-3xl font-black text-white font-['Montserrat']">6,430<span class="text-base">億円</span></p>
                         <p class="text-xs text-slate-500 mt-1">フィットネス産業規模（2025年）</p>
                     </div>
-                    <div class="bg-emerald-50 rounded-2xl p-6 border border-emerald-100">
-                        <p class="text-xs text-emerald-600 font-bold mb-1">パーソナルジム</p>
-                        <p class="text-3xl font-black text-slate-900 font-['Montserrat']">1,500<span class="text-base">+</span></p>
+                    <div class="glass rounded-2xl p-6">
+                        <p class="text-xs text-emerald-400 font-bold mb-1">パーソナルジム</p>
+                        <p class="text-3xl font-black text-white font-['Montserrat']">1,500<span class="text-base">+</span></p>
                         <p class="text-xs text-slate-500 mt-1">国内店舗数（推計）</p>
                     </div>
                 </div>
@@ -408,74 +460,78 @@
 
         <!-- ===== 03 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/gym-phone.png')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">3</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">課題の深掘り</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">3</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">課題の深掘り</span>
             </div>
         </div>
 
         <!-- 03. Challenges -->
-        <section id="challenges" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="challenges" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">課題の深掘り</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-slate-900">パーソナルジムの<span class="text-teal-600">3大構造的課題</span></h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">課題の深掘り</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-4 text-white">パーソナルジムの<span class="text-teal-400">3大構造的課題</span></h2>
+                    <p class="text-white text-sm font-black leading-relaxed mb-4 pb-4 border-b border-white/10">結論：課題は「167時間の管理不能」「基礎教育の反復コスト」「早期退会」の3つ。すべて人力では解決不可能。</p>
+                    <div class="glass rounded-xl p-4 mb-8">
+                        <p class="text-slate-400 text-sm leading-relaxed">退会を「やる気がなかった」で片付けてはいけません。その裏にある構造 ―― <strong class="text-white">セッション間の167時間の空白、現状維持バイアス、認知リソースの枯渇</strong> ―― を理解することが、課題解決の出発点です。</p>
+                    </div>
                 </div>
                 <div class="fade-up space-y-6">
                     <!-- Challenge 1 -->
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <div class="glass rounded-2xl p-6">
                         <div class="flex items-center gap-4 mb-4">
                             <div class="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center shrink-0">
                                 <span class="text-white font-black text-sm font-['Montserrat']">01</span>
                             </div>
-                            <h4 class="font-black text-lg text-slate-900">指導時間外の管理不能</h4>
+                            <h4 class="font-black text-lg text-white">指導時間外の管理不能</h4>
                         </div>
-                        <p class="text-slate-600 text-sm mb-4">週168時間のうち指導できるのは1時間。残り167時間の食事・生活習慣は完全にブラックボックス。</p>
-                        <div class="bg-slate-50 rounded-xl p-4">
-                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>管理可能時間</span><span class="font-bold text-red-600">0.6%</span></div>
-                            <div class="bg-slate-200 rounded-full h-4"><div class="bg-red-500 h-full rounded-full" style="width:0.6%"></div></div>
-                            <p class="text-xs text-slate-400 mt-1.5">週168時間中わずか1時間</p>
+                        <p class="text-slate-400 text-sm mb-4">週168時間のうち指導できるのは1時間。残り167時間の食事・生活習慣は完全にブラックボックス。30人の会員×167時間×40以上の栄養素 ―― この情報量は、どれだけ優秀なトレーナーでも人間の認知限界を超えている。</p>
+                        <div class="bg-white/[0.03] rounded-xl p-4">
+                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>管理可能時間</span><span class="font-bold text-red-400">0.6%</span></div>
+                            <div class="bg-white/10 rounded-full h-4"><div class="bg-red-500 h-full rounded-full" style="width:0.6%"></div></div>
+                            <p class="text-xs text-slate-500 mt-1.5">週168時間中わずか1時間</p>
                         </div>
                     </div>
                     <!-- Challenge 2 -->
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <div class="glass rounded-2xl p-6">
                         <div class="flex items-center gap-4 mb-4">
                             <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shrink-0">
                                 <span class="text-white font-black text-sm font-['Montserrat']">02</span>
                             </div>
-                            <h4 class="font-black text-lg text-slate-900">基礎教育の反復コスト</h4>
+                            <h4 class="font-black text-lg text-white">基礎教育の反復コスト</h4>
                         </div>
-                        <p class="text-slate-600 text-sm mb-4">PFCバランス、食事タイミング、栄養素の基礎知識…同じ説明を何十回も繰り返す非効率。</p>
-                        <div class="bg-slate-50 rounded-xl p-4">
-                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>指導時間に占める基礎教育の割合</span><span class="font-bold text-orange-600">推定40%</span></div>
-                            <div class="bg-slate-200 rounded-full h-4"><div class="bg-orange-500 h-full rounded-full" style="width:40%"></div></div>
+                        <p class="text-slate-400 text-sm mb-4">PFCバランス、食事タイミング、栄養素の基礎知識…同じ説明を何十回も繰り返す非効率。</p>
+                        <div class="bg-white/[0.03] rounded-xl p-4">
+                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>指導時間に占める基礎教育の割合</span><span class="font-bold text-orange-400">推定40%</span></div>
+                            <div class="bg-white/10 rounded-full h-4"><div class="bg-orange-500 h-full rounded-full" style="width:40%"></div></div>
                         </div>
                     </div>
                     <!-- Challenge 3 -->
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <div class="glass rounded-2xl p-6">
                         <div class="flex items-center gap-4 mb-4">
                             <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
                                 <span class="text-white font-black text-sm font-['Montserrat']">03</span>
                             </div>
-                            <h4 class="font-black text-lg text-slate-900">早期退会（LTV損失）</h4>
+                            <h4 class="font-black text-lg text-white">早期退会（LTV損失）</h4>
                         </div>
-                        <p class="text-slate-600 text-sm mb-4">退会理由の59%は「通うのが面倒」、36%が「忙しい」、23%が「効果が出ない」。パーソナルジムの継続率はわずか18.8%で、顧客獲得コスト（継続の5〜25倍）を回収できないリスク。</p>
-                        <div class="bg-slate-50 rounded-xl p-4">
-                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>1年以内退会率</span><span class="font-bold text-purple-600">80%</span></div>
-                            <div class="bg-slate-200 rounded-full h-4"><div class="bg-purple-500 h-full rounded-full" style="width:80%"></div></div>
-                            <p class="text-xs text-slate-400 mt-1.5">継続率: 入会時37% → 12ヶ月後4%</p>
+                        <p class="text-slate-400 text-sm mb-4">退会理由の59%は「通うのが面倒」、36%が「忙しい」、23%が「効果が出ない」。パーソナルジムの継続率はわずか18.8%で、顧客獲得コスト（継続の5〜25倍）を回収できないリスク。</p>
+                        <div class="bg-white/[0.03] rounded-xl p-4">
+                            <div class="flex justify-between text-xs text-slate-500 mb-1.5"><span>1年以内退会率</span><span class="font-bold text-purple-400">80%</span></div>
+                            <div class="bg-white/10 rounded-full h-4"><div class="bg-purple-500 h-full rounded-full" style="width:80%"></div></div>
+                            <p class="text-xs text-slate-500 mt-1.5">継続率: 入会時37% → 12ヶ月後4%</p>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- ===== Chasm Interlude: なぜ今、導入すべきか ===== -->
+        <!-- ===== Chasm Interlude ===== -->
         <section id="chasm" class="relative py-20 md:py-28 px-6 lg:px-12 overflow-hidden">
             <div class="absolute inset-0">
                 <img src="/images/wp/split-roi.png" alt="" class="w-full h-full object-cover" loading="lazy">
-                <div class="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-teal-900/85"></div>
+                <div class="absolute inset-0 bg-gradient-to-br from-[#08080d]/95 via-[#08080d]/90 to-teal-900/50"></div>
             </div>
             <div class="relative z-10 max-w-4xl mx-auto">
                 <div class="fade-up text-center mb-12">
@@ -487,27 +543,23 @@
                 </div>
 
                 <!-- Innovator Theory Diagram -->
-                <div class="fade-up bg-white/5 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-white/10 mb-10">
+                <div class="fade-up glass rounded-2xl p-6 md:p-8 mb-10">
                     <h3 class="text-lg font-black text-white mb-6 text-center">イノベーター理論 ― フィットネス業界の現在地</h3>
 
                     <!-- 5-layer pyramid -->
                     <div class="flex flex-col items-center gap-1.5 mb-8">
-                        <!-- Innovators -->
                         <div class="relative w-[30%] md:w-[20%]">
                             <div class="bg-gradient-to-r from-teal-400 to-teal-500 rounded-t-lg py-2.5 px-3 text-center">
                                 <p class="text-white font-black text-xs">イノベーター</p>
                                 <p class="text-teal-100 text-[10px]">2.5%</p>
                             </div>
                         </div>
-                        <!-- Early Adopters -->
                         <div class="relative w-[46%] md:w-[35%]">
                             <div class="bg-gradient-to-r from-teal-500 to-blue-500 py-2.5 px-3 text-center">
                                 <p class="text-white font-black text-xs">アーリーアダプター</p>
                                 <p class="text-blue-100 text-[10px]">13.5%</p>
                             </div>
                         </div>
-
-                        <!-- CHASM -->
                         <div class="w-[54%] md:w-[42%] relative my-2">
                             <div class="border-2 border-dashed border-red-400 rounded-lg py-2 px-4 text-center bg-red-500/10">
                                 <p class="text-red-400 font-black text-xs tracking-widest uppercase">CHASM ― キャズム（深い溝）</p>
@@ -515,31 +567,26 @@
                             <div class="absolute -left-4 top-1/2 -translate-y-1/2 w-3 h-3 border-t-2 border-l-2 border-red-400 rotate-[-45deg]"></div>
                             <div class="absolute -right-4 top-1/2 -translate-y-1/2 w-3 h-3 border-t-2 border-r-2 border-red-400 rotate-[45deg]"></div>
                         </div>
-
-                        <!-- Early Majority -->
                         <div class="relative w-[68%] md:w-[55%]">
-                            <div class="bg-slate-600/60 py-2.5 px-3 text-center">
+                            <div class="bg-white/5 py-2.5 px-3 text-center border border-white/10">
                                 <p class="text-slate-300 font-bold text-xs">アーリーマジョリティ</p>
-                                <p class="text-slate-400 text-[10px]">34%「皆が使い始めたら使う」</p>
+                                <p class="text-slate-500 text-[10px]">34%「皆が使い始めたら使う」</p>
                             </div>
                         </div>
-                        <!-- Late Majority -->
                         <div class="relative w-[82%] md:w-[70%]">
-                            <div class="bg-slate-700/60 py-2.5 px-3 text-center">
+                            <div class="bg-white/[0.03] py-2.5 px-3 text-center border border-white/8">
                                 <p class="text-slate-400 font-bold text-xs">レイトマジョリティ</p>
                                 <p class="text-slate-500 text-[10px]">34%</p>
                             </div>
                         </div>
-                        <!-- Laggards -->
                         <div class="relative w-[96%] md:w-[85%]">
-                            <div class="bg-slate-800/60 rounded-b-lg py-2.5 px-3 text-center">
+                            <div class="bg-white/[0.02] rounded-b-lg py-2.5 px-3 text-center border border-white/6">
                                 <p class="text-slate-500 font-bold text-xs">ラガード</p>
                                 <p class="text-slate-600 text-[10px]">16%</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Where is fitness industry? -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                         <div class="bg-red-500/10 border border-red-400/20 rounded-xl p-4">
                             <p class="text-red-400 font-black text-xs mb-2">フィットネス業界の大多数</p>
@@ -551,8 +598,7 @@
                         </div>
                     </div>
 
-                    <!-- Already crossing the chasm -->
-                    <div class="bg-white/8 border border-teal-400/30 rounded-xl p-5 text-center">
+                    <div class="bg-white/5 border border-teal-400/30 rounded-xl p-5 text-center">
                         <p class="text-teal-300 text-xs font-bold uppercase tracking-widest mb-2">Already Crossing</p>
                         <div class="flex items-center justify-center gap-3 mb-2">
                             <span class="text-4xl font-black text-white font-['Montserrat']">60</span>
@@ -564,21 +610,21 @@
 
                 <!-- Key argument cards -->
                 <div class="fade-up grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
-                    <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 text-center">
+                    <div class="glass rounded-2xl p-6 text-center">
                         <div class="w-12 h-12 mx-auto bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                         <p class="text-white font-black text-sm mb-2">行動しないことがリスク</p>
                         <p class="text-slate-400 text-xs leading-relaxed">AIの進化で変化が劇的に加速する現代。キャズムの向こう側で「様子見」をしていては、取り返しのつかない差がつきます。</p>
                     </div>
-                    <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 text-center">
+                    <div class="glass rounded-2xl p-6 text-center">
                         <div class="w-12 h-12 mx-auto bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                         </div>
                         <p class="text-white font-black text-sm mb-2">先行者が市場を取る</p>
                         <p class="text-slate-400 text-xs leading-relaxed">「AI×パーソナルコーチング」市場は今まさにキャズムを超えようとしています。先行導入ジムが会員の成功体験で市場を握ります。</p>
                     </div>
-                    <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 text-center">
+                    <div class="glass rounded-2xl p-6 text-center">
                         <div class="w-12 h-12 mx-auto bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mb-4">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                         </div>
@@ -587,8 +633,7 @@
                     </div>
                 </div>
 
-                <!-- Quote / Highlight -->
-                <div class="fade-up bg-gradient-to-r from-teal-500/20 to-blue-500/20 rounded-2xl p-6 md:p-8 border border-teal-400/20 text-center">
+                <div class="fade-up bg-gradient-to-r from-teal-500/15 to-blue-500/15 rounded-2xl p-6 md:p-8 border border-teal-400/20 text-center">
                     <p class="text-teal-300 text-lg md:text-xl font-black leading-relaxed mb-4">
                         「流行っているらしいけれど、もう少し様子を見よう」<br>
                         <span class="text-white">その間に、先行者は会員の行動変容を実現し、<br class="hidden md:block">圧倒的な競合優位を確立しています。</span>
@@ -600,28 +645,29 @@
 
         <!-- ===== 04 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/trainer-tablet.png')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">4</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">ソリューション</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">4</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">ソリューション</span>
             </div>
         </div>
 
         <!-- 04. Solution -->
-        <section id="solution" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="solution" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">ソリューション</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-3 text-slate-900">Your Coach+ <span class="text-teal-600">B2B2Cモデル</span></h2>
-                    <p class="text-slate-500 text-sm mb-8">トレーナーの「分身」として、AIが指導時間外の167時間を科学的に管理する。</p>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">ソリューション</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-3 text-white">Your Coach+ <span class="text-teal-400">B2B2Cモデル</span></h2>
+                    <p class="text-white text-sm font-black leading-relaxed mb-4 pb-4 border-b border-white/10">結論：AIをトレーナーの「分身」として配置し、167時間を科学的に管理する。教育・記録・分析の3コストを同時に削減。会員はクエストに従うだけで、80点の食事・運動が自然に達成される仕組み。</p>
+                    <p class="text-slate-500 text-sm mb-8">プロフィールで目標を設定すれば、AIが逆算した「今日やるべきこと」をクエストとして毎日自動生成。トレーナーの分身として167時間を管理し、データに基づいた指導を可能にします。</p>
                 </div>
 
                 <!-- B2B2C Diagram -->
-                <div class="fade-up bg-gradient-to-br from-slate-50 to-teal-50/30 rounded-2xl p-6 md:p-8 border border-slate-100 mb-8">
+                <div class="fade-up glass rounded-2xl p-6 md:p-8 mb-8">
                     <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-center">
-                        <div class="bg-white border-2 border-teal-500 rounded-xl p-5 w-full md:w-44 shadow-sm">
-                            <p class="text-xs text-teal-600 font-bold mb-1">B2B</p>
-                            <p class="text-sm font-black text-slate-900">ジム・法人</p>
+                        <div class="rounded-xl p-5 w-full md:w-44" style="background:rgba(74,158,255,0.05); border: 2px solid rgba(74,158,255,0.3);">
+                            <p class="text-xs text-teal-400 font-bold mb-1">B2B</p>
+                            <p class="text-sm font-black text-white">ジム・法人</p>
                             <p class="text-xs text-slate-500">ライセンス契約</p>
                         </div>
                         <svg class="w-6 h-6 text-teal-400 rotate-90 md:rotate-0 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
@@ -631,26 +677,26 @@
                             <p class="text-xs text-blue-100">AIナビゲーション</p>
                         </div>
                         <svg class="w-6 h-6 text-teal-400 rotate-90 md:rotate-0 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                        <div class="bg-white border-2 border-emerald-500 rounded-xl p-5 w-full md:w-44 shadow-sm">
-                            <p class="text-xs text-emerald-600 font-bold mb-1">B2C</p>
-                            <p class="text-sm font-black text-slate-900">会員</p>
+                        <div class="rounded-xl p-5 w-full md:w-44" style="background:rgba(16,185,129,0.05); border: 2px solid rgba(16,185,129,0.3);">
+                            <p class="text-xs text-emerald-400 font-bold mb-1">B2C</p>
+                            <p class="text-sm font-black text-white">会員</p>
                             <p class="text-xs text-slate-500">Premium機能利用</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="fade-up space-y-4">
-                    <div class="flex items-start gap-4 bg-slate-50 rounded-xl p-5 border border-slate-100">
+                    <div class="flex items-start gap-4 glass rounded-xl p-5">
                         <div class="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center shrink-0"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
-                        <div><p class="font-bold text-sm text-slate-900">教育コスト削減</p><p class="text-xs text-slate-500 mt-1">PGBASE教科書が基礎知識教育を担当。トレーナーは本質的な指導に集中。</p></div>
+                        <div><p class="font-bold text-sm text-white">教育コスト削減</p><p class="text-xs text-slate-500 mt-1">PGBASE教科書が基礎知識教育を担当。トレーナーは本質的な指導に集中。</p></div>
                     </div>
-                    <div class="flex items-start gap-4 bg-slate-50 rounded-xl p-5 border border-slate-100">
+                    <div class="flex items-start gap-4 glass rounded-xl p-5">
                         <div class="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center shrink-0"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
-                        <div><p class="font-bold text-sm text-slate-900">認知リソース保護</p><p class="text-xs text-slate-500 mt-1">クエストで1秒記録、写真解析でどんな食事もエフォートレス。会員の「面倒」を排除。</p></div>
+                        <div><p class="font-bold text-sm text-white">認知限界の突破</p><p class="text-xs text-slate-500 mt-1">40以上の栄養素をS〜Dスコアに圧縮。写真1枚で記録完了。会員もトレーナーも、認知の限界を超えない設計。</p></div>
                     </div>
-                    <div class="flex items-start gap-4 bg-slate-50 rounded-xl p-5 border border-slate-100">
+                    <div class="flex items-start gap-4 glass rounded-xl p-5">
                         <div class="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center shrink-0"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>
-                        <div><p class="font-bold text-sm text-slate-900">LTV最大化</p><p class="text-xs text-slate-500 mt-1">毎日のAIフィードバックで成長を実感。継続率の構造的な向上。</p></div>
+                        <div><p class="font-bold text-sm text-white">LTV最大化</p><p class="text-xs text-slate-500 mt-1">毎日のAIフィードバックで成長を実感。継続率の構造的な向上。</p></div>
                     </div>
                 </div>
             </div>
@@ -658,45 +704,48 @@
 
         <!-- ===== 05 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/collage.png')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">5</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">行動変容ループ</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">5</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">行動変容ループ</span>
             </div>
         </div>
 
         <!-- 05. Behavioral Change Loop -->
-        <section id="loop" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="loop" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">行動変容ループ</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-slate-900">4ステップ科学的<span class="text-teal-600">行動変容</span>フレームワーク</h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">行動変容ループ</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-4 text-white">4ステップ科学的<span class="text-teal-400">行動変容</span>フレームワーク</h2>
+                    <p class="text-white text-sm font-black leading-relaxed mb-4 pb-4 border-b border-white/10">結論：Quest → Action → Analysis → Feedback の4ステップが毎日自動で回り、会員は「考えなくても正しい行動が続く」状態になる。</p>
+                    <p class="text-slate-500 text-xs mb-4">40以上の栄養素を毎日自分で判断するのは不可能。このループは、膨大な情報を「クエスト1つ」と「スコア1文字」に圧縮し、認知の限界を超えさせない仕組みです。</p>
+                    <p class="text-slate-400 text-xs mb-8"><strong class="text-slate-300">行動経済学に基づく設計：</strong>選択肢の圧縮で決定麻痺を解消。毎日のクエストでタスク分解+期限を設定し後回しを防止。スコアという「事実の共有」が、健全な緊張感を生みます。</p>
                 </div>
                 <div class="fade-up grid grid-cols-2 gap-5 mb-6">
-                    <div class="bg-white border-2 border-teal-500 rounded-2xl p-5 text-center shadow-sm">
+                    <div class="glass rounded-2xl p-5 text-center" style="border-color: rgba(74,158,255,0.3);">
                         <div class="w-12 h-12 mx-auto bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center mb-3"><span class="text-white font-black font-['Montserrat']">1</span></div>
-                        <p class="font-black text-teal-600">Quest</p>
+                        <p class="font-black text-teal-400">Quest</p>
                         <p class="text-xs text-slate-500 mt-1">クエストを毎日自動生成</p>
                     </div>
-                    <div class="bg-white border-2 border-emerald-500 rounded-2xl p-5 text-center shadow-sm">
+                    <div class="glass rounded-2xl p-5 text-center" style="border-color: rgba(16,185,129,0.3);">
                         <div class="w-12 h-12 mx-auto bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mb-3"><span class="text-white font-black font-['Montserrat']">2</span></div>
-                        <p class="font-black text-emerald-600">Action</p>
+                        <p class="font-black text-emerald-400">Action</p>
                         <p class="text-xs text-slate-500 mt-1">会員が実行・1秒記録</p>
                     </div>
-                    <div class="bg-white border-2 border-purple-500 rounded-2xl p-5 text-center shadow-sm">
+                    <div class="glass rounded-2xl p-5 text-center" style="border-color: rgba(147,51,234,0.3);">
                         <div class="w-12 h-12 mx-auto bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mb-3"><span class="text-white font-black font-['Montserrat']">3</span></div>
-                        <p class="font-black text-purple-600">Analysis</p>
+                        <p class="font-black text-purple-400">Analysis</p>
                         <p class="text-xs text-slate-500 mt-1">10+指標で毎日スコア化</p>
                     </div>
-                    <div class="bg-white border-2 border-orange-500 rounded-2xl p-5 text-center shadow-sm">
+                    <div class="glass rounded-2xl p-5 text-center" style="border-color: rgba(249,115,22,0.3);">
                         <div class="w-12 h-12 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mb-3"><span class="text-white font-black font-['Montserrat']">4</span></div>
-                        <p class="font-black text-orange-600">Feedback</p>
+                        <p class="font-black text-orange-400">Feedback</p>
                         <p class="text-xs text-slate-500 mt-1">具体的な改善提案を提供</p>
                     </div>
                 </div>
-                <div class="fade-up text-center bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-4 border border-teal-100">
-                    <p class="text-xs text-slate-600 flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <div class="fade-up text-center glass rounded-xl p-4">
+                    <p class="text-xs text-slate-400 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                         この4ステップが毎日自動で繰り返され、継続的な行動変容を実現
                     </p>
                 </div>
@@ -704,7 +753,7 @@
         </section>
 
         <!-- Lead Form CTA -->
-        <section class="py-12 px-6 lg:px-12 bg-slate-50">
+        <section class="py-12 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up bg-gradient-to-r from-teal-500 to-blue-600 rounded-2xl p-8 md:p-10 text-center shadow-lg">
                     <h3 class="text-xl md:text-2xl font-black text-white mb-3">詳細な資料をご希望ですか？</h3>
@@ -718,28 +767,29 @@
 
         <!-- ===== 06 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/fit-man.jpg')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">6</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">機能詳細</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">6</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">機能詳細</span>
             </div>
         </div>
 
         <!-- 06. Features Detail -->
-        <section id="features-detail" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="features-detail" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">機能詳細</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-10 text-slate-900">Your Coach+の<span class="text-teal-600">主要機能</span></h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">機能詳細</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-10 text-white">Your Coach+の<span class="text-teal-400">主要機能</span></h2>
                 </div>
                 <div class="fade-up space-y-8">
                     <!-- Feature 1: Quest -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="glass rounded-2xl overflow-hidden">
                         <div class="flex flex-col md:flex-row">
                             <div class="flex-1 p-6 md:p-8">
-                                <div class="inline-block bg-teal-50 text-teal-600 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-teal-100">Quest</div>
-                                <h3 class="text-xl font-black mb-3 text-slate-900">クエスト自動生成</h3>
-                                <p class="text-slate-600 text-sm leading-relaxed">プロフィール・当日の予定に基づき、食事・運動・睡眠の具体的なアクションをクエストとして毎日自動生成。会員の「何をすればいいか分からない」を完全に解消します。</p>
+                                <div class="inline-block bg-teal-500/10 text-teal-400 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-teal-500/30">Quest</div>
+                                <h3 class="text-xl font-black mb-3 text-white">クエスト自動生成</h3>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-2">プロフィールで目標を設定すれば、AIが逆算した食事・運動・睡眠の具体的なアクションをクエストとして毎日自動生成。会員は「今日何をすべきか」を考える必要がありません。</p>
+                                <p class="text-teal-400 text-xs font-bold leading-relaxed">抽象的な「健康に食べましょう」ではなく、具体的なクエストという正解を先に提示。頑張らなくても80点が出る仕組みです。</p>
                             </div>
                             <div class="md:w-72 h-52 md:h-auto overflow-hidden">
                                 <img src="/images/wp/gym-phone.png" alt="Quest - ジムでアプリを使う" class="w-full h-full object-cover" loading="lazy">
@@ -747,12 +797,14 @@
                         </div>
                     </div>
                     <!-- Feature 2: AI Analysis -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="glass rounded-2xl overflow-hidden">
                         <div class="flex flex-col md:flex-row-reverse">
                             <div class="flex-1 p-6 md:p-8">
-                                <div class="inline-block bg-orange-50 text-orange-600 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-orange-100">AI Analysis</div>
-                                <h3 class="text-xl font-black mb-3 text-slate-900">AI写真解析 + 総合分析</h3>
-                                <p class="text-slate-600 text-sm leading-relaxed">食事写真を撮影するだけでAIが40以上の栄養素を自動解析。毎日10以上の指標でスコアリングし、改善ポイントと具体的なアクションを提案します。</p>
+                                <div class="inline-block bg-orange-500/10 text-orange-400 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-orange-500/30">AI Analysis</div>
+                                <h3 class="text-xl font-black mb-3 text-white">AI写真解析 + 総合分析</h3>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-2">会員は「サラダを食べた＝健康」で終わる。しかしそのサラダのタンパク質はわずか3g、脂質はドレッシングで15gかもしれない。</p>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-2">食事写真を撮影するだけでAIがPFC・ビタミン・ミネラルなど<strong class="text-white">40以上の栄養素</strong>を自動解析し、食事の「見えない構造」を可視化。毎日10以上の指標でスコアリングし、改善ポイントと具体的なアクションを提案します。</p>
+                                <p class="text-orange-400 text-xs font-bold leading-relaxed">写真1枚で手動入力の手間を完全に排除。S〜Dスコアで40以上の栄養素を一目で把握でき、具体的な改善ポイントまで提示します。</p>
                             </div>
                             <div class="md:w-72 h-52 md:h-auto overflow-hidden">
                                 <img src="/images/wp/meal-photo.png" alt="AI写真解析 - 食事を撮影" class="w-full h-full object-cover" loading="lazy">
@@ -760,12 +812,13 @@
                         </div>
                     </div>
                     <!-- Feature 3: PGBASE -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="glass rounded-2xl overflow-hidden">
                         <div class="flex flex-col md:flex-row">
                             <div class="flex-1 p-6 md:p-8">
-                                <div class="inline-block bg-purple-50 text-purple-600 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-purple-100">PGBASE</div>
-                                <h3 class="text-xl font-black mb-3 text-slate-900">教科書コンテンツ</h3>
-                                <p class="text-slate-600 text-sm leading-relaxed">タンパク質・脂質・炭水化物・ビタミン・ミネラル・メンタルなど、ボディメイクに必要な知識を体系的にまとめた教科書。基礎教育をアプリに委任し、トレーナーの負荷を軽減。</p>
+                                <div class="inline-block bg-purple-500/10 text-purple-400 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-purple-500/30">PGBASE</div>
+                                <h3 class="text-xl font-black mb-3 text-white">PGBASE 教科書</h3>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-2">タンパク質・脂質・炭水化物・ビタミン・ミネラル・メンタルなど、ボディメイクに必要な知識を体系的にまとめた教科書。基礎教育をアプリに委任することでトレーナーの負荷を軽減し、学んだ知識はクエストで即実践できる設計です。</p>
+                                <p class="text-purple-400 text-xs font-bold leading-relaxed">80点はAIとクエストが出す。80→100に近づくには「なぜこのPFCバランスなのか」を理解する必要がある ―― PGBASEはその武器です。</p>
                             </div>
                             <div class="md:w-72 h-52 md:h-auto overflow-hidden">
                                 <img src="/images/wp/fit-man.jpg" alt="PGBASE - フィットネス知識" class="w-full h-full object-cover" loading="lazy">
@@ -773,12 +826,13 @@
                         </div>
                     </div>
                     <!-- Feature 4: Trainer Portal -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="glass rounded-2xl overflow-hidden">
                         <div class="flex flex-col md:flex-row-reverse">
                             <div class="flex-1 p-6 md:p-8">
-                                <div class="inline-block bg-emerald-50 text-emerald-600 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-emerald-100">Trainer Portal</div>
-                                <h3 class="text-xl font-black mb-3 text-slate-900">トレーナーポータル</h3>
-                                <p class="text-slate-600 text-sm leading-relaxed">会員の食事・運動・コンディション記録をリアルタイムで確認できる専用管理画面。167時間の空白を可視化し、エビデンスに基づく指導が可能になります。</p>
+                                <div class="inline-block bg-emerald-500/10 text-emerald-400 font-bold px-3 py-1 rounded-full text-xs mb-3 border border-emerald-500/30">Trainer Portal</div>
+                                <h3 class="text-xl font-black mb-3 text-white">トレーナーポータル</h3>
+                                <p class="text-slate-400 text-sm leading-relaxed mb-2">会員の食事・運動・コンディション記録をリアルタイムで確認できる専用管理画面。月末の体重測定を待つのではなく、毎日のデータでズレを早期に発見。スコアに基づく具体的な声がけが可能になります。</p>
+                                <p class="text-slate-500 text-xs italic leading-relaxed">「昨日のタンパク質、目標に届いてましたね」―― データに基づく声がけが、信頼と継続を生む。</p>
                             </div>
                             <div class="md:w-72 h-52 md:h-auto overflow-hidden">
                                 <img src="/images/wp/dashboard.png" alt="トレーナーポータル - ダッシュボード" class="w-full h-full object-cover" loading="lazy">
@@ -791,87 +845,88 @@
 
         <!-- ===== 07 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/split-roi.png')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">7</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">ROI分析</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">7</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">ROI分析</span>
             </div>
         </div>
 
         <!-- 07. ROI Analysis -->
-        <section id="roi" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="roi" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">ROI分析</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-3 text-slate-900">導入前後の<span class="text-teal-600">比較シミュレーション</span></h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">ROI分析</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-3 text-white">導入前後の<span class="text-teal-400">比較シミュレーション</span></h2>
+                    <p class="text-white text-sm font-black leading-relaxed mb-4 pb-4 border-b border-white/10">結論：会員30名規模のジムで年間+270万円の売上増加。導入コスト対比ROI約9倍。</p>
                     <p class="text-xs text-slate-500 mb-8">会員30名のパーソナルジム（月額会員費 ¥30,000）で試算</p>
                 </div>
 
                 <div class="fade-up grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <!-- Before -->
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6">
-                        <p class="text-xs text-slate-400 uppercase tracking-widest mb-4 font-bold">Before（導入前）</p>
+                    <div class="glass rounded-2xl p-6">
+                        <p class="text-xs text-slate-500 uppercase tracking-widest mb-4 font-bold">Before（導入前）</p>
                         <div class="space-y-3">
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">平均継続月数</span><span class="font-bold text-red-600">4ヶ月</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">年間退会数</span><span class="font-bold text-red-600">18名</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">年間売上</span><span class="font-bold text-slate-900">¥10,800,000</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">基礎教育時間/月</span><span class="font-bold text-red-600">20時間</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">平均継続月数</span><span class="font-bold text-red-400">4ヶ月</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">年間退会数</span><span class="font-bold text-red-400">18名</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">年間売上</span><span class="font-bold text-white">¥10,800,000</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">基礎教育時間/月</span><span class="font-bold text-red-400">20時間</span></div>
                         </div>
                     </div>
                     <!-- After -->
-                    <div class="bg-white border-2 border-teal-500 rounded-2xl p-6 shadow-lg shadow-teal-500/10">
-                        <p class="text-xs text-teal-600 uppercase tracking-widest mb-4 font-black">After（導入後）</p>
+                    <div class="rounded-2xl p-6" style="background:rgba(74,158,255,0.05); border: 2px solid rgba(74,158,255,0.3); box-shadow: 0 0 40px -10px rgba(74,158,255,0.15);">
+                        <p class="text-xs text-teal-400 uppercase tracking-widest mb-4 font-black">After（導入後）</p>
                         <div class="space-y-3">
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">平均継続月数</span><span class="font-bold text-emerald-600">7ヶ月</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">年間退会数</span><span class="font-bold text-emerald-600">10名</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">年間売上</span><span class="font-bold text-slate-900">¥13,500,000</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">基礎教育時間/月</span><span class="font-bold text-emerald-600">5時間</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">平均継続月数</span><span class="font-bold text-emerald-400">7ヶ月</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">年間退会数</span><span class="font-bold text-emerald-400">10名</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">年間売上</span><span class="font-bold text-white">¥13,500,000</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-slate-400">基礎教育時間/月</span><span class="font-bold text-emerald-400">5時間</span></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="fade-up bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 text-center mb-8">
-                    <p class="text-sm text-slate-600 mb-1">年間売上増加額（試算）</p>
-                    <p class="text-4xl font-black text-teal-600 font-['Montserrat']">+¥2,700,000</p>
-                    <p class="text-xs text-slate-500 mt-2">Proプラン（¥297,000/年）に対し、ROI約<span class="font-black text-teal-600">9倍</span></p>
+                <div class="fade-up glass rounded-2xl p-6 text-center mb-8" style="border-color: rgba(74,158,255,0.15); box-shadow: 0 0 40px -10px rgba(74,158,255,0.1);">
+                    <p class="text-sm text-slate-400 mb-1">年間売上増加額（試算）</p>
+                    <p class="text-4xl font-black text-teal-400 font-['Montserrat']">+¥2,700,000</p>
+                    <p class="text-xs text-slate-500 mt-2">Proプラン（¥297,000/年）に対し、ROI約<span class="font-black text-teal-400">9倍</span></p>
                 </div>
 
-                <div class="fade-up bg-slate-50 border border-slate-200 rounded-2xl p-6">
-                    <h4 class="font-black text-slate-900 text-sm mb-4">継続率改善の利益インパクト（Bain & Company調査）</h4>
+                <div class="fade-up glass rounded-2xl p-6">
+                    <h4 class="font-black text-white text-sm mb-4">継続率改善の利益インパクト（Bain & Company調査）</h4>
                     <div class="grid grid-cols-3 gap-4 text-center">
-                        <div class="bg-white rounded-xl p-4 border border-slate-100">
-                            <p class="text-2xl font-black text-teal-500 font-['Montserrat']">+40%</p>
+                        <div class="bg-white/[0.03] rounded-xl p-4 border border-white/8">
+                            <p class="text-2xl font-black text-teal-400 font-['Montserrat']">+40%</p>
                             <p class="text-xs text-slate-500 mt-1">ゲーミフィケーション<br>による継続率改善</p>
                         </div>
-                        <div class="bg-white rounded-xl p-4 border border-slate-100">
-                            <p class="text-2xl font-black text-emerald-500 font-['Montserrat']">+30%</p>
+                        <div class="bg-white/[0.03] rounded-xl p-4 border border-white/8">
+                            <p class="text-2xl font-black text-emerald-400 font-['Montserrat']">+30%</p>
                             <p class="text-xs text-slate-500 mt-1">ソーシャル機能<br>による継続率改善</p>
                         </div>
-                        <div class="bg-white rounded-xl p-4 border border-slate-100">
-                            <p class="text-2xl font-black text-orange-500 font-['Montserrat']">+88%</p>
+                        <div class="bg-white/[0.03] rounded-xl p-4 border border-white/8">
+                            <p class="text-2xl font-black text-orange-400 font-['Montserrat']">+88%</p>
                             <p class="text-xs text-slate-500 mt-1">プッシュ通知<br>によるエンゲージメント</p>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-4 text-center">継続率をわずか5%改善するだけで、利益は25〜95%増加する</p>
+                    <p class="text-xs text-slate-500 mt-4 text-center">継続率をわずか5%改善するだけで、利益は25〜95%増加する</p>
                 </div>
             </div>
         </section>
 
         <!-- ===== 08 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/executives.jpg')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">8</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">導入事例</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">8</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">導入事例</span>
             </div>
         </div>
 
         <!-- 08. Case Studies -->
-        <section id="cases" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="cases" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">導入事例</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-slate-900">導入事例</h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">導入事例</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-white">導入事例</h2>
                 </div>
                 <!-- Early Traction -->
                 <div class="fade-up bg-gradient-to-br from-teal-500 to-blue-700 rounded-2xl p-8 md:p-10 text-white mb-8 shadow-xl">
@@ -887,13 +942,54 @@
                     </div>
                 </div>
 
-                <!-- Coming Soon -->
-                <div class="fade-up bg-slate-50 rounded-2xl p-8 md:p-12 border border-slate-100">
-                    <div class="text-center">
-                        <div class="w-16 h-16 mx-auto bg-white rounded-2xl flex items-center justify-center mb-5 shadow-sm border border-slate-200">
-                            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                <!-- Developer's Field Episode -->
+                <div class="fade-up glass rounded-2xl p-6 md:p-8 mb-8">
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                         </div>
-                        <h3 class="text-lg font-black text-slate-900 mb-3">施設導入事例は準備中です</h3>
+                        <div>
+                            <p class="text-xs text-teal-400 font-bold uppercase tracking-widest">Developer's Field Note</p>
+                            <p class="text-sm font-black text-white">開発者が現場で見た「167時間問題」のリアル</p>
+                        </div>
+                    </div>
+                    <div class="pl-5 space-y-4" style="border-left: 3px solid rgba(74,158,255,0.4);">
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            24hジムの現場責任者として延べ数百名の会員を見てきた中で、もっとも多く聞いた退会理由は「効果が出なかった」でした。
+                        </p>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            しかし、セッション中の彼らは真剣そのものでした。フォームも良い。重量も伸びている。では、なぜ体が変わらないのか。答えは明白でした。<strong class="text-white">セッション後の食事が見えない。</strong>LINEで食事写真を送ってもらう仕組みを作っても、3日で既読スルーになる。それは会員の怠慢ではなく、「毎回写真を撮って送る」という行為に認知リソースを使い果たしていたのです。
+                        </p>
+                        <p class="text-slate-400 text-sm leading-relaxed">
+                            ある会員は3ヶ月間まじめに通い続けてくれましたが、「頑張ってるつもりなのに、何が正解か分からなくなった」と退会していきました。週1回のセッションで伝えきれない情報量。残り167時間を見ることができないもどかしさ。<strong class="text-white">「自分がもう一人いれば」――その想いが、Your Coach+の原点です。</strong>
+                        </p>
+                    </div>
+                    <div class="mt-5 bg-teal-500/10 rounded-xl p-4 border border-teal-500/20">
+                        <p class="text-teal-400 text-xs font-bold">この原体験から生まれた設計思想</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                            <div class="flex items-start gap-2">
+                                <span class="text-teal-400 text-xs mt-0.5">&#10003;</span>
+                                <p class="text-xs text-slate-400">「写真を撮るだけ」で記録完了 → 認知リソース問題の解決</p>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="text-teal-400 text-xs mt-0.5">&#10003;</span>
+                                <p class="text-xs text-slate-400">クエストで「次に何をすべきか」を毎日提示 → 迷子問題の解決</p>
+                            </div>
+                            <div class="flex items-start gap-2">
+                                <span class="text-teal-400 text-xs mt-0.5">&#10003;</span>
+                                <p class="text-xs text-slate-400">トレーナーポータルで167時間を可視化 → ブラックボックス問題の解決</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coming Soon -->
+                <div class="fade-up glass rounded-2xl p-8 md:p-12">
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto bg-white/5 rounded-2xl flex items-center justify-center mb-5 border border-white/10">
+                            <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </div>
+                        <h3 class="text-lg font-black text-white mb-3">施設導入事例は準備中です</h3>
                         <p class="text-slate-500 text-sm mb-6">現在、先行導入パートナーを募集しています。<br>導入後の成果データは本ページに順次掲載予定です。</p>
                         <a href="/b2b2c.html#contact" class="inline-block bg-gradient-to-r from-teal-500 to-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:shadow-lg transition text-sm">先行導入パートナーに応募する</a>
                     </div>
@@ -903,47 +999,47 @@
 
         <!-- ===== 09 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/wellness-ai.png')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-800">0</span><span class="text-teal-500">9</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">技術基盤</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-slate-300">0</span><span class="text-teal-400">9</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">技術基盤</span>
             </div>
         </div>
 
         <!-- 09. Technology -->
-        <section id="tech" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="tech" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">技術基盤</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-slate-900">テクノロジー<span class="text-teal-600">スタック</span></h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">技術基盤</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-white">テクノロジー<span class="text-teal-400">スタック</span></h2>
                 </div>
                 <div class="fade-up grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
-                    <div class="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
+                    <div class="glass rounded-2xl p-6 text-center">
                         <div class="w-14 h-14 mx-auto bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
                             <span class="text-white font-black text-xl font-['Montserrat']">K</span>
                         </div>
-                        <p class="font-black text-slate-900">Kotlin Multiplatform</p>
+                        <p class="font-black text-white">Kotlin Multiplatform</p>
                         <p class="text-xs text-slate-500 mt-1">Android / iOS 共通コードベース</p>
-                        <p class="text-xs text-slate-400 mt-2">Compose Multiplatform + Voyager</p>
+                        <p class="text-xs text-slate-600 mt-2">Compose Multiplatform + Voyager</p>
                     </div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
+                    <div class="glass rounded-2xl p-6 text-center">
                         <div class="w-14 h-14 mx-auto bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center mb-4">
                             <span class="text-white font-black text-xl font-['Montserrat']">F</span>
                         </div>
-                        <p class="font-black text-slate-900">Firebase</p>
+                        <p class="font-black text-white">Firebase</p>
                         <p class="text-xs text-slate-500 mt-1">バックエンド・認証・DB</p>
-                        <p class="text-xs text-slate-400 mt-2">Firestore + Cloud Functions + FCM</p>
+                        <p class="text-xs text-slate-600 mt-2">Firestore + Cloud Functions + FCM</p>
                     </div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm hover:shadow-md transition">
+                    <div class="glass rounded-2xl p-6 text-center">
                         <div class="w-14 h-14 mx-auto bg-gradient-to-br from-teal-400 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
                             <span class="text-white font-black text-xl font-['Montserrat']">G</span>
                         </div>
-                        <p class="font-black text-slate-900">Gemini AI</p>
+                        <p class="font-black text-white">Gemini AI</p>
                         <p class="text-xs text-slate-500 mt-1">AI分析・写真解析エンジン</p>
-                        <p class="text-xs text-slate-400 mt-2">栄養分析 + Q&A + クエスト生成</p>
+                        <p class="text-xs text-slate-600 mt-2">栄養分析 + Q&A + クエスト生成</p>
                     </div>
                 </div>
-                <div class="fade-up bg-gradient-to-r from-slate-50 to-teal-50/30 rounded-xl p-5 border border-slate-100">
+                <div class="fade-up glass rounded-xl p-5">
                     <p class="text-xs text-slate-500 text-center">KMPにより共通コードベースで高速開発。Firebase のスケーラビリティと Gemini AI の分析能力を組み合わせ、法人規模でも安定稼働する基盤を構築。</p>
                 </div>
             </div>
@@ -951,24 +1047,45 @@
 
         <!-- ===== 10 Section Divider ===== -->
         <div class="section-divider" style="background-image:url('/images/wp/data-analytics.jpg')">
-            <div class="relative z-10 bg-white py-5 px-8 md:px-16 flex items-center gap-5 shadow-xl">
-                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-teal-500">1</span><span class="text-teal-500">0</span></span>
-                <span class="text-xl md:text-2xl font-black text-slate-900">結論</span>
+            <div class="relative z-10 glass py-5 px-8 md:px-16 flex items-center gap-5" style="box-shadow: 0 8px 40px rgba(0,0,0,0.4);">
+                <span class="font-['Montserrat'] font-black text-4xl md:text-5xl"><span class="text-teal-400">1</span><span class="text-teal-400">0</span></span>
+                <span class="text-xl md:text-2xl font-black text-white">結論</span>
             </div>
         </div>
 
         <!-- 10. Conclusion & CTA -->
-        <section id="conclusion" class="py-16 md:py-24 px-6 lg:px-12 bg-white">
+        <section id="conclusion" class="py-16 md:py-24 px-6 lg:px-12">
             <div class="max-w-4xl mx-auto">
                 <div class="fade-up">
                     <div class="gradient-bar mb-8 rounded-full"></div>
-                    <p class="text-xs text-teal-600 font-bold tracking-widest uppercase mb-2">結論</p>
-                    <h2 class="text-2xl md:text-4xl font-black mb-8 text-slate-900">「記録」から「ナビゲーション」へ。<br class="hidden md:block"><span class="text-teal-600">AIが法人ウェルネスの新たなスタンダードを創る。</span></h2>
+                    <p class="text-xs text-teal-400 font-bold tracking-widest uppercase mb-2">結論</p>
+                    <h2 class="text-2xl md:text-4xl font-black mb-4 text-white">「記録」から「ナビゲーション」へ。<br class="hidden md:block"><span class="text-teal-400">AIが法人ウェルネスの新たなスタンダードを創る。</span></h2>
+                    <p class="text-white text-sm font-black leading-relaxed mb-8 pb-4 border-b border-white/10">結論：167時間の管理不能は人力では解決できない。先行導入によってAIコーチングを会員体験に組み込むことが、継続率とLTVを構造的に変える唯一の手段。</p>
                 </div>
-                <div class="fade-up bg-slate-50 rounded-2xl p-6 md:p-8 border border-slate-100 mb-10">
-                    <p class="text-slate-600 text-sm leading-relaxed mb-4">パーソナルジムの構造的課題 &#8212; 指導時間外の167時間の管理不能、基礎教育の反復コスト、早期退会によるLTV損失 &#8212; は、従来のツールでは解決不可能です。</p>
-                    <p class="text-slate-600 text-sm leading-relaxed mb-4">Your Coach+のB2B2Cモデルは、毎日の自動クエスト生成、エフォートレスな写真解析、10以上の指標による毎日のスコアリングで、会員の行動変容を構造的に実現します。</p>
-                    <p class="text-slate-600 text-sm leading-relaxed">国体入賞アスリート×元24hジム現場責任者が開発した「机上の空論ゼロ」のプラットフォーム。先行導入パートナーとして、次世代フィットネスの基準をともに創りましょう。</p>
+                <div class="fade-up glass rounded-2xl p-6 md:p-8 mb-6">
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">パーソナルジムの構造的課題 &#8212; 指導時間外の167時間の管理不能、基礎教育の反復コスト、早期退会によるLTV損失 &#8212; は、従来のツールでは解決不可能です。</p>
+                    <p class="text-slate-400 text-sm leading-relaxed mb-4">Your Coach+のB2B2Cモデルは、毎日の自動クエスト生成、エフォートレスな写真解析、10以上の指標による毎日のスコアリングで、会員の行動変容を構造的に実現します。</p>
+                    <p class="text-slate-400 text-sm leading-relaxed">国体入賞アスリート×元24hジム現場責任者が開発した「机上の空論ゼロ」のプラットフォーム。先行導入パートナーとして、次世代フィットネスの基準をともに創りましょう。</p>
+                </div>
+
+                <!-- Vision Story -->
+                <div class="fade-up bg-gradient-to-br from-[#0c0c13] to-teal-900/30 rounded-2xl p-6 md:p-8 mb-10 border border-white/6">
+                    <p class="text-teal-300 text-xs font-bold uppercase tracking-widest mb-4">Vision</p>
+                    <p class="text-white text-sm md:text-base leading-relaxed mb-4">
+                        想像してみてください。
+                    </p>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                        あなたのジムの会員が、セッションのない日もアプリを開き、今日のクエストをクリアしている。トレーナーポータルには、昨夜の食事記録がリアルタイムで届いている。次のセッションでは「昨日のタンパク質、目標に届いてましたね」と、データに基づいた声がけができる。
+                    </p>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                        会員は「このジムは、私のことを本当に見てくれている」と感じる。退会を考えることすら、なくなる。
+                    </p>
+                    <p class="text-white text-sm md:text-base leading-relaxed font-bold mb-4">
+                        167時間の空白が埋まったとき、トレーナーの価値は何倍にもなる。<br>その未来を、私たちは一緒に創りたい。
+                    </p>
+                    <p class="text-slate-500 text-xs leading-relaxed">
+                        フィットネス業界の先人たちは、限られた手段の中で「手軽さ」を選び、「毎日の個別指導」を諦めてきた。その判断は正しかった。<br>しかし今、AIがその常識を変える。私たちは過去を否定するのではなく、先人が積み上げた物語の続きを書く。
+                    </p>
                 </div>
 
                 <!-- CTA -->
@@ -976,21 +1093,21 @@
                     <div class="relative overflow-hidden rounded-2xl">
                         <div class="absolute inset-0">
                             <img src="/images/wp/collage.png" alt="" class="w-full h-full object-cover" loading="lazy">
-                            <div class="absolute inset-0 bg-gradient-to-br from-teal-600/92 via-blue-700/90 to-slate-900/92"></div>
+                            <div class="absolute inset-0 bg-gradient-to-br from-[#08080d]/95 via-teal-900/80 to-[#08080d]/95"></div>
                         </div>
                         <div class="relative z-10 p-6 md:p-10">
-                            <div class="bg-slate-900/70 backdrop-blur-md rounded-2xl p-8 md:p-10 max-w-xl mx-auto border border-white/10 shadow-2xl text-center">
-                                <h3 class="text-2xl md:text-3xl font-black text-white mb-3" style="text-shadow: 0 2px 8px rgba(0,0,0,0.5)">お問い合わせ・デモ申し込み</h3>
-                                <p class="text-teal-200 text-sm mb-8" style="text-shadow: 0 1px 4px rgba(0,0,0,0.4)">先行導入キャンペーン実施中。開発者が直接ご対応いたします。</p>
+                            <div class="glass rounded-2xl p-8 md:p-10 max-w-xl mx-auto text-center" style="box-shadow: 0 8px 60px rgba(0,0,0,0.5);">
+                                <h3 class="text-2xl md:text-3xl font-black text-white mb-3">お問い合わせ・デモ申し込み</h3>
+                                <p class="text-teal-300 text-sm mb-8">先行導入キャンペーン実施中。開発者が直接ご対応いたします。</p>
                                 <div class="flex flex-col sm:flex-row justify-center gap-4 mb-6">
-                                    <a href="/b2b2c.html#contact" class="bg-white text-teal-600 font-bold px-8 py-3.5 rounded-xl hover:bg-teal-50 transition shadow-lg text-sm">
+                                    <a href="/b2b2c.html#contact" class="bg-teal-500 text-white font-bold px-8 py-3.5 rounded-xl hover:bg-teal-600 transition shadow-lg text-sm" style="box-shadow: 0 0 20px rgba(74,158,255,0.3);">
                                         お問い合わせ
                                     </a>
-                                    <a href="/b2b2c.html#pricing" class="border-2 border-white/80 text-white font-bold px-8 py-3.5 rounded-xl hover:bg-white/10 transition text-sm">
+                                    <a href="/b2b2c.html#pricing" class="border-2 border-white/30 text-white font-bold px-8 py-3.5 rounded-xl hover:border-white/60 transition text-sm">
                                         料金プランを見る
                                     </a>
                                 </div>
-                                <p class="text-white/40 text-xs">official@your-coach-plus.com</p>
+                                <p class="text-slate-500 text-xs">official@your-coach-plus.com</p>
                             </div>
                         </div>
                     </div>
@@ -999,12 +1116,14 @@
         </section>
 
         <!-- Footer -->
-        <footer class="bg-slate-900 py-12 px-6 lg:px-12" aria-label="フッター">
+        <div class="section-line"></div>
+
+        <footer class="bg-[#060609] py-12 px-6 lg:px-12" aria-label="フッター">
             <div class="max-w-4xl mx-auto text-center">
                 <a href="/home.html" class="text-xl font-bold text-white font-['Montserrat']">Your Coach<span class="text-teal-400">+</span></a>
                 <div class="flex flex-wrap justify-center gap-4 mt-4 mb-6">
                     <a href="/home.html" class="text-slate-400 hover:text-teal-400 transition text-sm">アプリダウンロード</a>
-                    <span class="text-slate-600">|</span>
+                    <span class="text-slate-700">|</span>
                     <a href="/b2b2c.html" class="text-slate-400 hover:text-teal-400 transition text-sm">法人向けプラン</a>
                 </div>
                 <div class="flex flex-wrap justify-center gap-6 mb-6">
