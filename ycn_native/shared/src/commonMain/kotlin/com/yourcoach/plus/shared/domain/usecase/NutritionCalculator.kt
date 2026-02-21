@@ -61,6 +61,7 @@ object NutritionCalculator {
         var monounsaturatedFat = 0f
         var polyunsaturatedFat = 0f
         var totalGL = 0f
+        var totalAdjustedGL = 0f
         var highGICarbs = 0f
         var lowGICarbs = 0f
         var totalFiber = 0f
@@ -154,6 +155,23 @@ object NutritionCalculator {
             }
         }
 
+        // PFC補正: 混食による血糖上昇緩和を食事単位で計算（getGlRatingと同じロジック）
+        meals.forEach { meal ->
+            var mealGL = 0f
+            meal.items.forEach { item ->
+                if (item.gi > 0 && item.carbs > 0) {
+                    mealGL += (item.gi * item.carbs) / 100f
+                }
+            }
+            if (mealGL > 0) {
+                val proteinReduction = kotlin.math.min(10f, (meal.totalProtein / 20f) * 10f)
+                val fatReduction = kotlin.math.min(5f, (meal.totalFat / 10f) * 5f)
+                val fiberReduction = kotlin.math.min(10f, (meal.totalFiber / 10f) * 10f)
+                val totalReduction = proteinReduction + fatReduction + fiberReduction
+                totalAdjustedGL += mealGL * (1f - totalReduction / 100f)
+            }
+        }
+
         // 平均DIAAS
         val averageDiaas = if (totalProtein > 0) weightedDiaas / totalProtein else 0f
 
@@ -194,16 +212,15 @@ object NutritionCalculator {
         val highGIPercent = if (totalGICarbs > 0) (highGICarbs / totalGICarbs) * 100f else 0f
         val lowGIPercent = if (totalGICarbs > 0) (lowGICarbs / totalGICarbs) * 100f else 0f
 
-        // PFC補正は食事単位で適用（getGlRating）するため、1日合計には適用しない
         val glModifiers = emptyList<Pair<String, Float>>()
-        val adjustedGL = totalGL
+        val adjustedGL = totalAdjustedGL
 
-        // 血糖管理評価（生のGL値で判定）
+        // 血糖管理評価（PFC補正後のGL値で判定 — 食事単位のGLタグと一貫性を保つ）
         val (bloodSugarRating, bloodSugarLabel) = when {
-            totalGL < glLimit * 0.5f -> "A+" to "優秀"
-            totalGL < glLimit * 0.7f -> "A" to "良好"
-            totalGL < glLimit * 0.85f -> "B" to "普通"
-            totalGL < glLimit -> "C" to "やや高め"
+            adjustedGL < glLimit * 0.5f -> "A+" to "優秀"
+            adjustedGL < glLimit * 0.7f -> "A" to "良好"
+            adjustedGL < glLimit * 0.85f -> "B" to "普通"
+            adjustedGL < glLimit -> "C" to "やや高め"
             else -> "D" to "要改善"
         }
 

@@ -249,14 +249,53 @@ class AnalysisScreenModel(
             _uiState.update { it.copy(isAnalyzing = true, aiAnalysis = null, error = null) }
 
             try {
-                val profile = state.userProfile
+                // === 分析時点の最新データを取得（日付ズレ・キャッシュ乖離を防止） ===
+                val analysisDate = DateUtil.todayString()
+                val freshMeals = mealRepository.getMealsForDate(userId, analysisDate).getOrNull() ?: emptyList()
+                val freshWorkouts = workoutRepository.getWorkoutsForDate(userId, analysisDate).getOrNull() ?: emptyList()
+                val freshCondition = conditionRepository?.getCondition(userId, analysisDate)?.getOrNull()
+                val freshIsRestDay = scoreRepository?.getRestDayStatus(userId, analysisDate)?.getOrNull() ?: false
+                val freshRoutine = routineRepository?.getRoutineForDate(userId, analysisDate)?.getOrNull()
+                val freshSplitType = freshRoutine?.splitType
+
+                // 明日のクエスト情報を更新
+                val tomorrow = DateUtil.nextDay(analysisDate)
+                val freshTomorrowDirective = directiveRepository?.getDirective(userId, tomorrow)?.getOrNull()
+                val freshTomorrowCustomQuest = customQuestRepository?.getCustomQuest(userId, tomorrow)?.getOrNull()
+
+                // 微量栄養素を再計算
+                val detailedNutrition = calculateDetailedNutrition(freshMeals)
+                val vitaminAvg = if (detailedNutrition.vitaminScores.isNotEmpty())
+                    detailedNutrition.vitaminScores.values.average().toFloat() * 100 else 0f
+                val mineralAvg = if (detailedNutrition.mineralScores.isNotEmpty())
+                    detailedNutrition.mineralScores.values.average().toFloat() * 100 else 0f
+
+                // UIステートを最新データで更新
+                _uiState.update { it.copy(
+                    meals = freshMeals,
+                    workouts = freshWorkouts,
+                    condition = freshCondition,
+                    isRestDay = freshIsRestDay,
+                    todaySplitType = freshSplitType,
+                    tomorrowDirective = freshTomorrowDirective,
+                    tomorrowCustomQuest = freshTomorrowCustomQuest,
+                    averageDiaas = detailedNutrition.averageDiaas,
+                    fattyAcidScore = detailedNutrition.fattyAcidScore,
+                    fattyAcidLabel = detailedNutrition.fattyAcidLabel,
+                    totalFiber = detailedNutrition.totalFiber,
+                    totalGL = detailedNutrition.totalGL,
+                    vitaminAvg = vitaminAvg,
+                    mineralAvg = mineralAvg
+                ) }
+
+                val profile = _uiState.value.userProfile
 
                 // class消費加算を含む動的ターゲット計算
                 val weight = profile?.weight ?: 70f
                 val bodyFat = profile?.bodyFatPercentage ?: 20f
                 val lbm = weight * (1 - bodyFat / 100f)
                 val trainingBonus = TrainingCalorieBonus.fromSplitType(
-                    state.todaySplitType, state.isRestDay, lbm
+                    freshSplitType, freshIsRestDay, lbm
                 )
                 val baseCalories = profile?.targetCalories ?: 2000
                 val targetCalories = baseCalories + trainingBonus
@@ -267,11 +306,11 @@ class AnalysisScreenModel(
                 val targetFat = targetCalories * fRatio / 9f
                 val targetCarbs = targetCalories * cRatio / 4f
 
-                // Calculate score if not available
-                val effectiveScore = state.score ?: calculateScoreFromMeals(
+                // 常にmealデータから計算（Firestoreスコアとの乖離を防止）
+                val effectiveScore = calculateScoreFromMeals(
                     userId = userId,
-                    meals = state.meals,
-                    workouts = state.workouts,
+                    meals = freshMeals,
+                    workouts = freshWorkouts,
                     targetCalories = targetCalories,
                     targetProtein = targetProtein,
                     targetFat = targetFat,
@@ -282,10 +321,10 @@ class AnalysisScreenModel(
                 val prompt = buildAnalysisPrompt(
                     profile = profile,
                     score = effectiveScore,
-                    meals = state.meals,
-                    workouts = state.workouts,
-                    condition = state.condition,
-                    isRestDay = state.isRestDay
+                    meals = freshMeals,
+                    workouts = freshWorkouts,
+                    condition = freshCondition,
+                    isRestDay = freshIsRestDay
                 )
 
                 // Call Gemini service
@@ -614,6 +653,7 @@ class AnalysisScreenModel(
         } ?: "\n## 明日のクエスト\n未生成"
 
         return """あなたは専属AIヘルスコーチです。行動心理学とスポーツ栄養学のエビデンスに基づき、ユーザーの長期的な健康習慣の構築を支援します。
+本日の日付: ${DateUtil.todayString()}
 ユーザーはアプリが提示する「クエスト（食事・運動メニュー）」を毎日実行しています。
 
 ## トーンとマナー（厳守）

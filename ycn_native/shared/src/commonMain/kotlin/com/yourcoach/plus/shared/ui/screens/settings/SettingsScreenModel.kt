@@ -35,7 +35,7 @@ data class SettingsUiState(
     val user: User? = null,
     val isPremium: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val appVersion: String = "2.1.5",
+    val appVersion: String = "2.1.6",
     val error: String? = null,
     val isDeletingAccount: Boolean = false,
     val needsReauthentication: Boolean = false,
