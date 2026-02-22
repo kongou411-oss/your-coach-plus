@@ -247,7 +247,7 @@
             border: 1px solid rgba(255,255,255,0.06);
             border-top: none;
         }
-        .device img {
+        .device img, .device video {
             display: block;
             border-radius: 28px;
             width: auto;
@@ -255,7 +255,7 @@
             object-fit: contain;
         }
         @media (min-width: 768px) {
-            .device img { height: 520px; }
+            .device img, .device video { height: 520px; }
         }
         .device::after {
             content: '';
@@ -452,7 +452,7 @@
                         </div>
                         <div class="flex-1 flex justify-center fade-right">
                             <div class="device" style="box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.6), 0 0 60px rgba(74,158,255,0.2);">
-                                <img src="/guide-images/FEATURE1_new.png" alt="クエスト画面 - 今日のタスクがリスト表示されている" loading="lazy">
+                                <video src="/guide-images/quest_demo.mp4" autoplay muted loop playsinline alt="クエスト完了デモ" style="display:block;border-radius:28px;width:auto;height:400px;object-fit:contain;"></video>
                             </div>
                         </div>
                     </div>
